@@ -92,7 +92,10 @@ int check_pas_request(int request)
          break;
       }
       default:
+      {
          rval = PasErrorStatus_FAIL;
+         break;
+      }
    }
    return rval;
 }
@@ -197,7 +200,6 @@ int send_pas_register(const char* method, const char* appname)
    if(message != NULL)
    {
       dbus_message_append_args(message, DBUS_TYPE_STRING, &appname, DBUS_TYPE_INVALID);
-
 
       if(conn != NULL)
       {

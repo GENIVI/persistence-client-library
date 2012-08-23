@@ -134,7 +134,8 @@ int key_handle_register_notify_on_change(int key_handle);
  *
  * @param key_handle key value handle return by key_handle_open()
  * @param buffer the buffer containing the persistent data to write
- * @param buffer_size the number of bytes to write
+ * @param buffer_size the number of bytes to write (default max size is set to 16kB)
+ *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
  * @return positive value: the bytes written; negative value: error code
  */
@@ -180,7 +181,8 @@ int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsign
  * @param user_no  the user ID
  * @param seat_no  the seat number (seat 0 to 3)
  * @param buffer the buffer containing the persistent data to write
- * @param buffer_size the number of bytes to write
+ * @param buffer_size the number of bytes to write (default max size is set to 16kB)
+ *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
  * @return positive value: the bytes written; negative value: error code
  */

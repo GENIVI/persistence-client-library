@@ -23,6 +23,8 @@ libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library_lc_interface.c \
                                      persistence_client_library_pas_interface.c \
                                      persistence_client_library_dbus_service.c \
+                                     persistence_client_library_custom_loader.c \
+                                     persistence_client_library_access_helper.c \
                                      crc32.c
 
 libpersistence_client_library_la_LDFLAGS = -module -export-dynamic $(LDFLAGS)

@@ -70,41 +70,74 @@ START_TEST (test_persGetData)
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
    printf("\n\n");
 
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/pos/last_position",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   ret = key_read_data(0xFF, "/language/country_code",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
+   printf("T E S T  Data - country_code: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
+   memset(buffer, 0, READ_SIZE);
+   ret = key_read_data(0xFF, "/pos/last_position",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
+   printf("T E S T  Data - last_position: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
+
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0,    "/language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data - current_language: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0xFF, "/status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data - open_document: %s \n", buffer);
+    printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0x20, "/address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data - home_address: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0xFF, "/pos/last satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data - last satellites: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0x84, "/links/last link",           2, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data - last link: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0x84, "/links/last link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data - last link: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
+
+   printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_write_data(0x84, "/links/last link",          2, 1, sysTimeBuffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"         => "/84/User/2/Seat/1/links/last link" 
    printf("T E S T  Data: %s \n\n", sysTimeBuffer);
+   printf("----------------------------------------------->\n\n");
 
-    memset(buffer, 0, READ_SIZE);
+
+   printf("<-----------------------------------------------\n");
+   memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0x84, "/links/last link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/Seat/1/links/last link" 
-   printf("T E S T  Data: %s \n\n", buffer);
+   printf("T E S T  Data last link: %s \n", buffer);
+   printf("----------------------------------------------->\n\n");
 
 
 
@@ -229,11 +262,11 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_persGetData_file, test_persGetData_file);
 
    suite_add_tcase(s, tc_persGetData);
-   suite_add_tcase(s, tc_persGetDataHandle);
+   /*suite_add_tcase(s, tc_persGetDataHandle);
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persSetSharedData);
    suite_add_tcase(s, tc_persGetData_file);
-
+*/
    return s;
 }
 
@@ -249,9 +282,6 @@ int main(int argc, char *argv[])
    srunner_run_all(sr, CK_NORMAL);
    nr_failed = srunner_ntests_failed(sr);
    srunner_free(sr);
-
-
-   getchar();
 
    return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
 

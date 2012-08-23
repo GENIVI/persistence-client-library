@@ -43,16 +43,11 @@
 
 
 /// constant definitions
-enum persClientLibConstantDef
+enum _PersistenceConstantDef
 {
-
-   storeWt              = 0,        /// flag for write through storage policy
-   dbLocal              = 0,        /// flag for local storage location
    resIsNoFile          = 0,        /// flag to identify that resource a not file
-   storeCached          = 1,        /// flag for cached storage policy
-   dbShared             = 1,        /// flag for shared storage location
    resIsFile            = 1,        /// flag to identify that resource a file
-   accessLocked         = 1,        /// flag to indicate that access is locked
+   accessNoLock         = 1,        /// flag to indicate that access is not locked
 
    FileClosed           = 0,
    FileOpen             = 1,
@@ -68,10 +63,13 @@ enum persClientLibConstantDef
    PasErrorStatus_OK       = 100,   /// persistence administration service msg return status
    PasErrorStatus_FAIL     = -1,    /// persistence administration service msg return status
 
+   CustLibMaxLen = 128,             /// max length of the custom library name and path
    dbKeyMaxLen   = 128,             /// max database key length
    dbPathMaxLen  = 128,             /// max database path length
    maxAppNameLen = 128,             /// max application name
-   maxPersHandle = 256              /// max number of parallel open persistence handles
+   maxPersHandle = 256,             /// max number of parallel open persistence handles
+
+   defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };
 
 /// resource configuration table name
@@ -109,17 +107,17 @@ static const char* gLocalCachePath        = "/Data/mnt-c/%s%s";
 /// path prefic for local write through database /Data/mnt_wt/<appId>/<database_name>
 static const char* gLocalWtPath           = "/Data/mnt-wt/%s%s";
 /// path prefic for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-static const char* gSharedCachePath       = "/Data/mnt-c/Shared/Group/%x%s";
+static const char* gSharedCachePath       = "/Data/mnt-c/shared/group/%x%s";
 /// path prefic for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-static const char* gSharedWtPath          = "/Data/mnt-wt/Shared/Group/%x%s";
+static const char* gSharedWtPath          = "/Data/mnt-wt/shared/group/%x%s";
 /// path prefic for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-static const char* gSharedPublicCachePath = "/Data/mnt-c/Shared/Public%s";
+static const char* gSharedPublicCachePath = "/Data/mnt-c/shared/public%s";
 /// path prefic for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-static const char* gSharedPublicWtPath    = "/Data/mnt-wt/Shared/Public%s";
+static const char* gSharedPublicWtPath    = "/Data/mnt-wt/shared/public%s";
 
 
 /// application id
-static char gAppId[maxAppNameLen];
+char gAppId[maxAppNameLen];
 
 
 /** enumerator used to identify the policy to manage the data */
@@ -154,57 +152,27 @@ typedef struct _PersistenceConfigurationKey_s
    PersistencePolicy_e     policy;           /**< policy  */
    PersistenceStorage_e    storage;          /**< definition of storage to use */
    unsigned int            permission;       /**< access right, corresponds to UNIX */
-   long                    max_size;         /**< max size expected for the key */
+   unsigned int            max_size;         /**< max size expected for the key */
    char *                  reponsible;       /**< name of responsible application */
    char *                  custom_name;      /**< name of the customer plugin */
 } PersistenceConfigurationKey_s;
 
 
+typedef enum _PersistenceRCT_e
+{
+   PersistenceRCT_local         = 0,
+   PersistenceRCT_shared_public = 1,
+   PersistenceRCT_shared_group  = 2,
 
-/**
- * @brief Create database search key and database location path
- *
- * @param ldbid logical database id
- * @param resource_id the resource id
- * @param user_no user identification
- * @param seat_no seat identifier
- * @param isFile identifier if this resource is a file
- * @param dbKey the array where the database key will be stored
- * @param dbPath the array where the database location path will be stored
- * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
- *
- * @return -1 if error : 1 if shared database and 0 if local database
- */
-int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                        unsigned int isFile, char dbKey[], char dbPath[], unsigned char cached_resource);
+   PersistenceRCT_LastEntry                // last Entry
+
+} PersistenceRCT_e;
 
 
-
-/**
- * Create database search key and database location path
- *
- * @param ldbid logical database id
- * @param resource_id the resource id
- * @param user_no user identification
- * @param seat_no seat identifier
- * @param isFile identifier if this resource is a file
- * @param dbKey the array where the database key will be stored
- * @param dbPath the array where the database location path will be stored
- * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
- *
- * @return -1 if error : 1 if shared database and 0 if local database
- */
-int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                   unsigned int isFile, char dbKey[], char dbPath[]);
+/// max key value data size
+static int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
 
 
-
-/**
- * @brief get the resource configuration table gvbd database
- *
- * @return pointer to the gvdb database table
- */
-GvdbTable* get_resource_cfg_table();
 
 
 

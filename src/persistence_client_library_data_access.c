@@ -35,8 +35,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <dconf-dbus-1.h>
-
 
 
 
@@ -95,23 +95,22 @@ int get_size_from_table(GvdbTable* database, char* key)
 
 
 
-int persistence_get_data(char* dbPath, char* key, int shared, unsigned char* buffer, unsigned long buffer_size)
+int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size)
 {
    int read_size = -1;
 
-   printf("key : %s \n", key);
-   printf("path: %s \n", dbPath);
-   if(dbShared == shared)       // check if shared data (dconf)
+   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
    {
       printf("    S H A R E D   D A T A  => not implemented yet\n");
       //DConfClient* dconf_client_new(const gchar *profile, DConfWatchFunc watch_func, gpointer user_data, GDestroyNotify notify);
 
       //GVariant* dconf_client_read(DConfClient *client, const gchar *key);
-
-
+      strncpy(buffer, "S H A R E D   D A T A  => not implemented yet", buffer_size-1);
    }
-   else if(dbLocal == shared)   // it is local data (gvdb)
+   else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
    {
+      printf("    L O C A L   D A T A  - path: %s \n", dbPath);
+
       GError *error = NULL;
       GvdbTable* database = gvdb_table_new(dbPath, TRUE, &error);;
       gvdb_table_ref(database);
@@ -122,23 +121,27 @@ int persistence_get_data(char* dbPath, char* key, int shared, unsigned char* buf
       }
       else
       {
-         printf("Database  E R R O R: %s\n", error->message);
+         printf("persistence_get_data - Database  E R R O R: %s\n", error->message);
          g_error_free(error);
          error = NULL;
       }
    }
+   else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+   {
+      printf("    C U S T O M   D A T A  => not implemented yet - path: %s \n", dbPath);
+      strncpy(buffer, "C U S T O M   D A T A  => not implemented yet", buffer_size-1);
+   }
+
    return read_size;
 }
 
 
 
-int persistence_set_data(char* dbPath, char* key, int shared, unsigned char* buffer, unsigned long buffer_size)
+int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size)
 {
    int write_size = -1;
 
-   printf("key : %s \n", key);
-   printf("path: %s \n", dbPath);
-   if(dbShared == shared)       // check if shared data (dconf)
+   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
    {
       //GVariant *value = NULL;
       //gboolean ok = FALSE;
@@ -148,7 +151,7 @@ int persistence_set_data(char* dbPath, char* key, int shared, unsigned char* buf
       //ok =  dconf_dbus_client_write(dcdbc, key, value);
 
    }
-   else if(dbLocal == shared)   // it is local data (gvdb)
+   else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
    {
       GError *error = NULL;
       GHashTable* parent = NULL;      
@@ -161,28 +164,34 @@ int persistence_set_data(char* dbPath, char* key, int shared, unsigned char* buf
       {         
          write_size = set_value_to_table(hash_table, key, buffer, buffer_size);   
          gvdb_table_write_contents(hash_table, dbPath, FALSE, &error);
+
       }
       else
       {
-         printf("Database  E R R O R: %s\n", error->message);
+         printf("persistence_set_data - Database  E R R O R: %s\n", error->message);
          g_error_free(error);
          error = NULL;
       }
    }
+   else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+   {
+      printf("    C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
+   }
+
    return write_size;
 }
 
 
 
-int persistence_get_data_size(char* dbPath, char* key, int shared)
+int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage)
 {
    int read_size = -1;
 
-   if(dbShared == shared)       // check if shared data (dconf)
+   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
    {
       printf("S H A R E D  D A T A  => not implemented yet\n");
    }
-   else if(dbLocal == shared)   // it is local data (gvdb)
+   else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
    {
       GError *error = NULL;
       GvdbTable* database = gvdb_table_new(dbPath, TRUE, &error);;
@@ -194,11 +203,16 @@ int persistence_get_data_size(char* dbPath, char* key, int shared)
       }
       else
       {
-         printf("Database  E R R O R: %s\n", error->message);
+         printf("persistence_get_data_size - Database  E R R O R: %s\n", error->message);
          g_error_free(error);
          error = NULL;
       }
    }
+   else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+   {
+      printf("    C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
+   }
+
    return read_size;
 
 }
@@ -206,7 +220,7 @@ int persistence_get_data_size(char* dbPath, char* key, int shared)
 
 int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, unsigned long buffer_size)
 {
-   int size_written = -1;
+   int size_written = buffer_size;
    gvdb_hash_table_insert_string(database, key,  (const gchar*)buffer);
    return size_written;
 }
@@ -219,9 +233,6 @@ int persistence_reg_notify_on_change(char* dbPath, char* key)
 
    return rval;
 }
-
-
-
 
 
 

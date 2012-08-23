@@ -31,13 +31,12 @@
  * @see            
  */
 
-
 #include "persistence_client_library_key.h"
 #include "persistence_client_library.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_data_access.h"
 #include "persistence_client_library_pas_interface.h"
-
+#include "persistence_client_library_access_helper.h"
 
 
 
@@ -49,24 +48,24 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
 {
    int handle = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
-      int shared_DB = 0;
+      int storePolicy = 0;
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
 
       // get database context: database path and database key
-      shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+      storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
 
-      if(shared_DB != -1)  // check valid database context
+      if(storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
       {
          handle = get_persistence_handle_idx();
 
          // remember data in handle array
          strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
          strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
-         gHandleArray[handle].shared_DB = shared_DB;
+         gHandleArray[handle].shared_DB = storePolicy;
       }
    }
 
@@ -79,7 +78,7 @@ int key_handle_close(int key_handle)
 {
    int rval = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       // invalidate entries
       strncpy(gHandleArray[key_handle].dbPath, "", dbPathMaxLen);
@@ -98,10 +97,11 @@ int key_handle_get_size(int key_handle)
 {
    int size = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       if(key_handle < maxPersHandle)
-         size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey, gHandleArray[key_handle].shared_DB);
+         size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                          gHandleArray[key_handle].shared_DB);
    }
 
    return size;
@@ -113,10 +113,11 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
 {
    int size = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       if(key_handle < maxPersHandle)
-         size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey, gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+         size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                     gHandleArray[key_handle].shared_DB, buffer, buffer_size);
    }
 
    return size;
@@ -137,10 +138,18 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
 {
    int size = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() )     // check if access to persistent data is locked
    {
-      if(key_handle < maxPersHandle)
-         size = persistence_set_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey, gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+      if(buffer_size <= gMaxKeyValDataSize)  // check data size
+      {
+         if(key_handle < maxPersHandle)
+            size = persistence_set_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                        gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+      }
+      else
+      {
+         printf("key_handle_write_data: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
+      }
    }
 
    return size;
@@ -157,11 +166,10 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 {
    int rval = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       // TODO
    }
-
    return rval;
 }
 
@@ -172,19 +180,24 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
 {
    int data_size = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
-      int shared_DB = 0;
+      int storePolicy = 0;
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
 
       // get database context: database path and database key
-      shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+      storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
 
-      if(shared_DB != -1)  // check if database context is valid
+      if(   storePolicy < PersistenceStoragePolicy_LastEntry
+         && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
       {
-         data_size = persistence_get_data_size(dbPath, dbKey, shared_DB);
+         data_size = persistence_get_data_size(dbPath, dbKey, storePolicy);
+      }
+      else
+      {
+        printf("key_read_data: error - storage policy does not exist \n");
       }
    }
 
@@ -194,56 +207,78 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
 
 
 // status: OK
-int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no, unsigned char* buffer, unsigned long buffer_size)
+int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
+                  unsigned char* buffer, unsigned long buffer_size)
 {
    int data_size = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
-      int shared_DB = 0;
+      int storePolicy = 0;
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
 
       // get database context: database path and database key
-      shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+      storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
 
-      if(shared_DB != -1)   // check if database context is valid
+      if(   storePolicy <  PersistenceStoragePolicy_LastEntry
+         && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
       {
-         data_size = persistence_get_data(dbPath, dbKey, shared_DB, buffer, buffer_size);
+         data_size = persistence_get_data(dbPath, dbKey, storePolicy, buffer, buffer_size);
       }
+      else
+      {
+         printf("key_read_data: error - storage policy does not exist \n");
+      }
+   }
+   else
+   {
+      printf("key_read_data - accessLocked\n");
    }
    return data_size;
 }
 
 
 
-// status: TODO
-int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no, unsigned char* buffer, unsigned long buffer_size)
+int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
+                   unsigned char* buffer, unsigned long buffer_size)
 {
    int data_size = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() )     // check if access to persistent data is locked
    {
-      int shared_DB = 0;
-      unsigned int hash_val_data = 0;
-
-      char dbKey[dbKeyMaxLen];  // database key
-      char dbPath[dbPathMaxLen];    // database location
-
-      // get database context: database path and database key
-      shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
-
-      // get hash value of data to verify storing
-      hash_val_data = crc32(hash_val_data, buffer, buffer_size);
-
-      // store data
-      if(shared_DB != -1)   // check if database context is valid
+      if(buffer_size <= gMaxKeyValDataSize)  // check data size
       {
-         data_size = persistence_set_data(dbPath, dbKey, shared_DB, buffer, buffer_size);
+         int storePolicy = 0;
+
+         unsigned int hash_val_data = 0;
+
+         char dbKey[dbKeyMaxLen];  // database key
+         char dbPath[dbPathMaxLen];    // database location
+
+         // get database context: database path and database key
+         storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+
+         // get hash value of data to verify storing
+         hash_val_data = crc32(hash_val_data, buffer, buffer_size);
+
+         // store data
+         if(   storePolicy <  PersistenceStoragePolicy_LastEntry
+            && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
+         {
+            data_size = persistence_set_data(dbPath, dbKey, storePolicy, buffer, buffer_size);
+         }
+         else
+         {
+            printf("key_write_data: error - storage policy does not exist \n");
+         }
+      }
+      else
+      {
+         printf("key_write_data: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
       }
    }
-
 
    return data_size;
 }
@@ -255,13 +290,12 @@ int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsign
 {
    int rval = 0;
 
-//   unsigned int hash_val_data = 0;
-
+   //   unsigned int hash_val_data = 0;
    char dbKey[dbKeyMaxLen];  // database key 
    char dbPath[dbPathMaxLen];    // database location
 
    // registration is only on shared key possible
-   if(dbShared == get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath))
+   if(PersistenceStorage_shared == get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath))
    {
       rval = persistence_reg_notify_on_change(dbPath, dbKey);
    }

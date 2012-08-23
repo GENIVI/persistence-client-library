@@ -36,6 +36,7 @@
 #include "persistence_client_library_data_access.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_handle.h"
+#include "persistence_client_library_access_helper.h"
 
 #include <fcntl.h>   // for open flags
 #include <errno.h>
@@ -49,7 +50,7 @@ int file_close(int fd)
 {
    int rval = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       rval = close(fd);
       if(fd < maxPersHandle)
@@ -66,7 +67,7 @@ int file_get_size(int fd)
 {
    int rval = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       struct stat buf;
       int ret = 0;
@@ -87,7 +88,7 @@ void* file_map_data(void* addr, long size, long offset, int fd)
    void* ptr = 0;
    int mapFlag = PROT_WRITE | PROT_READ;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
    }
@@ -100,7 +101,7 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 {
    int handle = -1;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       int shared_DB = 0,
           flags = O_RDWR;
@@ -137,7 +138,7 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 int file_read_data(int fd, void * buffer, unsigned long buffer_size)
 {
    int size = -1;
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       size = read(fd, buffer, buffer_size);
    }
@@ -150,7 +151,7 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
 {
    int rval = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       int shared_DB = 0;
 
@@ -177,7 +178,7 @@ int file_seek(int fd, long int offset, int whence)
 {
    int rval = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       rval = lseek(fd, offset, whence);
    }
@@ -190,7 +191,7 @@ int file_unmap_data(void* address, long size)
 {
    int rval = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       rval =  munmap(address, size);
    }
@@ -203,7 +204,7 @@ int file_write_data(int fd, const void * buffer, unsigned long buffer_size)
 {
    int size = 0;
 
-   if(accessLocked == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       size = write(fd, buffer, buffer_size);
    }

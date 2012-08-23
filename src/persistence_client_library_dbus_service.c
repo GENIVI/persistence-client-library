@@ -330,14 +330,14 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           if(DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
                                              != dbus_bus_request_name(conn, "org.genivi.persistence.adminconsumer", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
                                           {
-                                             printf("*** Cannot acquire name '%s' (%s). Bailing out!\n", "org.genivi.persistence.admin", err.message);
+                                             printf("*** Cannot acquire name '%s' (%s). Bailing out!\n", "org.genivi.persistence.admin\n", err.message);
                                              dbus_error_free(&err);
                                              bContinue = FALSE;
                                           }
                                           if(DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
                                              != dbus_bus_request_name(conn, "com.contiautomotive.NodeStateManager.LifecycleConsumer", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
                                           {
-                                             printf("*** Cannot acquire name '%s' (%s). Bailing out!\n", "com.contiautomotive.NodeStateManager.LifecycleConsumer", err.message);
+                                             printf("*** Cannot acquire name '%s' (%s). Bailing out!\n", "com.contiautomotive.NodeStateManager.LifecycleConsumer\n", err.message);
                                              dbus_error_free(&err);
                                              bContinue = FALSE;
                                           }

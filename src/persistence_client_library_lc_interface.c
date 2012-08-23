@@ -62,10 +62,13 @@ int check_lc_request(int request)
          {
             rval = NsmErrorStatus_OK;
          }
+         break;
       }
-      break;
-   default:
-      printf("Unknown lifecycle message!\n");
+      default:
+      {
+         printf("Unknown lifecycle message!\n");
+         break;
+      }
    }
 
    return rval;

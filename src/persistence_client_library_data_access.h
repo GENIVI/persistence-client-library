@@ -38,17 +38,16 @@
 #include "gvdb-builder.h"
 
 
-
 /**
  * @brief write data to a key
  *
  * @param dbPath the path to the database where the key is in 
  * @param key the database key
- * @param shared flag if key is a shared key 
+ * @param storage the storage identifier (local, shared or custom)
  *        (use dbShared for shared key or dbLocal if the key is local)
  * @return
  */
-int persistence_set_data(char* dbPath, char* key, int shared, unsigned char* buffer, unsigned long buffer_size);
+int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size);
 
 
 
@@ -57,12 +56,11 @@ int persistence_set_data(char* dbPath, char* key, int shared, unsigned char* buf
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key
- * @param shared flag if key is a shared key 
- *        (use dbShared for shared key or dbLocal if the key is local) 
+ * @param storage the storage identifier (local, shared or custom)
  *
  * @return
  */
-int persistence_get_data(char* dbPath, char* key, int shared, unsigned char* buffer, unsigned long buffer_size);
+int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size);
 
 
 
@@ -71,12 +69,11 @@ int persistence_get_data(char* dbPath, char* key, int shared, unsigned char* buf
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key
- * @param shared flag if key is a shared key 
- *        (use dbShared for shared key or dbLocal if the key is local)
+ * @param storage the storage identifier (local, shared or custom)
  *
  * @return size of data in bytes read from the key
  */
-int persistence_get_data_size(char* dbPath, char* key, int shared);
+int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage);
 
 
 
@@ -129,6 +126,10 @@ int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, u
  * @return size of data
  */
 int get_size_from_table(GvdbTable* database, char* key);
+
+
+
+
 
 
 
