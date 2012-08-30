@@ -81,7 +81,6 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
  */
 GvdbTable* get_resource_cfg_table_by_idx(int i);
 
-
 /**
  * @brief serialize data to store to database
  */

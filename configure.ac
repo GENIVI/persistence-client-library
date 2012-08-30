@@ -8,6 +8,9 @@ AC_GNU_SOURCE()
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+# Overwrite the build in defaults
+CFLAGS="-Wall -O2"
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -72,6 +75,20 @@ else
 fi
 AC_MSG_NOTICE([Tests enabled: $enable_tests])
 AC_MSG_NOTICE([Local check enabled: $localcheck])
+
+
+AC_ARG_ENABLE(debug,
+AS_HELP_STRING([--enable-debug],
+               [enable debugging, default: no]),
+[case "${enableval}" in
+             yes) debug=true ;;
+             no)  debug=false ;;
+             *)   AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+esac],
+[debug=false])
+
+AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
+
 
 #AC_CONFIG_FILES([Makefile
 #                 persistence_client_library.pc

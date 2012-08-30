@@ -41,7 +41,6 @@
 #include <string.h>
 #include <stdio.h>
 
-
 /// constant definitions
 enum _PersistenceConstantDef
 {
@@ -71,53 +70,6 @@ enum _PersistenceConstantDef
 
    defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };
-
-/// resource configuration table name
-static const char* gResTableCfg = "/resource-table-cfg.gvdb";
-
-/// shared cached default database
-//static const char* gSharedCachedDefault = "cached-default.dconf";
-/// shared cached database
-static const char* gSharedCached        = "/cached.dconf";
-/// shared write through default database
-//static const char* gSharedWtDefault     = "wt-default.dconf";
-/// shared write through database
-static const char* gSharedWt            = "/wt.dconf";
-
-/// local cached default database
-//static const char* gLocalCachedDefault  = "cached-default.gvdb";
-/// local cached default database
-static const char* gLocalCached         = "/cached.gvdb";
-/// local write through default database
-//static const char* gLocalWtDefault      = "wt-default.gvdb";
-/// local write through default database
-static const char* gLocalWt             = "/wt.gvdb";
-
-
-/// directory structure node name defintion
-static const char* gNode = "/Node";
-/// directory structure user name defintion
-static const char* gUser = "/User/";
-/// directory structure seat name defintion
-static const char* gSeat = "/Seat/";
-
-
-/// path prefic for local cached database: /Data/mnt_c/<appId>/<database_name>
-static const char* gLocalCachePath        = "/Data/mnt-c/%s%s";
-/// path prefic for local write through database /Data/mnt_wt/<appId>/<database_name>
-static const char* gLocalWtPath           = "/Data/mnt-wt/%s%s";
-/// path prefic for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-static const char* gSharedCachePath       = "/Data/mnt-c/shared/group/%x%s";
-/// path prefic for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-static const char* gSharedWtPath          = "/Data/mnt-wt/shared/group/%x%s";
-/// path prefic for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-static const char* gSharedPublicCachePath = "/Data/mnt-c/shared/public%s";
-/// path prefic for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-static const char* gSharedPublicWtPath    = "/Data/mnt-wt/shared/public%s";
-
-
-/// application id
-char gAppId[maxAppNameLen];
 
 
 /** enumerator used to identify the policy to manage the data */
@@ -169,11 +121,55 @@ typedef enum _PersistenceRCT_e
 } PersistenceRCT_e;
 
 
+/// resource configuration table name
+extern const char* gResTableCfg;;
+
+/// shared cached default database
+extern const char* gSharedCachedDefault;
+/// shared cached database
+extern const char* gSharedCached;
+/// shared write through default database
+extern const char* gSharedWtDefault;
+/// shared write through database
+extern const char* gSharedWt;
+
+/// local cached default database
+extern const char* gLocalCachedDefault;
+/// local cached default database
+extern const char* gLocalCached;
+/// local write through default database
+extern const char* gLocalWtDefault;
+/// local write through default database
+extern const char* gLocalWt;
+
+
+/// directory structure node name defintion
+extern const char* gNode;
+/// directory structure user name defintion
+extern const char* gUser;
+/// directory structure seat name defintion
+extern const char* gSeat;
+
+
+/// path prefic for local cached database: /Data/mnt_c/<appId>/<database_name>
+extern const char* gLocalCachePath;
+/// path prefic for local write through database /Data/mnt_wt/<appId>/<database_name>
+extern const char* gLocalWtPath;
+/// path prefic for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+extern const char* gSharedCachePath;
+/// path prefic for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+extern const char* gSharedWtPath;
+/// path prefic for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+extern const char* gSharedPublicCachePath;
+/// path prefic for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+extern const char* gSharedPublicWtPath;
+
+
+/// application id
+extern char gAppId[maxAppNameLen];
+
 /// max key value data size
-static int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
-
-
-
+extern int gMaxKeyValDataSize;
 
 
 

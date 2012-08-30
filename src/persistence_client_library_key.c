@@ -37,7 +37,7 @@
 #include "persistence_client_library_data_access.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_access_helper.h"
-
+#include "persistence_client_library_custom_loader.h"
 
 
 // ------------------------------------------------------------------
@@ -60,12 +60,29 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
 
       if(storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
       {
-         handle = get_persistence_handle_idx();
+         if(PersistenceStorage_custom ==  storePolicy)
+         {
+            int idx =  custom_client_name_to_id(dbPath, 1);
+            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+            snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
+
+            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+
+            if(idx < PersCustomLib_LastEntry)
+            {
+               int flag = 0, mode = 0;
+               handle = gPersCustomFuncs[idx].custom_plugin_open(dbPath, flag, mode);
+            }
+         }
+         else
+         {
+            handle = get_persistence_handle_idx();
+         }
 
          // remember data in handle array
-         strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
-         strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
-         gHandleArray[handle].shared_DB = storePolicy;
+        strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
+        strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
+        gHandleArray[handle].shared_DB = storePolicy;
       }
    }
 
@@ -80,12 +97,28 @@ int key_handle_close(int key_handle)
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
+      if(PersistenceStorage_custom == gHandleArray[key_handle].shared_DB )
+      {
+         int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+         snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
+
+         printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+
+         if(idx < PersCustomLib_LastEntry)
+         {
+            gPersCustomFuncs[idx].custom_plugin_close(key_handle);
+         }
+      }
+      else
+      {
+         set_persistence_handle_close_idx(key_handle);
+      }
+
       // invalidate entries
       strncpy(gHandleArray[key_handle].dbPath, "", dbPathMaxLen);
       strncpy(gHandleArray[key_handle].dbKey  ,"", dbKeyMaxLen);
       gHandleArray[key_handle].shared_DB = -1;
-
-      set_persistence_handle_close_idx(key_handle);
    }
 
    return rval;
@@ -100,8 +133,26 @@ int key_handle_get_size(int key_handle)
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       if(key_handle < maxPersHandle)
-         size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                          gHandleArray[key_handle].shared_DB);
+      {
+         if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+         {
+            int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+            snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
+
+            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+
+            if(idx < PersCustomLib_LastEntry)
+            {
+               //gPersCustomFuncs[idx].
+            }
+         }
+         else
+         {
+            size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                             gHandleArray[key_handle].shared_DB);
+         }
+      }
    }
 
    return size;
@@ -116,8 +167,26 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       if(key_handle < maxPersHandle)
-         size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                     gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+      {
+         if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+         {
+            int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+            snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
+
+            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+
+            if(idx < PersCustomLib_LastEntry)
+            {
+               gPersCustomFuncs[idx].custom_plugin_get_data(key_handle, (char*)buffer, buffer_size-1);
+            }
+         }
+         else
+         {
+            size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                        gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+         }
+      }
    }
 
    return size;
@@ -143,8 +212,26 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
       if(buffer_size <= gMaxKeyValDataSize)  // check data size
       {
          if(key_handle < maxPersHandle)
-            size = persistence_set_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                        gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+         {
+            if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+            {
+               int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+               char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+               snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
+
+               printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+
+               if(idx < PersCustomLib_LastEntry)
+               {
+                  gPersCustomFuncs[idx].custom_plugin_set_data(key_handle, (char*)buffer, buffer_size-1);
+               }
+            }
+            else
+            {
+               size = persistence_set_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                           gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+            }
+         }
       }
       else
       {

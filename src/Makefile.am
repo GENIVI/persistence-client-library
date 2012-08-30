@@ -1,14 +1,21 @@
 AUTOMAKE_OPTIONS = foreign
 
-AM_CFLAGS =$(DEPS_CFLAGS) -Wall -I../include \
+if DEBUG
+AM_CFLAGS =$(DEPS_CFLAGS) -g -I../include \
                           -I/usr/include/glib-2.0 \
                           -I/usr/include/dbus-1.0 \
                           -I/usr/include/dconf-dbus-1 \
-                          -I/usr/lib/glib-2.0/include                          
+                          -I/usr/lib/glib-2.0/include    
+else
+AM_CFLAGS =$(DEPS_CFLAGS) -I../include \
+                          -I/usr/include/glib-2.0 \
+                          -I/usr/include/dbus-1.0 \
+                          -I/usr/include/dconf-dbus-1 \
+                          -I/usr/lib/glib-2.0/include  
+endif
 
 
 include_HEADERS = ../include/persistence_client_library_key.h ../include/persistence_client_library_file.h
-
 
 lib_LTLIBRARIES = libpersistence_client_library.la
 

@@ -51,7 +51,11 @@ typedef enum _PersistenceCustomLibs_e
 
 } PersistenceCustomLibs_e;
 
+enum _PersCustomLibDefines_e
+{
+   PersCustomPathSize = 12
 
+} PersCustomLibDefines_e;
 
 /// callback definition for custom_plugin_get_status_notification_clbk function
 typedef int (*plugin_callback_t) (int status, void* dataPtr);
@@ -89,6 +93,9 @@ typedef struct _Pers_custom_functs_s
 Pers_custom_functs_s gPersCustomFuncs[PersCustomLib_LastEntry];
 
 
+
+PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring);
+
 /**
  * @brief get the names of the custom libraries to load
  *
@@ -100,6 +107,9 @@ int get_custom_libraries();
 
 /**
  * @brief get the names of the custom libraries to load
+ *
+ * @param customLib the enumerator id identifying the custom library
+ * @param customFuncts function pointer array of loaded custom library functions
  *
  * @return 0 for success or -1 if an error occurred
  */
@@ -115,12 +125,21 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
 int load_all_custom_libraries();
 
 
-/// get the position in the array
-int get_position_in_array(PersistenceCustomLibs_e customLib);
+/**
+ * @brief get the position in the array
+ *
+ * @param customLib the enumerator id identifying the custom library
+ *
+ * @return the array position
+ */
+int get_custom_client_position_in_array(PersistenceCustomLibs_e customLib);
 
 
+/// get the number of available custom client libraries
 int get_num_custom_client_libs();
 
+
+char* get_custom_client_lib_name(int id);
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_CUSTOM_LOADER_H */

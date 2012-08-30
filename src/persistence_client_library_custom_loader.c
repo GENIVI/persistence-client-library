@@ -52,37 +52,80 @@ static char gCustomLibArray[PersCustomLib_LastEntry][CustLibMaxLen];
 static int gNumOfCustomLibraries = 0;
 
 
-PersistenceCustomLibs_e custom_libname_to_id(const char* lib_name)
+PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring)
 {
    PersistenceCustomLibs_e libId = PersCustomLib_LastEntry;
 
-   if(0 == strcmp(lib_name, "early") )
+   if(substring == 0)
    {
-      libId = PersCustomLib_early;
+      if(0 == strncmp(lib_name, "early", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_early;
+      }
+      else if (0 == strncmp(lib_name, "secure", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_secure;
+      }
+      else if (0 == strncmp(lib_name, "emergency", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_emergency;
+      }
+      else if (0 == strncmp(lib_name, "hwinfo", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_HWinfo;
+      }
+      else if (0 == strncmp(lib_name, "custom1", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_Custom1;
+      }
+      else if (0 == strncmp(lib_name, "custom2", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_Custom2;
+      }
+      else if (0 == strncmp(lib_name, "custom3", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_Custom3;
+      }
+      else
+      {
+         printf("custom_libname_to_id - error - id not found for lib: %s \n", lib_name);
+      }
    }
-   else if (0 == strcmp(lib_name, "secure") )
+   else
    {
-      libId = PersCustomLib_secure;
-   }
-   else if (0 == strcmp(lib_name, "emergency") )
-   {
-      libId = PersCustomLib_emergency;
-   }
-   else if (0 == strcmp(lib_name, "hwinfo") )
-   {
-      libId = PersCustomLib_HWinfo;
-   }
-   else if (0 == strcmp(lib_name, "custom1") )
-   {
-      libId = PersCustomLib_Custom1;
-   }
-   else if (0 == strcmp(lib_name, "custom2") )
-   {
-      libId = PersCustomLib_Custom2;
-   }
-   else if (0 == strcmp(lib_name, "custom3") )
-   {
-      libId = PersCustomLib_Custom3;
+      if(NULL != strstr(lib_name, "early") )
+      {
+         libId = PersCustomLib_early;
+      }
+      else if (NULL != strstr(lib_name, "secure") )
+      {
+         libId = PersCustomLib_secure;
+      }
+      else if (NULL != strstr(lib_name, "emergency") )
+      {
+         libId = PersCustomLib_emergency;
+      }
+      else if (NULL != strstr(lib_name, "hwinfo") )
+      {
+         libId = PersCustomLib_HWinfo;
+      }
+      else if (NULL != strstr(lib_name, "custom1") )
+      {
+         libId = PersCustomLib_Custom1;
+      }
+      else if (NULL != strstr(lib_name, "custom2") )
+      {
+         libId = PersCustomLib_Custom2;
+      }
+      else if (NULL != strstr(lib_name, "custom3") )
+      {
+         libId = PersCustomLib_Custom3;
+      }
+      else
+      {
+         printf("custom_libname_to_id - error - id not found for lib: %s \n", lib_name);
+      }
+
    }
    return libId;
 }
@@ -119,7 +162,7 @@ int get_custom_libraries()
 
             // get the library identifier (early, secure, emergency, ...)
             token = strtok(configFileMap, delimiters);
-            libId = custom_libname_to_id(token);
+            libId = custom_client_name_to_id(token, 0);
             gCustomLibIdArray[libId] = i;
 
             // get the library name
@@ -132,7 +175,7 @@ int get_custom_libraries()
                token = strtok(NULL, delimiters);
                if(token != NULL)
                {
-                  libId = custom_libname_to_id(token);
+                  libId = custom_client_name_to_id(token, 0);
                   gCustomLibIdArray[libId] = i;
                }
                else
@@ -152,16 +195,17 @@ int get_custom_libraries()
                }
             }
             gNumOfCustomLibraries = i;    // remember the number of loaded libraries
-/*
-            printf("get_custom_libraries - found [ %d ] libraries \n", gNumOfCustomLibraries);
+
+            munmap(configFileMap, buffer.st_size);
+            close(fd);
+
+            // debugging only
+/*          printf("get_custom_libraries - found [ %d ] libraries \n", gNumOfCustomLibraries);
             for(i=0; i< gNumOfCustomLibraries; i++)
                printf("get_custom_libraries - names: %s\n", gCustomLibArray[i]);
 
             for(i=0; i<PersCustomLib_LastEntry; i++)
-               printf("get_custom_libraries - id: %d | pos: %d \n", i, gCustomLibIdArray[i]);
-*/
-            munmap(configFileMap, buffer.st_size);
-            close(fd);
+               printf("get_custom_libraries - id: %d | pos: %d \n", i, gCustomLibIdArray[i]); */
          }
          else
          {
@@ -170,10 +214,7 @@ int get_custom_libraries()
       }
       else
       {
-         printf("load config file error - filename: %s | error: %s \n", filename, strerror(errno) );
-
-         // load default librarys
-         // TODO
+         printf("load config file error - no file with plugins available -> filename: %s | error: %s \n", filename, strerror(errno) );
       }
    }
    else
@@ -249,7 +290,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
       }
       else
       {
-         //printf("load_custom_library - error: %s\n", dlerror());
+         printf("load_custom_library - error: %s\n", dlerror());
          rval = -1;
       }
    }
@@ -277,8 +318,12 @@ int load_all_custom_libraries()
 }
 
 
+char* get_custom_client_lib_name(int id)
+{
+   return gCustomLibArray[id];
+}
 
-int get_position_in_array(PersistenceCustomLibs_e customLibId)
+int get_custom_client_position_in_array(PersistenceCustomLibs_e customLibId)
 {
    //printf("get_position_in_array - id: %d | position: %d \n", customLibId, gCustomLibIdArray[(int)customLibId]);
    return gCustomLibIdArray[(int)customLibId];

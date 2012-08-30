@@ -32,6 +32,7 @@
  */
 
 #include "persistence_client_library_data_access.h"
+#include "persistence_client_library_custom_loader.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -105,7 +106,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       //DConfClient* dconf_client_new(const gchar *profile, DConfWatchFunc watch_func, gpointer user_data, GDestroyNotify notify);
 
       //GVariant* dconf_client_read(DConfClient *client, const gchar *key);
-      strncpy(buffer, "S H A R E D   D A T A  => not implemented yet", buffer_size-1);
+      strncpy((char*)buffer, "S H A R E D   D A T A  => not implemented yet", buffer_size-1);
    }
    else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
    {
@@ -128,8 +129,16 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
    }
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
-      printf("    C U S T O M   D A T A  => not implemented yet - path: %s \n", dbPath);
-      strncpy(buffer, "C U S T O M   D A T A  => not implemented yet", buffer_size-1);
+      int idx =  custom_client_name_to_id(dbPath, 1);
+      char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+      snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
+
+      printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+
+      if(idx < PersCustomLib_LastEntry)
+      {
+         gPersCustomFuncs[idx].custom_plugin_get_data(88, (char*)buffer, buffer_size-1);
+      }
    }
 
    return read_size;
@@ -175,7 +184,12 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
    }
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
-      printf("    C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
+      int idx = custom_client_name_to_id(dbPath, 1);
+      printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+      if(idx < PersCustomLib_LastEntry)
+      {
+         gPersCustomFuncs[idx].custom_plugin_set_data(88, (char*)buffer, buffer_size);
+      }
    }
 
    return write_size;

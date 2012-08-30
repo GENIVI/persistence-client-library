@@ -32,7 +32,6 @@
 
 
 #include "persistence_client_library_access_helper.h"
-
 #include "gvdb-builder.h"
 
 #include <stdlib.h>

@@ -38,6 +38,11 @@
 static int gHandleIdx = 0;
 static int gHandleFreeIdx = -1;
 
+/// persistence handle array
+PersistenceHandle_s gHandleArray[maxPersHandle];
+
+/// open file descriptor handle array
+int gOpenFdArray[maxPersHandle];
 
 
 /// get persistence handle

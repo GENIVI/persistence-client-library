@@ -44,12 +44,13 @@ typedef struct _PersistenceHandle_s
 }
 PersistenceHandle_s;
 
+
 /// persistence handle array
-static PersistenceHandle_s gHandleArray[maxPersHandle];
+extern PersistenceHandle_s gHandleArray[maxPersHandle];
 
 
 /// open file descriptor handle array
-static int gOpenFdArray[maxPersHandle];
+extern int gOpenFdArray[maxPersHandle];
 
 
 /// get persistence handle
