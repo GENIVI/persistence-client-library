@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([Persistence Client Library], [0.1], [not-valid@xse.de])
+AC_INIT([Persistence Client Library], [0.1.4], [not-valid@xse.de])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([dist-bzip2])
 AC_GNU_SOURCE()
@@ -50,6 +50,7 @@ PKG_CHECK_MODULES(DEPS,
                   automotive-dlt
                   dbus-1
                   dconf
+                  dconf-dbus-1
                   glib-2.0)
 
 AC_SUBST(DEPS_CFLAGS)
@@ -90,11 +91,9 @@ esac],
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 
-#AC_CONFIG_FILES([Makefile
-#                 persistence_client_library.pc
-#                 src/Makefile
-#                 test/Makefile])
 AC_CONFIG_FILES([Makefile
+                 persistence_client_library.pc
                  src/Makefile
-                 test/Makefile])                 
+                 test/Makefile])
+              
 AC_OUTPUT

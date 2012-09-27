@@ -41,7 +41,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <pthread.h>
 
 
 /// polling structure
@@ -61,7 +60,7 @@ static tPollInfo gPollInfo;
 DBusConnection* gDbusConn = NULL;
 
 
-DBusConnection* get_dbus_connection()
+DBusConnection* get_dbus_connection(void)
 {
    return gDbusConn;
 }
@@ -110,6 +109,9 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 
 void* run_mainloop(void* dataPtr)
 {
+   // lock mutex to make sure dbus main loop is running
+   pthread_mutex_lock(&gDbusInitializedMtx);
+
    // persistence admin message
    static const struct DBusObjectPathVTable vtablePersAdmin
       = {unregisterMessageHandler, checkPersAdminMsg, NULL, };
@@ -132,7 +134,7 @@ void* run_mainloop(void* dataPtr)
 
 
 
-int setup_dbus_mainloop()
+int setup_dbus_mainloop(void)
 {
    int rval = 0;
    pthread_t thread;
@@ -291,6 +293,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             {
                char buf[64];
 
+               // minloop is running now, release mutex
+               pthread_mutex_unlock(&gDbusInitializedMtx);
                do
                {
                   bContinue = 0; /* assume error */

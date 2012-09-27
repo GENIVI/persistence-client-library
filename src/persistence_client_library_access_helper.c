@@ -84,6 +84,7 @@ GvdbTable* get_resource_cfg_table(PersistenceRCT_e rct, int group)
    {
       GError* error = NULL;
       char filename[dbPathMaxLen];
+      memset(filename, 0, dbPathMaxLen);
 
       switch(rct)    // create db name
       {
@@ -134,7 +135,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
 {
    int rval = 1;
    char* token = NULL;
-   if(buffer != NULL)
+   if((buffer != NULL) && (pc != NULL))
    {
       token = strtok(buffer, " ");     // policy
       if(token != 0)
@@ -189,7 +190,15 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
       {
          int size = strlen(token)+1;
          pc->reponsible = malloc(size);
-         strncpy(pc->reponsible, token, size);
+
+         if(pc->reponsible != NULL)
+         {
+            strncpy(pc->reponsible, token, size);
+         }
+         else
+         {
+            printf("de_serialize_data - error: can't allocate memory [reponsible] \n");
+         }
          //printf("     pc->reponsible %s | 0x%x \n", pc->reponsible, (int)pc->reponsible);
       }
       else
@@ -203,7 +212,14 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
       {
          int size = strlen(token)+1;
          pc->custom_name = malloc(size);
-         strncpy(pc->custom_name, token, size);
+         if(pc->custom_name != NULL )
+         {
+            strncpy(pc->custom_name, token, size);
+         }
+         else
+         {
+            printf("de_serialize_data - error: can't allocate memory [custom_name] \n");
+         }
          //printf("     pc->custom_name %s | 0x%x \n", pc->custom_name, (int)pc->custom_name);
       }
       else
@@ -212,12 +228,19 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
          int size = strlen(na)+1;
          // custom name not available => no custom plugin
          pc->custom_name = malloc(size);
-         strncpy(pc->custom_name, "na", size);
+         if(pc->custom_name != NULL )
+         {
+            strncpy(pc->custom_name, "na", size);
+         }
+         else
+         {
+            printf("de_serialize_data - error: can't allocate memory [custom_name-default] \n");
+         }
       }
    }
    else
    {
-      printf("de_serialize_data - error: buffer is NULL\n");
+      printf("de_serialize_data - error: buffer or PersistenceConfigurationKey_s is NULL\n");
       rval = -1;
    }
 
@@ -284,30 +307,33 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
          if(valuePtr != NULL)
          {
             char* buffer = malloc(size);
-            memcpy(buffer, valuePtr, size);
-            de_serialize_data(buffer, &dbEntry);
-
-            if(dbEntry.storage != PersistenceStorage_custom )
+            if(buffer != NULL)
             {
-               // TODO check rval ==> double defined shared/local/custom via ldbid and dbEntry.policy
-               rval = get_db_path_and_key(ldbid, resource_id, user_no, seat_no, isFile, dbKey, dbPath, dbEntry.policy);
-               if(rval != -1)
+               memcpy(buffer, valuePtr, size);
+               de_serialize_data(buffer, &dbEntry);
+
+               if(dbEntry.storage != PersistenceStorage_custom )
                {
+                  rval = get_db_path_and_key(ldbid, resource_id, user_no, seat_no, isFile, dbKey, dbPath, dbEntry.policy);
+                  if(rval != -1)
+                  {
+                     rval = dbEntry.storage;
+                  }
+               }
+               else
+               {
+                  //printf("***************** dbEntry.custom_name %s \n", dbEntry.custom_name);
+                  // if customer storage, we use the custom name as path
+                  strncpy(dbPath, dbEntry.custom_name, strlen(dbEntry.custom_name));
                   rval = dbEntry.storage;
                }
-            }
-            else
-            {
-               printf("***************** dbEntry.custom_name %s \n", dbEntry.custom_name);
-               // if customer storage, we use the custom name as path
-               strncpy(dbPath, dbEntry.custom_name, strlen(dbEntry.custom_name));
-               rval = dbEntry.storage;
+
+               free(buffer);
+               buffer = NULL;
+               free_pers_conf_key(&dbEntry);
+               resourceFound = 1;
             }
 
-            free(buffer);
-            buffer = NULL;
-            free_pers_conf_key(&dbEntry);
-            resourceFound = 1;
          }
       }
       else

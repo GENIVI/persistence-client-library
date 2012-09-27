@@ -48,7 +48,7 @@ int gOpenFdArray[maxPersHandle];
 /// get persistence handle
 int get_persistence_handle_idx()
 {
-   int handle = -1;
+   int handle = 0;
 
    if(gHandleFreeIdx != -1)   // check if we have a free spot in the array before the current max
    {
@@ -63,7 +63,8 @@ int get_persistence_handle_idx()
       }
       else
       {
-         printf("Reached maximum of open handles: %d \n", maxPersHandle);
+         handle = -1;
+         printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", maxPersHandle);
       }
    }
 

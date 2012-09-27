@@ -163,7 +163,15 @@ int get_custom_libraries()
             // get the library identifier (early, secure, emergency, ...)
             token = strtok(configFileMap, delimiters);
             libId = custom_client_name_to_id(token, 0);
-            gCustomLibIdArray[libId] = i;
+
+            if(libId < PersCustomLib_LastEntry)
+            {
+               gCustomLibIdArray[libId] = i;
+            }
+            else
+            {
+                return -1; // out of array bounds
+            }
 
             // get the library name
             token  = strtok (NULL, delimiters);
@@ -176,7 +184,15 @@ int get_custom_libraries()
                if(token != NULL)
                {
                   libId = custom_client_name_to_id(token, 0);
-                  gCustomLibIdArray[libId] = i;
+                  if(libId < PersCustomLib_LastEntry)
+                  {
+                     gCustomLibIdArray[libId] = i;
+                  }
+                  else
+                  {
+                     rval = -1;
+                     break;
+                  }
                }
                else
                {
@@ -234,6 +250,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
    if(customLib < PersCustomLib_LastEntry)
    {
       void* handle = dlopen(gCustomLibArray[customLib], RTLD_LAZY);
+      customFuncts->handle = handle;
       if(handle != NULL)
       {
          dlerror();    // reset error
@@ -247,6 +264,13 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
          }
          // custom_plugin_delete_data
          *(void **) (&customFuncts->custom_plugin_delete_data) = dlsym(handle, "plugin_delete_data");
+         if ((error = dlerror()) != NULL)
+         {
+              printf("load_custom_library - error: %s\n", error);
+              return -1;
+          }
+         // custom_plugin_get_data
+         *(void **) (&customFuncts->custom_plugin_get_data_handle) = dlsym(handle, "plugin_get_data_handle");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
@@ -268,6 +292,13 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
           }
          // custom_plugin_open
          *(void **) (&customFuncts->custom_plugin_open) = dlsym(handle, "plugin_open");
+         if ((error = dlerror()) != NULL)
+         {
+              printf("load_custom_library - error: %s\n", error);
+              return -1;
+          }
+         // custom_plugin_set_data
+         *(void **) (&customFuncts->custom_plugin_set_data_handle) = dlsym(handle, "plugin_set_data");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
@@ -318,15 +349,29 @@ int load_all_custom_libraries()
 }
 
 
-char* get_custom_client_lib_name(int id)
+char* get_custom_client_lib_name(int idx)
 {
-   return gCustomLibArray[id];
+   if(idx < PersCustomLib_LastEntry)
+   {
+      return gCustomLibArray[idx];
+   }
+   else
+   {
+      return NULL;
+   }
 }
 
 int get_custom_client_position_in_array(PersistenceCustomLibs_e customLibId)
 {
    //printf("get_position_in_array - id: %d | position: %d \n", customLibId, gCustomLibIdArray[(int)customLibId]);
-   return gCustomLibIdArray[(int)customLibId];
+   if(customLibId < PersCustomLib_LastEntry)
+   {
+      return gCustomLibIdArray[(int)customLibId];
+   }
+   else
+   {
+      return -1;
+   }
 }
 
 

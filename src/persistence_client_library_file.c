@@ -86,10 +86,10 @@ int file_get_size(int fd)
 void* file_map_data(void* addr, long size, long offset, int fd)
 {
    void* ptr = 0;
-   int mapFlag = PROT_WRITE | PROT_READ;
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
+      int mapFlag = PROT_WRITE | PROT_READ;
       ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
    }
    return ptr;
@@ -108,6 +108,9 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
+
+      memset(dbKey, 0, dbKeyMaxLen);
+      memset(dbPath, 0, dbPathMaxLen);
 
       // get database context: database path and database key
       shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsFile, dbKey, dbPath);
@@ -157,6 +160,9 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
+
+      memset(dbKey, 0, dbKeyMaxLen);
+      memset(dbPath, 0, dbPathMaxLen);
 
       // get database context: database path and database key
       shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsFile, dbKey, dbPath);

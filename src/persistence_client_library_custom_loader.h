@@ -51,11 +51,14 @@ typedef enum _PersistenceCustomLibs_e
 
 } PersistenceCustomLibs_e;
 
+
+/// enumerator fo custom library defines
 enum _PersCustomLibDefines_e
 {
    PersCustomPathSize = 12
 
 } PersCustomLibDefines_e;
+
 
 /// callback definition for custom_plugin_get_status_notification_clbk function
 typedef int (*plugin_callback_t) (int status, void* dataPtr);
@@ -64,6 +67,9 @@ typedef int (*plugin_callback_t) (int status, void* dataPtr);
 /// structure definition for custom library functions
 typedef struct _Pers_custom_functs_s
 {
+   /// custom library handle
+   void* handle;
+
    /// custom library init function
    int (*custom_plugin_init)();
 
@@ -74,10 +80,17 @@ typedef struct _Pers_custom_functs_s
    int (*custom_plugin_close)(int handle);
 
    /// custom get data function
-   long (*custom_plugin_get_data)(long handle, char* buffer, long size);
+   long (*custom_plugin_get_data_handle)(long handle, char* buffer, long size);
 
    /// custom set data function
-   long (*custom_plugin_set_data)(long handle, char* buffer, long size);
+   long (*custom_plugin_set_data_handle)(long handle, char* buffer, long size);
+
+   /// custom get data function
+   long (*custom_plugin_get_data)(char* buffer, long size);
+
+   /// custom set data function
+   long (*custom_plugin_set_data)(char* buffer, long size);
+
 
    /// custom delete function
    int (*custom_plugin_delete_data)(const char* path);
@@ -88,12 +101,18 @@ typedef struct _Pers_custom_functs_s
 }Pers_custom_functs_s;
 
 
-
 /// custom library functions array
 Pers_custom_functs_s gPersCustomFuncs[PersCustomLib_LastEntry];
 
 
-
+/**
+ * @brief Translate a client library name into a id
+ *
+ * @param lib_name the library name
+ * @param substring indicator if a substring search is neccessary
+ *
+ * @return the library id
+ */
 PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring);
 
 /**
@@ -139,7 +158,12 @@ int get_custom_client_position_in_array(PersistenceCustomLibs_e customLib);
 int get_num_custom_client_libs();
 
 
-char* get_custom_client_lib_name(int id);
+/**
+ * @brief get the custom library name form an index
+ *
+ * @return the name of the custom library ot NULL if invalid
+ */
+char* get_custom_client_lib_name(int idx);
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_CUSTOM_LOADER_H */

@@ -9,5 +9,5 @@ Name: persistence client library
 Description: persistence client library 
 Version: @VERSION@
 Requires: automotive-dlt glib-2.0
-Libs: -L${libdir} -lmygvdb -lrt -lglib-2.0 -ldl
+Libs: -L${libdir} -lgvdb -lrt -lglib-2.0 -ldl
 Cflags: -I${includedir}

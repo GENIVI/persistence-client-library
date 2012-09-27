@@ -43,22 +43,22 @@
 static int gLockAccess = 0;
 
 
-int pers_data_sync()
+int pers_data_sync(void)
 {
-   return 1;
+   return 1;   // TODO  implement sync data back
 }
 
-void pers_lock_access()
+void pers_lock_access(void)
 {
    __sync_fetch_and_add(&gLockAccess,1);
 }
 
-void pers_unlock_access()
+void pers_unlock_access(void)
 {
    __sync_fetch_and_sub(&gLockAccess,1);
 }
 
-int isAccessLocked()
+int isAccessLocked(void)
 {
    return gLockAccess;
 }
@@ -213,12 +213,14 @@ int send_pas_register(const char* method, const char* appname)
       else
       {
          fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid connection!! \n");
+         rval = -1;
       }
       dbus_message_unref(message);
    }
    else
    {
       fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid message!! \n");
+      rval = -1;
    }
 
    return rval;
@@ -248,6 +250,7 @@ int send_pas_request(const char* method, int blockStatus)
          if(!dbus_connection_send(conn, message, 0))
          {
             fprintf(stderr, "send_pers_admin_service ==> Access denied: %s \n", error.message);
+            rval = -1;
          }
 
          dbus_connection_flush(conn);
@@ -255,12 +258,14 @@ int send_pas_request(const char* method, int blockStatus)
       else
       {
          fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid connection!! \n");
+         rval = -1;
       }
       dbus_message_unref(message);
    }
    else
    {
       fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid message!! \n");
+      rval = -1;
    }
 
    return rval;
@@ -269,25 +274,25 @@ int send_pas_request(const char* method, int blockStatus)
 
 
 
-int register_pers_admin_service()
+int register_pers_admin_service(void)
 {
    return send_pas_register("RegisterPersAdminNotification", gAppId);
 }
 
 
-int unregister_pers_admin_service()
+int unregister_pers_admin_service(void)
 {
    return send_pas_register("UnRegisterPersAdminNotification", gAppId);
 }
 
 
-int pers_admin_service_data_sync_complete()
+int pers_admin_service_data_sync_complete(void)
 {
    return send_pas_request("PersistenceAdminRequestCompleted", 1);
 }
 
 
-void process_block_and_write_data_back()
+void process_block_and_write_data_back(void)
 {
    // lock persistence data access
    pers_lock_access();

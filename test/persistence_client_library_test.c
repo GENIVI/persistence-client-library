@@ -50,15 +50,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define BUF_SIZE     64
 #define NUM_OF_FILES 3
-#define READ_SIZE    256
+#define READ_SIZE    1024
 
 char* dayOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+
+
 
 START_TEST (test_persGetData)
 {
    int ret = 0;
    unsigned char* buffer = NULL;
-   char sysTimeBuffer[128];
+   char sysTimeBuffer[256];
    buffer = malloc(READ_SIZE);
 
    struct tm *locTime;
@@ -66,79 +68,89 @@ START_TEST (test_persGetData)
   
    locTime = localtime(&t);
 
-   snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900), 
+   snprintf(sysTimeBuffer, 256, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
    printf("\n\n");
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0xFF, "/language/country_code",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
-   printf("T E S T  Data - country_code: %s \n", buffer);
+   printf("T E S T  Data - country_code: %s | size: %d \n", buffer, ret);
+   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0xFF, "/pos/last_position",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
+   fail_unless(strncmp((char*)buffer, "+48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  Data - last_position: %s \n", buffer);
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0,    "/language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language" 
+   ret = key_read_data(0,    "/language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language"
+   fail_unless(strncmp((char*)buffer, "S H A R E D   D A T A  => not implemented yet", strlen((char*)buffer)) == 0, "Buffer not correctly read");
    printf("T E S T  Data - current_language: %s \n", buffer);
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document" 
+   ret = key_read_data(0xFF, "/status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
+   printf("T E S T  Data - last link: %s \n", buffer);
+   fail_unless(strncmp((char*)buffer, "/var/opt/user_manual_climateControl.pdf", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  Data - open_document: %s \n", buffer);
-    printf("----------------------------------------------->\n\n");
+   printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x20, "/address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address" 
+   ret = key_read_data(0x20, "/address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address"
+   fail_unless(strncmp((char*)buffer, "S H A R E D   D A T A  => not implemented yet", strlen((char*)buffer)) == 0, "Buffer not correctly read");
    printf("T E S T  Data - home_address: %s \n", buffer);
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/pos/last satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites" 
+   ret = key_read_data(0xFF, "/pos/last satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites"
+   fail_unless(strncmp((char*)buffer, "17", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  Data - last satellites: %s \n", buffer);
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "/links/last link",           2, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link" 
+   ret = key_read_data(0x84, "/links/last link",           2, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
+   fail_unless(strncmp((char*)buffer, "/last_exit/brooklyn", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  Data - last link: %s \n", buffer);
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "/links/last link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link" 
+   ret = key_read_data(0x84, "/links/last link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
+   fail_unless(strncmp((char*)buffer, "/last_exit/queens", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  Data - last link: %s \n", buffer);
    printf("----------------------------------------------->\n\n");
 
-
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_write_data(0x84, "/links/last link",          2, 1, sysTimeBuffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"         => "/84/User/2/Seat/1/links/last link" 
-   printf("T E S T  Data: %s \n\n", sysTimeBuffer);
+   //ret = key_write_data(0xFF, "/status/open_document",          1, 2, (unsigned char*)sysTimeBuffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
+   printf("T E S T  write data /status/open_document: %s \n", sysTimeBuffer);
    printf("----------------------------------------------->\n\n");
 
 
    printf("<-----------------------------------------------\n");
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "/links/last link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/Seat/1/links/last link" 
-   printf("T E S T  Data last link: %s \n", buffer);
-   printf("----------------------------------------------->\n\n");
+   ret = key_read_data(0xFF, "/status/open_document",           1, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
+   printf("T E S T  Data /status/open_document: %s \n", buffer);
+   fail_unless(strncmp((char*)buffer, "empty", strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
 
+   printf("----------------------------------------------->\n\n");
 
 
    free(buffer);
@@ -166,6 +178,7 @@ START_TEST (test_persGetDataHandle)
    memset(buffer, 0, READ_SIZE);
    handlePos = key_handle_open(0xFF, "/posHandle/last_position", 0, 0);
    ret = key_handle_read_data(handlePos, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  handle: %d | Data: %s \n\n", handlePos, buffer);
 
    memset(buffer, 0, READ_SIZE);
@@ -194,7 +207,6 @@ END_TEST
 
 START_TEST(test_persSetData)
 {
-   int ret = 0;
    unsigned char* buffer = NULL;
    buffer = malloc(READ_SIZE);                            
    memset(buffer, 0, READ_SIZE);
@@ -215,6 +227,7 @@ START_TEST(test_persSetSharedData)
 
    memset(buffer, 0, READ_SIZE);
    ret = key_write_data(0x20, "/address/home_address",      4, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "", ret-1) == 0, "Buffer not correctly read");
    printf("T E S T  Data: %s \n\n", buffer);
 
    free(buffer);
@@ -233,6 +246,7 @@ START_TEST(test_persGetData_file)
    memset(buffer, 0, READ_SIZE);
 
    ret = file_open(0xFF, "/media/mediaDB.db", 1, 1);
+   fail_unless(ret != -1, "Could not open file");
    printf("T E S T  Data: %s \n\n", buffer);
 
    free(buffer);

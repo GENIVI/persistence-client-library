@@ -1,0 +1,8 @@
+Revison 0.1.4
+
+- Update after code review; Extended custom library interface with function without handle
+- Removed c++test warnings
+- Moved test data to subfolder test
+- Update after code review; corrected package config; updated tests and test data 
+- Now custom client lib functions will be called; Added debug configure switch (debug was by default activated)
+- Added debug version to configure; Now custom client lib functions will be called; stabilized custom library feature; added new test data

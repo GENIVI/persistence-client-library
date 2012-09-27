@@ -36,6 +36,7 @@
 
 #include "persistence_client_library.h"
 
+/// handle structure definition
 typedef struct _PersistenceHandle_s
 {
    int shared_DB;             /// is a shared resource

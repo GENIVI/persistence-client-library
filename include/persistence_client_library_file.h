@@ -33,7 +33,13 @@
  *                 Library provides an API to access persistent data
  * @see            
  */
-
+/** \ingroup SSW_PERS */
+/** \defgroup SSW_PERS_FILE Client: File access
+ *  \{
+ */
+/** \defgroup SSW_PERS_FILE_INTERFACE API document
+ *  \{
+ */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -172,6 +178,10 @@ int file_write_data(int fd, const void * buffer, unsigned long buffer_size);
 #ifdef __cplusplus
 }
 #endif
+
+
+/** \} */ /* End of API */
+/** \} */ /* End of MODULE */
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_FILE_H */

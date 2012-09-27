@@ -48,6 +48,7 @@
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
+extern char* __progname;
 
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(persClientLibCtx);
@@ -100,8 +101,8 @@ const char* gSharedPublicWtPath    = "/Data/mnt-wt/shared/public%s";
 /// application id
 char gAppId[maxAppNameLen];
 
-/// max key value data size
-int gMaxKeyValDataSize;
+/// max key value data size [default 16kB]
+int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
 
 
 /// library constructor
@@ -120,7 +121,7 @@ void pers_library_init(void)
    DLT_LOG(persClientLibCtx, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
 
    /// environment variable for on demand loading of custom libraries
-   const char *pOnDemenaLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
+   const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
 
    /// environment variable for max key value data
    const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
@@ -130,8 +131,14 @@ void pers_library_init(void)
       gMaxKeyValDataSize = atoi(pDataSize);
    }
 
+   // initialize mutex
+   pthread_mutex_init(&gDbusInitializedMtx, NULL);
+
    // setup dbus main dispatching loop
    setup_dbus_mainloop();
+
+   // wain until dbus main loop has been setup and running
+   pthread_mutex_lock(&gDbusInitializedMtx);
 
    // register for lifecycle and persistence admin service dbus messages
    register_lifecycle();
@@ -143,7 +150,7 @@ void pers_library_init(void)
    /// get custom library names to load
    get_custom_libraries();
 
-   if(pOnDemenaLoad == NULL)  // load all available libraries now
+   if(pOnDemandLoad == NULL)  // load all available libraries now
    {
       int i = 0;
 
@@ -155,7 +162,6 @@ void pers_library_init(void)
             break;
          }
          gPersCustomFuncs[i].custom_plugin_init();
-
       }
 
       /// just testing
@@ -163,27 +169,16 @@ void pers_library_init(void)
       //gPersCustomFuncs[PersCustomLib_early].custom_plugin_close(17);
    }
 
-   printf("A p p l i c a t i o n   n a m e : %s \n", program_invocation_short_name);   // TODO: only temp solution for application name
-   strncpy(gAppId, program_invocation_short_name, maxAppNameLen);
+   printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
+   strncpy(gAppId, __progname, maxAppNameLen);
 }
 
 
 
 void pers_library_destroy(void)
 {
-   int i = 0;
-   GvdbTable* resourceTable = NULL;
-
-   for(i=0; i< PersistenceRCT_LastEntry; i++)
-   {
-      resourceTable = get_resource_cfg_table_by_idx(i);
-
-      // dereference opend database
-      if(resourceTable != NULL)
-      {
-         gvdb_table_unref(resourceTable);
-      }
-   }
+   // destory mutex
+   pthread_mutex_destroy(&gDbusInitializedMtx);
 
    // unregister for lifecycle and persistence admin service dbus messages
    unregister_lifecycle();

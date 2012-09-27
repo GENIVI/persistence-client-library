@@ -33,6 +33,13 @@
  *                 Library provides an API to access persistent data
  * @see            
  */
+/** \ingroup SSW_PERS */
+/** \defgroup SSW_PERS_KEYVALUE Client: Key-value access
+ *  \{
+ */
+/** \defgroup SSW_PERS_KEYVALUE_INTERFACE API document
+ *  \{
+ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -193,6 +200,8 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 }
 #endif
 
+/** \} */ /* End of API */
+/** \} */ /* End of MODULE */
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_KEY_H */
 

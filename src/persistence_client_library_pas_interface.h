@@ -37,34 +37,56 @@
 #include <dbus/dbus.h>
 
 
-
-
+/**
+ * @brief Check if a org.genivi.persistence.admin message has been received
+ *
+ * @param connection the debus connection
+ * @param message the dbus message
+ * @param user_data data handed over to this function
+ *
+ * @return DBUS_HANDLER_RESULT_HANDLED or DBUS_HANDLER_RESULT_NOT_YET_HANDLED
+ */
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data);
 
+
 /// synchronize data back to memory device
-int pers_data_sync();
+int pers_data_sync(void);
+
 
 /// lock access to persistence data
-void pers_lock_access();
+void pers_lock_access(void);
 
 
 /// unlock access to persistent data
-void pers_unlock_access();
+void pers_unlock_access(void);
 
 
-/// check if access to persistent data is locked
-int isAccessLocked();
-
+/**
+ * @brief check if access to persistent data is locked
+ *
+ * @return 1 if access is locked, 0 if access is possible
+ */
+int isAccessLocked(void);
 
 
 /// block persistence access and write data back to device
-void process_block_and_write_data_back();
+void process_block_and_write_data_back(void);
 
 
+/**
+ * @brief send registration message 'RegisterPersAdminNotification' to org.genivi.persistence.admin
+ *
+ * @return 0 on success or -1 on error
+ */
+int register_pers_admin_service(void);
 
-int register_pers_admin_service();
 
-int unregister_pers_admin_service();
+/**
+ * @brief send registration message 'UnRegisterPersAdminNotification' to org.genivi.persistence.admin
+ *
+ * @return 0 on success or -1 on error
+ */
+int unregister_pers_admin_service(void);
 
 
 

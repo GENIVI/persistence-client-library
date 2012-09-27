@@ -30,16 +30,21 @@
  * @see
  */
 
+
 #include "persistence_client_library_lc_interface.h"
-#include "persistence_client_library_pas_interface.h"
-#include "persistence_client_library_dbus_service.h"
+
 #include "persistence_client_library.h"
 #include "persistence_client_library_handle.h"
+#include "persistence_client_library_pas_interface.h"
+#include "persistence_client_library_dbus_service.h"
+#include "persistence_client_library_custom_loader.h"
+#include "persistence_client_library_access_helper.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 
 int check_lc_request(int request)
@@ -242,12 +247,14 @@ int send_lifecycle_un_register(const char* method, const char* busname, const ch
       else
       {
          fprintf(stderr, "send_lifecycle ==> ERROR: Invalid connection!! \n");
+         rval = -1;
       }
       dbus_message_unref(message);
    }
    else
    {
       fprintf(stderr, "send_lifecycle ==> ERROR: Invalid message!! \n");
+      rval = -1;
    }
 
    return rval;
@@ -300,8 +307,9 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 int register_lifecycle()
 {
    const char* objName = "objName";
-   int shutdownMode = 88;
-   int TimeoutMs = 500;
+   int shutdownMode = 88;  // TODO send correct mode
+   int TimeoutMs = 500;    // TODO send timeout
+
    return send_lifecycle_register("RegisterShutdownClient",
          dbus_bus_get_unique_name(get_dbus_connection()), objName, shutdownMode, TimeoutMs);
 }
@@ -311,7 +319,7 @@ int register_lifecycle()
 int unregister_lifecycle()
 {
    const char* objName = "objName";
-   int shutdownMode = 88;
+   int shutdownMode = 88;     // TODO send correct mode
 
    return send_lifecycle_un_register("UnRegisterShutdownClient",
          dbus_bus_get_unique_name(get_dbus_connection()), objName, shutdownMode);
@@ -320,7 +328,7 @@ int unregister_lifecycle()
 
 int send_prepare_shutdown_complete(int requestId)
 {
-   int status    = 1;
+   int status    = 1;   // TODO send correct status
 
    return send_lifecycle_request("LifecycleRequestComplete", requestId, status);
 }
@@ -331,6 +339,7 @@ int send_prepare_shutdown_complete(int requestId)
 void process_prepare_shutdown(unsigned char requestId)
 {
    int i = 0;
+   GvdbTable* resourceTable = NULL;
 
    // block write
    pers_lock_access();
@@ -346,7 +355,22 @@ void process_prepare_shutdown(unsigned char requestId)
    }
 
    // close open gvdb and dconf database
-   // TODO
+   for(i=0; i< PersistenceRCT_LastEntry; i++)
+   {
+     resourceTable = get_resource_cfg_table_by_idx(i);
+
+     // dereference opend database
+     if(resourceTable != NULL)
+     {
+        gvdb_table_unref(resourceTable);
+     }
+   }
+
+   // unload custom client libraries
+   for(i=0; i<get_num_custom_client_libs(); i++)
+   {
+      dlclose(gPersCustomFuncs[i].handle);
+   }
 
    // notify lifecycle shutdown OK
    send_prepare_shutdown_complete((int)requestId);

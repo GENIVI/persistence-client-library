@@ -46,7 +46,7 @@
 
 int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
-   int handle = -1;
+   int handle = 0;
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -54,6 +54,9 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
+
+      memset(dbKey, 0, dbKeyMaxLen);
+      memset(dbPath, 0, dbPathMaxLen);
 
       // get database context: database path and database key
       storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
@@ -70,7 +73,8 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
 
             if(idx < PersCustomLib_LastEntry)
             {
-               int flag = 0, mode = 0;
+               int flag = 0,
+                   mode = 0;
                handle = gPersCustomFuncs[idx].custom_plugin_open(dbPath, flag, mode);
             }
          }
@@ -79,10 +83,17 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
             handle = get_persistence_handle_idx();
          }
 
-         // remember data in handle array
-        strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
-        strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
-        gHandleArray[handle].shared_DB = storePolicy;
+         if(handle < maxPersHandle)
+         {
+            // remember data in handle array
+            strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
+            strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
+            gHandleArray[handle].shared_DB = storePolicy;
+         }
+         else
+         {
+            printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
+         }
       }
    }
 
@@ -140,7 +151,8 @@ int key_handle_get_size(int key_handle)
             char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
             snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
-            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n",
+                    gHandleArray[key_handle].dbPath , idx);
 
             if(idx < PersCustomLib_LastEntry)
             {
@@ -178,7 +190,7 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
 
             if(idx < PersCustomLib_LastEntry)
             {
-               gPersCustomFuncs[idx].custom_plugin_get_data(key_handle, (char*)buffer, buffer_size-1);
+               gPersCustomFuncs[idx].custom_plugin_get_data_handle(key_handle, (char*)buffer, buffer_size-1);
             }
          }
          else
@@ -223,7 +235,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
 
                if(idx < PersCustomLib_LastEntry)
                {
-                  gPersCustomFuncs[idx].custom_plugin_set_data(key_handle, (char*)buffer, buffer_size-1);
+                  gPersCustomFuncs[idx].custom_plugin_set_data_handle(key_handle, (char*)buffer, buffer_size-1);
                }
             }
             else
@@ -255,7 +267,7 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
-      // TODO
+      // TODO implement key delete
    }
    return rval;
 }
@@ -273,6 +285,9 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
+
+      memset(dbKey, 0, dbKeyMaxLen);
+      memset(dbPath, 0, dbPathMaxLen);
 
       // get database context: database path and database key
       storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
@@ -306,6 +321,10 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
 
+      memset(dbKey, 0, dbKeyMaxLen);
+      memset(dbPath, 0, dbPathMaxLen);
+
+
       // get database context: database path and database key
       storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
 
@@ -333,7 +352,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 {
    int data_size = -1;
 
-   if(accessNoLock == isAccessLocked() )     // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() )     // check if access to persistent data is locked
    {
       if(buffer_size <= gMaxKeyValDataSize)  // check data size
       {
@@ -343,6 +362,9 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 
          char dbKey[dbKeyMaxLen];  // database key
          char dbPath[dbPathMaxLen];    // database location
+
+         memset(dbKey, 0, dbKeyMaxLen);
+         memset(dbPath, 0, dbPathMaxLen);
 
          // get database context: database path and database key
          storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
@@ -372,7 +394,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 
 
 
-// status: TODO
+// status: TODO implement register on change
 int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
    int rval = 0;
@@ -380,6 +402,9 @@ int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsign
    //   unsigned int hash_val_data = 0;
    char dbKey[dbKeyMaxLen];  // database key 
    char dbPath[dbPathMaxLen];    // database location
+
+   memset(dbKey, 0, dbKeyMaxLen);
+   memset(dbPath, 0, dbPathMaxLen);
 
    // registration is only on shared key possible
    if(PersistenceStorage_shared == get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath))

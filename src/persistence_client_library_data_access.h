@@ -130,7 +130,4 @@ int get_size_from_table(GvdbTable* database, char* key);
 
 
 
-
-
-
 #endif /* PERSISTENCY_CLIENT_LIBRARY_DATA_ACCESS_H */

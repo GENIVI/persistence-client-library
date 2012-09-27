@@ -35,15 +35,41 @@
 
 #include <dbus/dbus.h>
 
+
+/**
+ * @brief Check if a com.contiautomotive.NodeStateManager.LifecycleConsumer message has been received
+ *
+ * @param connection the debus connection
+ * @param message the dbus message
+ * @param user_data data handed over to this function
+ *
+ * @return DBUS_HANDLER_RESULT_HANDLED or DBUS_HANDLER_RESULT_NOT_YET_HANDLED
+ */
 DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * message, void * user_data);
 
+
+/**
+ * @brief send register message 'RegisterShutdownClient' to com.contiautomotive.NodeStateManager.Consumer
+ *
+ * @return 0 on success or -1 on error
+ */
 int register_lifecycle();
 
+
+/**
+ * @brief send register message 'UnRegisterShutdownClient' to com.contiautomotive.NodeStateManager.Consumer
+ *
+ * @return 0 on success or -1 on error
+ */
 int unregister_lifecycle();
 
+
+/**
+ * @brief process a shutdown message (close all open files, open databases, ...
+ *
+ * @param requestId the requestID
+ */
 void process_prepare_shutdown(unsigned char requestId);
-
-
 
 
 

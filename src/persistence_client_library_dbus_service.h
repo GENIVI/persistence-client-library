@@ -35,6 +35,11 @@
 
 #include <dbus/dbus.h>
 #include <poll.h>
+#include <pthread.h>
+
+/// mutex to make sure main loop is running
+pthread_mutex_t gDbusInitializedMtx;
+
 
 /// command definitions for main loop
 typedef enum ECmd
@@ -51,24 +56,32 @@ typedef enum ECmd
 int gPipefds[2];
 
 
-
-
 /// returns the dbus connection
-DBusConnection* get_dbus_connection();
+DBusConnection* get_dbus_connection(void);
 
 
 
 /**
- * Main loop to dispatch events and dbus messages
+ * @brief DBus main loop to dispatch events and dbus messages
  *
+ * @param vtable the function pointer tables for '/org/genivi/persistence/adminconsumer' messages
+ * @param vtable2 the function pointer tables for '/com/contiautomotive/NodeStateManager/LifecycleConsumer' messages
+ * @param vtableFallback the fallback function pointer tables
+ * @param userData data to pass to the main loop
+ *
+ * @return 0
  */
 int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
              DBusObjectPathVTable vtableFallback, void* userData);
 
 
 
-/// dbus main loop
-int setup_dbus_mainloop();
+/**
+ * @brief Setup the dbus main dispatching loop
+ *
+ * @return 0
+ */
+int setup_dbus_mainloop(void);
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_SERVICE_H_ */

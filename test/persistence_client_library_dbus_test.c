@@ -21,11 +21,11 @@ int main(int argc, char *argv[])
 
    printf("Dbus interface test application\n");
 
-   ret = key_read_data(0,    "/language/current_language", 3, 0, buffer, 128);
+   ret = key_read_data(0,    "/language/current_language", 3, 0, (unsigned char*)buffer, 128);
 
    getchar();
 
 
    printf("By\n");
-   return 1;
+   return ret;
 }

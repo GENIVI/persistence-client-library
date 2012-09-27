@@ -44,13 +44,14 @@
 int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, unsigned long buffer_size)
 {
    int read_size = 0;
-   gconstpointer valuePtr = NULL;
    GVariant* dbValue = NULL;
 
    dbValue = gvdb_table_get_value(database, key);
    
    if(dbValue != NULL)
    {
+      gconstpointer valuePtr = NULL;
+
       read_size = g_variant_get_size(dbValue);
       valuePtr = g_variant_get_data(dbValue);   // get the "data" part from GVariant
       
@@ -116,7 +117,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       GvdbTable* database = gvdb_table_new(dbPath, TRUE, &error);;
       gvdb_table_ref(database);
       if(database != NULL)
-      {         
+      {
          read_size = get_value_from_table(database, key, buffer, buffer_size-1);   
          gvdb_table_unref(database);
       }
@@ -137,7 +138,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 
       if(idx < PersCustomLib_LastEntry)
       {
-         gPersCustomFuncs[idx].custom_plugin_get_data(88, (char*)buffer, buffer_size-1);
+         gPersCustomFuncs[idx].custom_plugin_get_data_handle(88, (char*)buffer, buffer_size-1);
       }
    }
 
@@ -172,8 +173,14 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       if(hash_table != NULL)
       {         
          write_size = set_value_to_table(hash_table, key, buffer, buffer_size);   
-         gvdb_table_write_contents(hash_table, dbPath, FALSE, &error);
 
+         gboolean success = gvdb_table_write_contents(hash_table, dbPath, FALSE, &error);
+         if(success != TRUE)
+         {
+            printf("persistence_set_data => error: %s \n", error->message );
+            g_error_free(error);
+            error = NULL;
+         }
       }
       else
       {
@@ -188,7 +195,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
       if(idx < PersCustomLib_LastEntry)
       {
-         gPersCustomFuncs[idx].custom_plugin_set_data(88, (char*)buffer, buffer_size);
+         gPersCustomFuncs[idx].custom_plugin_set_data_handle(88, (char*)buffer, buffer_size);
       }
    }
 

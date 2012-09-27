@@ -72,7 +72,7 @@ enum _PersistenceConstantDef
 };
 
 
-/** enumerator used to identify the policy to manage the data */
+/// enumerator used to identify the policy to manage the data
 typedef enum _PersistencePolicy_e
 {
    PersistencePolicy_wc    = 0,  /**< the data is managed write cached */
@@ -85,7 +85,7 @@ typedef enum _PersistencePolicy_e
 } PersistencePolicy_e;
 
 
-/** enumerator used to identify the persistence storage to manage the data */
+/// enumerator used to identify the persistence storage to manage the data
 typedef enum _PersistenceStorage_e
 {
    PersistenceStorage_local    = 0,  /**< the data is managed local: gvdb */
@@ -98,7 +98,7 @@ typedef enum _PersistenceStorage_e
 } PersistenceStorage_e;
 
 
-/** structure used to manage the persistence configuration for a key */
+/// structure used to manage the persistence configuration for a key
 typedef struct _PersistenceConfigurationKey_s
 {
    PersistencePolicy_e     policy;           /**< policy  */
