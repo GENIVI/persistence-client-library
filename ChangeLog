@@ -1,4 +1,4 @@
-Revison 0.1.4
+Revison 0.1.4 (rev 1591)
 
 - Update after code review; Extended custom library interface with function without handle
 - Removed c++test warnings
