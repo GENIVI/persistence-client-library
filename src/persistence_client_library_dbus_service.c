@@ -213,12 +213,6 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
          }
 
          ++gPollInfo.nfds;
-
-         static const int cmd = CMD_REQUEST_NAME;
-         if (sizeof(int)!=write(gPipefds[1], &cmd, sizeof(int)))
-         {
-            printf("write failed w/ errno %d\n", errno);
-         }
       }
 
       result = TRUE;
@@ -330,22 +324,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  {
                                     switch (buf[0])
                                     {
-                                       case CMD_REQUEST_NAME:
-                                          if(DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
-                                             != dbus_bus_request_name(conn, "org.genivi.persistence.adminconsumer", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
-                                          {
-                                             printf("*** Cannot acquire name '%s' (%s). Bailing out!\n", "org.genivi.persistence.admin\n", err.message);
-                                             dbus_error_free(&err);
-                                             bContinue = FALSE;
-                                          }
-                                          if(DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER
-                                             != dbus_bus_request_name(conn, "com.contiautomotive.NodeStateManager.LifecycleConsumer", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
-                                          {
-                                             printf("*** Cannot acquire name '%s' (%s). Bailing out!\n", "com.contiautomotive.NodeStateManager.LifecycleConsumer\n", err.message);
-                                             dbus_error_free(&err);
-                                             bContinue = FALSE;
-                                          }
-                                          break;
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
                                           process_block_and_write_data_back();
                                           break;

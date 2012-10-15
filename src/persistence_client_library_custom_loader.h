@@ -73,6 +73,9 @@ typedef struct _Pers_custom_functs_s
    /// custom library init function
    int (*custom_plugin_init)();
 
+   /// custom library deinit function
+   int (*custom_plugin_deinit)();
+
    /// custom open function
    long (*custom_plugin_open)(char* path, int flag, int mode);
 
@@ -91,9 +94,20 @@ typedef struct _Pers_custom_functs_s
    /// custom set data function
    long (*custom_plugin_set_data)(char* buffer, long size);
 
-
    /// custom delete function
    int (*custom_plugin_delete_data)(const char* path);
+
+   // get the size
+   int (*custom_plugin_get_size_handle)(int key_handle);
+
+   // get the size
+   int (*custom_plugin_get_size)(const char* path);
+
+   /// create backup
+   int (*custom_plugin_backup_create)(const char* src, const char* dst);
+
+   /// restore backup
+   int (*custom_plugin_backup_restore)(const char* srt, const char* dst);
 
    /// custom status notification function
    int (*custom_plugin_get_status_notification_clbk)(plugin_callback_t pFunct);
@@ -111,14 +125,15 @@ Pers_custom_functs_s gPersCustomFuncs[PersCustomLib_LastEntry];
  * @param lib_name the library name
  * @param substring indicator if a substring search is neccessary
  *
- * @return the library id
+ * @return the library id or PersCustomLib_LastEntry if nothing found
  */
 PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring);
 
 /**
  * @brief get the names of the custom libraries to load
  *
- * @return 0 for success or -1 if an error occurred
+ * @return 0 for success or a negative value with the following errors:
+ * EPERS_OUTOFBOUNDS
  */
 int get_custom_libraries();
 
@@ -130,7 +145,9 @@ int get_custom_libraries();
  * @param customLib the enumerator id identifying the custom library
  * @param customFuncts function pointer array of loaded custom library functions
  *
- * @return 0 for success or -1 if an error occurred
+ * @return 0 for success or a negative value with one of the following errors:
+ *  EPERS_NOPLUGINFCNT   EPERS_DLOPENERROR
+ *
  */
 int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s *customFuncts);
 
@@ -139,7 +156,8 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
 /**
  * @brief get the names of the custom libraries to load
  *
- * @return 0 for success or -1 if an error occurred
+ * @return 0 for success orr a negative value with one of the following errors:
+ *  EPERS_NOPLUGINFCNT   EPERS_DLOPENERROR
  */
 int load_all_custom_libraries();
 
@@ -149,12 +167,16 @@ int load_all_custom_libraries();
  *
  * @param customLib the enumerator id identifying the custom library
  *
- * @return the array position
+ * @return the array position or -1 if the position can't be found
  */
 int get_custom_client_position_in_array(PersistenceCustomLibs_e customLib);
 
 
-/// get the number of available custom client libraries
+/**
+ * @brief gget the number of available custom client libraries
+ *
+ * @return the number of the client libraries
+ */
 int get_num_custom_client_libs();
 
 

@@ -15,11 +15,15 @@ AM_CFLAGS =$(DEPS_CFLAGS) -I../include \
 endif
 
 
-include_HEADERS = ../include/persistence_client_library_key.h ../include/persistence_client_library_file.h
+include_HEADERS = ../include/persistence_client_library_key.h \
+                  ../include/persistence_client_library_file.h \
+                  ../include/persistence_client_library_error_def.h
+                  
 
 lib_LTLIBRARIES = libpersistence_client_library.la
 
 libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) -ldconf -ldl -ldconf-dbus-1 -lgvdb
+
 
 libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library.c \
@@ -34,6 +38,6 @@ libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library_access_helper.c \
                                      crc32.c
 
-libpersistence_client_library_la_LDFLAGS = -module -export-dynamic $(LDFLAGS)
+libpersistence_client_library_la_LDFLAGS = -export-dynamic $(LDFLAGS)
 
 

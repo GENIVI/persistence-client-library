@@ -54,7 +54,8 @@ extern "C" {
  *
  * @param fd the file descriptor to close
  *
- * @return zero on success. On error, -1 is returned, and errno is set appropriately
+ * @return zero on success. On error a negative value will be returned with th follwoing error codes:
+ *                          EPERS_LOCKFS
  */
 int file_close(int fd);
 
@@ -65,7 +66,8 @@ int file_close(int fd);
  *
  * @param fd the POSIX file descriptor
  *
- * @return positive value. On error, -1 is returned, and errno is set appropriately
+ * @return positive value. On error a negative value will be returned with th follwoing error codes:
+ *                         EPERS_LOCKFS
  */
 int file_get_size(int fd);
 
@@ -79,7 +81,8 @@ int file_get_size(int fd);
  * @param offset in the file to map
  * @param fd the POSIX file descriptor of the file to map
  *
- * @return a pointer to the mapped area, or on error the value MAP_FAILED
+ * @return a pointer to the mapped area, or on error the value MAP_FAILED or
+ *  EPERS_MAP_FAILEDLOCK if filesystem is currrently locked
  */
 void* file_map_data(void* addr, long size, long offset, int fd);
 
@@ -93,7 +96,9 @@ void* file_map_data(void* addr, long size, long offset, int fd);
  * @param user_no  the user ID
  * @param seat_no  the seat number (seat 0 to 3)
  *
- * @return positive value: the POSIX file descriptor; negative value: Error code
+ * @return positive value: the POSIX file descriptor;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS, EPERS_MAXHANDLE, EPERS_NOKEY, EPERS_NOKEYDATA, EPERS_NOPRCTABLE or EPERS_COMMON,
  */
 int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no);
 
@@ -106,7 +111,9 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
  * @param buffer buffer to read the data
  * @param buffer_size the size buffer for reading
  *
- * @return positive value: the size read; negative value: error code
+ * @return positive value: the size read;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
  */
 int file_read_data(int fd, void * buffer, unsigned long buffer_size);
 
@@ -120,8 +127,9 @@ int file_read_data(int fd, void * buffer, unsigned long buffer_size);
  * @param user_no  the user ID
  * @param seat_no  the seat number (seat 0 to 3)
  *
- * @return positive value: success; negative value: error code
- *
+ * @return positive value: success;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
  */
 int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no);
 
@@ -140,7 +148,9 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
                  SEEK_END
                       The offset is set to the size of the file plus offset bytes.
  *
- * @return positive value: resulting offset location; negative value: error code
+ * @return positive value: resulting offset location;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
  */
 int file_seek(int fd, long int offset, int whence);
 
@@ -152,7 +162,9 @@ int file_seek(int fd, long int offset, int whence);
  * @param address the address to unmap
  * @param size the size in bytes to unmap
  *
- * @return on success 0; negative value: error code
+ * @return on success 0;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
  */
 int file_unmap_data(void* address, long size);
 
@@ -165,7 +177,9 @@ int file_unmap_data(void* address, long size);
  * @param buffer the buffer to write
  * @param buffer_size the size of the buffer to write in bytes
  *
-* @return positive value: bytes written; negative value: error code
+ * @return positive value: bytes written;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
  */
 int file_write_data(int fd, const void * buffer, unsigned long buffer_size);
 

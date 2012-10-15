@@ -179,7 +179,7 @@ int send_lifecycle_register(const char* method, const char* busname, const char*
    DBusConnection* conn = get_dbus_connection();
 
    DBusMessage* message = dbus_message_new_method_call("com.contiautomotive.NodeStateManager.Consumer",  // destination
-                                                      "/com/contiautomotive/NodeStateManager/Consumer",  // path
+                                                       "/com/contiautomotive/NodeStateManager/Consumer",  // path
                                                        "com.contiautomotive.NodeStateManager.Consumer",  // interface
                                                        method);                  // method
    if(message != NULL)
@@ -369,6 +369,9 @@ void process_prepare_shutdown(unsigned char requestId)
    // unload custom client libraries
    for(i=0; i<get_num_custom_client_libs(); i++)
    {
+      // deinitialize plugin
+      gPersCustomFuncs[i].custom_plugin_deinit();
+      // close library handle
       dlclose(gPersCustomFuncs[i].handle);
    }
 

@@ -1,3 +1,10 @@
+Revison 0.1.5 (rev 1665)
+- Fixed problem where no custom lib is available; extended custom lib interface; introduced error codes; removed modules form Makefile.am
+- Adjusted license in test files to MIT
+- Removed requesting dbus name from dbus main loop
+
+
+
 Revison 0.1.4 (rev 1591)
 
 - Update after code review; Extended custom library interface with function without handle

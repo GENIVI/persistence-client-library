@@ -45,7 +45,6 @@ pthread_mutex_t gDbusInitializedMtx;
 typedef enum ECmd
 {
    CMD_NONE = 0,                    /// command none
-   CMD_REQUEST_NAME,                /// command request dbus name
    CMD_PAS_BLOCK_AND_WRITE_BACK,    /// command block access and write data back
    CMD_LC_PREPARE_SHUTDOWN,         /// command to prepare shutdown
    CMD_QUIT                         /// quit command

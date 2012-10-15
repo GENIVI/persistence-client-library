@@ -48,7 +48,8 @@
  * @param dbPath the array where the database location path will be stored
  * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
  *
- * @return -1 if error : 1 if shared database and 0 if local database
+ * @return 1 if shared database and 0 if local database or PersistenceStoragePolicy_LastEntry
+ *         when no valid database has been found
  */
 int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
                         unsigned int isFile, char dbKey[], char dbPath[], unsigned char cached_resource);
@@ -67,7 +68,8 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
  * @param dbPath the array where the database location path will be stored
  * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
  *
- * @return -1 if error : or PersistenceStorage_e
+ * @return the PersistenceStorage_e
+ * or a negative value with one of the following errors: EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
 int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
                                     unsigned int isFile, char dbKey[], char dbPath[]);
@@ -77,28 +79,33 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
 /**
  * @brief get the resource configuration table gvbd database by id
  *
- * @return pointer to the gvdb database table
+ * @return pointer to the gvdb database table or NULL if no valid database has been found
  */
 GvdbTable* get_resource_cfg_table_by_idx(int i);
 
+
 /**
  * @brief serialize data to store to database
+ *
+ * @return the number of bytes serialized of a negative value on error and errno is set
  */
 int serialize_data(PersistenceConfigurationKey_s pc, char* buffer);
 
 
 /**
  * @brief deserialize data read from database
+ *
+ * @return 1 of correct deserialization or on of the following error codes:
+ * EPERS_DESER_BUFORKEY, EPERS_DESER_ALLOCMEM, EPERS_DESER_POLICY, EPERS_DESER_STORE,
+ * EPERS_DESER_PERM, EPERS_DESER_MAXSIZE or EPERS_DESER_RESP
  */
 int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc);
 
 
 /**
  * @brief free allocated data of a persistence configuration key
- *
- * @param pc the configuration key
  */
-int free_pers_conf_key(PersistenceConfigurationKey_s* pc);
+void free_pers_conf_key(PersistenceConfigurationKey_s* pc);
 
 
 

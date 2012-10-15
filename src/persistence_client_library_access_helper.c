@@ -124,8 +124,6 @@ int serialize_data(PersistenceConfigurationKey_s pc, char* buffer)
    rval = snprintf(buffer, gMaxKeyValDataSize, "%d %d %u %d %s %s",
                                                pc.policy, pc.storage, pc.permission, pc.max_size,
                                                pc.reponsible, pc.custom_name);
-
-   printf("serialize_data: %s \n", buffer);
    return rval;
 }
 
@@ -146,7 +144,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
       else
       {
          printf("de_serialize_data - error: can't get [policy] \n");
-         rval = -1;
+         rval = EPERS_DESER_POLICY;
       }
 
       token = strtok (NULL, " ");      // storage
@@ -158,7 +156,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
       else
       {
          printf("de_serialize_data - error: can't get [storage] \n");
-         rval = -1;
+         rval = EPERS_DESER_STORE;
       }
 
       token = strtok (NULL, " ");      // permission
@@ -170,7 +168,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
       else
       {
          printf("de_serialize_data - error: can't get [permission] \n");
-         rval = -1;
+         rval = EPERS_DESER_PERM;
       }
 
       token = strtok (NULL, " ");      // max_size
@@ -182,7 +180,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
       else
       {
          printf("de_serialize_data - error: can't get [max_size] \n");
-         rval = -1;
+         rval = EPERS_DESER_MAXSIZE;
       }
 
       token = strtok (NULL, " ");      // reponsible
@@ -194,17 +192,18 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
          if(pc->reponsible != NULL)
          {
             strncpy(pc->reponsible, token, size);
+            //printf("     pc->reponsible %s | 0x%x \n", pc->reponsible, (int)pc->reponsible);
          }
          else
          {
+            rval = EPERS_DESER_ALLOCMEM;
             printf("de_serialize_data - error: can't allocate memory [reponsible] \n");
          }
-         //printf("     pc->reponsible %s | 0x%x \n", pc->reponsible, (int)pc->reponsible);
       }
       else
       {
          printf("de_serialize_data - error: can't get [reponsible] \n");
-         rval = -1;
+         rval = EPERS_DESER_RESP;
       }
 
       token = strtok (NULL, " ");      // custom_name
@@ -218,6 +217,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
          }
          else
          {
+            rval = EPERS_DESER_ALLOCMEM;
             printf("de_serialize_data - error: can't allocate memory [custom_name] \n");
          }
          //printf("     pc->custom_name %s | 0x%x \n", pc->custom_name, (int)pc->custom_name);
@@ -234,6 +234,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
          }
          else
          {
+            rval = EPERS_DESER_ALLOCMEM;
             printf("de_serialize_data - error: can't allocate memory [custom_name-default] \n");
          }
       }
@@ -241,7 +242,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
    else
    {
       printf("de_serialize_data - error: buffer or PersistenceConfigurationKey_s is NULL\n");
-      rval = -1;
+      rval = EPERS_DESER_BUFORKEY;
    }
 
    return rval;
@@ -249,10 +250,8 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
 
 
 
-int free_pers_conf_key(PersistenceConfigurationKey_s* pc)
+void free_pers_conf_key(PersistenceConfigurationKey_s* pc)
 {
-   int rval = 1;
-
    if(pc != NULL)
    {
       if(pc->reponsible != NULL)
@@ -269,8 +268,6 @@ int free_pers_conf_key(PersistenceConfigurationKey_s* pc)
          //printf("free_pers_conf_key => free(pc->reponsible);");
       }
    }
-
-   return rval;
 }
 
 
@@ -333,20 +330,25 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
                free_pers_conf_key(&dbEntry);
                resourceFound = 1;
             }
-
          }
       }
       else
       {
          printf("get_db_context - resource_table: no value for key: %s \n", resource_id);
-         rval = -1;
+         rval = EPERS_NOKEYDATA;
       }
    }  // resource table
+   else
+   {
+      printf("get_db_context - error resource table\n");
+      rval = EPERS_NOPRCTABLE;
+   }
 
 
    if(resourceFound == 0)
    {
       printf("get_db_context - error resource not found %s \n", resource_id);
+      rval = EPERS_NOKEY;
    }
 
    return rval;

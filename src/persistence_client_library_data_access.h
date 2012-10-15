@@ -45,7 +45,9 @@
  * @param key the database key
  * @param storage the storage identifier (local, shared or custom)
  *        (use dbShared for shared key or dbLocal if the key is local)
- * @return
+ *
+ * @return the number of bytes written or a negative value if an error occured with the following error codes:
+ *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
 int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size);
 
@@ -58,7 +60,8 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  * @param key the database key
  * @param storage the storage identifier (local, shared or custom)
  *
- * @return
+ * @return the number of bytes read or a negative value if an error occured with the following error codes:
+ *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
 int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size);
 
@@ -71,7 +74,8 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  * @param key the database key
  * @param storage the storage identifier (local, shared or custom)
  *
- * @return size of data in bytes read from the key
+ * @return size of data in bytes read from the key or on error a negative value with the following error codes:
+ *  EPERS_NOPRCTABLE or EPERS_NOKEY
  */
 int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage);
 
@@ -97,7 +101,8 @@ int persistence_reg_notify_on_change(char* dbPath, char* key);
  * @param buffer the data
  * @param buffer_size the size of the buffer in bytes
  *
- * @return size of data in bytes read from the key
+ * @return size of data in bytes read from the key or a negative value on error with the following error codes:
+ *  EPERS_NOKEYDATA   EPERS_NOKEY
  */
 int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
 
@@ -123,7 +128,8 @@ int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, u
  * @param database pointer to the database
  * @param key the database key to get the size form
  *
- * @return size of data
+ * @return size of data or a negative value on error with the following errors codes:
+ * EPERS_NOKEY
  */
 int get_size_from_table(GvdbTable* database, char* key);
 

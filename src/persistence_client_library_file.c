@@ -58,6 +58,10 @@ int file_close(int fd)
          __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
       }
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
    return rval;
 }
 
@@ -78,6 +82,10 @@ int file_get_size(int fd)
          rval = buf.st_size;
       }
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
    return rval;
 }
 
@@ -91,6 +99,10 @@ void* file_map_data(void* addr, long size, long offset, int fd)
    {
       int mapFlag = PROT_WRITE | PROT_READ;
       ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
+   }
+   else
+   {
+      ptr = EPERS_MAP_LOCKFS;
    }
    return ptr;
 }
@@ -129,9 +141,18 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
             {
                __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
             }
+            else
+            {
+               handle = EPERS_MAXHANDLE;
+            }
          }
       }
    }
+   else
+   {
+      handle = EPERS_LOCKFS;
+   }
+
 
    return handle;
 }
@@ -144,6 +165,10 @@ int file_read_data(int fd, void * buffer, unsigned long buffer_size)
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       size = read(fd, buffer, buffer_size);
+   }
+   else
+   {
+      size = EPERS_LOCKFS;
    }
    return size;
 }
@@ -174,6 +199,10 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
             printf("file_remove ERROR: %s \n", strerror(errno) );
       }
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
 
    return rval;
 }
@@ -188,6 +217,11 @@ int file_seek(int fd, long int offset, int whence)
    {
       rval = lseek(fd, offset, whence);
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
+
    return rval;
 }
 
@@ -201,6 +235,11 @@ int file_unmap_data(void* address, long size)
    {
       rval =  munmap(address, size);
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
+
    return rval;
 }
 
@@ -214,6 +253,11 @@ int file_write_data(int fd, const void * buffer, unsigned long buffer_size)
    {
       size = write(fd, buffer, buffer_size);
    }
+   else
+   {
+      size = EPERS_LOCKFS;
+   }
+
    return size;
 }
 

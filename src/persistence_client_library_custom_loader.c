@@ -170,7 +170,7 @@ int get_custom_libraries()
             }
             else
             {
-                return -1; // out of array bounds
+                return EPERS_OUTOFBOUNDS; // out of array bounds
             }
 
             // get the library name
@@ -190,7 +190,7 @@ int get_custom_libraries()
                   }
                   else
                   {
-                     rval = -1;
+                     rval = EPERS_OUTOFBOUNDS;
                      break;
                   }
                }
@@ -225,16 +225,19 @@ int get_custom_libraries()
          }
          else
          {
+            rval = EPERS_CONFIGMAPFAILED;
             printf("load config file error - mapping of file failed");
          }
       }
       else
       {
+         rval = EPERS_CONFIGNOTAVAILABLE;
          printf("load config file error - no file with plugins available -> filename: %s | error: %s \n", filename, strerror(errno) );
       }
    }
    else
    {
+      rval = EPERS_CONFIGNOSTAT;
       printf("load config file error - can't stat config file: %s | %s \n", filename, strerror(errno));
    }
    return rval;
@@ -260,49 +263,56 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
          }
          // custom_plugin_delete_data
          *(void **) (&customFuncts->custom_plugin_delete_data) = dlsym(handle, "plugin_delete_data");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_get_data
          *(void **) (&customFuncts->custom_plugin_get_data_handle) = dlsym(handle, "plugin_get_data_handle");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_get_data
          *(void **) (&customFuncts->custom_plugin_get_data) = dlsym(handle, "plugin_get_data");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_init
          *(void **) (&customFuncts->custom_plugin_init) = dlsym(handle, "plugin_init");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
+          }
+         // custom_plugin_deinit
+         *(void **) (&customFuncts->custom_plugin_deinit) = dlsym(handle, "plugin_deinit");
+         if ((error = dlerror()) != NULL)
+         {
+              printf("load_custom_library - error: %s\n", error);
+              return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_open
          *(void **) (&customFuncts->custom_plugin_open) = dlsym(handle, "plugin_open");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_set_data
          *(void **) (&customFuncts->custom_plugin_set_data_handle) = dlsym(handle, "plugin_set_data");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_set_data
          *(void **) (&customFuncts->custom_plugin_set_data) = dlsym(handle, "plugin_set_data");
@@ -310,19 +320,49 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
          {
               printf("load_custom_library - error: %s\n", error);
               return -1;
-          }
+         }
+         // custom_plugin_get_size_handle
+         *(void **) (&customFuncts->custom_plugin_get_size_handle) = dlsym(handle, "plugin_get_size_handle");
+         if ((error = dlerror()) != NULL)
+         {
+            printf("load_custom_library - error: %s\n", error);
+            return -1;
+         }
+         // custom_plugin_get_size
+         *(void **) (&customFuncts->custom_plugin_get_size) = dlsym(handle, "plugin_get_size");
+         if ((error = dlerror()) != NULL)
+         {
+            printf("load_custom_library - error: %s\n", error);
+            return -1;
+         }
+          // create backup
+         *(void **) (&customFuncts->custom_plugin_backup_create) = dlsym(handle, "plugin_backup_create");
+         if ((error = dlerror()) != NULL)
+         {
+            printf("load_custom_library - error: %s\n", error);
+            return -1;
+         }
+         // restore backup
+         *(void **) (&customFuncts->custom_plugin_backup_restore) = dlsym(handle, "plugin_backup_restore");
+         if ((error = dlerror()) != NULL)
+         {
+             printf("load_custom_library - error: %s\n", error);
+             return -1;
+         }
+
+
          // custom_plugin_get_status_notification_clbk
          *(void **) (&customFuncts->custom_plugin_get_status_notification_clbk) = dlsym(handle, "plugin_get_status_notification_clbk");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
-              return -1;
+              return EPERS_NOPLUGINFCNT;
           }
       }
       else
       {
          printf("load_custom_library - error: %s\n", dlerror());
-         rval = -1;
+         rval = EPERS_DLOPENERROR;
       }
    }
 
@@ -338,10 +378,10 @@ int load_all_custom_libraries()
 
    for(i=0; i<gNumOfCustomLibraries; i++)
    {
-      if( load_custom_library(i, &gPersCustomFuncs[i] ) == -1)
+      rval = load_custom_library(i, &gPersCustomFuncs[i]);
+      if( rval < 0)
       {
          // printf("load_all_custom_libraries - error loading library number [%d] \n", i);
-         rval = -1;
          break;
       }
    }

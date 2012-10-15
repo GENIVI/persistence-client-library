@@ -35,6 +35,7 @@
  */
 
 #include "persistence_client_library_lc_interface.h"
+#include "../include/persistence_client_library_error_def.h"
 #include <gvdb-reader.h>
 #include "crc32.h"
 
@@ -122,7 +123,7 @@ typedef enum _PersistenceRCT_e
 
 
 /// resource configuration table name
-extern const char* gResTableCfg;;
+extern const char* gResTableCfg;
 
 /// shared cached default database
 extern const char* gSharedCachedDefault;

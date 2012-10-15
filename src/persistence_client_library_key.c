@@ -69,13 +69,17 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
             char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
             snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
 
-            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+            printf("    open C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
 
-            if(idx < PersCustomLib_LastEntry)
+            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_open != NULL) )
             {
                int flag = 0,
                    mode = 0;
                handle = gPersCustomFuncs[idx].custom_plugin_open(dbPath, flag, mode);
+            }
+            else
+            {
+               handle = EPERS_NOPLUGINFUNCT;
             }
          }
          else
@@ -95,6 +99,14 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
             printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
          }
       }
+      else
+      {
+         handle = EPERS_BADPOL;
+      }
+   }
+   else
+   {
+      handle = EPERS_LOCKFS;
    }
 
    return handle;
@@ -114,11 +126,15 @@ int key_handle_close(int key_handle)
          char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
          snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
-         printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+         printf("    close C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
-         if(idx < PersCustomLib_LastEntry)
+         if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_close) )
          {
             gPersCustomFuncs[idx].custom_plugin_close(key_handle);
+         }
+         else
+         {
+            rval = EPERS_NOPLUGINFUNCT;
          }
       }
       else
@@ -131,6 +147,10 @@ int key_handle_close(int key_handle)
       strncpy(gHandleArray[key_handle].dbKey  ,"", dbKeyMaxLen);
       gHandleArray[key_handle].shared_DB = -1;
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
 
    return rval;
 }
@@ -139,7 +159,7 @@ int key_handle_close(int key_handle)
 
 int key_handle_get_size(int key_handle)
 {
-   int size = -1;
+   int size = 0;
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -151,12 +171,16 @@ int key_handle_get_size(int key_handle)
             char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
             snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
-            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n",
+            printf("    get size C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n",
                     gHandleArray[key_handle].dbPath , idx);
 
             if(idx < PersCustomLib_LastEntry)
             {
-               //gPersCustomFuncs[idx].
+               //gPersCustomFuncs[idx].custom_plugin_get_size()
+            }
+            else
+            {
+               size = EPERS_NOPLUGINFUNCT;
             }
          }
          else
@@ -166,6 +190,10 @@ int key_handle_get_size(int key_handle)
          }
       }
    }
+   else
+   {
+      size = EPERS_LOCKFS;
+   }
 
    return size;
 }
@@ -174,7 +202,7 @@ int key_handle_get_size(int key_handle)
 
 int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long buffer_size)
 {
-   int size = -1;
+   int size = 0;
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -186,11 +214,15 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
             char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
             snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
-            printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+            printf("    read C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
-            if(idx < PersCustomLib_LastEntry)
+            if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_get_data_handle) != NULL)
             {
                gPersCustomFuncs[idx].custom_plugin_get_data_handle(key_handle, (char*)buffer, buffer_size-1);
+            }
+            else
+            {
+               size = EPERS_NOPLUGINFUNCT;
             }
          }
          else
@@ -199,6 +231,10 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
                                         gHandleArray[key_handle].shared_DB, buffer, buffer_size);
          }
       }
+   }
+   else
+   {
+      size = EPERS_LOCKFS;
    }
 
    return size;
@@ -217,7 +253,7 @@ int key_handle_register_notify_on_change(int key_handle)
 
 int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long buffer_size)
 {
-   int size = -1;
+   int size = 0;
 
    if(accessNoLock == isAccessLocked() )     // check if access to persistent data is locked
    {
@@ -231,11 +267,15 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
                char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
                snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
-               printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
+               printf("    write C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
-               if(idx < PersCustomLib_LastEntry)
+               if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_set_data_handle != NULL)
                {
                   gPersCustomFuncs[idx].custom_plugin_set_data_handle(key_handle, (char*)buffer, buffer_size-1);
+               }
+               else
+               {
+                  size = EPERS_NOPLUGINFUNCT;
                }
             }
             else
@@ -244,11 +284,19 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
                                            gHandleArray[key_handle].shared_DB, buffer, buffer_size);
             }
          }
+         else
+         {
+            size = EPERS_MAXHANDLE;
+         }
       }
       else
       {
          printf("key_handle_write_data: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
       }
+   }
+   else
+   {
+      size = EPERS_LOCKFS;
    }
 
    return size;
@@ -269,6 +317,11 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
    {
       // TODO implement key delete
    }
+   else
+   {
+      rval = EPERS_LOCKFS;
+   }
+
    return rval;
 }
 
@@ -277,7 +330,7 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 // status: OK
 int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
-   int data_size = -1;
+   int data_size = 0;
 
    if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -299,8 +352,12 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
       }
       else
       {
-        printf("key_read_data: error - storage policy does not exist \n");
+        data_size = EPERS_BADPOL;
       }
+   }
+   else
+   {
+      data_size = EPERS_LOCKFS;
    }
 
    return data_size;
@@ -312,7 +369,7 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
 int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
                   unsigned char* buffer, unsigned long buffer_size)
 {
-   int data_size = -1;
+   int data_size = 0;
 
    if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -335,13 +392,14 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
       }
       else
       {
-         printf("key_read_data: error - storage policy does not exist \n");
+         data_size = EPERS_BADPOL;
       }
    }
    else
    {
-      printf("key_read_data - accessLocked\n");
+      data_size = EPERS_LOCKFS;
    }
+
    return data_size;
 }
 
@@ -350,7 +408,7 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
 int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
                    unsigned char* buffer, unsigned long buffer_size)
 {
-   int data_size = -1;
+   int data_size = 0;
 
    if(accessNoLock != isAccessLocked() )     // check if access to persistent data is locked
    {
@@ -380,13 +438,18 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
          }
          else
          {
-            printf("key_write_data: error - storage policy does not exist \n");
+            data_size = EPERS_BADPOL;
          }
       }
       else
       {
+         data_size = EPERS_BUFLIMIT;
          printf("key_write_data: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
       }
+   }
+   else
+   {
+      data_size = EPERS_LOCKFS;
    }
 
    return data_size;

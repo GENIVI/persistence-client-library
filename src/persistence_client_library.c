@@ -115,6 +115,8 @@ void pers_library_destroy(void) __attribute__((destructor));
 
 void pers_library_init(void)
 {
+   int status = 0;
+   int i = 0;
    DLT_REGISTER_APP("Persistence Client Library","persClientLib");
    DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
 
@@ -148,12 +150,34 @@ void pers_library_init(void)
    memset(gOpenFdArray, maxPersHandle, sizeof(int));
 
    /// get custom library names to load
-   get_custom_libraries();
+   status = get_custom_libraries();
+   if(status < 0)
+   {
+      printf("Failed to load custom library config table => error number %d\n", status );
+   }
+
+   // initialize custom library structure
+   for(i = 0; i<PersCustomLib_LastEntry; i++)
+   {
+      gPersCustomFuncs[i].handle  = NULL;
+      gPersCustomFuncs[i].custom_plugin_init = NULL;
+      gPersCustomFuncs[i].custom_plugin_deinit = NULL;
+      gPersCustomFuncs[i].custom_plugin_open = NULL;
+      gPersCustomFuncs[i].custom_plugin_close = NULL;
+      gPersCustomFuncs[i].custom_plugin_get_data_handle = NULL;
+      gPersCustomFuncs[i].custom_plugin_set_data_handle  = NULL;
+      gPersCustomFuncs[i].custom_plugin_get_data = NULL;
+      gPersCustomFuncs[i].custom_plugin_set_data = NULL;
+      gPersCustomFuncs[i].custom_plugin_delete_data = NULL;
+      gPersCustomFuncs[i].custom_plugin_get_status_notification_clbk = NULL;
+      gPersCustomFuncs[i].custom_plugin_get_size_handle = NULL;
+      gPersCustomFuncs[i].custom_plugin_get_size = NULL;
+      gPersCustomFuncs[i].custom_plugin_backup_create = NULL;
+      gPersCustomFuncs[i].custom_plugin_backup_restore = NULL;
+   }
 
    if(pOnDemandLoad == NULL)  // load all available libraries now
    {
-      int i = 0;
-
       for(i=0; i < get_num_custom_client_libs(); i++ )
       {
          if(load_custom_library(get_custom_client_position_in_array(i), &gPersCustomFuncs[i] ) == -1)

@@ -37,8 +37,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dconf-dbus-1.h>
-
 
 
 int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, unsigned long buffer_size)
@@ -65,11 +63,13 @@ int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, 
       }
       else
       {
+         read_size = EPERS_NOKEYDATA;
          printf("get_value_from_table:  E R R O R getting size and/or data for key: %s \n", key);
       }
    }
    else
    {
+      read_size = EPERS_NOKEY;
       printf("get_value_from_table:  E R R O R  getting value for key: %s \n", key);
    }
 
@@ -89,6 +89,7 @@ int get_size_from_table(GvdbTable* database, char* key)
    }
    else
    {
+      read_size = EPERS_NOKEY;
       printf("get_size_from_table:  E R R O R getting value for key: %s \n", key);
    }
 
@@ -123,6 +124,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       }
       else
       {
+         read_size = EPERS_NOPRCTABLE;
          printf("persistence_get_data - Database  E R R O R: %s\n", error->message);
          g_error_free(error);
          error = NULL;
@@ -134,11 +136,15 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
       snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
 
-      printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+      printf("    get C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
 
-      if(idx < PersCustomLib_LastEntry)
+      if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_data_handle != NULL) )
       {
          gPersCustomFuncs[idx].custom_plugin_get_data_handle(88, (char*)buffer, buffer_size-1);
+      }
+      else
+      {
+         read_size = EPERS_NOPLUGINFUNCT;
       }
    }
 
@@ -180,11 +186,13 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
             printf("persistence_set_data => error: %s \n", error->message );
             g_error_free(error);
             error = NULL;
+            write_size = EPERS_SETDTAFAILED;
          }
       }
       else
       {
          printf("persistence_set_data - Database  E R R O R: %s\n", error->message);
+         write_size = EPERS_NOPRCTABLE;
          g_error_free(error);
          error = NULL;
       }
@@ -192,10 +200,14 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      printf("    C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
-      if(idx < PersCustomLib_LastEntry)
+      printf("    set C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_set_data_handle) )
       {
          gPersCustomFuncs[idx].custom_plugin_set_data_handle(88, (char*)buffer, buffer_size);
+      }
+      else
+      {
+         write_size = EPERS_NOPLUGINFUNCT;
       }
    }
 
@@ -224,6 +236,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
       }
       else
       {
+         read_size = EPERS_NOPRCTABLE;
          printf("persistence_get_data_size - Database  E R R O R: %s\n", error->message);
          g_error_free(error);
          error = NULL;
@@ -231,7 +244,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
    }
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
-      printf("    C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
+      printf("    get C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
    }
 
    return read_size;
