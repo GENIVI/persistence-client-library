@@ -54,11 +54,22 @@ extern PersistenceHandle_s gHandleArray[maxPersHandle];
 extern int gOpenFdArray[maxPersHandle];
 
 
-/// get persistence handle
+/**
+ * @brief get persistence handle
+ *
+ * @return a new handle or -1 if an error occured
+ */
 int get_persistence_handle_idx();
 
-/// close persistence handle
+
+/**
+ * @brief close persistence handle
+ *
+ * @param the handle to close
+ */
 void set_persistence_handle_close_idx(int handle);
+
+
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */

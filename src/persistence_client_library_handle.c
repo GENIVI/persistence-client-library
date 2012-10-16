@@ -34,15 +34,23 @@
 
 #include "persistence_client_library_handle.h"
 
+#include <stdlib.h>
+
 /// handle index
 static int gHandleIdx = 0;
-static int gHandleFreeIdx = -1;
 
+static int gInitialized = 0;
 /// persistence handle array
 PersistenceHandle_s gHandleArray[maxPersHandle];
 
 /// open file descriptor handle array
 int gOpenFdArray[maxPersHandle];
+/// free handle array
+int gFreeHandleArray[maxPersHandle];
+
+int gFreeHandleIdxHead = -1;
+
+pthread_mutex_t gMtx;
 
 
 /// get persistence handle
@@ -50,22 +58,31 @@ int get_persistence_handle_idx()
 {
    int handle = 0;
 
-   if(gHandleFreeIdx != -1)   // check if we have a free spot in the array before the current max
+   if(gInitialized == 0)
    {
-      handle = gHandleIdx = gHandleFreeIdx;
-      gHandleFreeIdx = -1;
+      gInitialized = 1;
+      pthread_mutex_init(&gMtx, 0);
    }
-   else
+
+   if(pthread_mutex_lock(&gMtx) == 0)
    {
-      if((gHandleIdx + 1) < maxPersHandle)
+      if(gFreeHandleIdxHead != -1)   // check if we have a free spot in the array before the current max
       {
-         handle = ++gHandleIdx;  // no free sport before current max, increment handle index
+         handle = gFreeHandleArray[gFreeHandleIdxHead--];
       }
       else
       {
-         handle = -1;
-         printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", maxPersHandle);
+         if(gHandleIdx < maxPersHandle-1)
+         {
+            handle = gHandleIdx + 1;  // no free spot before current max, increment handle index
+         }
+         else
+         {
+            handle = -1;
+            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", maxPersHandle);
+         }
       }
+      pthread_mutex_unlock(&gMtx);
    }
 
    return handle;
@@ -75,5 +92,13 @@ int get_persistence_handle_idx()
 /// close persistence handle
 void set_persistence_handle_close_idx(int handle)
 {
-   gHandleFreeIdx = handle;
+   if(pthread_mutex_lock(&gMtx) == 0)
+   {
+      if(gFreeHandleIdxHead < maxPersHandle)
+      {
+         gFreeHandleArray[gFreeHandleIdxHead++] = handle;
+      }
+      pthread_mutex_unlock(&gMtx);
+   }
 }
+
