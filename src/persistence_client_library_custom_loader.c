@@ -259,7 +259,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
          dlerror();    // reset error
 
          // plugin_close
-         *(void **) (&customFuncts->custom_plugin_close) = dlsym(handle, "plugin_close");
+         *(void **) (&customFuncts->custom_plugin_handle_close) = dlsym(handle, "plugin_handle_close");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
@@ -273,7 +273,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
               return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_get_data
-         *(void **) (&customFuncts->custom_plugin_get_data_handle) = dlsym(handle, "plugin_get_data_handle");
+         *(void **) (&customFuncts->custom_plugin_handle_get_data) = dlsym(handle, "plugin_handle_get_data");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
@@ -301,14 +301,14 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
               return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_open
-         *(void **) (&customFuncts->custom_plugin_open) = dlsym(handle, "plugin_open");
+         *(void **) (&customFuncts->custom_plugin_handle_open) = dlsym(handle, "plugin_handle_open");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
               return EPERS_NOPLUGINFCNT;
           }
          // custom_plugin_set_data
-         *(void **) (&customFuncts->custom_plugin_set_data_handle) = dlsym(handle, "plugin_set_data");
+         *(void **) (&customFuncts->custom_plugin_handle_set_data) = dlsym(handle, "plugin_handle_set_data");
          if ((error = dlerror()) != NULL)
          {
               printf("load_custom_library - error: %s\n", error);
@@ -322,7 +322,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
               return -1;
          }
          // custom_plugin_get_size_handle
-         *(void **) (&customFuncts->custom_plugin_get_size_handle) = dlsym(handle, "plugin_get_size_handle");
+         *(void **) (&customFuncts->custom_plugin_handle_get_size) = dlsym(handle, "plugin_get_size_handle");
          if ((error = dlerror()) != NULL)
          {
             printf("load_custom_library - error: %s\n", error);
@@ -336,14 +336,21 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
             return -1;
          }
           // create backup
-         *(void **) (&customFuncts->custom_plugin_backup_create) = dlsym(handle, "plugin_backup_create");
+         *(void **) (&customFuncts->custom_plugin_create_backup) = dlsym(handle, "plugin_create_backup");
          if ((error = dlerror()) != NULL)
          {
             printf("load_custom_library - error: %s\n", error);
             return -1;
          }
          // restore backup
-         *(void **) (&customFuncts->custom_plugin_backup_restore) = dlsym(handle, "plugin_backup_restore");
+         *(void **) (&customFuncts->custom_plugin_restore_backup) = dlsym(handle, "plugin_restore_backup");
+         if ((error = dlerror()) != NULL)
+         {
+             printf("load_custom_library - error: %s\n", error);
+             return -1;
+         }
+         // restore backup
+         *(void **) (&customFuncts->custom_plugin_get_backup) = dlsym(handle, "plugin_get_backup");
          if ((error = dlerror()) != NULL)
          {
              printf("load_custom_library - error: %s\n", error);

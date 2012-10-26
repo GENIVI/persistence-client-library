@@ -67,6 +67,7 @@ const char* gSharedWtDefault     = "wt-default.dconf";
 const char* gSharedWt            = "/wt.dconf";
 
 /// local cached default database
+#ifdef USE_GVDB
 const char* gLocalCachedDefault  = "cached-default.gvdb";
 /// local cached default database
 const char* gLocalCached         = "/cached.gvdb";
@@ -74,6 +75,15 @@ const char* gLocalCached         = "/cached.gvdb";
 const char* gLocalWtDefault      = "wt-default.gvdb";
 /// local write through default database
 const char* gLocalWt             = "/wt.gvdb";
+#else
+const char* gLocalCachedDefault  = "cached-default.itz";
+/// local cached default database
+const char* gLocalCached         = "/cached.itz";
+/// local write through default database
+const char* gLocalWtDefault      = "wt-default.itz";
+/// local write through default database
+const char* gLocalWt             = "/wt.itz";
+#endif
 
 
 /// directory structure node name defintion
@@ -162,18 +172,19 @@ void pers_library_init(void)
       gPersCustomFuncs[i].handle  = NULL;
       gPersCustomFuncs[i].custom_plugin_init = NULL;
       gPersCustomFuncs[i].custom_plugin_deinit = NULL;
-      gPersCustomFuncs[i].custom_plugin_open = NULL;
-      gPersCustomFuncs[i].custom_plugin_close = NULL;
-      gPersCustomFuncs[i].custom_plugin_get_data_handle = NULL;
-      gPersCustomFuncs[i].custom_plugin_set_data_handle  = NULL;
+      gPersCustomFuncs[i].custom_plugin_handle_open = NULL;
+      gPersCustomFuncs[i].custom_plugin_handle_close = NULL;
+      gPersCustomFuncs[i].custom_plugin_handle_get_data = NULL;
+      gPersCustomFuncs[i].custom_plugin_handle_set_data  = NULL;
       gPersCustomFuncs[i].custom_plugin_get_data = NULL;
       gPersCustomFuncs[i].custom_plugin_set_data = NULL;
       gPersCustomFuncs[i].custom_plugin_delete_data = NULL;
       gPersCustomFuncs[i].custom_plugin_get_status_notification_clbk = NULL;
-      gPersCustomFuncs[i].custom_plugin_get_size_handle = NULL;
+      gPersCustomFuncs[i].custom_plugin_handle_get_size = NULL;
       gPersCustomFuncs[i].custom_plugin_get_size = NULL;
-      gPersCustomFuncs[i].custom_plugin_backup_create = NULL;
-      gPersCustomFuncs[i].custom_plugin_backup_restore = NULL;
+      gPersCustomFuncs[i].custom_plugin_create_backup = NULL;
+      gPersCustomFuncs[i].custom_plugin_get_backup = NULL;
+      gPersCustomFuncs[i].custom_plugin_restore_backup = NULL;
    }
 
    if(pOnDemandLoad == NULL)  // load all available libraries now

@@ -56,6 +56,9 @@ enum _PersistenceConstantDef
    NsmErrorStatus_OK       = 1,
    NsmErrorStatus_Fail     = -1,
 
+   KeySize                 = 64,
+   ValueSize               = 16384,
+
    PasMsg_Block            = 1,     /// persistence administration service block access
    PasMsg_WriteBack        = 2,     /// persistence administration service write_back
    PasMsg_Unblock          = 4,     /// persistence administration service unblock access

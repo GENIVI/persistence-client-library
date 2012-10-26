@@ -104,7 +104,8 @@ int persistence_reg_notify_on_change(char* dbPath, char* key);
  * @return size of data in bytes read from the key or a negative value on error with the following error codes:
  *  EPERS_NOKEYDATA   EPERS_NOKEY
  */
-int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
+//int get_value_from_table(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size);
+//int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
 
 
 
@@ -118,7 +119,8 @@ int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, 
  *
  * @return size of data in bytes written to the key
  */
-int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
+//int set_value_to_table(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size);
+//int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
 
 
 
@@ -131,7 +133,8 @@ int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, u
  * @return size of data or a negative value on error with the following errors codes:
  * EPERS_NOKEY
  */
-int get_size_from_table(GvdbTable* database, char* key);
+//int get_size_from_table(const char* dbPath, char* key);
+//int get_size_from_table(GvdbTable* database, char* key);
 
 
 

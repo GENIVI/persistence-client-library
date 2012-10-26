@@ -110,7 +110,7 @@ int msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
    DBusError error;
    dbus_error_init (&error);
 
-   if (!dbus_message_get_args (message, &error, DBUS_TYPE_UINT16 , &request, DBUS_TYPE_INVALID))
+   if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &request, DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
 

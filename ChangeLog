@@ -1,12 +1,19 @@
-Revison 0.1.5 (rev 1665)
+Revision 0.2.0 (rev 1709)
+- Fixed a problem with handle generation
+- Updated custom plugin library interface
+- Switched to itzam database (gvdb currently commented out)
+- Adjusted dbus message parameter
+- Extended tests (added tests for "key_write_data")
+- Added itzam database files to Data.tar.gz files
+
+
+Revision 0.1.5 (rev 1665)
 - Fixed problem where no custom lib is available; extended custom lib interface; introduced error codes; removed modules form Makefile.am
 - Adjusted license in test files to MIT
 - Removed requesting dbus name from dbus main loop
 
 
-
 Revison 0.1.4 (rev 1591)
-
 - Update after code review; Extended custom library interface with function without handle
 - Removed c++test warnings
 - Moved test data to subfolder test

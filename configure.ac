@@ -51,6 +51,7 @@ PKG_CHECK_MODULES(DEPS,
                   dbus-1
                   dconf
                   dconf-dbus-1
+                  libitzam
                   glib-2.0)
 
 AC_SUBST(DEPS_CFLAGS)

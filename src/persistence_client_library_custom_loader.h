@@ -77,37 +77,40 @@ typedef struct _Pers_custom_functs_s
    int (*custom_plugin_deinit)();
 
    /// custom open function
-   long (*custom_plugin_open)(char* path, int flag, int mode);
+   long (*custom_plugin_handle_open)(char* path, int flag, int mode);
 
    /// custom close function
-   int (*custom_plugin_close)(int handle);
+   int (*custom_plugin_handle_close)(int handle);
 
    /// custom get data function
-   long (*custom_plugin_get_data_handle)(long handle, char* buffer, long size);
+   long (*custom_plugin_handle_get_data)(long handle, char* buffer, long size);
 
    /// custom set data function
-   long (*custom_plugin_set_data_handle)(long handle, char* buffer, long size);
+   long (*custom_plugin_handle_set_data)(long handle, char* buffer, long size);
 
    /// custom get data function
-   long (*custom_plugin_get_data)(char* buffer, long size);
+   long (*custom_plugin_get_data)(const char* path, char* buffer, long size);
 
    /// custom set data function
-   long (*custom_plugin_set_data)(char* buffer, long size);
+   long (*custom_plugin_set_data)(const char* path, char* buffer, long size);
 
    /// custom delete function
    int (*custom_plugin_delete_data)(const char* path);
 
    // get the size
-   int (*custom_plugin_get_size_handle)(int key_handle);
+   int (*custom_plugin_handle_get_size)(int key_handle);
 
    // get the size
    int (*custom_plugin_get_size)(const char* path);
 
    /// create backup
-   int (*custom_plugin_backup_create)(const char* src, const char* dst);
+   long (*custom_plugin_create_backup)(const char* backup_id);
 
    /// restore backup
-   int (*custom_plugin_backup_restore)(const char* srt, const char* dst);
+   long (*custom_plugin_restore_backup)(const char* backup_id);
+
+   /// get backup
+   long (*custom_plugin_get_backup)(const char* backup_id, long size);
 
    /// custom status notification function
    int (*custom_plugin_get_status_notification_clbk)(plugin_callback_t pFunct);

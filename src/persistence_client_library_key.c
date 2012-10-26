@@ -71,11 +71,11 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
 
             printf("    open C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
 
-            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_open != NULL) )
+            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
             {
                int flag = 0,
                    mode = 0;
-               handle = gPersCustomFuncs[idx].custom_plugin_open(dbPath, flag, mode);
+               handle = gPersCustomFuncs[idx].custom_plugin_handle_open(dbPath, flag, mode);
             }
             else
             {
@@ -128,9 +128,9 @@ int key_handle_close(int key_handle)
 
          printf("    close C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
-         if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_close) )
+         if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_close) )
          {
-            gPersCustomFuncs[idx].custom_plugin_close(key_handle);
+            gPersCustomFuncs[idx].custom_plugin_handle_close(key_handle);
          }
          else
          {
@@ -216,9 +216,9 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
 
             printf("    read C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
-            if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_get_data_handle) != NULL)
+            if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_handle_get_data) != NULL)
             {
-               gPersCustomFuncs[idx].custom_plugin_get_data_handle(key_handle, (char*)buffer, buffer_size-1);
+               gPersCustomFuncs[idx].custom_plugin_handle_get_data(key_handle, (char*)buffer, buffer_size-1);
             }
             else
             {
@@ -269,9 +269,9 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
 
                printf("    write C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
-               if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_set_data_handle != NULL)
+               if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL)
                {
-                  gPersCustomFuncs[idx].custom_plugin_set_data_handle(key_handle, (char*)buffer, buffer_size-1);
+                  gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
                }
                else
                {
