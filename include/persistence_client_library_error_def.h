@@ -83,7 +83,8 @@
 #define EPERS_DLOPENERROR        -23
 /// plugin function not loaded
 #define EPERS_NOPLUGINFUNCT      -24
-
+/// file remove error
+#define EPERS_FILEREMOVE         -25
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ERROR_DEF_H */

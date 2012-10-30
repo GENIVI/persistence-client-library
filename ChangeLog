@@ -1,3 +1,9 @@
+Revision 0.2.1 (rev 1748)
+- Extended tests
+- Fixed some minor bugs
+- Removed dconf
+
+
 Revision 0.2.0 (rev 1709)
 - Fixed a problem with handle generation
 - Updated custom plugin library interface

@@ -48,66 +48,57 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
 {
    int handle = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   int storePolicy = 0;
+
+   char dbKey[dbKeyMaxLen];      // database key
+   char dbPath[dbPathMaxLen];    // database location
+
+   memset(dbKey, 0, dbKeyMaxLen);
+   memset(dbPath, 0, dbPathMaxLen);
+
+   // get database context: database path and database key
+   storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+
+   if(storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
    {
-      int storePolicy = 0;
-
-      char dbKey[dbKeyMaxLen];      // database key
-      char dbPath[dbPathMaxLen];    // database location
-
-      memset(dbKey, 0, dbKeyMaxLen);
-      memset(dbPath, 0, dbPathMaxLen);
-
-      // get database context: database path and database key
-      storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
-
-      if(storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
+      if(PersistenceStorage_custom ==  storePolicy)
       {
-         if(PersistenceStorage_custom ==  storePolicy)
+         int idx =  custom_client_name_to_id(dbPath, 1);
+         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+         snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
+
+         if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
          {
-            int idx =  custom_client_name_to_id(dbPath, 1);
-            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-            snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
-
-            printf("    open C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
-
-            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
-            {
-               int flag = 0,
-                   mode = 0;
-               handle = gPersCustomFuncs[idx].custom_plugin_handle_open(dbPath, flag, mode);
-            }
-            else
-            {
-               handle = EPERS_NOPLUGINFUNCT;
-            }
+            int flag = 0, mode = 0;
+            handle = gPersCustomFuncs[idx].custom_plugin_handle_open(dbPath, flag, mode);
          }
          else
          {
-            handle = get_persistence_handle_idx();
-         }
-
-         if(handle < maxPersHandle)
-         {
-            // remember data in handle array
-            strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
-            strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
-            gHandleArray[handle].shared_DB = storePolicy;
-         }
-         else
-         {
-            printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
+            handle = EPERS_NOPLUGINFUNCT;
          }
       }
       else
       {
-         handle = EPERS_BADPOL;
+         handle = get_persistence_handle_idx();
+      }
+
+      if(handle < maxPersHandle && handle != -1)
+      {
+         // remember data in handle array
+         strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
+         strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
+         gHandleArray[handle].shared_DB = storePolicy;
+      }
+      else
+      {
+         printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
       }
    }
    else
    {
-      handle = EPERS_LOCKFS;
+      handle = EPERS_BADPOL;
    }
+
 
    return handle;
 }
@@ -118,15 +109,13 @@ int key_handle_close(int key_handle)
 {
    int rval = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(key_handle < maxPersHandle)
    {
       if(PersistenceStorage_custom == gHandleArray[key_handle].shared_DB )
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
          char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
          snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
-
-         printf("    close C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
          if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_close) )
          {
@@ -149,7 +138,7 @@ int key_handle_close(int key_handle)
    }
    else
    {
-      rval = EPERS_LOCKFS;
+      rval = -1;
    }
 
    return rval;
@@ -161,38 +150,28 @@ int key_handle_get_size(int key_handle)
 {
    int size = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(key_handle < maxPersHandle)
    {
-      if(key_handle < maxPersHandle)
+      if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
       {
-         if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+         int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+         snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
+
+         if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_get_size) != NULL)
          {
-            int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
-            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-            snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
-
-            printf("    get size C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n",
-                    gHandleArray[key_handle].dbPath , idx);
-
-            if(idx < PersCustomLib_LastEntry)
-            {
-               //gPersCustomFuncs[idx].custom_plugin_get_size()
-            }
-            else
-            {
-               size = EPERS_NOPLUGINFUNCT;
-            }
+            gPersCustomFuncs[idx].custom_plugin_get_size(gHandleArray[key_handle].dbPath);
          }
          else
          {
-            size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                             gHandleArray[key_handle].shared_DB);
+            size = EPERS_NOPLUGINFUNCT;
          }
       }
-   }
-   else
-   {
-      size = EPERS_LOCKFS;
+      else
+      {
+         size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                          gHandleArray[key_handle].shared_DB);
+      }
    }
 
    return size;
@@ -203,38 +182,28 @@ int key_handle_get_size(int key_handle)
 int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long buffer_size)
 {
    int size = 0;
-
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(key_handle < maxPersHandle)
    {
-      if(key_handle < maxPersHandle)
+      if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
       {
-         if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+         int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+         snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
+
+         if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_handle_get_data) != NULL)
          {
-            int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
-            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-            snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
-
-            printf("    read C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
-
-            if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_handle_get_data) != NULL)
-            {
-               gPersCustomFuncs[idx].custom_plugin_handle_get_data(key_handle, (char*)buffer, buffer_size-1);
-            }
-            else
-            {
-               size = EPERS_NOPLUGINFUNCT;
-            }
+            gPersCustomFuncs[idx].custom_plugin_handle_get_data(key_handle, (char*)buffer, buffer_size-1);
          }
          else
          {
-            size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                        gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+            size = EPERS_NOPLUGINFUNCT;
          }
       }
-   }
-   else
-   {
-      size = EPERS_LOCKFS;
+      else
+      {
+         size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+                                     gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+      }
    }
 
    return size;
@@ -255,7 +224,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
 {
    int size = 0;
 
-   if(accessNoLock == isAccessLocked() )     // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() )     // check if access to persistent data is locked
    {
       if(buffer_size <= gMaxKeyValDataSize)  // check data size
       {
@@ -266,8 +235,6 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
                int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
                char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
                snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
-
-               printf("    write C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", gHandleArray[key_handle].dbPath , idx);
 
                if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL)
                {
@@ -313,9 +280,28 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 {
    int rval = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
-      // TODO implement key delete
+      int storePolicy = 0;
+
+     char dbKey[dbKeyMaxLen];      // database key
+     char dbPath[dbPathMaxLen];    // database location
+
+     memset(dbKey, 0, dbKeyMaxLen);
+     memset(dbPath, 0, dbPathMaxLen);
+
+     // get database context: database path and database key
+     storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+
+     if(   storePolicy < PersistenceStoragePolicy_LastEntry
+        && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
+     {
+        rval = persistence_delete_data(dbPath, dbKey, storePolicy);
+     }
+     else
+     {
+       rval = EPERS_BADPOL;
+     }
    }
    else
    {
@@ -331,33 +317,25 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
    int data_size = 0;
+   int storePolicy = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   char dbKey[dbKeyMaxLen];      // database key
+   char dbPath[dbPathMaxLen];    // database location
+
+   memset(dbKey, 0, dbKeyMaxLen);
+   memset(dbPath, 0, dbPathMaxLen);
+
+   // get database context: database path and database key
+   storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+
+   if(   storePolicy < PersistenceStoragePolicy_LastEntry
+      && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
    {
-      int storePolicy = 0;
-
-      char dbKey[dbKeyMaxLen];      // database key
-      char dbPath[dbPathMaxLen];    // database location
-
-      memset(dbKey, 0, dbKeyMaxLen);
-      memset(dbPath, 0, dbPathMaxLen);
-
-      // get database context: database path and database key
-      storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
-
-      if(   storePolicy < PersistenceStoragePolicy_LastEntry
-         && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
-      {
-         data_size = persistence_get_data_size(dbPath, dbKey, storePolicy);
-      }
-      else
-      {
-        data_size = EPERS_BADPOL;
-      }
+      data_size = persistence_get_data_size(dbPath, dbKey, storePolicy);
    }
    else
    {
-      data_size = EPERS_LOCKFS;
+     data_size = EPERS_BADPOL;
    }
 
    return data_size;

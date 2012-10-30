@@ -33,12 +33,12 @@
 
 #include "persistence_client_library_data_access.h"
 #include "persistence_client_library_custom_loader.h"
+#include "persistence_client_library_itzam_errors.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <itzam.h>
-#include "persistence_client_library_itzam_errors.h"
 
 
 typedef struct _KeyValuePair_s
@@ -108,12 +108,14 @@ int set_value_to_table_itzam(const char* dbPath, char* key, unsigned char* buffe
          dataSize = (int)strlen( (const char*)buffer);
          if(dataSize < ValueSize)
          {
+            memset(insert.m_key, 0, KeySize);
             memcpy(insert.m_key, key, keySize);
             if(itzam_true == itzam_btree_find(&btree, key, &insert))
             {
                // key already available, so delete "old" key
                state = itzam_btree_remove(&btree, (const void *)&insert);
             }
+            memset(insert.m_data, 0, ValueSize);
             memcpy(insert.m_data, buffer, dataSize);
             state = itzam_btree_insert(&btree,(const void *)&insert);
             if (state != ITZAM_OKAY)
@@ -276,39 +278,92 @@ int get_size_from_table_gvdb(const char* dbPath, char* key)
 #else
 int get_size_from_table_itzam(const char* dbPath, char* key)
 {
-   int read_size = 0;
-     itzam_btree  btree;
-     itzam_state  state;
-     KeyValuePair_s search;
+   int read_size = 0,
+         keySize = 0;
+   itzam_btree  btree;
+   itzam_state  state;
+   KeyValuePair_s search;
 
-     //printf("get_value_from_table_itzam => Path: %s key: \"%s\" \n", dbPath, key);
+   //printf("* * * %s ==> dbPath: %s | key: %s \n", __FUNCTION__, dbPath, key);
+   state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
+   if(state == ITZAM_OKAY)
+   {
+      keySize = (int)strlen((const char*)key);
+      if(keySize < KeySize)
+      {
+         memset(search.m_key,0, KeySize);
+         memcpy(search.m_key, key, keySize);
+         if(itzam_true == itzam_btree_find(&btree, key, &search))
+         {
+            read_size = strlen(search.m_data);
+         }
+         else
+         {
+            read_size = EPERS_NOKEY;
+         }
+      }
 
-     state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
-     if(state == ITZAM_OKAY)
-     {
-        if(itzam_true == itzam_btree_find(&btree, key, &search))
-        {
-           read_size = strlen(search.m_data);
-        }
-        else
-        {
-           read_size = EPERS_NOKEY;
-        }
-
-        state = itzam_btree_close(&btree);
-        if (state != ITZAM_OKAY)
-        {
-           fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
-        }
-     }
-     else
-     {
-        read_size = EPERS_NOPRCTABLE;
-        fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
-     }
-     return read_size;
+      state = itzam_btree_close(&btree);
+      if (state != ITZAM_OKAY)
+      {
+         fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
+      }
+   }
+   else
+   {
+      read_size = EPERS_NOPRCTABLE;
+      fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+   }
+   return read_size;
 }
 #endif
+
+
+int delete_key_from_table_itzam(char* dbPath, char* key)
+{
+   int rval = 0;
+   itzam_btree  btree;
+   itzam_state  state;
+   KeyValuePair_s delete;
+
+   //printf("delete_key_from_table_itzam => Path: \"%s\" | key: \"%s\" \n", dbPath, key);
+
+   state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
+   if(state == ITZAM_OKAY)
+   {
+      int keySize = 0;
+      keySize = (int)strlen((const char*)key);
+      if(keySize < KeySize)
+      {
+         memset(delete.m_key,0, KeySize);
+         memcpy(delete.m_key, key, keySize);
+         state = itzam_btree_remove(&btree, (const void *)&delete);
+         if (state != ITZAM_OKAY)
+         {
+            fprintf(stderr, "\nRemove Itzam problem: %s\n", STATE_MESSAGES[state]);
+         }
+
+         state = itzam_btree_close(&btree);
+         if (state != ITZAM_OKAY)
+         {
+            fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
+         }
+      }
+      else
+      {
+         fprintf(stderr, "\nset_value_to_table_itzam => key to long » size: %d | maxSize: %d\n", keySize, KeySize);
+      }
+   }
+   else
+   {
+      rval = EPERS_NOPRCTABLE;
+      fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+   }
+
+
+   return rval;
+}
+
 
 
 int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size)
@@ -365,7 +420,6 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       printf("    S H A R E D   D A T A  => NOW IMPLEMENTING implemented yet\n");
       //DConfDBusClient *dcdbc = dconf_dbus_client_new("/com/canonical/indicator/power/", NULL, NULL);
       //ok =  dconf_dbus_client_write(dcdbc, key, value);
-
    }
    else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
    {
@@ -420,7 +474,24 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 
 
 
+int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage)
+{
+   int ret = 0;
+   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
+     {
+        printf("S H A R E D  D A T A  => not implemented yet\n");
+     }
+     else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
+     {
+        ret = delete_key_from_table_itzam(dbPath, dbKey);
+     }
+     else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+     {
+        printf("    get C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
+     }
 
+   return ret;
+}
 
 
 int persistence_reg_notify_on_change(char* dbPath, char* key)
@@ -429,6 +500,36 @@ int persistence_reg_notify_on_change(char* dbPath, char* key)
 
    return rval;
 }
+
+
+//-----------------------------------------------------------------------------
+// code to print database content (for debugging)
+//-----------------------------------------------------------------------------
+// walk the database
+/*
+KeyValuePair_s  rec;
+itzam_btree_cursor cursor;
+state = itzam_btree_cursor_create(&cursor, &btree);
+if(state == ITZAM_OKAY)
+{
+  printf("==> Database content ==> db size: %d\n", (int)itzam_btree_count(&btree));
+  do
+  {
+     // get the key pointed to by the cursor
+     state = itzam_btree_cursor_read(&cursor,(void *)&rec);
+     if (state == ITZAM_OKAY)
+     {
+       printf("   Key: %s \n     ==> data: %s\n", rec.m_key, rec.m_data);
+     }
+     else
+        fprintf(stderr, "\nItzam problem: %s\n", STATE_MESSAGES[state]);
+  }
+  while (itzam_btree_cursor_next(&cursor));
+
+  state = itzam_btree_cursor_free(&cursor);
+}
+*/
+//-----------------------------------------------------------------------------
 
 
 

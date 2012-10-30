@@ -357,7 +357,6 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
              return -1;
          }
 
-
          // custom_plugin_get_status_notification_clbk
          *(void **) (&customFuncts->custom_plugin_get_status_notification_clbk) = dlsym(handle, "plugin_get_status_notification_clbk");
          if ((error = dlerror()) != NULL)

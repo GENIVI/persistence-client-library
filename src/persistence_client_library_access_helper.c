@@ -103,7 +103,7 @@ GvdbTable* get_resource_cfg_table(PersistenceRCT_e rct, int group)
       }
 
       gResource_table[rct] = gvdb_table_new(filename, TRUE, &error);
-      printf("get_resource_cfg_table - group %d | db filename: %s \n", group, filename);
+      //printf("get_resource_cfg_table - group %d | db filename: %s \n", group, filename);
 
       if(gResource_table[rct] == NULL)
       {

@@ -66,8 +66,7 @@ int file_close(int fd);
  *
  * @param fd the POSIX file descriptor
  *
- * @return positive value. On error a negative value will be returned with th follwoing error codes:
- *                         EPERS_LOCKFS
+ * @return positive value. On error the negative value -1 will be returned
  */
 int file_get_size(int fd);
 

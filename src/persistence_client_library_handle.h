@@ -57,7 +57,7 @@ extern int gOpenFdArray[maxPersHandle];
 /**
  * @brief get persistence handle
  *
- * @return a new handle or -1 if an error occured
+ * @return a new handle or 0 if an error occured
  */
 int get_persistence_handle_idx();
 

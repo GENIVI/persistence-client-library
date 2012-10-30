@@ -1,16 +1,15 @@
 AUTOMAKE_OPTIONS = foreign
 
+
 if DEBUG
-AM_CFLAGS =$(DEPS_CFLAGS) -g -I../include \
+AM_CFLAGS = $(DEPS_CFLAGS) -g -I../include \
                           -Iglib-2.0 \
                           -Idbus-1.0 \
-                          -Idconf-dbus-1 \
                           -Iglib-2.0/include
 else
-AM_CFLAGS =$(DEPS_CFLAGS) -I../include \
+AM_CFLAGS = $(DEPS_CFLAGS) -I../include \
                           -Iglib-2.0 \
                           -Idbus-1.0 \
-                          -Idconf-dbus-1 \
                           -Iglib-2.0/include
 endif
 
@@ -22,7 +21,7 @@ include_HEADERS = ../include/persistence_client_library_key.h \
 
 lib_LTLIBRARIES = libpersistence_client_library.la
 
-libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) -ldconf -ldl -ldconf-dbus-1 -lgvdb
+libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) -ldl -lgvdb
 
 
 libpersistence_client_library_la_SOURCES = \

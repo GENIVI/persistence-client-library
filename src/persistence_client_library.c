@@ -87,11 +87,11 @@ const char* gLocalWt             = "/wt.itz";
 
 
 /// directory structure node name defintion
-const char* gNode = "/Node";
+const char* gNode = "/node";
 /// directory structure user name defintion
-const char* gUser = "/User/";
+const char* gUser = "/user/";
 /// directory structure seat name defintion
-const char* gSeat = "/Seat/";
+const char* gSeat = "/seat/";
 
 
 /// path prefic for local cached database: /Data/mnt_c/<appId>/<database_name>
@@ -127,10 +127,10 @@ void pers_library_init(void)
 {
    int status = 0;
    int i = 0;
-   DLT_REGISTER_APP("Persistence Client Library","persClientLib");
-   DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
+   //DLT_REGISTER_APP("Persistence Client Library","persClientLib");
+   //DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
 
-   DLT_LOG(persClientLibCtx, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
+   //DLT_LOG(persClientLibCtx, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
 
    /// environment variable for on demand loading of custom libraries
    const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
@@ -204,7 +204,7 @@ void pers_library_init(void)
       //gPersCustomFuncs[PersCustomLib_early].custom_plugin_close(17);
    }
 
-   printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
+   //printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
    strncpy(gAppId, __progname, maxAppNameLen);
 }
 

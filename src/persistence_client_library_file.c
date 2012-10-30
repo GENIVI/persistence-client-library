@@ -43,6 +43,8 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 
 
@@ -50,18 +52,12 @@ int file_close(int fd)
 {
    int rval = -1;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   rval = close(fd);
+   if(fd < maxPersHandle)
    {
-      rval = close(fd);
-      if(fd < maxPersHandle)
-      {
-         __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
-      }
+      __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
    }
-   else
-   {
-      rval = EPERS_LOCKFS;
-   }
+
    return rval;
 }
 
@@ -69,22 +65,15 @@ int file_close(int fd)
 
 int file_get_size(int fd)
 {
-   int rval = 0;
+   int rval = -1;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
-   {
-      struct stat buf;
-      int ret = 0;
-      ret = fstat(fd, &buf);
+   struct stat buf;
+   int ret = 0;
+   ret = fstat(fd, &buf);
 
-      if(ret != -1)
-      {
-         rval = buf.st_size;
-      }
-   }
-   else
+   if(ret != -1)
    {
-      rval = EPERS_LOCKFS;
+      rval = buf.st_size;
    }
    return rval;
 }
@@ -95,7 +84,7 @@ void* file_map_data(void* addr, long size, long offset, int fd)
 {
    void* ptr = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       int mapFlag = PROT_WRITE | PROT_READ;
       ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
@@ -113,46 +102,38 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 {
    int handle = -1;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   int shared_DB = 0,
+       flags = O_RDWR;
+
+   char dbKey[dbKeyMaxLen];      // database key
+   char dbPath[dbPathMaxLen];    // database location
+
+   memset(dbKey, 0, dbKeyMaxLen);
+   memset(dbPath, 0, dbPathMaxLen);
+
+   // get database context: database path and database key
+   shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsFile, dbKey, dbPath);
+
+   if(shared_DB != -1)  // check valid database context
    {
-      int shared_DB = 0,
-          flags = O_RDWR;
+      handle = open(dbPath, flags);
 
-      char dbKey[dbKeyMaxLen];      // database key
-      char dbPath[dbPathMaxLen];    // database location
-
-      memset(dbKey, 0, dbKeyMaxLen);
-      memset(dbPath, 0, dbPathMaxLen);
-
-      // get database context: database path and database key
-      shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsFile, dbKey, dbPath);
-
-      if(shared_DB != -1)  // check valid database context
+      if(handle == -1)
       {
-         handle = open(dbPath, flags);
-
-         if(handle == -1)
+         printf("file_open ERROR: %s \n", strerror(errno) );
+      }
+      else
+      {
+         if(handle < maxPersHandle)
          {
-            printf("file_open ERROR: %s \n", strerror(errno) );
+            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
          }
          else
          {
-            if(handle < maxPersHandle)
-            {
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-            }
-            else
-            {
-               handle = EPERS_MAXHANDLE;
-            }
+            handle = EPERS_MAXHANDLE;
          }
       }
    }
-   else
-   {
-      handle = EPERS_LOCKFS;
-   }
-
 
    return handle;
 }
@@ -161,16 +142,7 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 
 int file_read_data(int fd, void * buffer, unsigned long buffer_size)
 {
-   int size = -1;
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
-   {
-      size = read(fd, buffer, buffer_size);
-   }
-   else
-   {
-      size = EPERS_LOCKFS;
-   }
-   return size;
+   return read(fd, buffer, buffer_size);
 }
 
 
@@ -179,7 +151,7 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
 {
    int rval = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       int shared_DB = 0;
 
@@ -196,7 +168,9 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
       {
          rval = remove(dbPath);
          if(rval == -1)
+         {
             printf("file_remove ERROR: %s \n", strerror(errno) );
+         }
       }
    }
    else
@@ -231,7 +205,7 @@ int file_unmap_data(void* address, long size)
 {
    int rval = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       rval =  munmap(address, size);
    }
@@ -249,7 +223,7 @@ int file_write_data(int fd, const void * buffer, unsigned long buffer_size)
 {
    int size = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       size = write(fd, buffer, buffer_size);
    }

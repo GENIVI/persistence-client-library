@@ -70,14 +70,23 @@ typedef struct _Pers_custom_functs_s
    /// custom library handle
    void* handle;
 
-   /// custom library init function
-   int (*custom_plugin_init)();
+   /// create backup
+   long (*custom_plugin_create_backup)(const char* backup_id);
 
    /// custom library deinit function
    int (*custom_plugin_deinit)();
 
-   /// custom open function
-   long (*custom_plugin_handle_open)(char* path, int flag, int mode);
+   /// custom delete function
+   int (*custom_plugin_delete_data)(const char* path);
+
+   /// get backup
+   long (*custom_plugin_get_backup)(const char* backup_id, long size);
+
+   // get the size
+   int (*custom_plugin_get_size)(const char* path);
+
+   /// custom get data function
+   long (*custom_plugin_get_data)(const char* path, char* buffer, long size);
 
    /// custom close function
    int (*custom_plugin_handle_close)(int handle);
@@ -85,35 +94,26 @@ typedef struct _Pers_custom_functs_s
    /// custom get data function
    long (*custom_plugin_handle_get_data)(long handle, char* buffer, long size);
 
+   /// custom open function
+   long (*custom_plugin_handle_open)(const char* path, int flag, int mode);
+
    /// custom set data function
    long (*custom_plugin_handle_set_data)(long handle, char* buffer, long size);
 
-   /// custom get data function
-   long (*custom_plugin_get_data)(const char* path, char* buffer, long size);
-
-   /// custom set data function
-   long (*custom_plugin_set_data)(const char* path, char* buffer, long size);
-
-   /// custom delete function
-   int (*custom_plugin_delete_data)(const char* path);
-
-   // get the size
-   int (*custom_plugin_handle_get_size)(int key_handle);
-
-   // get the size
-   int (*custom_plugin_get_size)(const char* path);
-
-   /// create backup
-   long (*custom_plugin_create_backup)(const char* backup_id);
+   /// custom library init function
+   int (*custom_plugin_init)();
 
    /// restore backup
    long (*custom_plugin_restore_backup)(const char* backup_id);
 
-   /// get backup
-   long (*custom_plugin_get_backup)(const char* backup_id, long size);
+   /// custom set data function
+   long (*custom_plugin_set_data)(const char* path, char* buffer, long size);
 
    /// custom status notification function
    int (*custom_plugin_get_status_notification_clbk)(plugin_callback_t pFunct);
+
+   // get the size
+   int (*custom_plugin_handle_get_size)(int key_handle);
 
 }Pers_custom_functs_s;
 

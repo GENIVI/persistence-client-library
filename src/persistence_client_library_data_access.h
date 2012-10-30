@@ -35,8 +35,9 @@
  */
 
 #include "persistence_client_library.h"
+#ifdef USE_GVDB
 #include "gvdb-builder.h"
-
+#endif
 
 /**
  * @brief write data to a key
@@ -92,6 +93,10 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 int persistence_reg_notify_on_change(char* dbPath, char* key);
 
 
+/**
+ * @brief delete data
+ */
+int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storePolicy);
 
 /**
  * @brief read data from a key
