@@ -39,6 +39,7 @@
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_access_helper.h"
+#include "persistence_client_library_data_access.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -354,17 +355,21 @@ void process_prepare_shutdown(unsigned char requestId)
       }
    }
 
-   // close open gvdb and dconf database
+   // close open gvdb persistence resource configuration table
    for(i=0; i< PersistenceRCT_LastEntry; i++)
    {
      resourceTable = get_resource_cfg_table_by_idx(i);
-
      // dereference opend database
      if(resourceTable != NULL)
      {
         gvdb_table_unref(resourceTable);
      }
    }
+
+   //close opend database
+   database_close(PersistenceStorage_local);
+   database_close(PersistenceStorage_shared);
+
 
    // unload custom client libraries
    for(i=0; i<get_num_custom_client_libs(); i++)

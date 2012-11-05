@@ -54,7 +54,7 @@ char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 
 
 
-START_TEST (test_persGetData)
+START_TEST (test_GetData)
 {
    int ret = 0;
    unsigned char buffer[READ_SIZE];
@@ -71,7 +71,7 @@ START_TEST (test_persGetData)
 
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0,    "/language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language"
-   fail_unless(strncmp((char*)buffer, "S H A R E D   D A T A  => not implemented yet", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, "Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0xFF, "/status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
@@ -79,7 +79,7 @@ START_TEST (test_persGetData)
 
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0x20, "/address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address"
-   fail_unless(strncmp((char*)buffer, "S H A R E D   D A T A  => not implemented yet", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, "55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0xFF, "/pos/last satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites"
@@ -97,7 +97,7 @@ END_TEST
 
 
 
-START_TEST (test_persGetDataHandle)
+START_TEST (test_GetDataHandle)
 {
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
    unsigned char buffer[READ_SIZE];
@@ -167,7 +167,7 @@ END_TEST
 
 
 
-START_TEST(test_persSetData)
+START_TEST(test_SetData)
 {
    int ret = 0;
    unsigned char buffer[READ_SIZE];
@@ -218,7 +218,7 @@ END_TEST
 
 
 
-START_TEST(test_persGetDataSize)
+START_TEST(test_GetDataSize)
 {
    int size = 0;
 
@@ -232,7 +232,7 @@ END_TEST
 
 
 
-START_TEST(test_persDeleteData)
+START_TEST(test_DeleteData)
 {
    int rval = 0;
    unsigned char buffer[READ_SIZE];
@@ -254,7 +254,7 @@ END_TEST
 
 
 
-START_TEST(test_persDataFile)
+START_TEST(test_DataFile)
 {
    int fd = 0, i = 0, idx = 0;
    int size = 0, ret = 0;
@@ -340,7 +340,7 @@ END_TEST
 
 
 
-START_TEST(test_persDataHandle)
+START_TEST(test_DataHandle)
 {
    int handle1 = 0, handle2 = 0;
    int ret = 0;
@@ -377,26 +377,26 @@ static Suite * persistencyClientLib_suite()
 {
    Suite * s  = suite_create("Persistency client library");
 
-   TCase * tc_persGetData = tcase_create("persGetData");
-   tcase_add_test(tc_persGetData, test_persGetData);
+   TCase * tc_persGetData = tcase_create("GetData");
+   tcase_add_test(tc_persGetData, test_GetData);
 
-   TCase * tc_persSetData = tcase_create("persSetData");
-   tcase_add_test(tc_persSetData, test_persSetData);
+   TCase * tc_persSetData = tcase_create("SetData");
+   tcase_add_test(tc_persSetData, test_SetData);
 
-   TCase * tc_persGetDataSize = tcase_create("persGetDataSize");
-   tcase_add_test(tc_persGetDataSize, test_persGetDataSize);
+   TCase * tc_persGetDataSize = tcase_create("GetDataSize");
+   tcase_add_test(tc_persGetDataSize, test_GetDataSize);
 
-   TCase * tc_persDeleteData = tcase_create("persDeleteData");
-   tcase_add_test(tc_persDeleteData, test_persDeleteData);
+   TCase * tc_persDeleteData = tcase_create("DeleteData");
+   tcase_add_test(tc_persDeleteData, test_DeleteData);
 
-   TCase * tc_persGetDataHandle = tcase_create("persGetDataHandle");
-   tcase_add_test(tc_persGetDataHandle, test_persGetDataHandle);
+   TCase * tc_persGetDataHandle = tcase_create("GetDataHandle");
+   tcase_add_test(tc_persGetDataHandle, test_GetDataHandle);
 
-   TCase * tc_persDataHandle = tcase_create("persDataHandle");
-   tcase_add_test(tc_persDataHandle, test_persDataHandle);
+   TCase * tc_persDataHandle = tcase_create("DataHandle");
+   tcase_add_test(tc_persDataHandle, test_DataHandle);
 
-   TCase * tc_persDataFile = tcase_create("persDataFile");
-   tcase_add_test(tc_persDataFile, test_persDataFile);
+   TCase * tc_persDataFile = tcase_create("DataFile");
+   tcase_add_test(tc_persDataFile, test_DataFile);
 
 
    suite_add_tcase(s, tc_persGetData);
@@ -415,14 +415,14 @@ static Suite * persistencyClientLib_suite()
 
 int main(int argc, char *argv[])
 {
-   int nr_failed;
+   int nr_failed = 0;
 
    Suite * s = persistencyClientLib_suite();
    SRunner * sr = srunner_create(s);
-   srunner_run_all(sr, CK_NORMAL);
+   srunner_run_all(sr, CK_VERBOSE);
    nr_failed = srunner_ntests_failed(sr);
-   srunner_free(sr);
 
+   srunner_free(sr);
    return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
 
 }

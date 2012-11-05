@@ -92,8 +92,8 @@ typedef enum _PersistencePolicy_e
 /// enumerator used to identify the persistence storage to manage the data
 typedef enum _PersistenceStorage_e
 {
-   PersistenceStorage_local    = 0,  /**< the data is managed local: gvdb */
-   PersistenceStorage_shared   = 1,  /**< the data is managed shared: dconf */
+   PersistenceStorage_local    = 0,  /**< the data is managed local */
+   PersistenceStorage_shared   = 1,  /**< the data is managed shared */
    PersistenceStorage_custom   = 2,  /**< the data is managed over custom client implementation */
 
    /** insert new entries here ... */

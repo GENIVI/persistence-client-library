@@ -1,3 +1,10 @@
+Revision 0.2.2 (rev 1759)
+- Updated test data
+- Added shared data support
+- Removed error when loading custom plugin function that is not available in the plugin library
+  (loading just continues with the next function and does not abort anymore)
+
+
 Revision 0.2.1 (rev 1748)
 - Extended tests
 - Fixed some minor bugs

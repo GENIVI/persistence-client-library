@@ -49,320 +49,66 @@ typedef struct _KeyValuePair_s
 KeyValuePair_s;
 
 
+/// btree array
+static itzam_btree gBtree[2];
+static int gBtreeCreated[] = { 0, 0 };
+
+
 void error_handler(const char * function_name, itzam_error error)
 {
     fprintf(stderr, "Itzam error in %s: %s\n", function_name, ERROR_STRINGS[error]);
 }
 
 
-#ifdef USE_GVDB
-int set_value_to_table_gvdb(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size)
+
+itzam_btree* database_get(PersistenceStorage_e storage, const char* dbPath)
 {
-   int size_written = buffer_size;
-
-   GError *error = NULL;
-   GHashTable* hash_table = NULL;
-
-   hash_table = gvdb_hash_table_new(NULL, NULL);
-
-   if(hash_table != NULL)
+   itzam_btree* btree = NULL;
+   if(   (storage >= PersistenceStorage_local)
+      && (storage <= PersistenceStorage_shared)  )
    {
-      gvdb_hash_table_insert_string(hash_table, key,  (const gchar*)buffer);
-
-      gboolean success = gvdb_table_write_contents(hash_table, dbPath, FALSE, &error);
-      if(success != TRUE)
+      if(gBtreeCreated[storage] == 0)
       {
-         printf("persistence_set_data => error: %s \n", error->message );
-         g_error_free(error);
-         error = NULL;
-         size_written = EPERS_SETDTAFAILED;
-      }
-      else
-      {
-         printf("persistence_set_data - Database  E R R O R: %s\n", error->message);
-         size_written = EPERS_NOPRCTABLE;
-         g_error_free(error);
-         error = NULL;
-      }
-   }
-   return size_written;
-}
-#else
-int set_value_to_table_itzam(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size)
-{
-   int size_written = buffer_size;
-   itzam_btree  btree;
-   itzam_state  state;
-   KeyValuePair_s insert;
-
-   //printf("set_value_to_table_itzam => Path: %s key: \"%s\" buffer: \"%s\" \n", dbPath, key, buffer);
-
-   state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
-   if(state == ITZAM_OKAY)
-   {
-      int keySize = 0;
-      keySize = (int)strlen((const char*)key);
-      if(keySize < KeySize)
-      {
-         int dataSize = 0;
-         dataSize = (int)strlen( (const char*)buffer);
-         if(dataSize < ValueSize)
-         {
-            memset(insert.m_key, 0, KeySize);
-            memcpy(insert.m_key, key, keySize);
-            if(itzam_true == itzam_btree_find(&btree, key, &insert))
-            {
-               // key already available, so delete "old" key
-               state = itzam_btree_remove(&btree, (const void *)&insert);
-            }
-            memset(insert.m_data, 0, ValueSize);
-            memcpy(insert.m_data, buffer, dataSize);
-            state = itzam_btree_insert(&btree,(const void *)&insert);
-            if (state != ITZAM_OKAY)
-            {
-               fprintf(stderr, "\nInsert Itzam problem: %s\n", STATE_MESSAGES[state]);
-            }
-         }
-         else
-         {
-            fprintf(stderr, "\nset_value_to_table_itzam => data to long » size %d | maxSize: %d\n", dataSize, KeySize);
-         }
-
-         state = itzam_btree_close(&btree);
+         itzam_state  state = ITZAM_FAILED;
+         state = itzam_btree_open(&gBtree[storage], dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
          if (state != ITZAM_OKAY)
          {
-            fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
+            fprintf(stderr, "Open Itzam problem: %s\n", STATE_MESSAGES[state]);
          }
+         gBtreeCreated[storage] = 1;
       }
-      else
-      {
-         fprintf(stderr, "\nset_value_to_table_itzam => key to long » size: %d | maxSize: %d\n", keySize, KeySize);
-      }
+      // return tree
+      btree = &gBtree[storage];
    }
    else
    {
-      size_written = EPERS_NOPRCTABLE;
-      fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+      printf("btree_get ==> invalid storage type\n");
    }
 
-   return size_written;
+   return btree;
 }
-#endif
 
 
-#ifdef USE_GVDB
-int get_value_from_table_gvdb(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size)
+void database_close(PersistenceStorage_e storage)
 {
-   GError *error = NULL;
-   int read_size = 0;
-   GvdbTable* database = gvdb_table_new(dbPath, TRUE, &error);;
-   gvdb_table_ref(database);
-   if(database != NULL)
+   if(   (storage >= PersistenceStorage_local)
+      && (storage <= PersistenceStorage_shared)  )
    {
-      GVariant* dbValue = NULL;
-
-      dbValue = gvdb_table_get_value(database, key);
-      
-      if(dbValue != NULL)
-      {
-        gconstpointer valuePtr = NULL;
-
-        read_size = g_variant_get_size(dbValue);
-        valuePtr = g_variant_get_data(dbValue);   // get the "data" part from GVariant
-
-        if( (valuePtr != NULL))
-        {
-           if(read_size > buffer_size)
-           {
-              read_size = buffer_size;   // truncate data size to buffer size
-           }
-           memcpy(buffer, valuePtr, read_size-1);
-        }
-        else
-        {
-           read_size = EPERS_NOKEYDATA;
-           printf("get_value_from_table:  E R R O R getting size and/or data for key: %s \n", key);
-        }
-      }
-      else
-      {
-        read_size = EPERS_NOKEY;
-        printf("get_value_from_table:  E R R O R  getting value for key: %s \n", key);
-      }
-      gvdb_table_unref(database);
-   }
-   else
-   {
-     read_size = EPERS_NOPRCTABLE;
-     printf("persistence_get_data - Database  E R R O R: %s\n", error->message);
-     g_error_free(error);
-     error = NULL;
-   }
-   return read_size;
-} 
-#else
-int get_value_from_table_itzam(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size)
-{
-   int read_size = 0;
-   itzam_btree  btree;
-   itzam_state  state;
-   KeyValuePair_s search;
-
-   //printf("get_value_from_table_itzam => Path: %s key: \"%s\" \n", dbPath, key);
-
-   state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
-   if(state == ITZAM_OKAY)
-   {
-      if(itzam_true == itzam_btree_find(&btree, key, &search))
-      {
-         read_size = strlen(search.m_data);
-         if(read_size > buffer_size)
-         {
-            read_size = buffer_size;   // truncate data size to buffer size
-         }
-         memcpy(buffer, search.m_data, read_size);
-         //printf("get_value_from_table_itzam => \n m_data: %s \n buffer: %s \n", search.m_data, buffer);
-      }
-      else
-      {
-         read_size = EPERS_NOKEY;
-      }
-
-      state = itzam_btree_close(&btree);
+      itzam_state  state = ITZAM_FAILED;
+      state = itzam_btree_close(&gBtree[storage]);
       if (state != ITZAM_OKAY)
       {
-         fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
+         fprintf(stderr, "Close Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
+      gBtreeCreated[storage] = 0;
    }
    else
    {
-      read_size = EPERS_NOPRCTABLE;
-      fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+      printf("database_close ==> invalid storage type\n");
    }
-   return read_size;
 }
-#endif
 
 
-#ifdef USE_GVDB
-int get_size_from_table_gvdb(const char* dbPath, char* key)
-{
-   GError *error = NULL;
-   int read_size = 0;
-   GvdbTable* database = gvdb_table_new(dbPath, TRUE, &error);;
-
-   if(database != 0)
-   {
-      GVariant* dbValue = gvdb_table_get_value(database, key);
-
-      if(dbValue != NULL)
-      {
-         read_size = g_variant_get_size(dbValue);
-      }
-      else
-      {
-         read_size = EPERS_NOKEY;
-         printf("get_size_from_table:  E R R O R getting value for key: %s \n", key);
-      }
-      gvdb_table_unref(database);
-   }
-   else
-   {
-      read_size = EPERS_NOPRCTABLE;
-      printf("persistence_get_data_size - Database  E R R O R: %s\n", error->message);
-      g_error_free(error);
-      error = NULL;
-   }
-   return read_size;
-}
-#else
-int get_size_from_table_itzam(const char* dbPath, char* key)
-{
-   int read_size = 0,
-         keySize = 0;
-   itzam_btree  btree;
-   itzam_state  state;
-   KeyValuePair_s search;
-
-   //printf("* * * %s ==> dbPath: %s | key: %s \n", __FUNCTION__, dbPath, key);
-   state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
-   if(state == ITZAM_OKAY)
-   {
-      keySize = (int)strlen((const char*)key);
-      if(keySize < KeySize)
-      {
-         memset(search.m_key,0, KeySize);
-         memcpy(search.m_key, key, keySize);
-         if(itzam_true == itzam_btree_find(&btree, key, &search))
-         {
-            read_size = strlen(search.m_data);
-         }
-         else
-         {
-            read_size = EPERS_NOKEY;
-         }
-      }
-
-      state = itzam_btree_close(&btree);
-      if (state != ITZAM_OKAY)
-      {
-         fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
-      }
-   }
-   else
-   {
-      read_size = EPERS_NOPRCTABLE;
-      fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
-   }
-   return read_size;
-}
-#endif
-
-
-int delete_key_from_table_itzam(char* dbPath, char* key)
-{
-   int rval = 0;
-   itzam_btree  btree;
-   itzam_state  state;
-   KeyValuePair_s delete;
-
-   //printf("delete_key_from_table_itzam => Path: \"%s\" | key: \"%s\" \n", dbPath, key);
-
-   state = itzam_btree_open(&btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
-   if(state == ITZAM_OKAY)
-   {
-      int keySize = 0;
-      keySize = (int)strlen((const char*)key);
-      if(keySize < KeySize)
-      {
-         memset(delete.m_key,0, KeySize);
-         memcpy(delete.m_key, key, keySize);
-         state = itzam_btree_remove(&btree, (const void *)&delete);
-         if (state != ITZAM_OKAY)
-         {
-            fprintf(stderr, "\nRemove Itzam problem: %s\n", STATE_MESSAGES[state]);
-         }
-
-         state = itzam_btree_close(&btree);
-         if (state != ITZAM_OKAY)
-         {
-            fprintf(stderr, "\nClose Itzam problem: %s\n", STATE_MESSAGES[state]);
-         }
-      }
-      else
-      {
-         fprintf(stderr, "\nset_value_to_table_itzam => key to long » size: %d | maxSize: %d\n", keySize, KeySize);
-      }
-   }
-   else
-   {
-      rval = EPERS_NOPRCTABLE;
-      fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
-   }
-
-
-   return rval;
-}
 
 
 
@@ -370,33 +116,49 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 {
    int read_size = -1;
 
-   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
+   if(PersistenceStorage_shared == storage || PersistenceStorage_local == storage)
    {
-      printf("    S H A R E D   D A T A  => not implemented yet\n");
-      //DConfClient* dconf_client_new(const gchar *profile, DConfWatchFunc watch_func, gpointer user_data, GDestroyNotify notify);
+      itzam_btree* btree = NULL;
+      itzam_state  state = ITZAM_FAILED;
+      KeyValuePair_s search;
 
-      //GVariant* dconf_client_read(DConfClient *client, const gchar *key);
-      strncpy((char*)buffer, "S H A R E D   D A T A  => not implemented yet", buffer_size-1);
-   }
-   else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
-   {
-#ifdef USE_GVDB
-      read_size = get_value_from_table_gvdb(dbPath, key, buffer, buffer_size-1);
-#else
-      read_size = get_value_from_table_itzam(dbPath, key, buffer, buffer_size-1);
-#endif
+      btree = database_get(storage, dbPath);
+      if(btree != NULL)
+      {
+         if(itzam_true == itzam_btree_find(btree, key, &search))
+         {
+            read_size = strlen(search.m_data);
+            if(read_size > buffer_size)
+            {
+               read_size = buffer_size;   // truncate data size to buffer size
+            }
+            memcpy(buffer, search.m_data, read_size);
+         }
+         else
+         {
+            read_size = EPERS_NOKEY;
+         }
+
+         //
+         // workaround till lifecycle is working correctly
+         //
+         database_close(storage);
+      }
+      else
+      {
+         read_size = EPERS_NOPRCTABLE;
+         fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+      }
    }
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
       int idx =  custom_client_name_to_id(dbPath, 1);
       char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-      snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
-
-      printf("    get C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
+      snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
       if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_get_data != NULL) )
       {
-         gPersCustomFuncs[idx].custom_plugin_handle_get_data(88, (char*)buffer, buffer_size-1);
+         gPersCustomFuncs[idx].custom_plugin_get_data(key, (char*)buffer, buffer_size);
       }
       else
       {
@@ -412,30 +174,66 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 {
    int write_size = -1;
 
-   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
+   if(PersistenceStorage_shared == storage || PersistenceStorage_local == storage)
    {
-      //GVariant *value = NULL;
-      //gboolean ok = FALSE;
+      write_size = buffer_size;
+      itzam_btree* btree = NULL;
+      itzam_state  state = ITZAM_FAILED;
+      KeyValuePair_s insert;
 
-      printf("    S H A R E D   D A T A  => NOW IMPLEMENTING implemented yet\n");
-      //DConfDBusClient *dcdbc = dconf_dbus_client_new("/com/canonical/indicator/power/", NULL, NULL);
-      //ok =  dconf_dbus_client_write(dcdbc, key, value);
-   }
-   else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
-   {
-#ifdef USE_GVDB
-      write_size = set_value_to_table_gvdb(dbPath, key, buffer, buffer_size);
-#else
-      write_size = set_value_to_table_itzam(dbPath, key, buffer, buffer_size);
-#endif
+      btree = database_get(storage, dbPath);
+      if(btree != NULL)
+      {
+         int keySize = 0;
+         keySize = (int)strlen((const char*)key);
+         if(keySize < KeySize)
+         {
+            int dataSize = 0;
+            dataSize = (int)strlen( (const char*)buffer);
+            if(dataSize < ValueSize)
+            {
+               memset(insert.m_key, 0, KeySize);
+               memcpy(insert.m_key, key, keySize);
+               if(itzam_true == itzam_btree_find(btree, key, &insert))
+               {
+                  // key already available, so delete "old" key
+                  state = itzam_btree_remove(btree, (const void *)&insert);
+               }
+               memset(insert.m_data, 0, ValueSize);
+               memcpy(insert.m_data, buffer, dataSize);
+               state = itzam_btree_insert(btree,(const void *)&insert);
+               if (state != ITZAM_OKAY)
+               {
+                  fprintf(stderr, "\nInsert Itzam problem: %s\n", STATE_MESSAGES[state]);
+               }
+            }
+            else
+            {
+               fprintf(stderr, "\nset_value_to_table_itzam => data to long » size %d | maxSize: %d\n", dataSize, KeySize);
+            }
+
+            //
+            // workaround till lifecycle is working correctly
+            //
+            database_close(storage);
+         }
+         else
+         {
+            fprintf(stderr, "\nset_value_to_table_itzam => key to long » size: %d | maxSize: %d\n", keySize, KeySize);
+         }
+      }
+      else
+      {
+         write_size = EPERS_NOPRCTABLE;
+         fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+      }
    }
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      printf("    set C U S T O M   D A T A  => not implemented yet - path: %s | index: %d \n", dbPath , idx);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
       {
-         gPersCustomFuncs[idx].custom_plugin_handle_set_data(88, (char*)buffer, buffer_size);
+         gPersCustomFuncs[idx].custom_plugin_set_data(key, (char*)buffer, buffer_size);
       }
       else
       {
@@ -451,25 +249,54 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 {
    int read_size = -1;
 
-   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
+   if(PersistenceStorage_shared == storage || PersistenceStorage_local == storage)
    {
-      printf("S H A R E D  D A T A  => not implemented yet\n");
-   }
-   else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
-   {
-#ifdef USE_GVDB
-      read_size = get_size_from_table_gvdb(dbPath, key);
-#else
-      read_size = get_size_from_table_itzam(dbPath, key);
-#endif
+      int keySize = 0;
+      itzam_btree*  btree = NULL;
+      itzam_state  state = ITZAM_FAILED;
+      KeyValuePair_s search;
+
+      btree = database_get(storage, dbPath);
+      if(btree != NULL)
+      {
+         keySize = (int)strlen((const char*)key);
+         if(keySize < KeySize)
+         {
+            memset(search.m_key,0, KeySize);
+            memcpy(search.m_key, key, keySize);
+            if(itzam_true == itzam_btree_find(btree, key, &search))
+            {
+               read_size = strlen(search.m_data);
+            }
+            else
+            {
+               read_size = EPERS_NOKEY;
+            }
+         }
+         //
+         // workaround till lifecycle is working correctly
+         //
+         database_close(storage);
+      }
+      else
+      {
+         read_size = EPERS_NOPRCTABLE;
+         fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+      }
    }
    else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
    {
-      printf("    get C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
+      int idx = custom_client_name_to_id(dbPath, 1);
+      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
+      {
+         gPersCustomFuncs[idx].custom_plugin_get_size(key);
+      }
+      else
+      {
+         read_size = EPERS_NOPLUGINFUNCT;
+      }
    }
-
    return read_size;
-
 }
 
 
@@ -477,19 +304,56 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage)
 {
    int ret = 0;
-   if(PersistenceStorage_shared == storage)       // check if shared data (dconf)
-     {
-        printf("S H A R E D  D A T A  => not implemented yet\n");
-     }
-     else if(PersistenceStorage_local == storage)   // it is local data (gvdb)
-     {
-        ret = delete_key_from_table_itzam(dbPath, dbKey);
-     }
-     else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
-     {
-        printf("    get C U S T O M   D A T A  => NOW IMPLEMENTING implemented yet\n");
-     }
+   if(PersistenceStorage_custom != storage)
+   {
+      itzam_btree*  btree = NULL;
+      KeyValuePair_s delete;
 
+      //printf("delete_key_from_table_itzam => Path: \"%s\" | key: \"%s\" \n", dbPath, key);
+      btree = database_get(storage, dbPath);
+      if(btree != NULL)
+      {
+         int keySize = 0;
+         keySize = (int)strlen((const char*)dbKey);
+         if(keySize < KeySize)
+         {
+            itzam_state  state;
+
+            memset(delete.m_key,0, KeySize);
+            memcpy(delete.m_key, dbKey, keySize);
+            state = itzam_btree_remove(btree, (const void *)&delete);
+            if (state != ITZAM_OKAY)
+            {
+               fprintf(stderr, "Remove Itzam problem: %s\n", STATE_MESSAGES[state]);
+            }
+         }
+         else
+         {
+            fprintf(stderr, "persistence_delete_data => key to long » size: %d | maxSize: %d\n", keySize, KeySize);
+         }
+         //
+         // workaround till lifecycle is working correctly
+         //
+         database_close(storage);
+      }
+      else
+      {
+         fprintf(stderr, "persistence_delete_data => no prct table\n");
+         ret = EPERS_NOPRCTABLE;
+      }
+   }
+   else   // custom storage implementation via custom library
+   {
+      int idx = custom_client_name_to_id(dbPath, 1);
+      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
+      {
+         gPersCustomFuncs[idx].custom_plugin_delete_data(dbKey);
+      }
+      else
+      {
+         ret = EPERS_NOPLUGINFUNCT;
+      }
+   }
    return ret;
 }
 

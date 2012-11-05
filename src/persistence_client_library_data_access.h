@@ -99,49 +99,10 @@ int persistence_reg_notify_on_change(char* dbPath, char* key);
 int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storePolicy);
 
 /**
- * @brief read data from a key
+ * @brief close the database for the given storage type
  *
- * @param database pointer to the database
- * @param key the database key to read data from
- * @param buffer the data
- * @param buffer_size the size of the buffer in bytes
- *
- * @return size of data in bytes read from the key or a negative value on error with the following error codes:
- *  EPERS_NOKEYDATA   EPERS_NOKEY
+ * @param storage the storage type of the database to close
  */
-//int get_value_from_table(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size);
-//int get_value_from_table(GvdbTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
-
-
-
-/**
- * @brief write data to a key
- *
- * @param database pointer to the database
- * @param key the database key to write data
- * @param buffer the data
- * @param buffer_size the size of the buffer in bytes
- *
- * @return size of data in bytes written to the key
- */
-//int set_value_to_table(const char* dbPath, char* key, unsigned char* buffer, unsigned long buffer_size);
-//int set_value_to_table(GHashTable* database, char* key, unsigned char* buffer, unsigned long buffer_size);
-
-
-
-/**
- * @brief get the size of the data from a key
- *
- * @param database pointer to the database
- * @param key the database key to get the size form
- *
- * @return size of data or a negative value on error with the following errors codes:
- * EPERS_NOKEY
- */
-//int get_size_from_table(const char* dbPath, char* key);
-//int get_size_from_table(GvdbTable* database, char* key);
-
-
-
+void database_close(PersistenceStorage_e storage);
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_DATA_ACCESS_H */

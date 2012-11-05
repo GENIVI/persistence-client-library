@@ -40,9 +40,12 @@
 #include "persistence_client_library_custom_loader.h"
 
 
-// ------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // function with handle
-// ------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
@@ -65,12 +68,12 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
       {
          int idx =  custom_client_name_to_id(dbPath, 1);
          char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-         snprintf(workaroundPath, 128, "%s%s", "/tmp", dbPath  );
+         snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
          if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
          {
             int flag = 0, mode = 0;
-            handle = gPersCustomFuncs[idx].custom_plugin_handle_open(dbPath, flag, mode);
+            handle = gPersCustomFuncs[idx].custom_plugin_handle_open(workaroundPath, flag, mode);
          }
          else
          {
@@ -114,8 +117,6 @@ int key_handle_close(int key_handle)
       if(PersistenceStorage_custom == gHandleArray[key_handle].shared_DB )
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
-         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-         snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
          if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_close) )
          {
@@ -155,8 +156,6 @@ int key_handle_get_size(int key_handle)
       if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
-         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-         snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
          if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_get_size) != NULL)
          {
@@ -187,8 +186,6 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
       if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
-         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-         snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
          if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_handle_get_data) != NULL)
          {
@@ -233,8 +230,6 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
             if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
             {
                int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
-               char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-               snprintf(workaroundPath, 128, "%s%s", "/tmp", gHandleArray[key_handle].dbPath  );
 
                if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL)
                {
@@ -272,9 +267,12 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
 
 
 
-// ------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // functions to be used directly without a handle
-// ------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
@@ -396,7 +394,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 
          unsigned int hash_val_data = 0;
 
-         char dbKey[dbKeyMaxLen];  // database key
+         char dbKey[dbKeyMaxLen];      // database key
          char dbPath[dbPathMaxLen];    // database location
 
          memset(dbKey, 0, dbKeyMaxLen);
@@ -441,7 +439,7 @@ int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsign
    int rval = 0;
 
    //   unsigned int hash_val_data = 0;
-   char dbKey[dbKeyMaxLen];  // database key 
+   char dbKey[dbKeyMaxLen];      // database key
    char dbPath[dbPathMaxLen];    // database location
 
    memset(dbKey, 0, dbKeyMaxLen);

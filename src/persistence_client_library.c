@@ -57,14 +57,25 @@ DLT_DECLARE_CONTEXT(persClientLibCtx);
 /// resource configuration table name
 const char* gResTableCfg = "/resource-table-cfg.gvdb";
 
+#ifdef USE_GVDB
 /// shared cached default database
-//static const char* gSharedCachedDefault = "cached-default.dconf";
+const char* gSharedCachedDefault = "/cached-default.dconf";
 /// shared cached database
 const char* gSharedCached        = "/cached.dconf";
 /// shared write through default database
 const char* gSharedWtDefault     = "wt-default.dconf";
 /// shared write through database
 const char* gSharedWt            = "/wt.dconf";
+#else
+/// shared cached default database
+const char* gSharedCachedDefault = "/cached-default.itz";
+/// shared cached database
+const char* gSharedCached        = "/cached.itz";
+/// shared write through default database
+const char* gSharedWtDefault     = "/wt-default.itz";
+/// shared write through database
+const char* gSharedWt            = "/wt.itz";
+#endif
 
 /// local cached default database
 #ifdef USE_GVDB
