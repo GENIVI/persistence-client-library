@@ -44,6 +44,10 @@
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_error_def.h"
 
+// internal header, should normally not included in any application
+// only for testing the cursor functionality
+#include "../src/persistence_client_library_data_access.h"
+
 
 #define BUF_SIZE     64
 #define NUM_OF_FILES 3
@@ -60,37 +64,37 @@ START_TEST (test_GetData)
    unsigned char buffer[READ_SIZE];
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/language/country_code",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
+   ret = key_read_data(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
    fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle", strlen((char*)buffer)) == 0, "Buffer not correctly read");
    fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/pos/last_position",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
+   ret = key_read_data(0xFF, "pos/last_position",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
    fail_unless(strncmp((char*)buffer, "+48° 10' 38.95\", +8° 44' 39.06\"", strlen((char*)buffer)) == 0, "Buffer not correctly read");
    fail_unless(ret = strlen("+48° 10' 38.95\", +8° 44' 39.06\""));
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0,    "/language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language"
+   ret = key_read_data(0,    "language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language"
    fail_unless(strncmp((char*)buffer, "Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
+   ret = key_read_data(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
    fail_unless(strncmp((char*)buffer, "/var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x20, "/address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address"
+   ret = key_read_data(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address"
    fail_unless(strncmp((char*)buffer, "55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/pos/last satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites"
+   ret = key_read_data(0xFF, "pos/last_satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites"
    fail_unless(strncmp((char*)buffer, "17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "/links/last link",           2, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
+   ret = key_read_data(0x84, "links/last_link",           2, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
    fail_unless(strncmp((char*)buffer, "/last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "/links/last link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
+   ret = key_read_data(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
    fail_unless(strncmp((char*)buffer, "/last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 }
 END_TEST
@@ -112,7 +116,7 @@ START_TEST (test_GetDataHandle)
    snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
    // open handle ---------------------------------------------------
-   handle = key_handle_open(0xFF, "/posHandle/last position", 0, 0);
+   handle = key_handle_open(0xFF, "posHandle/last_position", 0, 0);
    fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last position");
 
    ret = key_handle_read_data(handle, buffer, READ_SIZE);
@@ -123,7 +127,7 @@ START_TEST (test_GetDataHandle)
 
 
    // open handle ---------------------------------------------------
-   handle2 = key_handle_open(0xFF, "/statusHandle/open_document", 3, 2);
+   handle2 = key_handle_open(0xFF, "statusHandle/open_document", 3, 2);
    fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    size = key_handle_write_data(handle2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
@@ -134,7 +138,7 @@ START_TEST (test_GetDataHandle)
 
    // open handle ---------------------------------------------------
    memset(buffer, 0, READ_SIZE);
-   handle4 = key_handle_open(0xFF, "/language/country_code", 0, 0);
+   handle4 = key_handle_open(0xFF, "language/country_code", 0, 0);
    fail_unless(handle4 >= 0, "Failed to open handle /language/country_code");
 
    ret = key_handle_read_data(handle4, buffer, READ_SIZE);
@@ -147,7 +151,7 @@ START_TEST (test_GetDataHandle)
 
 
    // open handle ---------------------------------------------------
-   handle3 = key_handle_open(0xFF, "/statusHandle/open_document", 3, 2);
+   handle3 = key_handle_open(0xFF, "statusHandle/open_document", 3, 2);
    fail_unless(handle3 >= 0, "Failed to open handle /statusHandle/open_document");
 
    ret = key_handle_read_data(handle3, buffer, READ_SIZE);
@@ -186,30 +190,30 @@ START_TEST(test_SetData)
    // write data
    snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                  locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
-   ret = key_write_data(0xFF, "/69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+   ret = key_write_data(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
 
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
-   ret = key_write_data(0xFF, "/70", 1, 2, (unsigned char*)write1, strlen(write1));
+   ret = key_write_data(0xFF, "70", 1, 2, (unsigned char*)write1, strlen(write1));
    fail_unless(ret == strlen(write1), "Wrong write size");
 
    snprintf(write2, 128, "%s %s", "/key_70",  sysTimeBuffer);
-   ret = key_write_data(0xFF, "/key_70", 1, 2, (unsigned char*)write2, strlen(write2));
+   ret = key_write_data(0xFF, "key_70", 1, 2, (unsigned char*)write2, strlen(write2));
    fail_unless(ret == strlen(write2), "Wrong write size");
 
    // read data again and and verify datat has been written correctly
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/69", 1, 2, buffer, READ_SIZE);
+   ret = key_read_data(0xFF, "69", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/70", 1, 2, buffer, READ_SIZE);
+   ret = key_read_data(0xFF, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write1, strlen(write1)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write1), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "/key_70", 1, 2, buffer, READ_SIZE);
+   ret = key_read_data(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write2), "Wrong read size");
 
@@ -222,10 +226,10 @@ START_TEST(test_GetDataSize)
 {
    int size = 0;
 
-   size = key_get_size(0xFF, "/status/open_document", 3, 2);
+   size = key_get_size(0xFF, "status/open_document", 3, 2);
    fail_unless(size == strlen("/var/opt/user_manual_climateControl.pdf"), "Invalid size");
 
-   size = key_get_size(0x84, "/links/last link", 2, 1);
+   size = key_get_size(0x84, "links/last_link", 2, 1);
    fail_unless(size == strlen("/last_exit/queens"), "Invalid size");
 }
 END_TEST
@@ -238,16 +242,16 @@ START_TEST(test_DeleteData)
    unsigned char buffer[READ_SIZE];
 
    // delete key
-   rval = key_delete(0xFF, "/key_70", 1, 2);
+   rval = key_delete(0xFF, "key_70", 1, 2);
    fail_unless(rval == 0, "Failed to delete key");
    // reading from key must fail now
-   rval = key_read_data(0xFF, "/key_70", 1, 2, buffer, READ_SIZE);
+   rval = key_read_data(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval == EPERS_NOKEY, "Read form key key_70 works, but should fail");
 
 
-   rval = key_delete(0xFF, "/70", 1, 2);
+   rval = key_delete(0xFF, "70", 1, 2);
    fail_unless(rval == 0, "Failed to delete key");
-   rval = key_read_data(0xFF, "/70", 1, 2, buffer, READ_SIZE);
+   rval = key_read_data(0xFF, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
 }
 END_TEST
@@ -286,7 +290,7 @@ START_TEST(test_DataFile)
    close(fd);
 
    // open ----------------------------------------------------------
-   fd = file_open(0xFF, "/media/mediaDB.db", 1, 1);
+   fd = file_open(0xFF, "media/mediaDB.db", 1, 1);
    fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
 
    size = file_get_size(fd);
@@ -301,7 +305,7 @@ START_TEST(test_DataFile)
 
 
    // open ----------------------------------------------------------
-   fd = file_open(0xFF, "/media/mediaDBWrite.db", 1, 1);
+   fd = file_open(0xFF, "media/mediaDBWrite.db", 1, 1);
    fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
 
    size = file_write_data(fd, writeBuffer, strlen(writeBuffer));
@@ -312,15 +316,15 @@ START_TEST(test_DataFile)
 
 
    // remove ----------------------------------------------------------
-   ret = file_remove(0xFF, "/media/mediaDBWrite.db", 1, 1);
+   ret = file_remove(0xFF, "media/mediaDBWrite.db", 1, 1);
    fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
 
-   fd = file_open(0xFF, "/media/mediaDBWrite.db", 1, 1);
+   fd = file_open(0xFF, "media/mediaDBWrite.db", 1, 1);
    fail_unless(fd == -1, "File can be opend, but should not ==> /media/mediaDBWrite.db");
 
 
    // map file ------------------------------------------------------
-   fd = file_open(0xFF, "/media/mediaDB.db", 1, 1);
+   fd = file_open(0xFF, "media/mediaDB.db", 1, 1);
 
    size = file_get_size(fd);
    file_map_data(fileMap, size, 0, fd);
@@ -346,11 +350,11 @@ START_TEST(test_DataHandle)
    int ret = 0;
 
    // test file handles
-   handle1 = file_open(0xFF, "/media/mediaDB.db", 1, 1);
+   handle1 = file_open(0xFF, "media/mediaDB.db", 1, 1);
    fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
 
    ret = file_close(handle1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
+   fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
 
    ret = file_close(1024);
    fail_unless(ret == -1, "Could close file, but should not!!");
@@ -360,7 +364,7 @@ START_TEST(test_DataHandle)
 
 
    // test key handles
-   handle2 = key_handle_open(0xFF, "/statusHandle/open_document", 3, 2);
+   handle2 = key_handle_open(0xFF, "statusHandle/open_document", 3, 2);
    fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    ret = key_handle_close(handle2);
@@ -368,6 +372,136 @@ START_TEST(test_DataHandle)
 
    ret = key_handle_close(1024);
    fail_unless(ret == -1, "Could close, but should not!!");
+}
+END_TEST
+
+
+
+START_TEST(test_DataHandleOpen)
+{
+   int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
+
+   // open handles ----------------------------------------------------
+   hd1 = key_handle_open(0xFF, "posHandle/last_position1", 0, 0);
+   fail_unless(hd1 == 1, "Failed to open handle ==> /posHandle/last_position1");
+
+   hd2 = key_handle_open(0xFF, "posHandle/last_position2", 0, 0);
+   fail_unless(hd2 == 2, "Failed to open handle ==> /posHandle/last_position2");
+
+   hd3 = key_handle_open(0xFF, "posHandle/last_position3", 0, 0);
+   fail_unless(hd3 == 3, "Failed to open handle ==> /posHandle/last_position3");
+
+   // close handles ---------------------------------------------------
+   ret = key_handle_close(hd1);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd2);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd3);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   // open handles ----------------------------------------------------
+   hd4 = key_handle_open(0xFF, "posHandle/last_position4", 0, 0);
+   fail_unless(hd4 == 3, "Failed to open handle ==> /posHandle/last_position4");
+
+   hd5 = key_handle_open(0xFF, "posHandle/last_position5", 0, 0);
+   fail_unless(hd5 == 2, "Failed to open handle ==> /posHandle/last_position5");
+
+   hd6 = key_handle_open(0xFF, "posHandle/last_position6", 0, 0);
+   fail_unless(hd6 == 1, "Failed to open handle ==> /posHandle/last_position6");
+
+   hd7 = key_handle_open(0xFF, "posHandle/last_position7", 0, 0);
+   fail_unless(hd7 == 4, "Failed to open handle ==> /posHandle/last_position7");
+
+   hd8 = key_handle_open(0xFF, "posHandle/last_position8", 0, 0);
+   fail_unless(hd8 == 5, "Failed to open handle ==> /posHandle/last_position8");
+
+   hd9 = key_handle_open(0xFF, "posHandle/last_position9", 0, 0);
+   fail_unless(hd9 == 6, "Failed to open handle ==> /posHandle/last_position9");
+
+   // close handles ---------------------------------------------------
+   ret = key_handle_close(hd4);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd5);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd6);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd7);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd8);
+   fail_unless(ret != -1, "Failed to close handle!!");
+
+   ret = key_handle_close(hd9);
+   fail_unless(ret != -1, "Failed to close handle!!");
+}
+END_TEST
+
+
+
+START_TEST(test_Cursor)
+{
+   int handle = -1, rval = 0, size = 0, handle1 = 0;
+   char bufferKey[READ_SIZE];
+   char bufferData[READ_SIZE];
+   memset(bufferKey, 0, READ_SIZE);
+   memset(bufferData, 0, READ_SIZE);
+
+   // create cursor
+   handle = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz", PersistenceStorage_local);
+   fail_unless(handle != -1, "Failed to create cursor!!");
+   do
+   {
+      memset(bufferKey, 0, READ_SIZE);
+      memset(bufferData, 0, READ_SIZE);
+      // get key
+      rval = persistence_db_cursor_get_key(handle, bufferKey, 128);
+      fail_unless(rval != -1, "Cursor failed to get key!!");
+      // get data
+      rval = persistence_db_cursor_get_data(handle, bufferData, 128);
+      fail_unless(rval != -1, "Cursor failed to get data!!");
+      // get size
+      size = persistence_db_cursor_get_data_size(handle);
+      fail_unless(size != -1, "Cursor failed to get size!!");
+
+      //printf("Key: %s | Data: %s » Size: %d \n", bufferKey, bufferData, size);
+   }
+   while(persistence_db_cursor_next(handle) == 0); // next cursor
+
+   // create cursor
+   handle1 = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz", PersistenceStorage_local);
+   printf("Handle1: %d \n", handle1);
+   fail_unless(handle1 != -1, "Failed to create cursor!!");
+   do
+   {
+      memset(bufferKey, 0, READ_SIZE);
+      memset(bufferData, 0, READ_SIZE);
+      // get key
+      rval = persistence_db_cursor_get_key(handle1, bufferKey, 128);
+      fail_unless(rval != -1, "Cursor failed to get key!!");
+      // get data
+      rval = persistence_db_cursor_get_data(handle1, bufferData, 128);
+      fail_unless(rval != -1, "Cursor failed to get data!!");
+      // get size
+      size = persistence_db_cursor_get_data_size(handle1);
+      fail_unless(size != -1, "Cursor failed to get size!!");
+
+      //printf("Key: %s | Data: %s » Size: %d \n", bufferKey, bufferData, size);
+   }
+   while(persistence_db_cursor_next(handle1) == 0); // next cursor
+
+
+
+   // destory cursor
+   rval = persistence_db_cursor_destroy(handle);
+   fail_unless(rval != -1, "Failed to destroy cursor!!");
+
+   rval = persistence_db_cursor_destroy(handle1);
+   fail_unless(rval != -1, "Failed to destroy cursor!!");
 }
 END_TEST
 
@@ -395,9 +529,14 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persDataHandle = tcase_create("DataHandle");
    tcase_add_test(tc_persDataHandle, test_DataHandle);
 
+   TCase * tc_persDataHandleOpen = tcase_create("DataHandleOpen");
+   tcase_add_test(tc_persDataHandleOpen, test_DataHandleOpen);
+
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
 
+   TCase * tc_Cursor = tcase_create("Cursor");
+   tcase_add_test(tc_Cursor, test_Cursor);
 
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetData);
@@ -405,7 +544,9 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_persDeleteData);
    suite_add_tcase(s, tc_persGetDataHandle);
    suite_add_tcase(s, tc_persDataHandle);
+   suite_add_tcase(s, tc_persDataHandleOpen);
    suite_add_tcase(s, tc_persDataFile);
+   suite_add_tcase(s, tc_Cursor);
 
    return s;
 }

@@ -37,18 +37,19 @@
 #include <stdlib.h>
 
 /// handle index
-static int gHandleIdx = 0;
+static int gHandleIdx = 1;
 
 static int gInitialized = 0;
-/// persistence handle array
-PersistenceHandle_s gHandleArray[maxPersHandle];
 
 /// open file descriptor handle array
 int gOpenFdArray[maxPersHandle];
+
+/// persistence handle array
+PersistenceHandle_s gHandleArray[maxPersHandle];
 /// free handle array
 int gFreeHandleArray[maxPersHandle];
 
-int gFreeHandleIdxHead = -1;
+int gFreeHandleIdxHead = 0;
 
 pthread_mutex_t gMtx;
 
@@ -66,15 +67,15 @@ int get_persistence_handle_idx()
 
    if(pthread_mutex_lock(&gMtx) == 0)
    {
-      if(gFreeHandleIdxHead != -1)   // check if we have a free spot in the array before the current max
+      if(gFreeHandleIdxHead > 0)   // check if we have a free spot in the array before the current max
       {
-         handle = gFreeHandleArray[gFreeHandleIdxHead--];
+         handle = gFreeHandleArray[--gFreeHandleIdxHead];
       }
       else
       {
          if(gHandleIdx < maxPersHandle-1)
          {
-            handle = gHandleIdx + 1;  // no free spot before current max, increment handle index
+            handle = gHandleIdx++;  // no free spot before current max, increment handle index
          }
          else
          {

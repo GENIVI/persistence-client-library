@@ -62,7 +62,8 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
    // get database context: database path and database key
    storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
 
-   if(storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
+   if(   storePolicy >= PersistenceStorage_local
+      && storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
    {
       if(PersistenceStorage_custom ==  storePolicy)
       {
@@ -99,7 +100,7 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
    }
    else
    {
-      handle = EPERS_BADPOL;
+      handle = storePolicy;
    }
 
 

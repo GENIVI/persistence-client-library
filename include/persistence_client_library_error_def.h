@@ -34,57 +34,59 @@
  */
 
 // common error, for this error errno will be set
-#define EPERS_COMMON             -1
+#define EPERS_COMMON             (-1)
 /// file system is locked
-#define EPERS_LOCKFS             -2
+#define EPERS_LOCKFS             (-2)
 /// filesystem is currently locked
 #define EPERS_MAP_LOCKFS         ((void *) -2)
 /// bad storage policy
-#define EPERS_BADPOL             -3
+#define EPERS_BADPOL             (-3)
 /// open handle limit reached
-#define EPERS_MAXHANDLE          -4
+#define EPERS_MAXHANDLE          (-4)
 /// max buffer limit for persistence data
-#define EPERS_BUFLIMIT           -5
+#define EPERS_BUFLIMIT           (-5)
 /// persistence resource configuration table not found
-#define EPERS_NOPRCTABLE         -6
+#define EPERS_NOPRCTABLE         (-6)
 /// key not found
-#define EPERS_NOKEY              -7
+#define EPERS_NOKEY              (-7)
 /// no data for key
-#define EPERS_NOKEYDATA          -8
+#define EPERS_NOKEYDATA          (-8)
 /// write of data failed
-#define EPERS_SETDTAFAILED       -9
+#define EPERS_SETDTAFAILED       (-9)
 /// failed to open file
-#define EPERS_OPENFILE           -10
+#define EPERS_OPENFILE           (-10)
 /// invalid buffer or key
-#define EPERS_DESER_BUFORKEY     -11
+#define EPERS_DESER_BUFORKEY     (-11)
 /// can't allocat memory for deserialization of keyvalue
-#define EPERS_DESER_ALLOCMEM     -12
+#define EPERS_DESER_ALLOCMEM     (-12)
 /// no ploicy avaliable in data to serialize
-#define EPERS_DESER_POLICY       -13
+#define EPERS_DESER_POLICY       (-13)
 /// no store type avaliable in data to serialize
-#define EPERS_DESER_STORE        -14
+#define EPERS_DESER_STORE        (-14)
 /// no permission avaliable in data to serialize
-#define EPERS_DESER_PERM         -15
+#define EPERS_DESER_PERM         (-15)
 /// no max size avaliable in data to serialize
-#define EPERS_DESER_MAXSIZE      -16
+#define EPERS_DESER_MAXSIZE      (-16)
 /// no responsibility avaliable in data to serialize
-#define EPERS_DESER_RESP         -17
+#define EPERS_DESER_RESP         (-17)
 /// out of array bounds
-#define EPERS_OUTOFBOUNDS        -18
+#define EPERS_OUTOFBOUNDS        (-18)
 /// failed to map config file
-#define EPERS_CONFIGMAPFAILED    -19
+#define EPERS_CONFIGMAPFAILED    (-19)
 /// config file if not available
-#define EPERS_CONFIGNOTAVAILABLE -20
+#define EPERS_CONFIGNOTAVAILABLE (-20)
 /// can't stat config file
-#define EPERS_CONFIGNOSTAT       -21
+#define EPERS_CONFIGNOSTAT       (-21)
 /// plugin functin not found
-#define EPERS_NOPLUGINFCNT       -22
+#define EPERS_NOPLUGINFCNT       (-22)
 /// dlopen error
-#define EPERS_DLOPENERROR        -23
+#define EPERS_DLOPENERROR        (-23)
 /// plugin function not loaded
-#define EPERS_NOPLUGINFUNCT      -24
+#define EPERS_NOPLUGINFUNCT      (-24)
 /// file remove error
-#define EPERS_FILEREMOVE         -25
+#define EPERS_FILEREMOVE         (-25)
+/// err code to signalize last entry in DB
+#define EPERS_LAST_ENTRY_IN_DB   (-26)
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ERROR_DEF_H */

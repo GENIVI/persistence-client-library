@@ -34,10 +34,12 @@
  * @see            
  */
 
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x01000000U)
+
+
 #include "persistence_client_library.h"
-#ifdef USE_GVDB
-#include "gvdb-builder.h"
-#endif
+
+
 
 /**
  * @brief write data to a key
@@ -104,5 +106,69 @@ int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e stor
  * @param storage the storage type of the database to close
  */
 void database_close(PersistenceStorage_e storage);
+
+
+
+/**
+ * @brief create a cursor to a DB ; if success, the cursor points to (-1)
+ * to access the first entry in DB, call persistence_db_cursor_next
+ *
+ * @param dbPath[in] absolute path to the database
+ * @param storage[in] the storage identifier (local, shared or custom)
+ *
+ * @return handler to the DB (to be used in successive calls) or error code (< 0)
+ */
+int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage);
+
+/**
+ * @brief move cursor to the next position
+ *
+ * @param handlerDB[in] handler to DB (obtained with persistence_db_cursor_create())
+ *
+ * @return 0 for success, negative value in case of error (check against EPERS_LAST_ENTRY_IN_DB)
+ */
+int persistence_db_cursor_next(int handlerDB) ;
+
+/**
+ * @brief get the name of the key pointed by the cursor associated with the database
+ *
+ * @param handlerDB[in] handler to DB (obtained with persistence_db_cursor_create())
+ * @param bufKeyName_out[out] buffer where to pass the name of the key
+ * @param bufSize[out] size of bufKeyName_out
+ *
+ * @return read size (if >= 0), error other way
+ */
+int persistence_db_cursor_get_key(int handlerDB, char * bufKeyName_out, int bufSize) ;
+
+/**
+ * @brief get the data of the key pointed by the cursor associated with the database
+ *
+ * @param handlerDB[in] handler to DB (obtained with persistence_db_cursor_create())
+ * @param bufKeyData_out[out] buffer where to pass the data of the key
+ * @param bufSize[out] size of bufKeyData_out
+ *
+ * @return read size (if >= 0), error other way
+ */
+int persistence_db_cursor_get_data(int handlerDB, char * bufData_out, int bufSize) ;
+
+/**
+ * @brief get the data size of the key pointed by the cursor associated with the database
+ *
+ * @param handlerDB[in] handler to DB (obtained with persistence_db_cursor_create())
+ *
+ * @return positive value for data size, negative value for error
+ */
+int persistence_db_cursor_get_data_size(int handlerDB) ;
+
+
+/**
+ * @brief remove the cursor
+ *
+ * @param handlerDB[in] handler to DB (obtained with persistence_db_cursor_create())
+ *
+ * @return 0 for success, negative value in case of error
+ */
+int persistence_db_cursor_destroy(int handlerDB) ;
+
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_DATA_ACCESS_H */

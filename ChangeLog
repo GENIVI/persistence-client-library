@@ -1,3 +1,10 @@
+Revision 0.2.3 (rev 1793)
+- Fixed handle problem
+- added cursor functions
+- key do not need to start with a '/' anymore
+- added multi-threading support to dbus mainloop
+
+
 Revision 0.2.2 (rev 1759)
 - Updated test data
 - Added shared data support

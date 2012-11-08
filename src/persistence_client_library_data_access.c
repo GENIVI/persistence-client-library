@@ -49,6 +49,30 @@ typedef struct _KeyValuePair_s
 KeyValuePair_s;
 
 
+
+typedef struct _CursorEntry_s
+{
+   itzam_btree_cursor m_cursor;
+   int m_empty;
+}
+CursorEntry_s;
+
+
+CursorEntry_s gCursorArray[maxPersHandle];
+
+/// handle index
+static int gHandleIdx = 1;
+
+static int gInitialized = 0;
+
+/// free handle array
+int gFreeCursorHandleArray[maxPersHandle];
+
+int gFreeCursorHandleIdxHead = 0;
+
+pthread_mutex_t gMtx;
+
+
 /// btree array
 static itzam_btree gBtree[2];
 static int gBtreeCreated[] = { 0, 0 };
@@ -364,6 +388,239 @@ int persistence_reg_notify_on_change(char* dbPath, char* key)
 
    return rval;
 }
+
+
+//---------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------
+
+int get_cursor_handle()
+{
+   int handle = 0;
+
+   if(gInitialized == 0)
+   {
+      gInitialized = 1;
+      pthread_mutex_init(&gMtx, 0);
+   }
+
+   if(pthread_mutex_lock(&gMtx) == 0)
+   {
+      if(gFreeCursorHandleIdxHead > 0)   // check if we have a free spot in the array before the current max
+      {
+         handle = gFreeCursorHandleArray[--gFreeCursorHandleIdxHead];
+      }
+      else
+      {
+         if(gHandleIdx < maxPersHandle-1)
+         {
+            handle = gHandleIdx++;  // no free spot before current max, increment handle index
+         }
+         else
+         {
+            handle = -1;
+            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", maxPersHandle);
+         }
+      }
+      pthread_mutex_unlock(&gMtx);
+   }
+
+   return handle;
+}
+
+
+void close_cursor_handle(int handlerDB)
+{
+   if(pthread_mutex_lock(&gMtx) == 0)
+   {
+      if(gFreeCursorHandleIdxHead < maxPersHandle)
+      {
+         gFreeCursorHandleArray[gFreeCursorHandleIdxHead++] = handlerDB;
+      }
+      pthread_mutex_unlock(&gMtx);
+   }
+}
+
+
+int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage)
+{
+   int handle = -1;
+   itzam_btree*  btree = NULL;
+
+   btree = database_get(storage, dbPath);
+   if(btree != NULL)
+   {
+      itzam_state  state;
+      handle = get_cursor_handle();
+      state = itzam_btree_cursor_create(&gCursorArray[handle].m_cursor, btree);
+      if(state == ITZAM_OKAY)
+      {
+         gCursorArray[handle].m_empty = 0;
+      }
+      else
+      {
+         gCursorArray[handle].m_empty = 1;
+      }
+   }
+
+
+   return handle;
+}
+
+
+
+int persistence_db_cursor_next(int handlerDB)
+{
+   int rval = -1;
+   if(handlerDB < maxPersHandle)
+   {
+      if(gCursorArray[handlerDB].m_empty != 1)
+      {
+         itzam_bool success;
+         success = itzam_btree_cursor_next(&gCursorArray[handlerDB].m_cursor);
+
+         if(success == itzam_true)
+         {
+            rval = 0;
+         }
+         else
+         {
+            rval = EPERS_LAST_ENTRY_IN_DB;
+         }
+      }
+      else
+      {
+         printf("persistence_db_cursor_get_key ==> invalid handle: %d \n", handlerDB);
+      }
+   }
+   else
+   {
+      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %d | max: : %d \n", handlerDB, maxPersHandle);
+   }
+
+   return rval;
+}
+
+
+
+int persistence_db_cursor_get_key(int handlerDB, char * bufKeyName_out, int bufSize)
+{
+   int rval = -1;
+   KeyValuePair_s search;
+
+   if(handlerDB < maxPersHandle)
+   {
+      if(gCursorArray[handlerDB].m_empty != 1)
+      {
+         int length = 0;
+         itzam_btree_cursor_read(&gCursorArray[handlerDB].m_cursor ,(void *)&search);
+         length = strlen(search.m_key);
+         if(length < bufSize)
+         {
+            memcpy(bufKeyName_out, search.m_key, length);
+            rval = 0;
+         }
+         else
+         {
+            printf("persistence_db_cursor_get_key ==> buffer to small » keySize: %d | bufSize: %d \n", length, bufSize);
+         }
+      }
+      else
+      {
+         printf("persistence_db_cursor_get_key ==> invalid handle: %d \n", handlerDB);
+      }
+   }
+   else
+   {
+      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %d | max: : %d \n", handlerDB, maxPersHandle);
+   }
+
+   return rval;
+}
+
+
+
+int persistence_db_cursor_get_data(int handlerDB, char * bufData_out, int bufSize)
+{
+   int rval = -1;
+   KeyValuePair_s search;
+
+   if(handlerDB < maxPersHandle)
+   {
+      if(gCursorArray[handlerDB].m_empty != 1)
+      {
+         int length = 0;
+         itzam_btree_cursor_read(&gCursorArray[handlerDB].m_cursor ,(void *)&search);
+
+         length = strlen(search.m_data);
+         if(length < bufSize)
+         {
+            memcpy(bufData_out, search.m_data, length);
+            rval = 0;
+         }
+         else
+         {
+            printf("persistence_db_cursor_get_data ==> buffer to small » keySize: %d | bufSize: %d \n", length, bufSize);
+         }
+      }
+      else
+      {
+         printf("persistence_db_cursor_get_data ==> invalid handle: %d \n", handlerDB);
+      }
+   }
+   else
+   {
+      printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %d | max: : %d \n", handlerDB, maxPersHandle);
+   }
+
+   return rval;
+}
+
+
+
+int persistence_db_cursor_get_data_size(int handlerDB)
+{
+   int size = -1;
+   KeyValuePair_s search;
+
+   if(handlerDB < maxPersHandle)
+   {
+      if(gCursorArray[handlerDB].m_empty != 1)
+      {
+         itzam_btree_cursor_read(&gCursorArray[handlerDB].m_cursor ,(void *)&search);
+         size = strlen(search.m_data);
+      }
+      else
+      {
+         printf("persistence_db_cursor_get_data ==> invalid handle: %d \n", handlerDB);
+      }
+   }
+   else
+   {
+      printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %d | max: : %d \n", handlerDB, maxPersHandle);
+   }
+
+   return size;
+}
+
+
+
+int persistence_db_cursor_destroy(int handlerDB)
+{
+   int rval = -1;
+   itzam_state  state;
+
+   state = itzam_btree_cursor_free(&gCursorArray[handlerDB].m_cursor);
+   if (state == ITZAM_OKAY)
+   {
+      rval = 0;
+      gCursorArray[handlerDB].m_empty = 1;
+      close_cursor_handle(handlerDB);
+   }
+
+   return rval;
+}
+
+
 
 
 //-----------------------------------------------------------------------------

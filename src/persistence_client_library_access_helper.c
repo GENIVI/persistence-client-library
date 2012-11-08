@@ -373,7 +373,7 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
          //
          // Node is added in front of the resource ID as the key string.
          //
-         snprintf(dbKey, dbKeyMaxLen, "%s%s", gNode, resource_id);
+         snprintf(dbKey, dbKeyMaxLen, "%s/%s", gNode, resource_id);
       }
       else
       {
@@ -383,12 +383,12 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
          if(seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, dbKeyMaxLen, "%s%d%s", gUser, user_no, resource_id);
+            snprintf(dbKey, dbKeyMaxLen, "%s%d/%s", gUser, user_no, resource_id);
          }
          else
          {
             // /User/<user_no_parameter>/Seat/<seat_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, dbKeyMaxLen, "%s%d%s%d%s", gUser, user_no, gSeat, seat_no, resource_id);
+            snprintf(dbKey, dbKeyMaxLen, "%s%d%s%d/%s", gUser, user_no, gSeat, seat_no, resource_id);
          }
       }
       storePolicy = PersistenceStorage_local;
@@ -404,11 +404,11 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
 
       if(seat_no != 0)
       {
-         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d%s%d%s", ldbid, gUser, user_no, gSeat, seat_no, resource_id);
+         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d%s%d/%s", ldbid, gUser, user_no, gSeat, seat_no, resource_id);
       }
       else
       {
-         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d%s", ldbid, gUser, user_no, resource_id);
+         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d/%s", ldbid, gUser, user_no, resource_id);
       }
       storePolicy = PersistenceStorage_local;
    }

@@ -142,6 +142,9 @@ int setup_dbus_mainloop(void)
    const char *pAddress = getenv("PERS_CLIENT_DBUS_ADDRESS");
    dbus_error_init(&err);
 
+   // enable locking of data structures in the D-Bus library for multi threading.
+   dbus_threads_init_default();
+
    // Connect to the bus and check for errors
    if(pAddress != NULL)
    {
