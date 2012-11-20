@@ -100,10 +100,9 @@ void* file_map_data(void* addr, long size, long offset, int fd)
 
 int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
-   int handle = -1;
+   int handle = -1, shared_DB = 0, flags = O_RDWR;
 
-   int shared_DB = 0,
-       flags = O_RDWR;
+   PersistenceConfigurationKey_s dbContext;
 
    char dbKey[dbKeyMaxLen];      // database key
    char dbPath[dbPathMaxLen];    // database location
@@ -111,8 +110,12 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
    memset(dbKey, 0, dbKeyMaxLen);
    memset(dbPath, 0, dbPathMaxLen);
 
+   dbContext.context.ldbid   = ldbid;
+   dbContext.context.seat_no = seat_no;
+   dbContext.context.user_no = user_no;
+
    // get database context: database path and database key
-   shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsFile, dbKey, dbPath);
+   shared_DB = get_db_context(&dbContext, resource_id, resIsFile, dbKey, dbPath);
 
    if(shared_DB != -1)  // check valid database context
    {
@@ -154,6 +157,7 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
    if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       int shared_DB = 0;
+      PersistenceConfigurationKey_s dbContext;
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
@@ -161,8 +165,12 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
       memset(dbKey, 0, dbKeyMaxLen);
       memset(dbPath, 0, dbPathMaxLen);
 
+      dbContext.context.ldbid   = ldbid;
+      dbContext.context.seat_no = seat_no;
+      dbContext.context.user_no = user_no;
+
       // get database context: database path and database key
-      shared_DB = get_db_context(ldbid, resource_id, user_no, seat_no, resIsFile, dbKey, dbPath);
+      shared_DB = get_db_context(&dbContext, resource_id, resIsFile, dbKey, dbPath);
 
       if(shared_DB != -1)  // check valid database context
       {

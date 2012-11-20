@@ -102,16 +102,28 @@ typedef enum _PersistenceStorage_e
 } PersistenceStorage_e;
 
 
+/// structure used to manage database context
+typedef struct _PersistenceDbContext_s
+{
+   unsigned char ldbid;
+   unsigned char user_no;
+   unsigned char seat_no;
+} PersistenceDbContext_s;
+
 /// structure used to manage the persistence configuration for a key
 typedef struct _PersistenceConfigurationKey_s
 {
    PersistencePolicy_e     policy;           /**< policy  */
    PersistenceStorage_e    storage;          /**< definition of storage to use */
+   PersistenceDbContext_s  context;          /**< database context*/
    unsigned int            permission;       /**< access right, corresponds to UNIX */
    unsigned int            max_size;         /**< max size expected for the key */
    char *                  reponsible;       /**< name of responsible application */
    char *                  custom_name;      /**< name of the customer plugin */
 } PersistenceConfigurationKey_s;
+
+
+
 
 
 typedef enum _PersistenceRCT_e

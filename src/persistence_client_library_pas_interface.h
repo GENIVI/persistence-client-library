@@ -48,6 +48,10 @@
  */
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data);
 
+//DBusHandlerResult checkPersAdminSignal(DBusConnection * connection, DBusMessage * message, void * user_data);
+
+
+int signal_persModeChange(DBusConnection *connection, DBusMessage *message);
 
 /// synchronize data back to memory device
 int pers_data_sync(void);

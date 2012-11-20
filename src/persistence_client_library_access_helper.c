@@ -273,16 +273,13 @@ void free_pers_conf_key(PersistenceConfigurationKey_s* pc)
 
 
 // status: OK
-int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                   unsigned int isFile, char dbKey[], char dbPath[])
+int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
-   int rval = 0,
-       resourceFound = 0,
-       groupId = 0;
+   int rval = 0, resourceFound = 0, groupId = 0;
 
    PersistenceRCT_e rct = PersistenceRCT_LastEntry;
 
-   rct = get_table_id(ldbid, &groupId);
+   rct = get_table_id(dbContext->context.ldbid, &groupId);
 
    // get resource configuration table
    GvdbTable* resource_table = get_resource_cfg_table(rct, groupId);
@@ -296,7 +293,6 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
 
       if(dbValue != NULL)
       {
-         PersistenceConfigurationKey_s dbEntry;
 
          gconstpointer valuePtr = NULL;
          int size = g_variant_get_size(dbValue);
@@ -307,27 +303,22 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
             if(buffer != NULL)
             {
                memcpy(buffer, valuePtr, size);
-               de_serialize_data(buffer, &dbEntry);
+               de_serialize_data(buffer, dbContext);
 
-               if(dbEntry.storage != PersistenceStorage_custom )
+               if(dbContext->storage != PersistenceStorage_custom )
                {
-                  rval = get_db_path_and_key(ldbid, resource_id, user_no, seat_no, isFile, dbKey, dbPath, dbEntry.policy);
-                  if(rval != -1)
-                  {
-                     rval = dbEntry.storage;
-                  }
+                  rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
                }
                else
                {
                   //printf("***************** dbEntry.custom_name %s \n", dbEntry.custom_name);
                   // if customer storage, we use the custom name as path
-                  strncpy(dbPath, dbEntry.custom_name, strlen(dbEntry.custom_name));
-                  rval = dbEntry.storage;
+                  strncpy(dbPath, dbContext->custom_name, strlen(dbContext->custom_name));
                }
 
                free(buffer);
                buffer = NULL;
-               free_pers_conf_key(&dbEntry);
+               free_pers_conf_key(dbContext);
                resourceFound = 1;
             }
          }
@@ -357,18 +348,17 @@ int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no
 
 
 // status: OK
-int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                        unsigned int isFile, char dbKey[], char dbPath[], unsigned char cached_resource)
+int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
    int storePolicy = PersistenceStoragePolicy_LastEntry;
 
    //
    // create resource database key
    //
-   if((ldbid < 0x80) || (ldbid == 0xFF) )
+   if((dbContext->context.ldbid < 0x80) || (dbContext->context.ldbid == 0xFF) )
    {
       // The LDBID is used to find the DBID in the resource table.
-      if((user_no == 0) && (seat_no == 0))
+      if((dbContext->context.user_no == 0) && (dbContext->context.seat_no == 0))
       {
          //
          // Node is added in front of the resource ID as the key string.
@@ -380,21 +370,21 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
          //
          // Node is added in front of the resource ID as the key string.
          //
-         if(seat_no == 0)
+         if(dbContext->context.seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, dbKeyMaxLen, "%s%d/%s", gUser, user_no, resource_id);
+            snprintf(dbKey, dbKeyMaxLen, "%s%d/%s", gUser, dbContext->context.user_no, resource_id);
          }
          else
          {
             // /User/<user_no_parameter>/Seat/<seat_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, dbKeyMaxLen, "%s%d%s%d/%s", gUser, user_no, gSeat, seat_no, resource_id);
+            snprintf(dbKey, dbKeyMaxLen, "%s%d%s%d/%s", gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
          }
       }
       storePolicy = PersistenceStorage_local;
    }
 
-   if((ldbid >= 0x80) && ( ldbid != 0xFF))
+   if((dbContext->context.ldbid >= 0x80) && (dbContext->context.ldbid != 0xFF))
    {
       // The LDBID is used to find the DBID in the resource table.
       // /<LDBID parameter> is added in front of the resource ID as the key string.
@@ -402,13 +392,13 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
       //  Rational: Reduction of number of databases -> reduction of maintenance costs
       // /User/<user_no_parameter> and /Seat/<seat_no_parameter> are add after /<LDBID parameter> if there are different than 0.
 
-      if(seat_no != 0)
+      if(dbContext->context.seat_no != 0)
       {
-         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d%s%d/%s", ldbid, gUser, user_no, gSeat, seat_no, resource_id);
+         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
       }
       else
       {
-         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d/%s", ldbid, gUser, user_no, resource_id);
+         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, resource_id);
       }
       storePolicy = PersistenceStorage_local;
    }
@@ -416,29 +406,29 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
    //
    // create resource database path
    //
-   if(ldbid < 0x80)
+   if(dbContext->context.ldbid < 0x80)
    {
       // S H A R E D  database
 
-      if(ldbid != 0)
+      if(dbContext->context.ldbid != 0)
       {
          // Additionally /GROUP/<LDBID_parameter> shall be added inside of the database path listed in the resource table. (Off target)
          //
          // shared  G R O U P  database * * * * * * * * * * * * *  * * * * * *
          //
-         if(PersistencePolicy_wc == cached_resource)
+         if(PersistencePolicy_wc == dbContext->policy)
          {
             if(isFile == resIsNoFile)
-               snprintf(dbPath, dbPathMaxLen, gSharedCachePath, ldbid, gSharedCached);
+               snprintf(dbPath, dbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, gSharedCached);
             else
-               snprintf(dbPath, dbPathMaxLen, gSharedCachePath, ldbid, dbKey);
+               snprintf(dbPath, dbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, dbKey);
          }
-         else if(PersistencePolicy_wt == cached_resource)
+         else if(PersistencePolicy_wt == dbContext->policy)
          {
             if(isFile == resIsNoFile)
-               snprintf(dbPath, dbPathMaxLen, gSharedWtPath, ldbid, gSharedWt);
+               snprintf(dbPath, dbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, gSharedWt);
             else
-               snprintf(dbPath, dbPathMaxLen, gSharedWtPath, ldbid, dbKey);
+               snprintf(dbPath, dbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, dbKey);
          }
       }
       else
@@ -447,14 +437,14 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
          //
          // shared  P U B L I C  database * * * * * * * * * * * * *  * * * * *
          //
-         if(PersistencePolicy_wc == cached_resource)
+         if(PersistencePolicy_wc == dbContext->policy)
          {
             if(isFile == resIsNoFile)
                snprintf(dbPath, dbPathMaxLen, gSharedPublicCachePath, gSharedCached);
             else
                snprintf(dbPath, dbPathMaxLen, gSharedPublicCachePath, dbKey);
          }
-         else if(PersistencePolicy_wt == cached_resource)
+         else if(PersistencePolicy_wt == dbContext->policy)
          {
             if(isFile == resIsNoFile)
                snprintf(dbPath, dbPathMaxLen, gSharedPublicWtPath, gSharedWt);
@@ -469,14 +459,14 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
    {
       // L O C A L   database
 
-      if(PersistencePolicy_wc == cached_resource)
+      if(PersistencePolicy_wc == dbContext->policy)
       {
          if(isFile == resIsNoFile)
             snprintf(dbPath, dbPathMaxLen, gLocalCachePath, gAppId, gLocalCached);
          else
             snprintf(dbPath, dbPathMaxLen, gLocalCachePath, gAppId, dbKey);
       }
-      else if(PersistencePolicy_wt == cached_resource)
+      else if(PersistencePolicy_wt == dbContext->policy)
       {
          if(isFile == resIsNoFile)
             snprintf(dbPath, dbPathMaxLen, gLocalWtPath, gAppId, gLocalWt);

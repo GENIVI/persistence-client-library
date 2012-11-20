@@ -51,8 +51,7 @@
  * @return 1 if shared database and 0 if local database or PersistenceStoragePolicy_LastEntry
  *         when no valid database has been found
  */
-int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                        unsigned int isFile, char dbKey[], char dbPath[], unsigned char cached_resource);
+int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 
 
 
@@ -68,11 +67,9 @@ int get_db_path_and_key(unsigned char ldbid, char* resource_id, unsigned char us
  * @param dbPath the array where the database location path will be stored
  * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
  *
- * @return the PersistenceStorage_e
- * or a negative value with one of the following errors: EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
+ * @return 0 or a negative value with one of the following errors: EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
-int get_db_context(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                                    unsigned int isFile, char dbKey[], char dbPath[]);
+int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 
 
 

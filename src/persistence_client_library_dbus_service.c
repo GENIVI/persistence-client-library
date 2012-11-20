@@ -77,9 +77,6 @@ void sigHandler(int signo)
 }
 //------------------------------------------------------------------------
 
-//const char* gPersDbusAdminInterface    =  "org.genivi.persistence.admin";
-//const char* gPersDbusAdminPath         = "/org/genivi/persistence/admin";
-
 
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -94,8 +91,70 @@ static void unregisterMessageHandler(DBusConnection *connection, void *user_data
 /* catches messages not directed to any registered object path ("garbage collector") */
 static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
-   printf("handleObjectPathMessageFallback '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message) );
-   return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+   DBusHandlerResult result = DBUS_HANDLER_RESULT_HANDLED;
+
+   printf("handleObjectPathMessageFallback Object: '%s' -> Interface: '%s' -> Message: '%s'\n",
+          dbus_message_get_sender(message), dbus_message_get_interface(message), dbus_message_get_member(message) );
+
+   // org.genivi.persistence.admin  S I G N A L
+   if((0==strcmp("org.genivi.persistence.admin", dbus_message_get_interface(message))))
+   {
+      // printf("checkPersAdminSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
+      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
+      {
+         printf("  checkPersAdminSignal signal\n");
+         if((0==strcmp("PersistenceModeChanged", dbus_message_get_member(message))))
+         {
+            printf("  checkPersAdminSignal message\n");
+            // to do handle signal
+            result = signal_persModeChange(connection, message);
+         }
+         else
+         {
+            printf("handleObjectPathMessageFallback -> unknown signal '%s'\n", dbus_message_get_interface(message));
+         }
+      }
+   }
+
+   // org.genivi.persistence.admin  P R O P E R T Y
+   else  if((0==strcmp("org.freedesktop.DBus.Properties", dbus_message_get_interface(message))))
+   {
+      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
+      {
+         if((0==strcmp("EggDBusChanged", dbus_message_get_member(message))))
+         {
+            DBusMessageIter array;
+            DBusMessageIter dict;
+            DBusMessageIter variant;
+
+            char* dictString = NULL;
+            int value = 0;
+
+            dbus_message_iter_open_container(&array, DBUS_TYPE_DICT_ENTRY, 0, &dict);
+            dbus_message_iter_get_basic(&dict, &dictString);
+
+            dbus_message_iter_open_container(&dict,DBUS_TYPE_VARIANT, NULL, &variant);
+            dbus_message_iter_get_basic(&dict, &value);
+
+            dbus_message_iter_close_container(&dict, &variant);
+            dbus_message_iter_close_container(&array, &dict);
+
+            printf("handleObjectPathMessageFallback ==> value: %d \n", value);
+            // to do handle signal
+            result = DBUS_HANDLER_RESULT_HANDLED;
+         }
+         else
+         {
+            printf("handleObjectPathMessageFallback -> unknown property '%s'\n", dbus_message_get_interface(message));
+         }
+      }
+      else
+      {
+         printf("handleObjectPathMessageFallback -> not a signal '%s'\n", dbus_message_get_member(message));
+      }
+   }
+
+   return result;
 }
 
 
@@ -109,8 +168,10 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 
 void* run_mainloop(void* dataPtr)
 {
+   printf("      *** run_mainloop ==> pthread_mutex_lock => \n");
    // lock mutex to make sure dbus main loop is running
-   pthread_mutex_lock(&gDbusInitializedMtx);
+   //pthread_mutex_lock(&gDbusInitializedMtx);
+   printf("      *** run_mainloop ==> pthread_mutex_lock <= \n");
 
    // persistence admin message
    static const struct DBusObjectPathVTable vtablePersAdmin
@@ -125,6 +186,7 @@ void* run_mainloop(void* dataPtr)
       = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, };
 
    // setup the dbus
+   printf("      *** run_mainloop ==> mainLoop\n");
    mainLoop(vtablePersAdmin, vtableLifecycle, vtableFallback, dataPtr);
 
    printf("Exit dbus main loop!!!!\n");
@@ -176,6 +238,7 @@ int setup_dbus_mainloop(void)
       gDbusConn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
    }
 
+   printf("   *** setup_dbus_mainloop ==> pthread_create\n");
    // create here the dbus connection and pass to main loop
    rval = pthread_create(&thread, NULL, run_mainloop, gDbusConn);
 
@@ -261,9 +324,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    else if (NULL != conn)
    {
       dbus_connection_set_exit_on_disconnect (conn, FALSE);
-
       printf("connected as '%s'\n", dbus_bus_get_unique_name(conn));
-
       if (0!=pipe(gPipefds))
       {
          printf("pipe() failed w/ errno %d\n", errno);
@@ -278,10 +339,15 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          gPollInfo.fds[0].fd = gPipefds[0];
          gPollInfo.fds[0].events = POLLIN;
 
+//         dbus_bus_add_match(conn, "type='signal', sender='org.genivi.persistence.admin',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
+//         dbus_connection_add_filter(conn, checkPersAdminSignal, NULL, NULL);
+
+         // register for messages
          if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/adminconsumer", &vtable, userData))
              && (TRUE==dbus_connection_register_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer", &vtable2, userData))
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
+            printf("* * * * mainLoop ==> success: dbus_connection_register_object_path \n");
             if (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
             {
                printf("dbus_connection_set_watch_functions() failed\n");
@@ -289,9 +355,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             else
             {
                char buf[64];
-
-               // minloop is running now, release mutex
-               pthread_mutex_unlock(&gDbusInitializedMtx);
+                  // mainloop is running now, release mutex
+                  //pthread_mutex_unlock(&gDbusInitializedMtx);
                do
                {
                   bContinue = 0; /* assume error */
@@ -378,9 +443,10 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                while (0!=bContinue);
             }
             dbus_connection_unregister_object_path(conn, "/org/genivi/persistence/adminconsumer");
-            //dbus_connection_unregister_object_path(conn, "/com/");
+            dbus_connection_unregister_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
+         printf("* * * * mainLoop ==> error: dbus_connection_register_object_path\n");
          close(gPipefds[1]);
          close(gPipefds[0]);
       }

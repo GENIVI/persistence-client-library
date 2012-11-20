@@ -34,7 +34,7 @@
  * @see            
  */
 
-#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x01000000U)
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x02000000U)
 
 
 #include "persistence_client_library.h"
@@ -52,7 +52,8 @@
  * @return the number of bytes written or a negative value if an error occured with the following error codes:
  *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size);
+int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy,
+                         unsigned char* buffer, unsigned long buffer_size);
 
 
 
@@ -66,7 +67,8 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
  *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size);
+int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy,
+                         unsigned char* buffer, unsigned long buffer_size);
 
 
 
@@ -80,7 +82,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  * @return size of data in bytes read from the key or on error a negative value with the following error codes:
  *  EPERS_NOPRCTABLE or EPERS_NOKEY
  */
-int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage);
+int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy);
 
 
 
@@ -98,16 +100,21 @@ int persistence_reg_notify_on_change(char* dbPath, char* key);
 /**
  * @brief delete data
  */
-int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storePolicy);
+int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage, PersistencePolicy_e policy);
 
 /**
  * @brief close the database for the given storage type
  *
  * @param storage the storage type of the database to close
  */
-void database_close(PersistenceStorage_e storage);
+void database_close(PersistenceStorage_e storage, PersistencePolicy_e policy);
 
 
+
+
+//---------------------------------------------------------------------------------------------
+// C U R S O R    F U N C T I O N S
+//---------------------------------------------------------------------------------------------
 
 /**
  * @brief create a cursor to a DB ; if success, the cursor points to (-1)
@@ -118,7 +125,7 @@ void database_close(PersistenceStorage_e storage);
  *
  * @return handler to the DB (to be used in successive calls) or error code (< 0)
  */
-int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage);
+int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, PersistencePolicy_e policy);
 
 /**
  * @brief move cursor to the next position
@@ -127,7 +134,7 @@ int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage);
  *
  * @return 0 for success, negative value in case of error (check against EPERS_LAST_ENTRY_IN_DB)
  */
-int persistence_db_cursor_next(int handlerDB) ;
+int persistence_db_cursor_next(int handlerDB);
 
 /**
  * @brief get the name of the key pointed by the cursor associated with the database

@@ -44,6 +44,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <dbus/dbus.h>
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
@@ -138,6 +139,7 @@ void pers_library_init(void)
 {
    int status = 0;
    int i = 0;
+
    //DLT_REGISTER_APP("Persistence Client Library","persClientLib");
    //DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
 
@@ -158,10 +160,12 @@ void pers_library_init(void)
    pthread_mutex_init(&gDbusInitializedMtx, NULL);
 
    // setup dbus main dispatching loop
+   printf("*** setup dbus main loop\n");
    setup_dbus_mainloop();
 
    // wain until dbus main loop has been setup and running
-   pthread_mutex_lock(&gDbusInitializedMtx);
+   //pthread_mutex_lock(&gDbusInitializedMtx);
+
 
    // register for lifecycle and persistence admin service dbus messages
    register_lifecycle();

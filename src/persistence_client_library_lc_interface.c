@@ -47,6 +47,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
+static int gTimeoutMs = 500;
 
 int check_lc_request(int request)
 {
@@ -152,7 +153,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
    //printf("handleObjectPathMessage '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
    if((0==strncmp("com.contiautomotive.NodeStateManager.LifecycleConsumer", dbus_message_get_interface(message), 20)))
    {
-      if((0==strncmp("LifecycleRequest", dbus_message_get_member(message), 18)))
+      if((0==strncmp("NSMLifecycleRequest", dbus_message_get_member(message), 18)))
       {
          result = msg_lifecycleRequest(connection, message);
       }
@@ -166,18 +167,16 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
 
 
-
-
-
-int send_lifecycle_register(const char* method, const char* busname, const char* objName,
-      int shutdownMode, int TimeoutMs)
+int send_lifecycle_register(const char* method, int shutdownMode)
 {
    int rval = 0;
 
    DBusError error;
    dbus_error_init (&error);
-
    DBusConnection* conn = get_dbus_connection();
+
+   const char* objName = "/com/contiautomotive/NodeStateManager/LifecycleConsumer";
+   const char* busName = dbus_bus_get_unique_name(conn);
 
    DBusMessage* message = dbus_message_new_method_call("com.contiautomotive.NodeStateManager.Consumer",  // destination
                                                        "/com/contiautomotive/NodeStateManager/Consumer",  // path
@@ -185,10 +184,10 @@ int send_lifecycle_register(const char* method, const char* busname, const char*
                                                        method);                  // method
    if(message != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_STRING, &busname,
+      dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
                                         DBUS_TYPE_STRING, &objName,
                                         DBUS_TYPE_INT32, &shutdownMode,
-                                        DBUS_TYPE_INT32, &TimeoutMs,
+                                        DBUS_TYPE_INT32, &gTimeoutMs,
                                         DBUS_TYPE_INVALID);
 
       if(conn != NULL)
@@ -215,51 +214,6 @@ int send_lifecycle_register(const char* method, const char* busname, const char*
 }
 
 
-
-int send_lifecycle_un_register(const char* method, const char* busname, const char* objName, int shutdownMode)
-{
-   int rval = 0;
-
-   DBusError error;
-   dbus_error_init (&error);
-
-   DBusConnection* conn = get_dbus_connection();
-
-   DBusMessage* message = dbus_message_new_method_call("com.contiautomotive.NodeStateManager.Consumer",  // destination
-                                                      "/com/contiautomotive/NodeStateManager/Consumer",  // path
-                                                       "com.contiautomotive.NodeStateManager.Consumer",  // interface
-                                                       method);                  // method
-   if(message != NULL)
-   {
-      dbus_message_append_args(message, DBUS_TYPE_STRING, &busname,
-                                        DBUS_TYPE_STRING, &objName,
-                                        DBUS_TYPE_INT32, &shutdownMode,
-                                        DBUS_TYPE_INVALID);
-
-      if(conn != NULL)
-      {
-         if(!dbus_connection_send(conn, message, 0))
-         {
-            fprintf(stderr, "send_lifecycle ==> Access denied: %s \n", error.message);
-         }
-
-         dbus_connection_flush(conn);
-      }
-      else
-      {
-         fprintf(stderr, "send_lifecycle ==> ERROR: Invalid connection!! \n");
-         rval = -1;
-      }
-      dbus_message_unref(message);
-   }
-   else
-   {
-      fprintf(stderr, "send_lifecycle ==> ERROR: Invalid message!! \n");
-      rval = -1;
-   }
-
-   return rval;
-}
 
 int send_lifecycle_request(const char* method, int requestId, int status)
 {
@@ -307,23 +261,18 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 
 int register_lifecycle()
 {
-   const char* objName = "objName";
    int shutdownMode = 88;  // TODO send correct mode
-   int TimeoutMs = 500;    // TODO send timeout
 
-   return send_lifecycle_register("RegisterShutdownClient",
-         dbus_bus_get_unique_name(get_dbus_connection()), objName, shutdownMode, TimeoutMs);
+   return send_lifecycle_register("RegisterShutdownClient", shutdownMode);
 }
 
 
 
 int unregister_lifecycle()
 {
-   const char* objName = "objName";
    int shutdownMode = 88;     // TODO send correct mode
 
-   return send_lifecycle_un_register("UnRegisterShutdownClient",
-         dbus_bus_get_unique_name(get_dbus_connection()), objName, shutdownMode);
+   return send_lifecycle_register("UnRegisterShutdownClient", shutdownMode);
 }
 
 
@@ -367,8 +316,10 @@ void process_prepare_shutdown(unsigned char requestId)
    }
 
    //close opend database
-   database_close(PersistenceStorage_local);
-   database_close(PersistenceStorage_shared);
+   database_close(PersistenceStorage_local, PersistencePolicy_wc);
+   database_close(PersistenceStorage_local, PersistencePolicy_wt);
+   database_close(PersistenceStorage_shared, PersistencePolicy_wc);
+   database_close(PersistenceStorage_shared, PersistencePolicy_wt);
 
 
    // unload custom client libraries

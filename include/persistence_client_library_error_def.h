@@ -89,4 +89,12 @@
 #define EPERS_LAST_ENTRY_IN_DB   (-26)
 
 
+/**
+ * @brief Main dispatching loop
+ *
+ * @return 0
+ */
+void* dbus_main_dispatching_loop(void* dataPtr);
+
+
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ERROR_DEF_H */

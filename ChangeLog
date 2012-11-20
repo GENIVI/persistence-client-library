@@ -1,24 +1,30 @@
-Revision 0.2.3 (rev 1793)
+Revision 0.2.4
+- Updated test data
+- Internal data reorganization
+- Fixed a problem with cursor (warning: still not fully working as expected)
+- Fixed a problem with internal database handling
+
+Revision 0.2.3
 - Fixed handle problem
 - added cursor functions
 - key do not need to start with a '/' anymore
 - added multi-threading support to dbus mainloop
 
 
-Revision 0.2.2 (rev 1759)
+Revision 0.2.2
 - Updated test data
 - Added shared data support
 - Removed error when loading custom plugin function that is not available in the plugin library
   (loading just continues with the next function and does not abort anymore)
 
 
-Revision 0.2.1 (rev 1748)
+Revision 0.2.1
 - Extended tests
 - Fixed some minor bugs
 - Removed dconf
 
 
-Revision 0.2.0 (rev 1709)
+Revision 0.2.0
 - Fixed a problem with handle generation
 - Updated custom plugin library interface
 - Switched to itzam database (gvdb currently commented out)
@@ -27,13 +33,13 @@ Revision 0.2.0 (rev 1709)
 - Added itzam database files to Data.tar.gz files
 
 
-Revision 0.1.5 (rev 1665)
+Revision 0.1.5
 - Fixed problem where no custom lib is available; extended custom lib interface; introduced error codes; removed modules form Makefile.am
 - Adjusted license in test files to MIT
 - Removed requesting dbus name from dbus main loop
 
 
-Revison 0.1.4 (rev 1591)
+Revison 0.1.4
 - Update after code review; Extended custom library interface with function without handle
 - Removed c++test warnings
 - Moved test data to subfolder test

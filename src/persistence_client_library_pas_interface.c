@@ -39,6 +39,8 @@
 #include <unistd.h>
 
 
+static int gTimeoutMs = 500;
+
 /// flag if access is locked
 static int gLockAccess = 0;
 
@@ -64,7 +66,7 @@ int isAccessLocked(void)
 }
 
 
-int check_pas_request(int request)
+int check_pas_request(unsigned int request, unsigned int requestID)
 {
    int rval = 0;
 
@@ -101,20 +103,25 @@ int check_pas_request(int request)
 }
 
 
-int msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
+
+
+
+DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
 {
-   int request = 0,
-       msgReturn = 0;
+   int request = 0, requestID = 0;
+   int errorCode = 0;
 
    DBusMessage *reply;
    DBusError error;
    dbus_error_init (&error);
 
-   if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &request, DBUS_TYPE_INVALID))
+   if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &request,
+                                                DBUS_TYPE_INT32 , &requestID,
+                                                DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
 
-      if (reply == 0)
+      if(reply == 0)
       {
          //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
          printf("DBus No memory\n");
@@ -131,7 +138,7 @@ int msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
 
-   msgReturn = check_pas_request(request);
+   errorCode = check_pas_request(request, requestID);
 
    reply = dbus_message_new_method_return(message);
 
@@ -141,7 +148,7 @@ int msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
       printf("DBus No memory\n");
    }
 
-   if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &msgReturn, DBUS_TYPE_INVALID))
+   if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
    {
      //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
       printf("DBus No memory\n");
@@ -159,24 +166,107 @@ int msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
    return DBUS_HANDLER_RESULT_HANDLED;
 }
 
+int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
+{
+   int persistenceMode = 0;
+   int errorCode = 0;
 
+   DBusMessage *reply;
+   DBusError error;
+   dbus_error_init (&error);
 
+   if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &persistenceMode,
+                                                DBUS_TYPE_INVALID))
+   {
+      reply = dbus_message_new_error(message, error.name, error.message);
+
+      if(reply == 0)
+      {
+         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+         printf("DBus No memory\n");
+      }
+
+      if (!dbus_connection_send(connection, reply, 0))
+      {
+         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+         printf("DBus No memory\n");
+      }
+
+      dbus_message_unref (reply);
+
+      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+   }
+
+   reply = dbus_message_new_method_return(message);
+
+   if (reply == 0)
+   {
+     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+      printf("DBus No memory\n");
+   }
+
+   if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
+   {
+     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+      printf("DBus No memory\n");
+   }
+
+   if (!dbus_connection_send(connection, reply, 0))
+   {
+     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+      printf("DBus No memory\n");
+   }
+
+   dbus_connection_flush(connection);
+   dbus_message_unref(reply);
+
+   return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+/*
+DBusHandlerResult checkPersAdminSignal(DBusConnection *connection, DBusMessage *message, void *user_data)
+{
+   DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+   printf("checkPersAdminSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
+
+   if((0==strcmp("org.genivi.persistence.admin", dbus_message_get_interface(message))))
+   {
+      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
+      {
+         printf("checkPersAdminSignal signal\n");
+         if((0==strcmp("PersistenceModeChanged", dbus_message_get_member(message))))
+         {
+            printf("checkPersAdminSignal signal\n");
+            // to do handle signal
+            result = signal_persModeChange(connection, message);
+         }
+         else
+         {
+            printf("checkPersAdminMsg -> unknown signal '%s'\n", dbus_message_get_interface(message));
+         }
+      }
+   }
+
+   return result;
+}
+*/
 
 
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-   //printf("handleObjectPathMessage '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
-   if((0==strncmp("org.genivi.persistence.admin", dbus_message_get_interface(message), 20)))
+   //printf("checkPersAdminMsg '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
+   if((0==strcmp("org.genivi.persistence.adminconsumer", dbus_message_get_interface(message))))
    {
-      if((0==strncmp("PersistenceAdminRequest", dbus_message_get_member(message), 14)))
+      if((0==strcmp("PersistenceAdminRequest", dbus_message_get_member(message))))
       {
          result = msg_persAdminRequest(connection, message);
       }
       else
       {
-          printf("checkPersAdminMsg -> unknown message '%s'\n", dbus_message_get_interface(message));
+         printf("checkPersAdminMsg -> unknown message '%s'\n", dbus_message_get_interface(message));
       }
    }
    return result;
@@ -184,14 +274,17 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
 
 
-
-int send_pas_register(const char* method, const char* appname)
+int send_pas_register(const char* method, int notificationFlag)
 {
    int rval = 0;
 
    DBusError error;
    dbus_error_init (&error);
+   DBusMessage *replyMsg = NULL;
    DBusConnection* conn = get_dbus_connection();
+
+   const char* objName = "/org/genivi/persistence/adminconsumer";
+   const char* busName = dbus_bus_get_unique_name(conn);
 
    DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",    // destination
                                                       "/org/genivi/persistence/admin",    // path
@@ -199,16 +292,25 @@ int send_pas_register(const char* method, const char* appname)
                                                        method);                  // method
    if(message != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_STRING, &appname, DBUS_TYPE_INVALID);
+      dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
+                                        DBUS_TYPE_STRING, &objName,
+                                        DBUS_TYPE_INT32, &notificationFlag,
+                                        DBUS_TYPE_INT32, &gTimeoutMs,
+                                        DBUS_TYPE_INVALID);
 
       if(conn != NULL)
       {
-         if(!dbus_connection_send(conn, message, 0))
+         replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
+         if(dbus_set_error_from_message(&error, replyMsg))
          {
-            fprintf(stderr, "send_pers_admin_service ==> Access denied: %s \n", error.message);
+            fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+         }
+         else
+         {
+            dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
          }
 
-         dbus_connection_flush(conn);
+         dbus_message_unref(message);
       }
       else
       {
@@ -228,12 +330,13 @@ int send_pas_register(const char* method, const char* appname)
 
 
 
-int send_pas_request(const char* method, int blockStatus)
+int send_pas_request(const char* method, unsigned int requestID, int status)
 {
    int rval = 0;
 
    DBusError error;
    dbus_error_init (&error);
+   DBusMessage *replyMsg = NULL;
    DBusConnection* conn = get_dbus_connection();
 
    DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",    // destination
@@ -242,18 +345,23 @@ int send_pas_request(const char* method, int blockStatus)
                                                        method);                  // method
    if(message != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_UINT32, &blockStatus, DBUS_TYPE_INVALID);
-
+      dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
+                                        DBUS_TYPE_INT32,  &status,
+                                        DBUS_TYPE_INVALID);
 
       if(conn != NULL)
       {
-         if(!dbus_connection_send(conn, message, 0))
+         replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
+         if(dbus_set_error_from_message(&error, replyMsg))
          {
-            fprintf(stderr, "send_pers_admin_service ==> Access denied: %s \n", error.message);
-            rval = -1;
+            fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+         }
+         else
+         {
+            dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
          }
 
-         dbus_connection_flush(conn);
+         dbus_message_unref(message);
       }
       else
       {
@@ -270,26 +378,35 @@ int send_pas_request(const char* method, int blockStatus)
 
    return rval;
 }
-
 
 
 
 int register_pers_admin_service(void)
 {
-   return send_pas_register("RegisterPersAdminNotification", gAppId);
+   int notificationFlag = 88;  // TODO send correct notification flag
+
+   return send_pas_register("RegisterPersAdminNotification", notificationFlag);
 }
+
 
 
 int unregister_pers_admin_service(void)
 {
-   return send_pas_register("UnRegisterPersAdminNotification", gAppId);
+   int notificationFlag = 88;  // TODO send correct notification flag
+
+   return send_pas_register("UnRegisterPersAdminNotification", notificationFlag);
 }
+
 
 
 int pers_admin_service_data_sync_complete(void)
 {
-   return send_pas_request("PersistenceAdminRequestCompleted", 1);
+   unsigned int requestID = 0;
+   int status = 0;
+
+   return send_pas_request("PersistenceAdminRequestCompleted", requestID, status);
 }
+
 
 
 void process_block_and_write_data_back(void)

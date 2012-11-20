@@ -50,8 +50,7 @@
 int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
    int handle = 0;
-
-   int storePolicy = 0;
+   PersistenceConfigurationKey_s dbContext;
 
    char dbKey[dbKeyMaxLen];      // database key
    char dbPath[dbPathMaxLen];    // database location
@@ -59,48 +58,51 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
    memset(dbKey, 0, dbKeyMaxLen);
    memset(dbPath, 0, dbPathMaxLen);
 
+   dbContext.context.ldbid   = ldbid;
+   dbContext.context.seat_no = seat_no;
+   dbContext.context.user_no = user_no;
+
    // get database context: database path and database key
-   storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
-
-   if(   storePolicy >= PersistenceStorage_local
-      && storePolicy < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
+   handle = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
+   if(handle >= 0)
    {
-      if(PersistenceStorage_custom ==  storePolicy)
+      if(   dbContext.storage >= PersistenceStorage_local
+         && dbContext.storage < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
       {
-         int idx =  custom_client_name_to_id(dbPath, 1);
-         char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-         snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
-
-         if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
+         if(PersistenceStorage_custom ==  dbContext.storage)
          {
-            int flag = 0, mode = 0;
-            handle = gPersCustomFuncs[idx].custom_plugin_handle_open(workaroundPath, flag, mode);
+            int idx =  custom_client_name_to_id(dbPath, 1);
+            char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+            snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
+
+            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
+            {
+               int flag = 0, mode = 0;
+               handle = gPersCustomFuncs[idx].custom_plugin_handle_open(workaroundPath, flag, mode);
+            }
+            else
+            {
+               handle = EPERS_NOPLUGINFUNCT;
+            }
          }
          else
          {
-            handle = EPERS_NOPLUGINFUNCT;
+            handle = get_persistence_handle_idx();
+         }
+
+         if(handle < maxPersHandle && handle != -1)
+         {
+            // remember data in handle array
+            strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
+            strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
+            gHandleArray[handle].storage = dbContext.storage;
+            gHandleArray[handle].policy = dbContext.policy;
+         }
+         else
+         {
+            printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
          }
       }
-      else
-      {
-         handle = get_persistence_handle_idx();
-      }
-
-      if(handle < maxPersHandle && handle != -1)
-      {
-         // remember data in handle array
-         strncpy(gHandleArray[handle].dbPath, dbPath, dbPathMaxLen);
-         strncpy(gHandleArray[handle].dbKey, dbKey,   dbKeyMaxLen);
-         gHandleArray[handle].shared_DB = storePolicy;
-      }
-      else
-      {
-         printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
-      }
-   }
-   else
-   {
-      handle = storePolicy;
    }
 
 
@@ -115,7 +117,7 @@ int key_handle_close(int key_handle)
 
    if(key_handle < maxPersHandle)
    {
-      if(PersistenceStorage_custom == gHandleArray[key_handle].shared_DB )
+      if(PersistenceStorage_custom == gHandleArray[key_handle].storage )
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
 
@@ -136,7 +138,7 @@ int key_handle_close(int key_handle)
       // invalidate entries
       strncpy(gHandleArray[key_handle].dbPath, "", dbPathMaxLen);
       strncpy(gHandleArray[key_handle].dbKey  ,"", dbKeyMaxLen);
-      gHandleArray[key_handle].shared_DB = -1;
+      gHandleArray[key_handle].storage = -1;
    }
    else
    {
@@ -154,7 +156,7 @@ int key_handle_get_size(int key_handle)
 
    if(key_handle < maxPersHandle)
    {
-      if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+      if(PersistenceStorage_custom ==  gHandleArray[key_handle].storage)
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
 
@@ -170,7 +172,7 @@ int key_handle_get_size(int key_handle)
       else
       {
          size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                          gHandleArray[key_handle].shared_DB);
+                                          gHandleArray[key_handle].storage, gHandleArray[key_handle].policy);
       }
    }
 
@@ -184,7 +186,7 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
    int size = 0;
    if(key_handle < maxPersHandle)
    {
-      if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+      if(PersistenceStorage_custom ==  gHandleArray[key_handle].storage)
       {
          int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
 
@@ -200,7 +202,7 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long bu
       else
       {
          size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                     gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+                                     gHandleArray[key_handle].storage, gHandleArray[key_handle].policy, buffer, buffer_size);
       }
    }
 
@@ -228,7 +230,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
       {
          if(key_handle < maxPersHandle)
          {
-            if(PersistenceStorage_custom ==  gHandleArray[key_handle].shared_DB)
+            if(PersistenceStorage_custom ==  gHandleArray[key_handle].storage)
             {
                int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
 
@@ -244,7 +246,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long b
             else
             {
                size = persistence_set_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                           gHandleArray[key_handle].shared_DB, buffer, buffer_size);
+                                           gHandleArray[key_handle].storage, gHandleArray[key_handle].policy, buffer, buffer_size);
             }
          }
          else
@@ -281,7 +283,7 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 
    if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
-      int storePolicy = 0;
+      PersistenceConfigurationKey_s dbContext;
 
      char dbKey[dbKeyMaxLen];      // database key
      char dbPath[dbPathMaxLen];    // database location
@@ -289,17 +291,23 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
      memset(dbKey, 0, dbKeyMaxLen);
      memset(dbPath, 0, dbPathMaxLen);
 
-     // get database context: database path and database key
-     storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+     dbContext.context.ldbid   = ldbid;
+     dbContext.context.seat_no = seat_no;
+     dbContext.context.user_no = user_no;
 
-     if(   storePolicy < PersistenceStoragePolicy_LastEntry
-        && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
+     // get database context: database path and database key
+     rval = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
+     if(rval >= 0)
      {
-        rval = persistence_delete_data(dbPath, dbKey, storePolicy);
-     }
-     else
-     {
-       rval = EPERS_BADPOL;
+        if(   dbContext.storage < PersistenceStoragePolicy_LastEntry
+           && dbContext.storage >= PersistenceStorage_local)   // check if store policy is valid
+        {
+           rval = persistence_delete_data(dbPath, dbKey, dbContext.storage, dbContext.policy);
+        }
+        else
+        {
+          rval = EPERS_BADPOL;
+        }
      }
    }
    else
@@ -316,7 +324,7 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
    int data_size = 0;
-   int storePolicy = 0;
+   PersistenceConfigurationKey_s dbContext;
 
    char dbKey[dbKeyMaxLen];      // database key
    char dbPath[dbPathMaxLen];    // database location
@@ -324,13 +332,23 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
    memset(dbKey, 0, dbKeyMaxLen);
    memset(dbPath, 0, dbPathMaxLen);
 
-   // get database context: database path and database key
-   storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+   dbContext.context.ldbid   = ldbid;
+   dbContext.context.seat_no = seat_no;
+   dbContext.context.user_no = user_no;
 
-   if(   storePolicy < PersistenceStoragePolicy_LastEntry
-      && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
+   // get database context: database path and database key
+   data_size = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
+   if(data_size >= 0)
    {
-      data_size = persistence_get_data_size(dbPath, dbKey, storePolicy);
+      if(   dbContext.storage < PersistenceStoragePolicy_LastEntry
+         && dbContext.storage >= PersistenceStorage_local)   // check if store policy is valid
+      {
+         data_size = persistence_get_data_size(dbPath, dbKey, dbContext.storage, dbContext.policy);
+      }
+      else
+      {
+        data_size = EPERS_BADPOL;
+      }
    }
    else
    {
@@ -350,7 +368,7 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
 
    if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
-      int storePolicy = 0;
+      PersistenceConfigurationKey_s dbContext;
 
       char dbKey[dbKeyMaxLen];      // database key
       char dbPath[dbPathMaxLen];    // database location
@@ -358,18 +376,24 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
       memset(dbKey, 0, dbKeyMaxLen);
       memset(dbPath, 0, dbPathMaxLen);
 
+      dbContext.context.ldbid   = ldbid;
+      dbContext.context.seat_no = seat_no;
+      dbContext.context.user_no = user_no;
 
       // get database context: database path and database key
-      storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
+      data_size = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
+      if(data_size >= 0)
+      {
 
-      if(   storePolicy <  PersistenceStoragePolicy_LastEntry
-         && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
-      {
-         data_size = persistence_get_data(dbPath, dbKey, storePolicy, buffer, buffer_size);
-      }
-      else
-      {
-         data_size = EPERS_BADPOL;
+         if(   dbContext.storage <  PersistenceStoragePolicy_LastEntry
+            && dbContext.storage >= PersistenceStorage_local)   // check if store policy is valid
+         {
+            data_size = persistence_get_data(dbPath, dbKey, dbContext.storage, dbContext.policy, buffer, buffer_size);
+         }
+         else
+         {
+            data_size = EPERS_BADPOL;
+         }
       }
    }
    else
@@ -391,7 +415,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
    {
       if(buffer_size <= gMaxKeyValDataSize)  // check data size
       {
-         int storePolicy = 0;
+         PersistenceConfigurationKey_s dbContext;
 
          unsigned int hash_val_data = 0;
 
@@ -401,21 +425,27 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
          memset(dbKey, 0, dbKeyMaxLen);
          memset(dbPath, 0, dbPathMaxLen);
 
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
+
          // get database context: database path and database key
-         storePolicy = get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath);
-
-         // get hash value of data to verify storing
-         hash_val_data = crc32(hash_val_data, buffer, buffer_size);
-
-         // store data
-         if(   storePolicy <  PersistenceStoragePolicy_LastEntry
-            && storePolicy >= PersistenceStorage_local)   // check if store policy is valid
+         data_size = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
+         if(data_size >= 0)
          {
-            data_size = persistence_set_data(dbPath, dbKey, storePolicy, buffer, buffer_size);
-         }
-         else
-         {
-            data_size = EPERS_BADPOL;
+            // get hash value of data to verify storing
+            hash_val_data = crc32(hash_val_data, buffer, buffer_size);
+
+            // store data
+            if(   dbContext.storage <  PersistenceStoragePolicy_LastEntry
+               && dbContext.storage >= PersistenceStorage_local)   // check if store policy is valid
+            {
+               data_size = persistence_set_data(dbPath, dbKey, dbContext.storage, dbContext.policy, buffer, buffer_size);
+            }
+            else
+            {
+               data_size = EPERS_BADPOL;
+            }
          }
       }
       else
@@ -438,6 +468,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
 {
    int rval = 0;
+   PersistenceConfigurationKey_s dbContext;
 
    //   unsigned int hash_val_data = 0;
    char dbKey[dbKeyMaxLen];      // database key
@@ -446,8 +477,15 @@ int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsign
    memset(dbKey, 0, dbKeyMaxLen);
    memset(dbPath, 0, dbPathMaxLen);
 
+   dbContext.context.ldbid   = ldbid;
+   dbContext.context.seat_no = seat_no;
+   dbContext.context.user_no = user_no;
+
+   // get database context: database path and database key
+   rval = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
+
    // registration is only on shared key possible
-   if(PersistenceStorage_shared == get_db_context(ldbid, resource_id, user_no, seat_no, resIsNoFile, dbKey, dbPath))
+   if(PersistenceStorage_shared == rval)
    {
       rval = persistence_reg_notify_on_change(dbPath, dbKey);
    }

@@ -39,7 +39,8 @@
 /// handle structure definition
 typedef struct _PersistenceHandle_s
 {
-   int shared_DB;             /// is a shared resource
+   int storage;               /// storage type
+   int policy;                /// write policy
    char dbPath[dbPathMaxLen]; /// path to the database
    char dbKey[dbKeyMaxLen];   /// database key
 }

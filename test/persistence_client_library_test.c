@@ -64,38 +64,41 @@ START_TEST (test_GetData)
    unsigned char buffer[READ_SIZE];
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
-   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle",
+               strlen((char*)buffer)) == 0, "Buffer not correctly read");
    fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "pos/last_position",         0, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/Node/pos/last position"
-   fail_unless(strncmp((char*)buffer, "+48° 10' 38.95\", +8° 44' 39.06\"", strlen((char*)buffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret = strlen("+48° 10' 38.95\", +8° 44' 39.06\""));
+   ret = key_read_data(0xFF, "pos/last_position",         0, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "CACHE_ +48° 10' 38.95\", +8° 44' 39.06\"",
+               strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   fail_unless(ret = strlen("CACHE_ +48° 10' 38.95\", +8° 44' 39.06\""));
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0,    "language/current_language", 3, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Shared/Public/wt.dconf"        => "/User/3/language/current_language"
-   fail_unless(strncmp((char*)buffer, "Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0,    "language/current_language", 3, 0, buffer, READ_SIZE);
+   printf("Buffer: %s \n", buffer);
+   fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);   // "/Data/mnt-c/Appl-1/cached.gvdb"             => "/User/3/Seat/2/status/open_document"
-   fail_unless(strncmp((char*)buffer, "/var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);   // "/Data/mnt-c/Shared/Group/20/cached.dconf"   => "/User/4/address/home_address"
-   fail_unless(strncmp((char*)buffer, "55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0xFF, "pos/last_satellites",       0, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-1/wt.gvdb"                => "/Node/pos/last satellites"
-   fail_unless(strncmp((char*)buffer, "17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0xFF, "pos/last_satellites",       0, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "links/last_link",           2, 0, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
-   fail_unless(strncmp((char*)buffer, "/last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0x84, "links/last_link",           2, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
-   ret = key_read_data(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);   // "/Data/mnt-wt/Appl-2/wt.gvdb"                => "/84/User/2/links/last link"
-   fail_unless(strncmp((char*)buffer, "/last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   ret = key_read_data(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 }
 END_TEST
 
@@ -120,10 +123,10 @@ START_TEST (test_GetDataHandle)
    fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last position");
 
    ret = key_handle_read_data(handle, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read");
 
    size = key_handle_get_size(handle);
-   fail_unless(size = strlen("H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   fail_unless(size = strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
 
 
    // open handle ---------------------------------------------------
@@ -227,10 +230,10 @@ START_TEST(test_GetDataSize)
    int size = 0;
 
    size = key_get_size(0xFF, "status/open_document", 3, 2);
-   fail_unless(size == strlen("/var/opt/user_manual_climateControl.pdf"), "Invalid size");
+   fail_unless(size == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Invalid size");
 
    size = key_get_size(0x84, "links/last_link", 2, 1);
-   fail_unless(size == strlen("/last_exit/queens"), "Invalid size");
+   fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 }
 END_TEST
 
@@ -446,55 +449,59 @@ END_TEST
 START_TEST(test_Cursor)
 {
    int handle = -1, rval = 0, size = 0, handle1 = 0;
-   char bufferKey[READ_SIZE];
-   char bufferData[READ_SIZE];
-   memset(bufferKey, 0, READ_SIZE);
-   memset(bufferData, 0, READ_SIZE);
+   char bufferKeySrc[READ_SIZE];
+   char bufferDataSrc[READ_SIZE];
+   char bufferKeyDst[READ_SIZE];
+   char bufferDataDst[READ_SIZE];
+
+   memset(bufferKeySrc, 0, READ_SIZE);
+   memset(bufferDataSrc, 0, READ_SIZE);
+
+   memset(bufferKeyDst, 0, READ_SIZE);
+   memset(bufferDataDst, 0, READ_SIZE);
 
    // create cursor
-   handle = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz", PersistenceStorage_local);
+   handle = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz",
+                                          PersistenceStorage_local, PersistencePolicy_wc);
+   printf("Handle  : %d \n", handle);
    fail_unless(handle != -1, "Failed to create cursor!!");
+
+   // create cursor
+   handle1 = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz",
+                                           PersistenceStorage_local, PersistencePolicy_wt);
+   printf("Handle1 : %d \n", handle1);
+   fail_unless(handle1 != -1, "Failed to create cursor!!");
+
    do
    {
-      memset(bufferKey, 0, READ_SIZE);
-      memset(bufferData, 0, READ_SIZE);
+      memset(bufferKeySrc, 0, READ_SIZE);
+      memset(bufferDataSrc, 0, READ_SIZE);
+      memset(bufferKeyDst, 0, READ_SIZE);
+      memset(bufferDataDst, 0, READ_SIZE);
+
       // get key
-      rval = persistence_db_cursor_get_key(handle, bufferKey, 128);
+      rval = persistence_db_cursor_get_key(handle, bufferKeySrc, 128);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = persistence_db_cursor_get_data(handle, bufferData, 128);
+      rval = persistence_db_cursor_get_data(handle, bufferDataSrc, 128);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = persistence_db_cursor_get_data_size(handle);
       fail_unless(size != -1, "Cursor failed to get size!!");
+      //printf("1. Key: %s | Data: %s » Size: %d \n", bufferKeySrc, bufferDataSrc, size);
 
-      //printf("Key: %s | Data: %s » Size: %d \n", bufferKey, bufferData, size);
-   }
-   while(persistence_db_cursor_next(handle) == 0); // next cursor
-
-   // create cursor
-   handle1 = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz", PersistenceStorage_local);
-   printf("Handle1: %d \n", handle1);
-   fail_unless(handle1 != -1, "Failed to create cursor!!");
-   do
-   {
-      memset(bufferKey, 0, READ_SIZE);
-      memset(bufferData, 0, READ_SIZE);
       // get key
-      rval = persistence_db_cursor_get_key(handle1, bufferKey, 128);
+      rval = persistence_db_cursor_get_key(handle1, bufferKeyDst, 128);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = persistence_db_cursor_get_data(handle1, bufferData, 128);
+      rval = persistence_db_cursor_get_data(handle1, bufferDataDst, 128);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = persistence_db_cursor_get_data_size(handle1);
       fail_unless(size != -1, "Cursor failed to get size!!");
-
-      //printf("Key: %s | Data: %s » Size: %d \n", bufferKey, bufferData, size);
+      //printf("  2. Key: %s | Data: %s » Size: %d \n", bufferKeyDst, bufferDataDst, size);
    }
-   while(persistence_db_cursor_next(handle1) == 0); // next cursor
-
-
+   while( (persistence_db_cursor_next(handle) == 0) && (persistence_db_cursor_next(handle1) == 0) ); // next cursor
 
    // destory cursor
    rval = persistence_db_cursor_destroy(handle);

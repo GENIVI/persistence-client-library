@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <itzam.h>
 
-
+// definition of a key-value pair
 typedef struct _KeyValuePair_s
 {
     char m_key[KeySize];
@@ -49,15 +49,17 @@ typedef struct _KeyValuePair_s
 KeyValuePair_s;
 
 
-
+// definition of a cursor entry
 typedef struct _CursorEntry_s
 {
    itzam_btree_cursor m_cursor;
+   PersistenceStorage_e storage;
+   PersistencePolicy_e policy;
    int m_empty;
 }
 CursorEntry_s;
 
-
+// cursor array handle
 CursorEntry_s gCursorArray[maxPersHandle];
 
 /// handle index
@@ -67,15 +69,20 @@ static int gInitialized = 0;
 
 /// free handle array
 int gFreeCursorHandleArray[maxPersHandle];
-
+// free head index
 int gFreeCursorHandleIdxHead = 0;
 
+// mutex
 pthread_mutex_t gMtx;
 
 
 /// btree array
-static itzam_btree gBtree[2];
-static int gBtreeCreated[] = { 0, 0 };
+static itzam_btree gBtree[PersistenceStoragePolicy_LastEntry][PersistencePolicy_LastEntry];
+static int gBtreeCreated[PersistenceStoragePolicy_LastEntry][PersistencePolicy_LastEntry] =
+{ {0, 0, 0 },
+  {0, 0, 0 },
+  {0, 0, 0 }
+};
 
 
 void error_handler(const char * function_name, itzam_error error)
@@ -85,24 +92,24 @@ void error_handler(const char * function_name, itzam_error error)
 
 
 
-itzam_btree* database_get(PersistenceStorage_e storage, const char* dbPath)
+itzam_btree* database_get(PersistenceStorage_e storage, PersistencePolicy_e policy, const char* dbPath)
 {
    itzam_btree* btree = NULL;
    if(   (storage >= PersistenceStorage_local)
       && (storage <= PersistenceStorage_shared)  )
    {
-      if(gBtreeCreated[storage] == 0)
+      if(gBtreeCreated[storage][policy] == 0)
       {
          itzam_state  state = ITZAM_FAILED;
-         state = itzam_btree_open(&gBtree[storage], dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
+         state = itzam_btree_open(&gBtree[storage][policy], dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
          if (state != ITZAM_OKAY)
          {
             fprintf(stderr, "Open Itzam problem: %s\n", STATE_MESSAGES[state]);
          }
-         gBtreeCreated[storage] = 1;
+         gBtreeCreated[storage][policy] = 1;
       }
       // return tree
-      btree = &gBtree[storage];
+      btree = &gBtree[storage][policy];
    }
    else
    {
@@ -113,18 +120,18 @@ itzam_btree* database_get(PersistenceStorage_e storage, const char* dbPath)
 }
 
 
-void database_close(PersistenceStorage_e storage)
+void database_close(PersistenceStorage_e storage, PersistencePolicy_e policy)
 {
    if(   (storage >= PersistenceStorage_local)
       && (storage <= PersistenceStorage_shared)  )
    {
       itzam_state  state = ITZAM_FAILED;
-      state = itzam_btree_close(&gBtree[storage]);
+      state = itzam_btree_close(&gBtree[storage][policy]);
       if (state != ITZAM_OKAY)
       {
          fprintf(stderr, "Close Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
-      gBtreeCreated[storage] = 0;
+      gBtreeCreated[storage][policy] = 0;
    }
    else
    {
@@ -136,7 +143,7 @@ void database_close(PersistenceStorage_e storage)
 
 
 
-int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size)
+int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy, unsigned char* buffer, unsigned long buffer_size)
 {
    int read_size = -1;
 
@@ -146,7 +153,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s search;
 
-      btree = database_get(storage, dbPath);
+      btree = database_get(storage, policy, dbPath);
       if(btree != NULL)
       {
          if(itzam_true == itzam_btree_find(btree, key, &search))
@@ -166,7 +173,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
          //
          // workaround till lifecycle is working correctly
          //
-         database_close(storage);
+         database_close(storage, policy);
       }
       else
       {
@@ -194,7 +201,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 
 
 
-int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, unsigned char* buffer, unsigned long buffer_size)
+int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy, unsigned char* buffer, unsigned long buffer_size)
 {
    int write_size = -1;
 
@@ -205,7 +212,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
       itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s insert;
 
-      btree = database_get(storage, dbPath);
+      btree = database_get(storage, policy, dbPath);
       if(btree != NULL)
       {
          int keySize = 0;
@@ -239,7 +246,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
             //
             // workaround till lifecycle is working correctly
             //
-            database_close(storage);
+            database_close(storage, policy);
          }
          else
          {
@@ -269,7 +276,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 
 
 
-int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage)
+int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy)
 {
    int read_size = -1;
 
@@ -280,7 +287,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
       itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s search;
 
-      btree = database_get(storage, dbPath);
+      btree = database_get(storage, policy, dbPath);
       if(btree != NULL)
       {
          keySize = (int)strlen((const char*)key);
@@ -300,7 +307,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
          //
          // workaround till lifecycle is working correctly
          //
-         database_close(storage);
+         database_close(storage, policy);
       }
       else
       {
@@ -325,7 +332,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 
 
 
-int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage)
+int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage, PersistencePolicy_e policy)
 {
    int ret = 0;
    if(PersistenceStorage_custom != storage)
@@ -334,7 +341,7 @@ int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e stor
       KeyValuePair_s delete;
 
       //printf("delete_key_from_table_itzam => Path: \"%s\" | key: \"%s\" \n", dbPath, key);
-      btree = database_get(storage, dbPath);
+      btree = database_get(storage, policy, dbPath);
       if(btree != NULL)
       {
          int keySize = 0;
@@ -358,7 +365,7 @@ int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e stor
          //
          // workaround till lifecycle is working correctly
          //
-         database_close(storage);
+         database_close(storage, policy);
       }
       else
       {
@@ -441,27 +448,34 @@ void close_cursor_handle(int handlerDB)
 }
 
 
-int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage)
+int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, PersistencePolicy_e policy)
 {
    int handle = -1;
    itzam_btree*  btree = NULL;
 
-   btree = database_get(storage, dbPath);
+   printf("CREATE-Cursor: %d | path: %s \n", (int)storage, dbPath);
+   btree = database_get(storage, policy, dbPath);
    if(btree != NULL)
    {
       itzam_state  state;
       handle = get_cursor_handle();
-      state = itzam_btree_cursor_create(&gCursorArray[handle].m_cursor, btree);
-      if(state == ITZAM_OKAY)
+      if(handle < maxPersHandle && handle >= 0)
       {
-         gCursorArray[handle].m_empty = 0;
-      }
-      else
-      {
-         gCursorArray[handle].m_empty = 1;
+         state = itzam_btree_cursor_create(&gCursorArray[handle].m_cursor, btree);
+         if(state == ITZAM_OKAY)
+         {
+            gCursorArray[handle].m_empty = 0;
+            gCursorArray[handle].storage = storage;
+            gCursorArray[handle].policy  = policy;
+         }
+         else
+         {
+            gCursorArray[handle].m_empty = 1;
+            gCursorArray[handle].storage = PersistenceStoragePolicy_LastEntry;
+            gCursorArray[handle].policy = PersistencePolicy_LastEntry;
+         }
       }
    }
-
 
    return handle;
 }
@@ -471,7 +485,7 @@ int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage)
 int persistence_db_cursor_next(int handlerDB)
 {
    int rval = -1;
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < maxPersHandle && handlerDB >= 0)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -507,7 +521,7 @@ int persistence_db_cursor_get_key(int handlerDB, char * bufKeyName_out, int bufS
    int rval = -1;
    KeyValuePair_s search;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < maxPersHandle && handlerDB >= 0)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -544,7 +558,7 @@ int persistence_db_cursor_get_data(int handlerDB, char * bufData_out, int bufSiz
    int rval = -1;
    KeyValuePair_s search;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < maxPersHandle && handlerDB >= 0)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -582,7 +596,7 @@ int persistence_db_cursor_get_data_size(int handlerDB)
    int size = -1;
    KeyValuePair_s search;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < maxPersHandle && handlerDB >= 0)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -613,7 +627,12 @@ int persistence_db_cursor_destroy(int handlerDB)
    if (state == ITZAM_OKAY)
    {
       rval = 0;
+      database_close(gCursorArray[handlerDB].storage, gCursorArray[handlerDB].policy);
+
       gCursorArray[handlerDB].m_empty = 1;
+      gCursorArray[handlerDB].storage = PersistenceStoragePolicy_LastEntry;
+      gCursorArray[handlerDB].policy = PersistencePolicy_LastEntry;
+
       close_cursor_handle(handlerDB);
    }
 
