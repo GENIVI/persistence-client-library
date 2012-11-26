@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_key.c
@@ -66,8 +52,7 @@ int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_n
    handle = get_db_context(&dbContext, resource_id, resIsNoFile, dbKey, dbPath);
    if(handle >= 0)
    {
-      if(   dbContext.storage >= PersistenceStorage_local
-         && dbContext.storage < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
+      if(dbContext.storage < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
       {
          if(PersistenceStorage_custom ==  dbContext.storage)
          {
@@ -181,7 +166,7 @@ int key_handle_get_size(int key_handle)
 
 
 
-int key_handle_read_data(int key_handle, unsigned char* buffer, unsigned long buffer_size)
+int key_handle_read_data(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = 0;
    if(key_handle < maxPersHandle)
@@ -220,7 +205,7 @@ int key_handle_register_notify_on_change(int key_handle)
 
 
 
-int key_handle_write_data(int key_handle, unsigned char* buffer, unsigned long buffer_size)
+int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = 0;
 
@@ -362,7 +347,7 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
 
 // status: OK
 int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                  unsigned char* buffer, unsigned long buffer_size)
+                  unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
 
@@ -407,7 +392,7 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
 
 
 int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
-                   unsigned char* buffer, unsigned long buffer_size)
+                   unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
 

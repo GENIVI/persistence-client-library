@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([Persistence Client Library], [0.2.4], [not-valid@xse.de])
+AC_INIT([Persistence Client Library], [0.3.0], [not-valid@xse.de])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([dist-bzip2])
 AC_GNU_SOURCE()
@@ -49,8 +49,7 @@ AC_CHECK_FUNCS([fdatasync ftruncate mkdir munmap rmdir strerror utime dlopen])
 PKG_CHECK_MODULES(DEPS,
                   automotive-dlt
                   dbus-1
-                  libitzam
-                  glib-2.0)
+                  libitzam)
 
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)

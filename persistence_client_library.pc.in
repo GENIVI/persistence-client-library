@@ -8,6 +8,6 @@ datadir=@datadir@
 Name: persistence client library
 Description: persistence client library 
 Version: @VERSION@
-Requires: automotive-dlt glib-2.0
-Libs: -L${libdir} -lgvdb -lrt -lglib-2.0 -ldl
+Requires: automotive-dlt
+Libs: -L${libdir} -lrt -ldl
 Cflags: -I${includedir}

@@ -7,23 +7,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_data_access.h
@@ -53,7 +39,7 @@
  *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
 int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy,
-                         unsigned char* buffer, unsigned long buffer_size);
+                         unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -63,12 +49,15 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  * @param dbPath the path to the database where the key is in
  * @param key the database key
  * @param storage the storage identifier (local, shared or custom)
+ * @param policy the storage policy (cached or write throug)
+ * @param buffer the buffer holding the data
+ * @param buffer_size the size of the buffer
  *
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
  *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
 int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy,
-                         unsigned char* buffer, unsigned long buffer_size);
+                         unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -78,6 +67,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  * @param dbPath the path to the database where the key is in
  * @param key the database key
  * @param storage the storage identifier (local, shared or custom)
+ * @param policy the storage policy (cached or write throug)
  *
  * @return size of data in bytes read from the key or on error a negative value with the following error codes:
  *  EPERS_NOPRCTABLE or EPERS_NOKEY
@@ -99,6 +89,12 @@ int persistence_reg_notify_on_change(char* dbPath, char* key);
 
 /**
  * @brief delete data
+ *
+ * @param dbPath the path to the database where the key is in
+ * @param key the database key to register on
+ *
+ * @return 0 if deletion was successfull;
+ *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
  */
 int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage, PersistencePolicy_e policy);
 
@@ -134,7 +130,7 @@ int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, Per
  *
  * @return 0 for success, negative value in case of error (check against EPERS_LAST_ENTRY_IN_DB)
  */
-int persistence_db_cursor_next(int handlerDB);
+int persistence_db_cursor_next(unsigned int handlerDB);
 
 /**
  * @brief get the name of the key pointed by the cursor associated with the database
@@ -145,7 +141,7 @@ int persistence_db_cursor_next(int handlerDB);
  *
  * @return read size (if >= 0), error other way
  */
-int persistence_db_cursor_get_key(int handlerDB, char * bufKeyName_out, int bufSize) ;
+int persistence_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out, int bufSize) ;
 
 /**
  * @brief get the data of the key pointed by the cursor associated with the database
@@ -156,7 +152,7 @@ int persistence_db_cursor_get_key(int handlerDB, char * bufKeyName_out, int bufS
  *
  * @return read size (if >= 0), error other way
  */
-int persistence_db_cursor_get_data(int handlerDB, char * bufData_out, int bufSize) ;
+int persistence_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, int bufSize) ;
 
 /**
  * @brief get the data size of the key pointed by the cursor associated with the database
@@ -165,7 +161,7 @@ int persistence_db_cursor_get_data(int handlerDB, char * bufData_out, int bufSiz
  *
  * @return positive value for data size, negative value for error
  */
-int persistence_db_cursor_get_data_size(int handlerDB) ;
+int persistence_db_cursor_get_data_size(unsigned int handlerDB) ;
 
 
 /**
@@ -175,7 +171,7 @@ int persistence_db_cursor_get_data_size(int handlerDB) ;
  *
  * @return 0 for success, negative value in case of error
  */
-int persistence_db_cursor_destroy(int handlerDB) ;
+int persistence_db_cursor_destroy(unsigned int handlerDB) ;
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_DATA_ACCESS_H */

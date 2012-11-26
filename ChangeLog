@@ -1,8 +1,19 @@
+Revision 0.3.0
+- Switched to the MPL v2 license
+- Fixed dbus signal issues
+- Corrected dbus persistence admin interface parameters
+- Removed static code analysis warnings
+- Removed gvdb library, only Itzam/C will be used now.
+- Adjusted customer plugin interface (long to int datatype)
+- Adjusted file and key interface (long to int)
+
+
 Revision 0.2.4
 - Updated test data
 - Internal data reorganization
 - Fixed a problem with cursor (warning: still not fully working as expected)
 - Fixed a problem with internal database handling
+
 
 Revision 0.2.3
 - Fixed handle problem

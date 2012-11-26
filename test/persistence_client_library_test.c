@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining 
-   a copy of this software and associated documentation files (the "Software"), 
-   to deal in the Software without restriction, including without limitation 
-   the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-   and/or sell copies of the Software, and to permit persons to whom the 
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included 
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE 
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_test.c
@@ -77,7 +63,6 @@ START_TEST (test_GetData)
 
    memset(buffer, 0, READ_SIZE);
    ret = key_read_data(0,    "language/current_language", 3, 0, buffer, READ_SIZE);
-   printf("Buffer: %s \n", buffer);
    fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
@@ -119,8 +104,9 @@ START_TEST (test_GetDataHandle)
    snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
    // open handle ---------------------------------------------------
-   handle = key_handle_open(0xFF, "posHandle/last_position", 0, 0);
-   fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last position");
+   handle = key_handle_open(0xFF, "posHandle/last_position", 1, 0);
+   printf("Handle: %d\n", handle);
+   fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = key_handle_read_data(handle, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read");
@@ -193,6 +179,7 @@ START_TEST(test_SetData)
    // write data
    snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                  locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
+
    ret = key_write_data(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
 
@@ -463,13 +450,13 @@ START_TEST(test_Cursor)
    // create cursor
    handle = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz",
                                           PersistenceStorage_local, PersistencePolicy_wc);
-   printf("Handle  : %d \n", handle);
+
    fail_unless(handle != -1, "Failed to create cursor!!");
 
    // create cursor
    handle1 = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz",
                                            PersistenceStorage_local, PersistencePolicy_wt);
-   printf("Handle1 : %d \n", handle1);
+
    fail_unless(handle1 != -1, "Failed to create cursor!!");
 
    do

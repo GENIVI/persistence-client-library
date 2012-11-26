@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_file.c
@@ -52,12 +38,11 @@ int file_close(int fd)
 {
    int rval = -1;
 
-   rval = close(fd);
    if(fd < maxPersHandle)
    {
       __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
+      rval = close(fd);
    }
-
    return rval;
 }
 
@@ -120,12 +105,7 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
    if(shared_DB != -1)  // check valid database context
    {
       handle = open(dbPath, flags);
-
-      if(handle == -1)
-      {
-         printf("file_open ERROR: %s \n", strerror(errno) );
-      }
-      else
+      if(handle != -1)
       {
          if(handle < maxPersHandle)
          {
@@ -133,8 +113,13 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
          }
          else
          {
+            close(handle);
             handle = EPERS_MAXHANDLE;
          }
+      }
+      else
+      {
+         printf("file_open ERROR: %s \n", strerror(errno) );
       }
    }
 
@@ -143,7 +128,7 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 
 
 
-int file_read_data(int fd, void * buffer, unsigned long buffer_size)
+int file_read_data(int fd, void * buffer, int buffer_size)
 {
    return read(fd, buffer, buffer_size);
 }
@@ -227,7 +212,7 @@ int file_unmap_data(void* address, long size)
 
 
 
-int file_write_data(int fd, const void * buffer, unsigned long buffer_size)
+int file_write_data(int fd, const void * buffer, int buffer_size)
 {
    int size = 0;
 

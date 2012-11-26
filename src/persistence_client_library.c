@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTIcacheON WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library.c
@@ -54,20 +40,9 @@ extern char* __progname;
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(persClientLibCtx);
 
+const char* gResTableCfg = "/resource-table-cfg.itz";
 
-/// resource configuration table name
-const char* gResTableCfg = "/resource-table-cfg.gvdb";
 
-#ifdef USE_GVDB
-/// shared cached default database
-const char* gSharedCachedDefault = "/cached-default.dconf";
-/// shared cached database
-const char* gSharedCached        = "/cached.dconf";
-/// shared write through default database
-const char* gSharedWtDefault     = "wt-default.dconf";
-/// shared write through database
-const char* gSharedWt            = "/wt.dconf";
-#else
 /// shared cached default database
 const char* gSharedCachedDefault = "/cached-default.itz";
 /// shared cached database
@@ -76,18 +51,9 @@ const char* gSharedCached        = "/cached.itz";
 const char* gSharedWtDefault     = "/wt-default.itz";
 /// shared write through database
 const char* gSharedWt            = "/wt.itz";
-#endif
+
 
 /// local cached default database
-#ifdef USE_GVDB
-const char* gLocalCachedDefault  = "cached-default.gvdb";
-/// local cached default database
-const char* gLocalCached         = "/cached.gvdb";
-/// local write through default database
-const char* gLocalWtDefault      = "wt-default.gvdb";
-/// local write through default database
-const char* gLocalWt             = "/wt.gvdb";
-#else
 const char* gLocalCachedDefault  = "cached-default.itz";
 /// local cached default database
 const char* gLocalCached         = "/cached.itz";
@@ -95,7 +61,7 @@ const char* gLocalCached         = "/cached.itz";
 const char* gLocalWtDefault      = "wt-default.itz";
 /// local write through default database
 const char* gLocalWt             = "/wt.itz";
-#endif
+
 
 
 /// directory structure node name defintion
@@ -140,10 +106,10 @@ void pers_library_init(void)
    int status = 0;
    int i = 0;
 
-   //DLT_REGISTER_APP("Persistence Client Library","persClientLib");
-   //DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
+   DLT_REGISTER_APP("Persistence Client Library","persClientLib");
+   DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
 
-   //DLT_LOG(persClientLibCtx, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
+   DLT_LOG(persClientLibCtx, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
 
    /// environment variable for on demand loading of custom libraries
    const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
@@ -156,15 +122,7 @@ void pers_library_init(void)
       gMaxKeyValDataSize = atoi(pDataSize);
    }
 
-   // initialize mutex
-   pthread_mutex_init(&gDbusInitializedMtx, NULL);
-
-   // setup dbus main dispatching loop
-   printf("*** setup dbus main loop\n");
    setup_dbus_mainloop();
-
-   // wain until dbus main loop has been setup and running
-   //pthread_mutex_lock(&gDbusInitializedMtx);
 
 
    // register for lifecycle and persistence admin service dbus messages
@@ -221,14 +179,16 @@ void pers_library_init(void)
 
    //printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
    strncpy(gAppId, __progname, maxAppNameLen);
+   // destory mutex
+   pthread_mutex_destroy(&gDbusInitializedMtx);
+   pthread_cond_destroy(&gDbusInitializedCond);
 }
 
 
 
 void pers_library_destroy(void)
 {
-   // destory mutex
-   pthread_mutex_destroy(&gDbusInitializedMtx);
+
 
    // unregister for lifecycle and persistence admin service dbus messages
    unregister_lifecycle();

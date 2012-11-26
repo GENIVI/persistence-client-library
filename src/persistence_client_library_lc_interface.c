@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_lc_interface.c
@@ -40,6 +26,7 @@
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_access_helper.h"
 #include "persistence_client_library_data_access.h"
+#include "persistence_client_library_itzam_errors.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -289,7 +276,9 @@ int send_prepare_shutdown_complete(int requestId)
 void process_prepare_shutdown(unsigned char requestId)
 {
    int i = 0;
-   GvdbTable* resourceTable = NULL;
+   //GvdbTable* resourceTable = NULL;
+   itzam_btree* resourceTable = NULL;
+   itzam_state  state = ITZAM_FAILED;
 
    // block write
    pers_lock_access();
@@ -297,10 +286,11 @@ void process_prepare_shutdown(unsigned char requestId)
    // flush open files to disk
    for(i=0; i<maxPersHandle; i++)
    {
-      if(gOpenFdArray[i] == FileOpen)
+      int tmp = i;
+      if(gOpenFdArray[tmp] == FileOpen)
       {
-         fsync(i);
-         close(i);
+         fsync(tmp);
+         close(tmp);
       }
    }
 
@@ -311,7 +301,11 @@ void process_prepare_shutdown(unsigned char requestId)
      // dereference opend database
      if(resourceTable != NULL)
      {
-        gvdb_table_unref(resourceTable);
+        state = itzam_btree_close(resourceTable);
+        if (state != ITZAM_OKAY)
+        {
+           fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+        }
      }
    }
 

@@ -2,15 +2,11 @@ AUTOMAKE_OPTIONS = foreign
 
 
 if DEBUG
-AM_CFLAGS = $(DEPS_CFLAGS) -g -I../include \
-                          -Iglib-2.0 \
-                          -Idbus-1.0 \
-                          -Iglib-2.0/include
+AM_CFLAGS = $(DEPS_CFLAGS) -g -I../include \                          
+                          -Idbus-1.0
 else
-AM_CFLAGS = $(DEPS_CFLAGS) -I../include \
-                          -Iglib-2.0 \
-                          -Idbus-1.0 \
-                          -Iglib-2.0/include
+AM_CFLAGS = $(DEPS_CFLAGS) -I../include \                         
+                          -Idbus-1.0
 endif
 
 
@@ -21,7 +17,7 @@ include_HEADERS = ../include/persistence_client_library_key.h \
 
 lib_LTLIBRARIES = libpersistence_client_library.la
 
-libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) -ldl -lgvdb
+libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) -ldl
 
 
 libpersistence_client_library_la_SOURCES = \
@@ -35,6 +31,7 @@ libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library_dbus_service.c \
                                      persistence_client_library_custom_loader.c \
                                      persistence_client_library_access_helper.c \
+                                     persistence_client_library_itzam_errors.c \
                                      crc32.c
 
 libpersistence_client_library_la_LDFLAGS = -export-dynamic $(LDFLAGS)

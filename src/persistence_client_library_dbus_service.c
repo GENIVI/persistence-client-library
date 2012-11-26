@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_dbus_service.c
@@ -42,6 +28,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+
+pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
 
 /// polling structure
 typedef struct SPollInfo
@@ -168,11 +157,6 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 
 void* run_mainloop(void* dataPtr)
 {
-   printf("      *** run_mainloop ==> pthread_mutex_lock => \n");
-   // lock mutex to make sure dbus main loop is running
-   //pthread_mutex_lock(&gDbusInitializedMtx);
-   printf("      *** run_mainloop ==> pthread_mutex_lock <= \n");
-
    // persistence admin message
    static const struct DBusObjectPathVTable vtablePersAdmin
       = {unregisterMessageHandler, checkPersAdminMsg, NULL, };
@@ -186,7 +170,6 @@ void* run_mainloop(void* dataPtr)
       = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, };
 
    // setup the dbus
-   printf("      *** run_mainloop ==> mainLoop\n");
    mainLoop(vtablePersAdmin, vtableLifecycle, vtableFallback, dataPtr);
 
    printf("Exit dbus main loop!!!!\n");
@@ -238,14 +221,20 @@ int setup_dbus_mainloop(void)
       gDbusConn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
    }
 
-   printf("   *** setup_dbus_mainloop ==> pthread_create\n");
+   // wain until dbus main loop has been setup and running
+   pthread_mutex_lock(&gDbusInitializedMtx);
+
    // create here the dbus connection and pass to main loop
    rval = pthread_create(&thread, NULL, run_mainloop, gDbusConn);
-
-   if (rval)
+   if(rval)
    {
      fprintf(stderr, "Server: - ERROR! pthread_create( run_mainloop ) returned: %d\n", rval);
    }
+
+   // wait for condition variable
+   pthread_cond_wait(&gDbusInitializedCond, &gDbusInitializedMtx);
+
+   pthread_mutex_unlock(&gDbusInitializedMtx);
    return rval;
 }
 
@@ -307,13 +296,14 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
              DBusObjectPathVTable vtableFallback, void* userData)
 {
    DBusError err;
+   // lock mutex to make sure dbus main loop is running
+   pthread_mutex_lock(&gDbusInitializedMtx);
 
    signal(SIGTERM, sigHandler);
    signal(SIGQUIT, sigHandler);
    signal(SIGINT,  sigHandler);
 
    DBusConnection* conn = (DBusConnection*)userData;
-
    dbus_error_init(&err);
 
    if (dbus_error_is_set(&err))
@@ -339,15 +329,13 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          gPollInfo.fds[0].fd = gPipefds[0];
          gPollInfo.fds[0].events = POLLIN;
 
-//         dbus_bus_add_match(conn, "type='signal', sender='org.genivi.persistence.admin',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
-//         dbus_connection_add_filter(conn, checkPersAdminSignal, NULL, NULL);
+         dbus_bus_add_match(conn, "type='signal',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
 
          // register for messages
          if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/adminconsumer", &vtable, userData))
              && (TRUE==dbus_connection_register_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer", &vtable2, userData))
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
-            printf("* * * * mainLoop ==> success: dbus_connection_register_object_path \n");
             if (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
             {
                printf("dbus_connection_set_watch_functions() failed\n");
@@ -355,15 +343,16 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             else
             {
                char buf[64];
-                  // mainloop is running now, release mutex
-                  //pthread_mutex_unlock(&gDbusInitializedMtx);
+
+               pthread_cond_signal(&gDbusInitializedCond);
+               pthread_mutex_unlock(&gDbusInitializedMtx);
                do
                {
                   bContinue = 0; /* assume error */
 
-                  while (DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
+                  while(DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
 
-                  while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, 500)))&&(EINTR==errno));
+                  while((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, 500)))&&(EINTR==errno));
 
                   if(0>ret)
                   {
@@ -446,13 +435,15 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             dbus_connection_unregister_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
-         printf("* * * * mainLoop ==> error: dbus_connection_register_object_path\n");
          close(gPipefds[1]);
          close(gPipefds[0]);
       }
       dbus_connection_unref(conn);
       dbus_shutdown();
    }
+
+   pthread_cond_signal(&gDbusInitializedCond);
+   pthread_mutex_unlock(&gDbusInitializedMtx);
    return 0;
 }
 

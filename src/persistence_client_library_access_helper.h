@@ -7,23 +7,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_access_helper.h
@@ -34,7 +20,7 @@
  */
 
 #include "persistence_client_library.h"
-
+#include <itzam.h>
 
 /**
  * @brief Create database search key and database location path
@@ -78,7 +64,7 @@ int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, 
  *
  * @return pointer to the gvdb database table or NULL if no valid database has been found
  */
-GvdbTable* get_resource_cfg_table_by_idx(int i);
+itzam_btree* get_resource_cfg_table_by_idx(int i);
 
 
 /**
@@ -103,7 +89,6 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc);
  * @brief free allocated data of a persistence configuration key
  */
 void free_pers_conf_key(PersistenceConfigurationKey_s* pc);
-
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ACCESS_HELPER_H */

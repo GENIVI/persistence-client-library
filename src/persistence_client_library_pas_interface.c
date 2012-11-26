@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_pas_interface.c
@@ -108,8 +94,8 @@ int check_pas_request(unsigned int request, unsigned int requestID)
 
 DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
 {
-   int request = 0, requestID = 0;
-   int errorCode = 0;
+   int request = 0, requestID = 0, errorCode = 0;
+   int errorReturn = 0;
 
    DBusMessage *reply;
    DBusError error;
@@ -117,6 +103,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
    if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &request,
                                                 DBUS_TYPE_INT32 , &requestID,
+                                                DBUS_TYPE_INT32 , &errorCode,
                                                 DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
@@ -138,7 +125,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
 
-   errorCode = check_pas_request(request, requestID);
+   errorReturn = check_pas_request(request, requestID);
 
    reply = dbus_message_new_method_return(message);
 
@@ -148,7 +135,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
       printf("DBus No memory\n");
    }
 
-   if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
+   if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorReturn, DBUS_TYPE_INVALID))
    {
      //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
       printf("DBus No memory\n");
@@ -276,7 +263,7 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
 int send_pas_register(const char* method, int notificationFlag)
 {
-   int rval = 0;
+   int rval = 0, errorCode = 0;
 
    DBusError error;
    dbus_error_init (&error);
@@ -290,12 +277,14 @@ int send_pas_register(const char* method, int notificationFlag)
                                                       "/org/genivi/persistence/admin",    // path
                                                        "org.genivi.persistence.admin",    // interface
                                                        method);                  // method
+
    if(message != NULL)
    {
       dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
                                         DBUS_TYPE_STRING, &objName,
-                                        DBUS_TYPE_INT32, &notificationFlag,
-                                        DBUS_TYPE_INT32, &gTimeoutMs,
+                                        DBUS_TYPE_INT32,  &notificationFlag,
+                                        DBUS_TYPE_UINT32, &gTimeoutMs,
+                                        DBUS_TYPE_INT32,  &errorCode,
                                         DBUS_TYPE_INVALID);
 
       if(conn != NULL)
@@ -332,7 +321,7 @@ int send_pas_register(const char* method, int notificationFlag)
 
 int send_pas_request(const char* method, unsigned int requestID, int status)
 {
-   int rval = 0;
+   int rval = 0, errorCode = 0;
 
    DBusError error;
    dbus_error_init (&error);
@@ -347,6 +336,7 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
    {
       dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
                                         DBUS_TYPE_INT32,  &status,
+                                        DBUS_TYPE_INT32,  &errorCode,
                                         DBUS_TYPE_INVALID);
 
       if(conn != NULL)

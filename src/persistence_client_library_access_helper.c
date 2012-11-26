@@ -4,23 +4,9 @@
  * Company         XS Embedded GmbH
  *****************************************************************************/
 /******************************************************************************
-   Permission is hereby granted, free of charge, to any person obtaining
-   a copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be included
-   in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
  * @file           persistence_client_library_access_helper.c
@@ -32,14 +18,23 @@
 
 
 #include "persistence_client_library_access_helper.h"
-#include "gvdb-builder.h"
-
+#include "persistence_client_library_itzam_errors.h"
 #include <stdlib.h>
 
 
 /// pointer to resource table database
-GvdbTable* gResource_table[] = { NULL, NULL, NULL, NULL };
+itzam_btree gResource_table[4];
+/// array to hold the information of database is already open
+int gResourceOpen[] = {0,0,0,0};
 
+
+/// structure definition of an persistence resource configuration table entry
+typedef struct record_t
+{
+    char m_key[PrctKeySize];        // the key
+    char m_data[PrctValueSize];     // data for the key
+}
+prct_record;
 
 
 PersistenceRCT_e get_table_id(int ldbid, int* groupId)
@@ -71,18 +66,18 @@ PersistenceRCT_e get_table_id(int ldbid, int* groupId)
 }
 
 
-GvdbTable* get_resource_cfg_table_by_idx(int i)
+itzam_btree* get_resource_cfg_table_by_idx(int i)
 {
-   return gResource_table[i];
+   return &gResource_table[i];
 }
 
 
 // status: OK
-GvdbTable* get_resource_cfg_table(PersistenceRCT_e rct, int group)
+itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
-   if(gResource_table[rct] == NULL)   // check if database is already open
+   if(gResourceOpen[rct] == 0)   // check if database is already open
    {
-      GError* error = NULL;
+      itzam_state  state;
       char filename[dbPathMaxLen];
       memset(filename, 0, dbPathMaxLen);
 
@@ -101,19 +96,16 @@ GvdbTable* get_resource_cfg_table(PersistenceRCT_e rct, int group)
          printf("get_resource_cfg_table - error: no valid PersistenceRCT_e\n");
          break;
       }
-
-      gResource_table[rct] = gvdb_table_new(filename, TRUE, &error);
-      //printf("get_resource_cfg_table - group %d | db filename: %s \n", group, filename);
-
-      if(gResource_table[rct] == NULL)
+      //printf("get_resource_cfg_table => %s \n", filename);
+      state = itzam_btree_open(&gResource_table[rct], filename, itzam_comparator_string, error_handler, 0 , 0);
+      if(state != ITZAM_OKAY)
       {
-         printf("get_resource_cfg_table - Database error: %s\n", error->message);
-         g_error_free(error);
-         error = NULL;
+         fprintf(stderr, "\nget_resource_cfg_table => Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
+      gResourceOpen[rct] = 1;
    }
 
-   return gResource_table[rct];
+   return &gResource_table[rct];
 }
 
 
@@ -133,6 +125,7 @@ int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
 {
    int rval = 1;
    char* token = NULL;
+   //printf("\nde_serialize_data: %s \n", buffer);
    if((buffer != NULL) && (pc != NULL))
    {
       token = strtok(buffer, " ");     // policy
@@ -282,46 +275,27 @@ int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, 
    rct = get_table_id(dbContext->context.ldbid, &groupId);
 
    // get resource configuration table
-   GvdbTable* resource_table = get_resource_cfg_table(rct, groupId);
+   itzam_btree* resource_table = get_resource_cfg_table(rct, groupId);
 
    if(resource_table != NULL)
    {
-      GVariant* dbValue = NULL;
-
+      prct_record search;
       // check if resouce id is in write through table
-      dbValue = gvdb_table_get_value(resource_table, resource_id);
-
-      if(dbValue != NULL)
+      if(itzam_true == itzam_btree_find(resource_table, resource_id, &search))
       {
-
-         gconstpointer valuePtr = NULL;
-         int size = g_variant_get_size(dbValue);
-         valuePtr = g_variant_get_data(dbValue);
-         if(valuePtr != NULL)
+         //printf("get_db_context ==> data: %s\n", search.m_data);
+         de_serialize_data(search.m_data, dbContext);
+         if(dbContext->storage != PersistenceStorage_custom )
          {
-            char* buffer = malloc(size);
-            if(buffer != NULL)
-            {
-               memcpy(buffer, valuePtr, size);
-               de_serialize_data(buffer, dbContext);
-
-               if(dbContext->storage != PersistenceStorage_custom )
-               {
-                  rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
-               }
-               else
-               {
-                  //printf("***************** dbEntry.custom_name %s \n", dbEntry.custom_name);
-                  // if customer storage, we use the custom name as path
-                  strncpy(dbPath, dbContext->custom_name, strlen(dbContext->custom_name));
-               }
-
-               free(buffer);
-               buffer = NULL;
-               free_pers_conf_key(dbContext);
-               resourceFound = 1;
-            }
+            rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
          }
+         else
+         {
+            // if customer storage, we use the custom name as path
+            strncpy(dbPath, dbContext->custom_name, strlen(dbContext->custom_name));
+         }
+         free_pers_conf_key(dbContext);
+         resourceFound = 1;
       }
       else
       {
@@ -334,7 +308,6 @@ int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, 
       printf("get_db_context - error resource table\n");
       rval = EPERS_NOPRCTABLE;
    }
-
 
    if(resourceFound == 0)
    {
