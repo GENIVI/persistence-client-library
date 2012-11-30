@@ -29,12 +29,12 @@ static int gHandleIdx = 1;
 static int gInitialized = 0;
 
 /// open file descriptor handle array
-int gOpenFdArray[maxPersHandle];
+int gOpenFdArray[MaxPersHandle];
 
 /// persistence handle array
-PersistenceHandle_s gHandleArray[maxPersHandle];
+PersistenceHandle_s gHandleArray[MaxPersHandle];
 /// free handle array
-int gFreeHandleArray[maxPersHandle];
+int gFreeHandleArray[MaxPersHandle];
 
 int gFreeHandleIdxHead = 0;
 
@@ -60,14 +60,14 @@ int get_persistence_handle_idx()
       }
       else
       {
-         if(gHandleIdx < maxPersHandle-1)
+         if(gHandleIdx < MaxPersHandle-1)
          {
             handle = gHandleIdx++;  // no free spot before current max, increment handle index
          }
          else
          {
             handle = -1;
-            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", maxPersHandle);
+            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", MaxPersHandle);
          }
       }
       pthread_mutex_unlock(&gMtx);
@@ -82,7 +82,7 @@ void set_persistence_handle_close_idx(int handle)
 {
    if(pthread_mutex_lock(&gMtx) == 0)
    {
-      if(gFreeHandleIdxHead < maxPersHandle)
+      if(gFreeHandleIdxHead < MaxPersHandle)
       {
          gFreeHandleArray[gFreeHandleIdxHead++] = handle;
       }

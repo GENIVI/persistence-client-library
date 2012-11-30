@@ -25,20 +25,19 @@
 /// handle structure definition
 typedef struct _PersistenceHandle_s
 {
-   int storage;               /// storage type
-   int policy;                /// write policy
-   char dbPath[dbPathMaxLen]; /// path to the database
-   char dbKey[dbKeyMaxLen];   /// database key
+   PersistenceInfo_s info;    /// persistence info
+   char dbPath[DbPathMaxLen]; /// path to the database
+   char dbKey[DbKeyMaxLen];   /// database key
 }
 PersistenceHandle_s;
 
 
 /// persistence handle array
-extern PersistenceHandle_s gHandleArray[maxPersHandle];
+extern PersistenceHandle_s gHandleArray[MaxPersHandle];
 
 
 /// open file descriptor handle array
-extern int gOpenFdArray[maxPersHandle];
+extern int gOpenFdArray[MaxPersHandle];
 
 
 /**

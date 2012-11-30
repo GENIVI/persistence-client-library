@@ -284,7 +284,7 @@ void process_prepare_shutdown(unsigned char requestId)
    pers_lock_access();
 
    // flush open files to disk
-   for(i=0; i<maxPersHandle; i++)
+   for(i=0; i<MaxPersHandle; i++)
    {
       int tmp = i;
       if(gOpenFdArray[tmp] == FileOpen)
@@ -295,7 +295,7 @@ void process_prepare_shutdown(unsigned char requestId)
    }
 
    // close open gvdb persistence resource configuration table
-   for(i=0; i< PersistenceRCT_LastEntry; i++)
+   for(i=0; i< PrctDbTableSize; i++)
    {
      resourceTable = get_resource_cfg_table_by_idx(i);
      // dereference opend database
@@ -310,10 +310,7 @@ void process_prepare_shutdown(unsigned char requestId)
    }
 
    //close opend database
-   database_close(PersistenceStorage_local, PersistencePolicy_wc);
-   database_close(PersistenceStorage_local, PersistencePolicy_wt);
-   database_close(PersistenceStorage_shared, PersistencePolicy_wc);
-   database_close(PersistenceStorage_shared, PersistencePolicy_wt);
+   database_close_all();
 
 
    // unload custom client libraries

@@ -48,13 +48,13 @@ typedef struct _CursorEntry_s
 CursorEntry_s;
 
 // cursor array handle
-CursorEntry_s gCursorArray[maxPersHandle];
+CursorEntry_s gCursorArray[MaxPersHandle];
 
 /// handle index
 static int gHandleIdx = 1;
 
 /// free handle array
-int gFreeCursorHandleArray[maxPersHandle];
+int gFreeCursorHandleArray[MaxPersHandle];
 // free head index
 int gFreeCursorHandleIdxHead = 0;
 
@@ -63,32 +63,34 @@ pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
 
 
 /// btree array
-static itzam_btree gBtree[PersistenceStoragePolicy_LastEntry][PersistencePolicy_LastEntry];
-static int gBtreeCreated[PersistenceStoragePolicy_LastEntry][PersistencePolicy_LastEntry] =
-{ {0, 0, 0 },
-  {0, 0, 0 },
-  {0, 0, 0 }
-};
+static itzam_btree gBtree[DbTableSize][PersistencePolicy_LastEntry];
+static int gBtreeCreated[DbTableSize][PersistencePolicy_LastEntry] = { {0} };
 
 
 
-itzam_btree* database_get(PersistenceStorage_e storage, PersistencePolicy_e policy, const char* dbPath)
+itzam_btree* database_get(PersistenceInfo_s* info, const char* dbPath)
 {
+   int arrayIdx = 0;
    itzam_btree* btree = NULL;
-   if(storage <= PersistenceStorage_shared)
+
+   // create array index: index is a combination of resource config table type and group
+   arrayIdx = info->configKey.storage + info->context.ldbid ;
+
+   if(arrayIdx <= DbTableSize)
    {
-      if(gBtreeCreated[storage][policy] == 0)
+      if(gBtreeCreated[arrayIdx][info->configKey.policy] == 0)
       {
          itzam_state  state = ITZAM_FAILED;
-         state = itzam_btree_open(&gBtree[storage][policy], dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
+         state = itzam_btree_open(&gBtree[arrayIdx][info->configKey.policy], dbPath,
+                                  itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
          if (state != ITZAM_OKAY)
          {
             fprintf(stderr, "database_get ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
          }
-         gBtreeCreated[storage][policy] = 1;
+         gBtreeCreated[arrayIdx][info->configKey.policy] = 1;
       }
-      // return tree
-      btree = &gBtree[storage][policy];
+      // assign database
+      btree = &gBtree[arrayIdx][info->configKey.policy];
    }
    else
    {
@@ -98,17 +100,19 @@ itzam_btree* database_get(PersistenceStorage_e storage, PersistencePolicy_e poli
 }
 
 
-void database_close(PersistenceStorage_e storage, PersistencePolicy_e policy)
+void database_close(PersistenceInfo_s* info)
 {
-   if(storage <= PersistenceStorage_shared )
+   int arrayIdx = info->configKey.storage + info->context.ldbid;
+
+   if(info->configKey.storage <= PersistenceStorage_shared )
    {
       itzam_state  state = ITZAM_FAILED;
-      state = itzam_btree_close(&gBtree[storage][policy]);
+      state = itzam_btree_close(&gBtree[arrayIdx][info->configKey.policy]);
       if (state != ITZAM_OKAY)
       {
          fprintf(stderr, "database_close ==> Close Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
-      gBtreeCreated[storage][policy] = 0;
+      gBtreeCreated[arrayIdx][info->configKey.policy] = 0;
    }
    else
    {
@@ -116,21 +120,52 @@ void database_close(PersistenceStorage_e storage, PersistencePolicy_e policy)
    }
 }
 
+void database_close_all()
+{
+   int i = 0;
+
+   for(i=0; i<DbTableSize; i++)
+   {
+      // close write cached database
+      if(gBtreeCreated[i][PersistencePolicy_wc] == 1)
+      {
+         itzam_state  state = ITZAM_FAILED;
+         state = itzam_btree_close(&gBtree[i][PersistencePolicy_wc]);
+         if (state != ITZAM_OKAY)
+         {
+            fprintf(stderr, "database_close ==> Close WC: Itzam problem: %s\n", STATE_MESSAGES[state]);
+         }
+         gBtreeCreated[i][PersistencePolicy_wc] = 0;
+      }
+
+      // close write through database
+      if(gBtreeCreated[i][PersistencePolicy_wt] == 1)
+      {
+         itzam_state  state = ITZAM_FAILED;
+         state = itzam_btree_close(&gBtree[i][PersistencePolicy_wt]);
+         if (state != ITZAM_OKAY)
+         {
+            fprintf(stderr, "database_close ==> Close WT: Itzam problem: %s\n", STATE_MESSAGES[state]);
+         }
+         gBtreeCreated[i][PersistencePolicy_wt] = 0;
+      }
+   }
+}
 
 
 
-
-int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy, unsigned char* buffer, unsigned int buffer_size)
+int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
 {
    int read_size = -1;
 
-   if(PersistenceStorage_shared == storage || PersistenceStorage_local == storage)
+   if(   PersistenceStorage_shared == info->configKey.storage
+      || PersistenceStorage_local == info->configKey.storage)
    {
       itzam_btree* btree = NULL;
       itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s search;
 
-      btree = database_get(storage, policy, dbPath);
+      btree = database_get(info, dbPath);
       if(btree != NULL)
       {
          if(itzam_true == itzam_btree_find(btree, key, &search))
@@ -150,7 +185,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
          //
          // workaround till lifecycle is working correctly
          //
-         database_close(storage, policy);
+         database_close(info);
       }
       else
       {
@@ -158,7 +193,7 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
          fprintf(stderr, "\npersistence_get_data ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
    }
-   else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+   else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx =  custom_client_name_to_id(dbPath, 1);
       char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
@@ -178,18 +213,19 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 
 
 
-int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy, unsigned char* buffer, unsigned int buffer_size)
+int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
 {
    int write_size = -1;
 
-   if(PersistenceStorage_shared == storage || PersistenceStorage_local == storage)
+   if(   PersistenceStorage_shared == info->configKey.storage
+      || PersistenceStorage_local == info->configKey.storage)
    {
       write_size = buffer_size;
       itzam_btree* btree = NULL;
       itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s insert;
 
-      btree = database_get(storage, policy, dbPath);
+      btree = database_get(info, dbPath);
       if(btree != NULL)
       {
          int keySize = 0;
@@ -232,7 +268,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
             //
             // workaround till lifecycle is working correctly
             //
-            database_close(storage, policy);
+            database_close(info);
          }
          else
          {
@@ -246,7 +282,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
          fprintf(stderr, "\npersistence_set_data ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
    }
-   else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+   else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
@@ -263,18 +299,19 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
 
 
 
-int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy)
+int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info)
 {
    int read_size = -1;
 
-   if(PersistenceStorage_shared == storage || PersistenceStorage_local == storage)
+   if(   PersistenceStorage_shared == info->configKey.storage
+      || PersistenceStorage_local == info->configKey.storage)
    {
       int keySize = 0;
       itzam_btree*  btree = NULL;
       itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s search;
 
-      btree = database_get(storage, policy, dbPath);
+      btree = database_get(info, dbPath);
       if(btree != NULL)
       {
          keySize = (int)strlen((const char*)key);
@@ -299,7 +336,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
          //
          // workaround till lifecycle is working correctly
          //
-         database_close(storage, policy);
+         database_close(info);
       }
       else
       {
@@ -307,7 +344,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
          fprintf(stderr, "\npersistence_get_data_size ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
    }
-   else if(PersistenceStorage_custom == storage)   // custom storage implementation via custom library
+   else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
@@ -324,16 +361,16 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 
 
 
-int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage, PersistencePolicy_e policy)
+int persistence_delete_data(char* dbPath, char* dbKey, PersistenceInfo_s* info)
 {
    int ret = 0;
-   if(PersistenceStorage_custom != storage)
+   if(PersistenceStorage_custom != info->configKey.storage)
    {
       itzam_btree*  btree = NULL;
       KeyValuePair_s delete;
 
       //printf("delete_key_from_table_itzam => Path: \"%s\" | key: \"%s\" \n", dbPath, key);
-      btree = database_get(storage, policy, dbPath);
+      btree = database_get(info, dbPath);
       if(btree != NULL)
       {
          int keySize = 0;
@@ -359,7 +396,7 @@ int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e stor
          //
          // workaround till lifecycle is working correctly
          //
-         database_close(storage, policy);
+         database_close(info);
       }
       else
       {
@@ -406,14 +443,14 @@ int get_cursor_handle()
       }
       else
       {
-         if(gHandleIdx < maxPersHandle-1)
+         if(gHandleIdx < MaxPersHandle-1)
          {
             handle = gHandleIdx++;  // no free spot before current max, increment handle index
          }
          else
          {
             handle = -1;
-            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", maxPersHandle);
+            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", MaxPersHandle);
          }
       }
       pthread_mutex_unlock(&gMtx);
@@ -426,7 +463,7 @@ void close_cursor_handle(int handlerDB)
 {
    if(pthread_mutex_lock(&gMtx) == 0)
    {
-      if(gFreeCursorHandleIdxHead < maxPersHandle)
+      if(gFreeCursorHandleIdxHead < MaxPersHandle)
       {
          gFreeCursorHandleArray[gFreeCursorHandleIdxHead++] = handlerDB;
       }
@@ -435,18 +472,23 @@ void close_cursor_handle(int handlerDB)
 }
 
 
+
 int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, PersistencePolicy_e policy)
 {
    int handle = -1;
    itzam_btree*  btree = NULL;
 
+   PersistenceInfo_s info;
+   info.configKey.storage = storage;
+   info.configKey.policy  = policy;
+
    //printf("CREATE-Cursor: %d | path: %s \n", (int)storage, dbPath);
-   btree = database_get(storage, policy, dbPath);
+   btree = database_get(&info, dbPath);
    if(btree != NULL)
    {
       itzam_state  state;
       handle = get_cursor_handle();
-      if(handle < maxPersHandle && handle >= 0)
+      if(handle < MaxPersHandle && handle >= 0)
       {
          state = itzam_btree_cursor_create(&gCursorArray[handle].m_cursor, btree);
          if(state == ITZAM_OKAY)
@@ -471,7 +513,7 @@ int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, Per
 int persistence_db_cursor_next(unsigned int handlerDB)
 {
    int rval = -1;
-   if(handlerDB < maxPersHandle && handlerDB >= 0)
+   if(handlerDB < MaxPersHandle && handlerDB >= 0)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -494,7 +536,7 @@ int persistence_db_cursor_next(unsigned int handlerDB)
    }
    else
    {
-      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, maxPersHandle);
+      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
    }
    return rval;
 }
@@ -506,7 +548,7 @@ int persistence_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out,
    int rval = -1;
    KeyValuePair_s search;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < MaxPersHandle)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -530,7 +572,7 @@ int persistence_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out,
    }
    else
    {
-      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, maxPersHandle);
+      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
    }
    return rval;
 }
@@ -542,7 +584,7 @@ int persistence_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, i
    int rval = -1;
    KeyValuePair_s search;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < MaxPersHandle)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -567,7 +609,7 @@ int persistence_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, i
    }
    else
    {
-      printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, maxPersHandle);
+      printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
    }
    return rval;
 }
@@ -579,7 +621,7 @@ int persistence_db_cursor_get_data_size(unsigned int handlerDB)
    int size = -1;
    KeyValuePair_s search;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < MaxPersHandle)
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -593,7 +635,7 @@ int persistence_db_cursor_get_data_size(unsigned int handlerDB)
    }
    else
    {
-      printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, maxPersHandle);
+      printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
    }
    return size;
 }
@@ -605,13 +647,19 @@ int persistence_db_cursor_destroy(unsigned int handlerDB)
    int rval = -1;
    itzam_state  state;
 
-   if(handlerDB < maxPersHandle)
+   if(handlerDB < MaxPersHandle)
    {
       state = itzam_btree_cursor_free(&gCursorArray[handlerDB].m_cursor);
       if (state == ITZAM_OKAY)
       {
          rval = 0;
-         database_close(gCursorArray[handlerDB].storage, gCursorArray[handlerDB].policy);
+         /*
+         PersistenceInfo_s info;
+         info.configKey.storage = gCursorArray[handlerDB].storage;
+         info.configKey.policy  = gCursorArray[handlerDB].policy;
+
+         database_close(&info);   // to do correct cursor handling
+         */
 
          gCursorArray[handlerDB].m_empty = 1;
          gCursorArray[handlerDB].storage = PersistenceStoragePolicy_LastEntry;

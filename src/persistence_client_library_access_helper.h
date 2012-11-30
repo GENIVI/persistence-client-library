@@ -25,7 +25,7 @@
 /**
  * @brief Create database search key and database location path
  *
- * @param ldbid logical database id
+ * @param dbContext the database context
  * @param resource_id the resource id
  * @param user_no user identification
  * @param seat_no seat identifier
@@ -37,14 +37,14 @@
  * @return 1 if shared database and 0 if local database or PersistenceStoragePolicy_LastEntry
  *         when no valid database has been found
  */
-int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
+int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 
 
 
 /**
  * Create database search key and database location path
  *
- * @param ldbid logical database id
+ * @param dbContext the database context
  * @param resource_id the resource id
  * @param user_no user identification
  * @param seat_no seat identifier
@@ -55,7 +55,7 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
  *
  * @return 0 or a negative value with one of the following errors: EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
-int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
+int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 
 
 

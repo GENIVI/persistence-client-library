@@ -38,7 +38,7 @@ int file_close(int fd)
 {
    int rval = -1;
 
-   if(fd < maxPersHandle)
+   if(fd < MaxPersHandle)
    {
       __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
       rval = close(fd);
@@ -69,7 +69,7 @@ void* file_map_data(void* addr, long size, long offset, int fd)
 {
    void* ptr = 0;
 
-   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       int mapFlag = PROT_WRITE | PROT_READ;
       ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
@@ -87,27 +87,27 @@ int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, uns
 {
    int handle = -1, shared_DB = 0, flags = O_RDWR;
 
-   PersistenceConfigurationKey_s dbContext;
+   PersistenceInfo_s dbContext;
 
-   char dbKey[dbKeyMaxLen];      // database key
-   char dbPath[dbPathMaxLen];    // database location
+   char dbKey[DbKeyMaxLen];      // database key
+   char dbPath[DbPathMaxLen];    // database location
 
-   memset(dbKey, 0, dbKeyMaxLen);
-   memset(dbPath, 0, dbPathMaxLen);
+   memset(dbKey, 0, DbKeyMaxLen);
+   memset(dbPath, 0, DbPathMaxLen);
 
    dbContext.context.ldbid   = ldbid;
    dbContext.context.seat_no = seat_no;
    dbContext.context.user_no = user_no;
 
    // get database context: database path and database key
-   shared_DB = get_db_context(&dbContext, resource_id, resIsFile, dbKey, dbPath);
+   shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
    if(shared_DB != -1)  // check valid database context
    {
       handle = open(dbPath, flags);
       if(handle != -1)
       {
-         if(handle < maxPersHandle)
+         if(handle < MaxPersHandle)
          {
             __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
          }
@@ -139,23 +139,23 @@ int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, u
 {
    int rval = 0;
 
-   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       int shared_DB = 0;
-      PersistenceConfigurationKey_s dbContext;
+      PersistenceInfo_s dbContext;
 
-      char dbKey[dbKeyMaxLen];      // database key
-      char dbPath[dbPathMaxLen];    // database location
+      char dbKey[DbKeyMaxLen];      // database key
+      char dbPath[DbPathMaxLen];    // database location
 
-      memset(dbKey, 0, dbKeyMaxLen);
-      memset(dbPath, 0, dbPathMaxLen);
+      memset(dbKey, 0, DbKeyMaxLen);
+      memset(dbPath, 0, DbPathMaxLen);
 
       dbContext.context.ldbid   = ldbid;
       dbContext.context.seat_no = seat_no;
       dbContext.context.user_no = user_no;
 
       // get database context: database path and database key
-      shared_DB = get_db_context(&dbContext, resource_id, resIsFile, dbKey, dbPath);
+      shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
       if(shared_DB != -1)  // check valid database context
       {
@@ -180,7 +180,7 @@ int file_seek(int fd, long int offset, int whence)
 {
    int rval = 0;
 
-   if(accessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(AccessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
       rval = lseek(fd, offset, whence);
    }
@@ -198,7 +198,7 @@ int file_unmap_data(void* address, long size)
 {
    int rval = 0;
 
-   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       rval =  munmap(address, size);
    }
@@ -216,7 +216,7 @@ int file_write_data(int fd, const void * buffer, int buffer_size)
 {
    int size = 0;
 
-   if(accessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       size = write(fd, buffer, buffer_size);
    }

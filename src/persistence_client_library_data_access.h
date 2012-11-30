@@ -20,7 +20,7 @@
  * @see            
  */
 
-#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x02000000U)
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x02100000U)
 
 
 #include "persistence_client_library.h"
@@ -32,14 +32,14 @@
  *
  * @param dbPath the path to the database where the key is in 
  * @param key the database key
- * @param storage the storage identifier (local, shared or custom)
- *        (use dbShared for shared key or dbLocal if the key is local)
+ * @param info persistence information
+ * @param buffer the buffer holding the data
+ * @param buffer_size the size of the buffer
  *
  * @return the number of bytes written or a negative value if an error occured with the following error codes:
  *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy,
-                         unsigned char* buffer, unsigned int buffer_size);
+int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -48,16 +48,14 @@ int persistence_set_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key
- * @param storage the storage identifier (local, shared or custom)
- * @param policy the storage policy (cached or write throug)
+ * @param info persistence information
  * @param buffer the buffer holding the data
  * @param buffer_size the size of the buffer
  *
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
  *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy,
-                         unsigned char* buffer, unsigned int buffer_size);
+int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -66,13 +64,12 @@ int persistence_get_data(char* dbPath, char* key, PersistenceStorage_e storage, 
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key
- * @param storage the storage identifier (local, shared or custom)
- * @param policy the storage policy (cached or write throug)
+ * @param info persistence information
  *
  * @return size of data in bytes read from the key or on error a negative value with the following error codes:
  *  EPERS_NOPRCTABLE or EPERS_NOKEY
  */
-int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e storage, PersistencePolicy_e policy);
+int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info);
 
 
 
@@ -87,25 +84,34 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceStorage_e stor
 int persistence_reg_notify_on_change(char* dbPath, char* key);
 
 
+
 /**
  * @brief delete data
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key to register on
+ * @param info persistence information
  *
  * @return 0 if deletion was successfull;
  *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
  */
-int persistence_delete_data(char* dbPath, char* dbKey, PersistenceStorage_e storage, PersistencePolicy_e policy);
+int persistence_delete_data(char* dbPath, char* dbKey, PersistenceInfo_s* info);
+
+
 
 /**
  * @brief close the database for the given storage type
  *
- * @param storage the storage type of the database to close
+ * @param info persistence information
  */
-void database_close(PersistenceStorage_e storage, PersistencePolicy_e policy);
+void database_close(PersistenceInfo_s* info);
 
 
+
+/**
+ * @brief close all databases
+ */
+void database_close_all();
 
 
 //---------------------------------------------------------------------------------------------

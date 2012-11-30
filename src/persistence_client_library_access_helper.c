@@ -23,9 +23,9 @@
 
 
 /// pointer to resource table database
-itzam_btree gResource_table[4];
+itzam_btree gResource_table[PrctDbTableSize];
 /// array to hold the information of database is already open
-int gResourceOpen[] = {0,0,0,0};
+int gResourceOpen[PrctDbTableSize] = {0};
 
 
 /// structure definition of an persistence resource configuration table entry
@@ -75,37 +75,48 @@ itzam_btree* get_resource_cfg_table_by_idx(int i)
 // status: OK
 itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
-   if(gResourceOpen[rct] == 0)   // check if database is already open
-   {
-      itzam_state  state;
-      char filename[dbPathMaxLen];
-      memset(filename, 0, dbPathMaxLen);
+   int arrayIdx = 0;
+   itzam_btree* tree = NULL;
 
-      switch(rct)    // create db name
+   // create array index: index is a combination of resource config table type and group
+   arrayIdx = rct + group;
+
+   if(arrayIdx < PrctDbTableSize)
+   {
+      if(gResourceOpen[arrayIdx] == 0)   // check if database is already open
       {
-      case PersistenceRCT_local:
-         snprintf(filename, dbPathMaxLen, gLocalWtPath, gAppId, gResTableCfg);
-         break;
-      case PersistenceRCT_shared_public:
-         snprintf(filename, dbPathMaxLen, gSharedPublicWtPath, gResTableCfg);
-         break;
-      case PersistenceRCT_shared_group:
-         snprintf(filename, dbPathMaxLen, gSharedWtPath, group, gResTableCfg);
-         break;
-      default:
-         printf("get_resource_cfg_table - error: no valid PersistenceRCT_e\n");
-         break;
+         itzam_state  state;
+         char filename[DbPathMaxLen];
+         memset(filename, 0, DbPathMaxLen);
+
+         switch(rct)    // create db name
+         {
+         case PersistenceRCT_local:
+            snprintf(filename, DbPathMaxLen, gLocalWtPath, gAppId, gResTableCfg);
+            break;
+         case PersistenceRCT_shared_public:
+            snprintf(filename, DbPathMaxLen, gSharedPublicWtPath, gResTableCfg);
+            break;
+         case PersistenceRCT_shared_group:
+            snprintf(filename, DbPathMaxLen, gSharedWtPath, group, gResTableCfg);
+            break;
+         default:
+            printf("get_resource_cfg_table - error: no valid PersistenceRCT_e\n");
+            break;
+         }
+
+         //printf("get_resource_cfg_table => %s \n", filename);
+         state = itzam_btree_open(&gResource_table[arrayIdx], filename, itzam_comparator_string, error_handler, 0 , 0);
+         if(state != ITZAM_OKAY)
+         {
+            fprintf(stderr, "\nget_resource_cfg_table => Itzam problem: %s\n", STATE_MESSAGES[state]);
+         }
+         gResourceOpen[arrayIdx] = 1;  // remember the index has an DB entry
       }
-      //printf("get_resource_cfg_table => %s \n", filename);
-      state = itzam_btree_open(&gResource_table[rct], filename, itzam_comparator_string, error_handler, 0 , 0);
-      if(state != ITZAM_OKAY)
-      {
-         fprintf(stderr, "\nget_resource_cfg_table => Itzam problem: %s\n", STATE_MESSAGES[state]);
-      }
-      gResourceOpen[rct] = 1;
+      tree = &gResource_table[arrayIdx];
    }
 
-   return &gResource_table[rct];
+   return tree;
 }
 
 
@@ -266,7 +277,7 @@ void free_pers_conf_key(PersistenceConfigurationKey_s* pc)
 
 
 // status: OK
-int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
+int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
    int rval = 0, resourceFound = 0, groupId = 0;
 
@@ -284,17 +295,17 @@ int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, 
       if(itzam_true == itzam_btree_find(resource_table, resource_id, &search))
       {
          //printf("get_db_context ==> data: %s\n", search.m_data);
-         de_serialize_data(search.m_data, dbContext);
-         if(dbContext->storage != PersistenceStorage_custom )
+         de_serialize_data(search.m_data, &dbContext->configKey);
+         if(dbContext->configKey.storage != PersistenceStorage_custom )
          {
             rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
          }
          else
          {
             // if customer storage, we use the custom name as path
-            strncpy(dbPath, dbContext->custom_name, strlen(dbContext->custom_name));
+            strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
          }
-         free_pers_conf_key(dbContext);
+         free_pers_conf_key(&dbContext->configKey);
          resourceFound = 1;
       }
       else
@@ -321,7 +332,7 @@ int get_db_context(PersistenceConfigurationKey_s* dbContext, char* resource_id, 
 
 
 // status: OK
-int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
+int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
    int storePolicy = PersistenceStoragePolicy_LastEntry;
 
@@ -336,7 +347,7 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
          //
          // Node is added in front of the resource ID as the key string.
          //
-         snprintf(dbKey, dbKeyMaxLen, "%s/%s", gNode, resource_id);
+         snprintf(dbKey, DbKeyMaxLen, "%s/%s", gNode, resource_id);
       }
       else
       {
@@ -346,12 +357,12 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
          if(dbContext->context.seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, dbKeyMaxLen, "%s%d/%s", gUser, dbContext->context.user_no, resource_id);
+            snprintf(dbKey, DbKeyMaxLen, "%s%d/%s", gUser, dbContext->context.user_no, resource_id);
          }
          else
          {
             // /User/<user_no_parameter>/Seat/<seat_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, dbKeyMaxLen, "%s%d%s%d/%s", gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
+            snprintf(dbKey, DbKeyMaxLen, "%s%d%s%d/%s", gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
          }
       }
       storePolicy = PersistenceStorage_local;
@@ -367,11 +378,11 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
 
       if(dbContext->context.seat_no != 0)
       {
-         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
+         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
       }
       else
       {
-         snprintf(dbKey, dbKeyMaxLen, "/%x%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, resource_id);
+         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, resource_id);
       }
       storePolicy = PersistenceStorage_local;
    }
@@ -389,19 +400,19 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
          //
          // shared  G R O U P  database * * * * * * * * * * * * *  * * * * * *
          //
-         if(PersistencePolicy_wc == dbContext->policy)
+         if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
-            if(isFile == resIsNoFile)
-               snprintf(dbPath, dbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, gSharedCached);
+            if(isFile == ResIsNoFile)
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, gSharedCached);
             else
-               snprintf(dbPath, dbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, dbKey);
          }
-         else if(PersistencePolicy_wt == dbContext->policy)
+         else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
-            if(isFile == resIsNoFile)
-               snprintf(dbPath, dbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, gSharedWt);
+            if(isFile == ResIsNoFile)
+               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, gSharedWt);
             else
-               snprintf(dbPath, dbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, dbKey);
          }
       }
       else
@@ -410,19 +421,19 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
          //
          // shared  P U B L I C  database * * * * * * * * * * * * *  * * * * *
          //
-         if(PersistencePolicy_wc == dbContext->policy)
+         if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
-            if(isFile == resIsNoFile)
-               snprintf(dbPath, dbPathMaxLen, gSharedPublicCachePath, gSharedCached);
+            if(isFile == ResIsNoFile)
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gSharedCached);
             else
-               snprintf(dbPath, dbPathMaxLen, gSharedPublicCachePath, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, dbKey);
          }
-         else if(PersistencePolicy_wt == dbContext->policy)
+         else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
-            if(isFile == resIsNoFile)
-               snprintf(dbPath, dbPathMaxLen, gSharedPublicWtPath, gSharedWt);
+            if(isFile == ResIsNoFile)
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gSharedWt);
             else
-               snprintf(dbPath, dbPathMaxLen, gSharedPublicWtPath, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, dbKey);
          }
       }
 
@@ -432,19 +443,19 @@ int get_db_path_and_key(PersistenceConfigurationKey_s* dbContext, char* resource
    {
       // L O C A L   database
 
-      if(PersistencePolicy_wc == dbContext->policy)
+      if(PersistencePolicy_wc == dbContext->configKey.policy)
       {
-         if(isFile == resIsNoFile)
-            snprintf(dbPath, dbPathMaxLen, gLocalCachePath, gAppId, gLocalCached);
+         if(isFile == ResIsNoFile)
+            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, gLocalCached);
          else
-            snprintf(dbPath, dbPathMaxLen, gLocalCachePath, gAppId, dbKey);
+            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, dbKey);
       }
-      else if(PersistencePolicy_wt == dbContext->policy)
+      else if(PersistencePolicy_wt == dbContext->configKey.policy)
       {
-         if(isFile == resIsNoFile)
-            snprintf(dbPath, dbPathMaxLen, gLocalWtPath, gAppId, gLocalWt);
+         if(isFile == ResIsNoFile)
+            snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId, gLocalWt);
          else
-            snprintf(dbPath, dbPathMaxLen, gLocalWtPath, gAppId, dbKey);
+            snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId, dbKey);
       }
 
       storePolicy = PersistenceStorage_local;   // we have a local database

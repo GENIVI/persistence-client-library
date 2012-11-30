@@ -31,9 +31,9 @@
 /// constant definitions
 enum _PersistenceConstantDef
 {
-   resIsNoFile          = 0,        /// flag to identify that resource a not file
-   resIsFile            = 1,        /// flag to identify that resource a file
-   accessNoLock         = 1,        /// flag to indicate that access is not locked
+   ResIsNoFile          = 0,        /// flag to identify that resource a not file
+   ResIsFile            = 1,        /// flag to identify that resource a file
+   AccessNoLock         = 1,        /// flag to indicate that access is not locked
 
    FileClosed           = 0,
    FileOpen             = 1,
@@ -44,9 +44,11 @@ enum _PersistenceConstantDef
 
    PrctKeySize             = 64,    /// persistence resource config table max key size
    PrctValueSize           = 256,   /// persistence resource config table max value size
+   PrctDbTableSize         = 1024,  /// number of persistence resource config tables to store
 
    DbKeySize               = 64,    /// database max key size
    DbValueSize             = 16384, /// database max value size
+   DbTableSize             = 1024,  /// database table size
 
    PasMsg_Block            = 1,     /// persistence administration service block access
    PasMsg_WriteBack        = 2,     /// persistence administration service write_back
@@ -56,10 +58,10 @@ enum _PersistenceConstantDef
    PasErrorStatus_FAIL     = -1,    /// persistence administration service msg return status
 
    CustLibMaxLen = 128,             /// max length of the custom library name and path
-   dbKeyMaxLen   = 128,             /// max database key length
-   dbPathMaxLen  = 128,             /// max database path length
-   maxAppNameLen = 128,             /// max application name
-   maxPersHandle = 256,             /// max number of parallel open persistence handles
+   DbKeyMaxLen   = 128,             /// max database key length
+   DbPathMaxLen  = 128,             /// max database path length
+   MaxAppNameLen = 128,             /// max application name
+   MaxPersHandle = 256,             /// max number of parallel open persistence handles
 
    defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };
@@ -104,7 +106,6 @@ typedef struct _PersistenceConfigurationKey_s
 {
    PersistencePolicy_e     policy;           /**< policy  */
    PersistenceStorage_e    storage;          /**< definition of storage to use */
-   PersistenceDbContext_s  context;          /**< database context*/
    unsigned int            permission;       /**< access right, corresponds to UNIX */
    unsigned int            max_size;         /**< max size expected for the key */
    char *                  reponsible;       /**< name of responsible application */
@@ -112,9 +113,16 @@ typedef struct _PersistenceConfigurationKey_s
 } PersistenceConfigurationKey_s;
 
 
+/// persistence information
+typedef struct _PersistenceInfo_s
+{
+   PersistenceDbContext_s           context;          /**< database context*/
+   PersistenceConfigurationKey_s    configKey;        /**< prct configuration key*/
+
+} PersistenceInfo_s;
 
 
-
+/// persistence resource config table type definition
 typedef enum _PersistenceRCT_e
 {
    PersistenceRCT_local         = 0,
@@ -171,7 +179,7 @@ extern const char* gSharedPublicWtPath;
 
 
 /// application id
-extern char gAppId[maxAppNameLen];
+extern char gAppId[MaxAppNameLen];
 
 /// max key value data size
 extern int gMaxKeyValDataSize;

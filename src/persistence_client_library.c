@@ -30,10 +30,14 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <dbus/dbus.h>
-
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
+
+#include <dbus/dbus.h>
+
+
+
+#define ENABLE_DBUS_INTERFACE 1
 
 extern char* __progname;
 
@@ -87,7 +91,7 @@ const char* gSharedPublicWtPath    = "/Data/mnt-wt/shared/public%s";
 
 
 /// application id
-char gAppId[maxAppNameLen];
+char gAppId[MaxAppNameLen];
 
 /// max key value data size [default 16kB]
 int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
@@ -122,15 +126,16 @@ void pers_library_init(void)
       gMaxKeyValDataSize = atoi(pDataSize);
    }
 
+#if ENABLE_DBUS_INTERFACE == 1
    setup_dbus_mainloop();
-
 
    // register for lifecycle and persistence admin service dbus messages
    register_lifecycle();
    register_pers_admin_service();
+#endif
 
    // clear the open file descriptor array
-   memset(gOpenFdArray, maxPersHandle, sizeof(int));
+   memset(gOpenFdArray, MaxPersHandle, sizeof(int));
 
    /// get custom library names to load
    status = get_custom_libraries();
@@ -178,7 +183,7 @@ void pers_library_init(void)
    }
 
    //printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
-   strncpy(gAppId, __progname, maxAppNameLen);
+   strncpy(gAppId, __progname, MaxAppNameLen);
    // destory mutex
    pthread_mutex_destroy(&gDbusInitializedMtx);
    pthread_cond_destroy(&gDbusInitializedCond);
@@ -189,11 +194,11 @@ void pers_library_init(void)
 void pers_library_destroy(void)
 {
 
-
+#if ENABLE_DBUS_INTERFACE == 1
    // unregister for lifecycle and persistence admin service dbus messages
    unregister_lifecycle();
    unregister_pers_admin_service();
-
+#endif
 
    DLT_UNREGISTER_CONTEXT(persClientLibCtx);
    DLT_UNREGISTER_APP();
