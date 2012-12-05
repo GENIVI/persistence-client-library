@@ -17,7 +17,7 @@
  * @see            
  */
 
-#include "persistence_client_library_data_access.h"
+#include "../include_protected/persistence_client_library_data_access.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_access_helper.h"
 #include "persistence_client_library_itzam_errors.h"

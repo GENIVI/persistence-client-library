@@ -19,6 +19,10 @@
  * @see
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // common error, for this error errno will be set
 #define EPERS_COMMON             (-1)
 /// file system is locked
@@ -88,5 +92,8 @@
  */
 void* dbus_main_dispatching_loop(void* dataPtr);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ERROR_DEF_H */

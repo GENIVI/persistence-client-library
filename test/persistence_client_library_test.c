@@ -30,9 +30,8 @@
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_error_def.h"
 
-// internal header, should normally not included in any application
-// only for testing the cursor functionality
-#include "../src/persistence_client_library_data_access.h"
+// protected header, should be used only be persistence components
+#include "../include_protected/persistence_client_library_data_access.h"
 
 
 #define BUF_SIZE     64

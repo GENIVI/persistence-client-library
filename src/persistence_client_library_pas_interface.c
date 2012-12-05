@@ -19,7 +19,8 @@
 
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
-#include "persistence_client_library.h"
+
+#include "../include_protected/persistence_client_library.h"
 
 #include <errno.h>
 #include <unistd.h>
@@ -60,9 +61,10 @@ int check_pas_request(unsigned int request, unsigned int requestID)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
-         // add command to queue
-         static const int cmd = CMD_PAS_BLOCK_AND_WRITE_BACK;
-         if(sizeof(int)!=write(gPipefds[1], &cmd, sizeof(int)))
+         // add command and data to queue
+         unsigned long cmd = ( (requestID << 8) | CMD_PAS_BLOCK_AND_WRITE_BACK);
+
+         if(sizeof(int)!=write(gPipefds[1], &cmd, sizeof(unsigned long)))
          {
             printf("write failed w/ errno %d\n", errno);
             rval = PasErrorStatus_FAIL;
@@ -94,16 +96,16 @@ int check_pas_request(unsigned int request, unsigned int requestID)
 
 DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
 {
-   int request = 0, requestID = 0, errorCode = 0;
+   int request = 0, requestID = 0;
    int errorReturn = 0;
 
    DBusMessage *reply;
    DBusError error;
    dbus_error_init (&error);
 
+
    if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &request,
                                                 DBUS_TYPE_INT32 , &requestID,
-                                                DBUS_TYPE_INT32 , &errorCode,
                                                 DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
@@ -124,7 +126,6 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
-
    errorReturn = check_pas_request(request, requestID);
 
    reply = dbus_message_new_method_return(message);
@@ -263,7 +264,7 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
 int send_pas_register(const char* method, int notificationFlag)
 {
-   int rval = 0, errorCode = 0;
+   int rval = 0;
 
    DBusError error;
    dbus_error_init (&error);
@@ -284,7 +285,6 @@ int send_pas_register(const char* method, int notificationFlag)
                                         DBUS_TYPE_STRING, &objName,
                                         DBUS_TYPE_INT32,  &notificationFlag,
                                         DBUS_TYPE_UINT32, &gTimeoutMs,
-                                        DBUS_TYPE_INT32,  &errorCode,
                                         DBUS_TYPE_INVALID);
 
       if(conn != NULL)
@@ -373,7 +373,8 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
 
 int register_pers_admin_service(void)
 {
-   int notificationFlag = 88;  // TODO send correct notification flag
+   // register for everything
+   int notificationFlag = PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock;
 
    return send_pas_register("RegisterPersAdminNotification", notificationFlag);
 }
@@ -382,31 +383,29 @@ int register_pers_admin_service(void)
 
 int unregister_pers_admin_service(void)
 {
-   int notificationFlag = 88;  // TODO send correct notification flag
+   // register for everything
+   int notificationFlag = PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock;
 
    return send_pas_register("UnRegisterPersAdminNotification", notificationFlag);
 }
 
 
 
-int pers_admin_service_data_sync_complete(void)
+int pers_admin_service_data_sync_complete(unsigned int requestID)
 {
-   unsigned int requestID = 0;
-   int status = 0;
-
-   return send_pas_request("PersistenceAdminRequestCompleted", requestID, status);
+   return send_pas_request("PersistenceAdminRequestCompleted", requestID, 1);
 }
 
 
 
-void process_block_and_write_data_back(void)
+void process_block_and_write_data_back(unsigned int requestID)
 {
    // lock persistence data access
    pers_lock_access();
    // sync data back to memory device
    pers_data_sync();
    // send complete notification
-   pers_admin_service_data_sync_complete();
+   pers_admin_service_data_sync_complete(requestID);
 }
 
 

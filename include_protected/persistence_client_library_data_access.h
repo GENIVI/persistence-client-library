@@ -20,6 +20,10 @@
  * @see            
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x02100000U)
 
 
@@ -179,5 +183,8 @@ int persistence_db_cursor_get_data_size(unsigned int handlerDB) ;
  */
 int persistence_db_cursor_destroy(unsigned int handlerDB) ;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_DATA_ACCESS_H */

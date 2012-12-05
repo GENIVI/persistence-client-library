@@ -51,7 +51,7 @@
  */
 
 
-#include "crc32.h"
+#include "../include_protected/crc32.h"
 
 
 enum crc32ConstantDefinition

@@ -20,7 +20,13 @@
  * @see            
  */
 
-#include "persistence_client_library_lc_interface.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define  PERSIST_CLIENT_LIBRARY_INTERFACE_VERSION   (0x01000000U)
+
 #include "../include/persistence_client_library_error_def.h"
 #include "crc32.h"
 
@@ -184,7 +190,9 @@ extern char gAppId[MaxAppNameLen];
 /// max key value data size
 extern int gMaxKeyValDataSize;
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_H */
 

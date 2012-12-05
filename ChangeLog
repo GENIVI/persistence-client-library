@@ -1,6 +1,10 @@
+Revision 0.3.2
+- Updated dbus interface (removed error code as paramaters; requestID passed by a message will now returned to "sender")
+- Moved headers used by other persistence components into include_protected folder
+
 Revision 0.3.1
 - Fixed a problem when accessing prct and key-value database
-- reverted chnage of datastructure mad in revision 0.2.4
+- reverted change of datastructure mad in revision 0.2.4
 
 Revision 0.3.0
 - Switched to the MPL v2 license

@@ -19,13 +19,14 @@
 
 #include "persistence_client_library_lc_interface.h"
 
-#include "persistence_client_library.h"
+#include "../include_protected/persistence_client_library.h"
+#include "../include_protected/persistence_client_library_data_access.h"
+
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_access_helper.h"
-#include "persistence_client_library_data_access.h"
 #include "persistence_client_library_itzam_errors.h"
 
 #include <errno.h>
@@ -36,7 +37,7 @@
 
 static int gTimeoutMs = 500;
 
-int check_lc_request(int request)
+int check_lc_request(int request, int requestID)
 {
    int rval = 0;
 
@@ -45,7 +46,7 @@ int check_lc_request(int request)
       case NsmShutdownNormal:
       {
          // add command and data to queue
-         unsigned long cmd = ( (request << 8) | CMD_LC_PREPARE_SHUTDOWN);
+         unsigned long cmd = ( (requestID << 8) | CMD_LC_PREPARE_SHUTDOWN);
 
          if(sizeof(int)!=write(gPipefds[1], &cmd, sizeof(unsigned long)))
          {
@@ -72,7 +73,7 @@ int check_lc_request(int request)
 int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 {
    int request   = 0,
-       requestId = 0,
+       requestID = 0,
        msgReturn = 0;
 
    DBusMessage *reply;
@@ -80,7 +81,7 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
    dbus_error_init (&error);
 
    if (!dbus_message_get_args (message, &error, DBUS_TYPE_UINT32, &request,
-                                                DBUS_TYPE_UINT32, &requestId,
+                                                DBUS_TYPE_UINT32, &requestID,
                                                 DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
@@ -102,7 +103,7 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
 
-   msgReturn = check_lc_request(request);
+   msgReturn = check_lc_request(request, requestID);
 
    reply = dbus_message_new_method_return(message);
 
@@ -248,7 +249,7 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 
 int register_lifecycle()
 {
-   int shutdownMode = 88;  // TODO send correct mode
+   int shutdownMode = 1;  // TODO send correct mode
 
    return send_lifecycle_register("RegisterShutdownClient", shutdownMode);
 }
@@ -257,7 +258,7 @@ int register_lifecycle()
 
 int unregister_lifecycle()
 {
-   int shutdownMode = 88;     // TODO send correct mode
+   int shutdownMode = 1;     // TODO send correct mode
 
    return send_lifecycle_register("UnRegisterShutdownClient", shutdownMode);
 }

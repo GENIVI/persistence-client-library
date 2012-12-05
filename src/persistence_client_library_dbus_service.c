@@ -382,7 +382,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                     switch (buf[0])
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
-                                          process_block_and_write_data_back();
+                                          process_block_and_write_data_back(buf[1]);
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
                                           process_prepare_shutdown(buf[1]);

@@ -20,7 +20,7 @@
  * @see            
  */
 
-#include "persistence_client_library.h"
+#include "../include_protected/persistence_client_library.h"
 
 /// handle structure definition
 typedef struct _PersistenceHandle_s
