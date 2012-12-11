@@ -95,10 +95,10 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
             snprintf(filename, DbPathMaxLen, gLocalWtPath, gAppId, gResTableCfg);
             break;
          case PersistenceRCT_shared_public:
-            snprintf(filename, DbPathMaxLen, gSharedPublicWtPath, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gSharedPublicWtPath, gAppId, gResTableCfg);
             break;
          case PersistenceRCT_shared_group:
-            snprintf(filename, DbPathMaxLen, gSharedWtPath, group, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gSharedWtPath, gAppId, group, gResTableCfg);
             break;
          default:
             printf("get_resource_cfg_table - error: no valid PersistenceRCT_e\n");
@@ -403,16 +403,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigne
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(isFile == ResIsNoFile)
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, gSharedCached);
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, gSharedCached);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(isFile == ResIsNoFile)
-               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, gSharedWt);
+               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid, gSharedWt);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid, dbKey);
          }
       }
       else
@@ -424,16 +424,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigne
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(isFile == ResIsNoFile)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gSharedCached);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, gSharedCached);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(isFile == ResIsNoFile)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gSharedWt);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, gSharedWt);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, dbKey);
          }
       }
 
