@@ -67,28 +67,5 @@ int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int
 itzam_btree* get_resource_cfg_table_by_idx(int i);
 
 
-/**
- * @brief serialize data to store to database
- *
- * @return the number of bytes serialized of a negative value on error and errno is set
- */
-int serialize_data(PersistenceConfigurationKey_s pc, char* buffer);
-
-
-/**
- * @brief deserialize data read from database
- *
- * @return 1 of correct deserialization or on of the following error codes:
- * EPERS_DESER_BUFORKEY, EPERS_DESER_ALLOCMEM, EPERS_DESER_POLICY, EPERS_DESER_STORE,
- * EPERS_DESER_PERM, EPERS_DESER_MAXSIZE or EPERS_DESER_RESP
- */
-int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc);
-
-
-/**
- * @brief free allocated data of a persistence configuration key
- */
-void free_pers_conf_key(PersistenceConfigurationKey_s* pc);
-
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ACCESS_HELPER_H */

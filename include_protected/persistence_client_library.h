@@ -69,6 +69,9 @@ enum _PersistenceConstantDef
    MaxAppNameLen = 128,             /// max application name
    MaxPersHandle = 256,             /// max number of parallel open persistence handles
 
+   MaxConfKeyLengthResp    = 32,    /// length of the config key responsible name
+   MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
+
    defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };
 
@@ -107,16 +110,26 @@ typedef struct _PersistenceDbContext_s
    unsigned char seat_no;
 } PersistenceDbContext_s;
 
+
 /// structure used to manage the persistence configuration for a key
 typedef struct _PersistenceConfigurationKey_s
 {
-   PersistencePolicy_e     policy;           /**< policy  */
-   PersistenceStorage_e    storage;          /**< definition of storage to use */
-   unsigned int            permission;       /**< access right, corresponds to UNIX */
-   unsigned int            max_size;         /**< max size expected for the key */
-   char *                  reponsible;       /**< name of responsible application */
-   char *                  custom_name;      /**< name of the customer plugin */
+   PersistencePolicy_e  policy;                                /**< policy  */
+   PersistenceStorage_e storage;                               /**< definition of storage to use */
+   unsigned int         permission;                            /**< access right, corresponds to UNIX */
+   unsigned int         max_size;                              /**< max size expected for the key */
+   char                 reponsible[MaxConfKeyLengthResp];      /**< name of responsible application */
+   char                 custom_name[MaxConfKeyLengthCusName];  /**< name of the customer plugin */
 } PersistenceConfigurationKey_s;
+
+
+/// structure definition of an persistence resource configuration table entry
+typedef struct _PersistenceRctEntry_s
+{
+    char key[PrctKeySize];                                   /**< the key */
+    PersistenceConfigurationKey_s data;                      /**< data for the key */
+}
+PersistenceRctEntry_s;
 
 
 /// persistence information
@@ -126,6 +139,7 @@ typedef struct _PersistenceInfo_s
    PersistenceConfigurationKey_s    configKey;        /**< prct configuration key*/
 
 } PersistenceInfo_s;
+
 
 
 /// persistence resource config table type definition

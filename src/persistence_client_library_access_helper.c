@@ -22,24 +22,17 @@
 #include <stdlib.h>
 
 
+
 /// pointer to resource table database
 itzam_btree gResource_table[PrctDbTableSize];
 /// array to hold the information of database is already open
 int gResourceOpen[PrctDbTableSize] = {0};
 
 
-/// structure definition of an persistence resource configuration table entry
-typedef struct record_t
-{
-    char m_key[PrctKeySize];        // the key
-    char m_data[PrctValueSize];     // data for the key
-}
-prct_record;
-
-
 PersistenceRCT_e get_table_id(int ldbid, int* groupId)
 {
    PersistenceRCT_e rctType = PersistenceRCT_LastEntry;
+
    if(ldbid < 0x80)
    {
       // S H A R E D  database
@@ -120,162 +113,6 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
 }
 
 
-
-int serialize_data(PersistenceConfigurationKey_s pc, char* buffer)
-{
-   int rval = 0;
-   rval = snprintf(buffer, gMaxKeyValDataSize, "%d %d %u %d %s %s",
-                                               pc.policy, pc.storage, pc.permission, pc.max_size,
-                                               pc.reponsible, pc.custom_name);
-   return rval;
-}
-
-
-
-int de_serialize_data(char* buffer, PersistenceConfigurationKey_s* pc)
-{
-   int rval = 1;
-   char* token = NULL;
-   //printf("\nde_serialize_data: %s \n", buffer);
-   if((buffer != NULL) && (pc != NULL))
-   {
-      token = strtok(buffer, " ");     // policy
-      if(token != 0)
-      {
-         pc->policy = strtol(token, 0, 10);
-         //printf("pc->policy %d \n", pc->policy);
-      }
-      else
-      {
-         printf("de_serialize_data - error: can't get [policy] \n");
-         rval = EPERS_DESER_POLICY;
-      }
-
-      token = strtok (NULL, " ");      // storage
-      if(token != 0)
-      {
-         pc->storage = strtol(token, 0, 10);
-         //printf("pc->storage %d \n", pc->storage);
-      }
-      else
-      {
-         printf("de_serialize_data - error: can't get [storage] \n");
-         rval = EPERS_DESER_STORE;
-      }
-
-      token = strtok (NULL, " ");      // permission
-      if(token != 0)
-      {
-         pc->permission = strtol(token, 0, 10);
-         //printf("pc->permission %d \n", pc->permission);
-      }
-      else
-      {
-         printf("de_serialize_data - error: can't get [permission] \n");
-         rval = EPERS_DESER_PERM;
-      }
-
-      token = strtok (NULL, " ");      // max_size
-      if(token != 0)
-      {
-         pc->max_size = strtol(token, 0, 10);
-         //printf("pc->max_size %d \n", pc->max_size);
-      }
-      else
-      {
-         printf("de_serialize_data - error: can't get [max_size] \n");
-         rval = EPERS_DESER_MAXSIZE;
-      }
-
-      token = strtok (NULL, " ");      // reponsible
-      if(token != 0)
-      {
-         int size = strlen(token)+1;
-         pc->reponsible = malloc(size);
-
-         if(pc->reponsible != NULL)
-         {
-            strncpy(pc->reponsible, token, size);
-            //printf("     pc->reponsible %s | 0x%x \n", pc->reponsible, (int)pc->reponsible);
-         }
-         else
-         {
-            rval = EPERS_DESER_ALLOCMEM;
-            printf("de_serialize_data - error: can't allocate memory [reponsible] \n");
-         }
-      }
-      else
-      {
-         printf("de_serialize_data - error: can't get [reponsible] \n");
-         rval = EPERS_DESER_RESP;
-      }
-
-      token = strtok (NULL, " ");      // custom_name
-      if(token != 0)
-      {
-         int size = strlen(token)+1;
-         pc->custom_name = malloc(size);
-         if(pc->custom_name != NULL )
-         {
-            strncpy(pc->custom_name, token, size);
-         }
-         else
-         {
-            rval = EPERS_DESER_ALLOCMEM;
-            printf("de_serialize_data - error: can't allocate memory [custom_name] \n");
-         }
-         //printf("     pc->custom_name %s | 0x%x \n", pc->custom_name, (int)pc->custom_name);
-      }
-      else
-      {
-         char* na = "na";
-         int size = strlen(na)+1;
-         // custom name not available => no custom plugin
-         pc->custom_name = malloc(size);
-         if(pc->custom_name != NULL )
-         {
-            strncpy(pc->custom_name, "na", size);
-         }
-         else
-         {
-            rval = EPERS_DESER_ALLOCMEM;
-            printf("de_serialize_data - error: can't allocate memory [custom_name-default] \n");
-         }
-      }
-   }
-   else
-   {
-      printf("de_serialize_data - error: buffer or PersistenceConfigurationKey_s is NULL\n");
-      rval = EPERS_DESER_BUFORKEY;
-   }
-
-   return rval;
-}
-
-
-
-void free_pers_conf_key(PersistenceConfigurationKey_s* pc)
-{
-   if(pc != NULL)
-   {
-      if(pc->reponsible != NULL)
-      {
-         free(pc->reponsible);
-         pc->reponsible = NULL;
-         //printf("free_pers_conf_key => free(pc->reponsible);");
-      }
-
-      if(pc->custom_name != NULL)
-      {
-         free(pc->custom_name);
-         pc->custom_name = NULL;
-         //printf("free_pers_conf_key => free(pc->reponsible);");
-      }
-   }
-}
-
-
-
 // status: OK
 int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
@@ -290,12 +127,20 @@ int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int
 
    if(resource_table != NULL)
    {
-      prct_record search;
+      PersistenceRctEntry_s search;
       // check if resouce id is in write through table
       if(itzam_true == itzam_btree_find(resource_table, resource_id, &search))
       {
-         //printf("get_db_context ==> data: %s\n", search.m_data);
-         de_serialize_data(search.m_data, &dbContext->configKey);
+         //printf("get_db_context ==> data: %s\n", search.data);
+         memset(dbContext->configKey.reponsible,  0, MaxConfKeyLengthResp);
+         memset(dbContext->configKey.custom_name, 0, MaxConfKeyLengthCusName);
+         dbContext->configKey.policy      = search.data.policy;
+         dbContext->configKey.storage     = search.data.storage;
+         dbContext->configKey.permission  = search.data.permission;
+         dbContext->configKey.max_size    = search.data.max_size;
+         memcpy(dbContext->configKey.reponsible, search.data.reponsible, MaxConfKeyLengthResp);
+         memcpy(dbContext->configKey.custom_name, search.data.custom_name, MaxConfKeyLengthCusName);
+
          if(dbContext->configKey.storage != PersistenceStorage_custom )
          {
             rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
@@ -305,7 +150,6 @@ int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int
             // if customer storage, we use the custom name as path
             strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
          }
-         free_pers_conf_key(&dbContext->configKey);
          resourceFound = 1;
       }
       else
