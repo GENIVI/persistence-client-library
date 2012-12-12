@@ -9,15 +9,16 @@
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
- * @file           persistence_client_library_access_helper.c
+ * @file           persistence_client_library_prct_access.c
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
- * @brief          Implementation of persistence access helper functions
+ * @brief          Implementation of persistence resource configuration config
+ *                 table access functions
  * @see
  */
 
 
-#include "persistence_client_library_access_helper.h"
+#include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_itzam_errors.h"
 #include <stdlib.h>
 

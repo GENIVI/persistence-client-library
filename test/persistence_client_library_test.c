@@ -31,7 +31,7 @@
 #include "../include/persistence_client_library_error_def.h"
 
 // protected header, should be used only be persistence components
-#include "../include_protected/persistence_client_library_data_access.h"
+#include "../include_protected/persistence_client_library_db_access.h"
 
 
 #define BUF_SIZE     64
@@ -447,14 +447,12 @@ START_TEST(test_Cursor)
    memset(bufferDataDst, 0, READ_SIZE);
 
    // create cursor
-   handle = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz",
-                                          PersistenceStorage_local, PersistencePolicy_wc);
+   handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
 
    fail_unless(handle != -1, "Failed to create cursor!!");
 
    // create cursor
-   handle1 = persistence_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz",
-                                           PersistenceStorage_local, PersistencePolicy_wt);
+   handle1 = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz");
 
    fail_unless(handle1 != -1, "Failed to create cursor!!");
 
@@ -466,34 +464,34 @@ START_TEST(test_Cursor)
       memset(bufferDataDst, 0, READ_SIZE);
 
       // get key
-      rval = persistence_db_cursor_get_key(handle, bufferKeySrc, 128);
+      rval = pers_db_cursor_get_key(handle, bufferKeySrc, 128);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = persistence_db_cursor_get_data(handle, bufferDataSrc, 128);
+      rval = pers_db_cursor_get_key_data(handle, bufferDataSrc, 128);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
-      size = persistence_db_cursor_get_data_size(handle);
+      size = pers_db_cursor_get_data_size(handle);
       fail_unless(size != -1, "Cursor failed to get size!!");
       //printf("1. Key: %s | Data: %s » Size: %d \n", bufferKeySrc, bufferDataSrc, size);
 
       // get key
-      rval = persistence_db_cursor_get_key(handle1, bufferKeyDst, 128);
+      rval = pers_db_cursor_get_key(handle1, bufferKeyDst, 128);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = persistence_db_cursor_get_data(handle1, bufferDataDst, 128);
+      rval = pers_db_cursor_get_key_data(handle1, bufferDataDst, 128);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
-      size = persistence_db_cursor_get_data_size(handle1);
+      size = pers_db_cursor_get_data_size(handle1);
       fail_unless(size != -1, "Cursor failed to get size!!");
       //printf("  2. Key: %s | Data: %s » Size: %d \n", bufferKeyDst, bufferDataDst, size);
    }
-   while( (persistence_db_cursor_next(handle) == 0) && (persistence_db_cursor_next(handle1) == 0) ); // next cursor
+   while( (pers_db_cursor_next(handle) == 0) && (pers_db_cursor_next(handle1) == 0) ); // next cursor
 
    // destory cursor
-   rval = persistence_db_cursor_destroy(handle);
+   rval = pers_db_cursor_destroy(handle);
    fail_unless(rval != -1, "Failed to destroy cursor!!");
 
-   rval = persistence_db_cursor_destroy(handle1);
+   rval = pers_db_cursor_destroy(handle1);
    fail_unless(rval != -1, "Failed to destroy cursor!!");
 }
 END_TEST

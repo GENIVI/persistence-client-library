@@ -1,5 +1,5 @@
-#ifndef PERSISTENCE_CLIENT_LIBRARY_DATA_ACCESS_H
-#define PERSISTENCE_CLIENT_LIBRARY_DATA_ACCESS_H
+#ifndef PERSISTENCE_CLIENT_LIBRARY_DB_ACCESS_H
+#define PERSISTENCE_CLIENT_LIBRARY_DB_ACCESS_H
 
 /******************************************************************************
  * Project         Persistency
@@ -15,7 +15,7 @@
  * @file           persistence_client_library_data_access.h
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
- * @brief          Header of the persistence client library data access.
+ * @brief          Header of the persistence client library database access.
  *                 Library provides an API to access persistent data
  * @see            
  */
@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x02100000U)
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x03000000U)
 
 
 #include "persistence_client_library.h"
@@ -43,7 +43,7 @@ extern "C" {
  * @return the number of bytes written or a negative value if an error occured with the following error codes:
  *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
+int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -59,7 +59,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
  *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
+int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -73,7 +73,37 @@ int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
  * @return size of data in bytes read from the key or on error a negative value with the following error codes:
  *  EPERS_NOPRCTABLE or EPERS_NOKEY
  */
-int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info);
+int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info);
+
+
+
+/**
+ * @brief delete data
+ *
+ * @param dbPath the path to the database where the key is in
+ * @param key the database key to register on
+ * @param info persistence information
+ *
+ * @return 0 if deletion was successfull;
+ *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
+ */
+int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info);
+
+
+
+/**
+ * @brief close the database for the given storage type
+ *
+ * @param info persistence information
+ */
+void pers_db_close(PersistenceInfo_s* info);
+
+
+
+/**
+ * @brief close all databases
+ */
+void pers_db_close_all();
 
 
 
@@ -89,35 +119,6 @@ int persistence_reg_notify_on_change(char* dbPath, char* key);
 
 
 
-/**
- * @brief delete data
- *
- * @param dbPath the path to the database where the key is in
- * @param key the database key to register on
- * @param info persistence information
- *
- * @return 0 if deletion was successfull;
- *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
- */
-int persistence_delete_data(char* dbPath, char* dbKey, PersistenceInfo_s* info);
-
-
-
-/**
- * @brief close the database for the given storage type
- *
- * @param info persistence information
- */
-void database_close(PersistenceInfo_s* info);
-
-
-
-/**
- * @brief close all databases
- */
-void database_close_all();
-
-
 //---------------------------------------------------------------------------------------------
 // C U R S O R    F U N C T I O N S
 //---------------------------------------------------------------------------------------------
@@ -127,11 +128,10 @@ void database_close_all();
  * to access the first entry in DB, call persistence_db_cursor_next
  *
  * @param dbPath[in] absolute path to the database
- * @param storage[in] the storage identifier (local, shared or custom)
  *
  * @return handler to the DB (to be used in successive calls) or error code (< 0)
  */
-int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, PersistencePolicy_e policy);
+int pers_db_cursor_create(char* dbPath);
 
 /**
  * @brief move cursor to the next position
@@ -140,7 +140,7 @@ int persistence_db_cursor_create(char* dbPath, PersistenceStorage_e storage, Per
  *
  * @return 0 for success, negative value in case of error (check against EPERS_LAST_ENTRY_IN_DB)
  */
-int persistence_db_cursor_next(unsigned int handlerDB);
+int pers_db_cursor_next(unsigned int handlerDB);
 
 /**
  * @brief get the name of the key pointed by the cursor associated with the database
@@ -151,7 +151,7 @@ int persistence_db_cursor_next(unsigned int handlerDB);
  *
  * @return read size (if >= 0), error other way
  */
-int persistence_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out, int bufSize) ;
+int pers_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out, int bufSize) ;
 
 /**
  * @brief get the data of the key pointed by the cursor associated with the database
@@ -162,7 +162,7 @@ int persistence_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out,
  *
  * @return read size (if >= 0), error other way
  */
-int persistence_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, int bufSize) ;
+int pers_db_cursor_get_key_data(unsigned int handlerDB, char * bufData_out, int bufSize) ;
 
 /**
  * @brief get the data size of the key pointed by the cursor associated with the database
@@ -171,7 +171,7 @@ int persistence_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, i
  *
  * @return positive value for data size, negative value for error
  */
-int persistence_db_cursor_get_data_size(unsigned int handlerDB) ;
+int pers_db_cursor_get_data_size(unsigned int handlerDB) ;
 
 
 /**
@@ -181,10 +181,11 @@ int persistence_db_cursor_get_data_size(unsigned int handlerDB) ;
  *
  * @return 0 for success, negative value in case of error
  */
-int persistence_db_cursor_destroy(unsigned int handlerDB) ;
+int pers_db_cursor_destroy(unsigned int handlerDB) ;
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* PERSISTENCY_CLIENT_LIBRARY_DATA_ACCESS_H */
+#endif /* PERSISTENCY_CLIENT_LIBRARY_DB_ACCESS_H */

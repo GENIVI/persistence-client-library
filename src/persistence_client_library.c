@@ -20,14 +20,11 @@
 
 #include "../include_protected/persistence_client_library.h"
 
-#include "../include_protected/persistence_client_library_data_access.h"
-
 #include "persistence_client_library_lc_interface.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_custom_loader.h"
-#include "persistence_client_library_access_helper.h"
 
 #include <string.h>
 #include <errno.h>

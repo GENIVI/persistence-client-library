@@ -12,10 +12,11 @@
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
- * @file           persistence_client_library_access_helper.h
+ * @file           persistence_client_library_prct_access.h
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
- * @brief          Header of the persistence client library access helper.
+ * @brief          Header of persistence resource configuration config
+ *                 table access functions
  * @see
  */
 

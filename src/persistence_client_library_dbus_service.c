@@ -16,7 +16,6 @@
  * @see
  */
 
-//#include "persistence_client_service_dbus_service.h"
 
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_lc_interface.h"

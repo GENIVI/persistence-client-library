@@ -20,13 +20,13 @@
 #include "persistence_client_library_lc_interface.h"
 
 #include "../include_protected/persistence_client_library.h"
-#include "../include_protected/persistence_client_library_data_access.h"
+#include "../include_protected/persistence_client_library_db_access.h"
 
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_custom_loader.h"
-#include "persistence_client_library_access_helper.h"
+#include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_itzam_errors.h"
 
 #include <errno.h>
@@ -311,7 +311,7 @@ void process_prepare_shutdown(unsigned char requestId)
    }
 
    //close opend database
-   database_close_all();
+   pers_db_close_all();
 
 
    // unload custom client libraries

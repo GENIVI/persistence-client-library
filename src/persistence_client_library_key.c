@@ -19,11 +19,11 @@
 
 #include "persistence_client_library_key.h"
 
-#include "../include_protected/persistence_client_library_data_access.h"
+#include "../include_protected/persistence_client_library_db_access.h"
 
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
-#include "persistence_client_library_access_helper.h"
+#include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_custom_loader.h"
 
 
@@ -156,7 +156,7 @@ int key_handle_get_size(int key_handle)
       }
       else
       {
-         size = persistence_get_data_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+         size = pers_db_get_key_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
                                           &gHandleArray[key_handle].info);
       }
    }
@@ -186,7 +186,7 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, int buffer_size)
       }
       else
       {
-         size = persistence_get_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+         size = pers_db_read_key(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
                                      &gHandleArray[key_handle].info, buffer, buffer_size);
       }
    }
@@ -230,7 +230,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size
             }
             else
             {
-               size = persistence_set_data(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
+               size = pers_db_write_key(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
                                            &gHandleArray[key_handle].info, buffer, buffer_size);
             }
          }
@@ -287,7 +287,7 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
         if(   dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry
            && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
         {
-           rval = persistence_delete_data(dbPath, dbKey, &dbContext);
+           rval = pers_db_delete_key(dbPath, dbKey, &dbContext);
         }
         else
         {
@@ -328,7 +328,7 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
       if(   dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry
          && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
       {
-         data_size = persistence_get_data_size(dbPath, dbKey, &dbContext);
+         data_size = pers_db_get_key_size(dbPath, dbKey, &dbContext);
       }
       else
       {
@@ -373,7 +373,7 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
          if(   dbContext.configKey.storage <  PersistenceStoragePolicy_LastEntry
             && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
          {
-            data_size = persistence_get_data(dbPath, dbKey, &dbContext, buffer, buffer_size);
+            data_size = pers_db_read_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
          }
          else
          {
@@ -425,7 +425,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
             if(   dbContext.configKey.storage <  PersistenceStoragePolicy_LastEntry
                && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
             {
-               data_size = persistence_set_data(dbPath, dbKey, &dbContext, buffer, buffer_size);
+               data_size = pers_db_write_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
             }
             else
             {
