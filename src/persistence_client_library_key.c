@@ -20,12 +20,12 @@
 #include "persistence_client_library_key.h"
 
 #include "../include_protected/persistence_client_library_db_access.h"
+#include "../include_protected/crc32.h"
 
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_custom_loader.h"
-
 
 
 // ----------------------------------------------------------------------------

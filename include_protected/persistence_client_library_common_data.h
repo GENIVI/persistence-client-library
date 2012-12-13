@@ -25,10 +25,9 @@
 extern "C" {
 #endif
 
-#define  PERSIST_CLIENT_LIBRARY_INTERFACE_VERSION   (0x01000000U)
+#define  PERSIST_CLIENT_LIBRARY_COMMON_DATA_INTERFACE_VERSION   (0x01000000U)
 
 #include "../include/persistence_client_library_error_def.h"
-#include "crc32.h"
 
 #include <string.h>
 #include <stdio.h>

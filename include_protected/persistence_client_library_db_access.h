@@ -27,7 +27,7 @@ extern "C" {
 #define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x03000000U)
 
 
-#include "persistence_client_library.h"
+#include "persistence_client_library_common_data.h"
 
 
 

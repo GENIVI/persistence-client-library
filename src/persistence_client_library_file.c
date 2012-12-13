@@ -18,7 +18,7 @@
  */
 
 #include "persistence_client_library_file.h"
-#include "../include_protected/persistence_client_library.h"
+#include "../include_protected/persistence_client_library_common_data.h"
 #include "../include_protected/persistence_client_library_db_access.h"
 
 #include "persistence_client_library_pas_interface.h"

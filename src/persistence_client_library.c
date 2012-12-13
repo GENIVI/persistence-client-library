@@ -18,8 +18,6 @@
  */
 
 
-#include "../include_protected/persistence_client_library.h"
-
 #include "persistence_client_library_lc_interface.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
@@ -43,59 +41,6 @@ extern char* __progname;
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(persClientLibCtx);
 
-const char* gResTableCfg = "/resource-table-cfg.itz";
-
-
-/// shared cached default database
-const char* gSharedCachedDefault = "/cached-default.itz";
-/// shared cached database
-const char* gSharedCached        = "/cached.itz";
-/// shared write through default database
-const char* gSharedWtDefault     = "/wt-default.itz";
-/// shared write through database
-const char* gSharedWt            = "/wt.itz";
-
-
-/// local cached default database
-const char* gLocalCachedDefault  = "cached-default.itz";
-/// local cached default database
-const char* gLocalCached         = "/cached.itz";
-/// local write through default database
-const char* gLocalWtDefault      = "wt-default.itz";
-/// local write through default database
-const char* gLocalWt             = "/wt.itz";
-
-
-
-/// directory structure node name defintion
-const char* gNode = "/node";
-/// directory structure user name defintion
-const char* gUser = "/user/";
-/// directory structure seat name defintion
-const char* gSeat = "/seat/";
-
-
-/// path prefic for local cached database: /Data/mnt_c/<appId>/<database_name>
-const char* gLocalCachePath        = "/Data/mnt-c/%s%s";
-/// path prefic for local write through database /Data/mnt_wt/<appId>/<database_name>
-const char* gLocalWtPath           = "/Data/mnt-wt/%s%s";
-/// path prefic for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-const char* gSharedCachePath       = "/Data/mnt-c/%s/Shared_Group_%x%s";
-/// path prefic for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-const char* gSharedWtPath          = "/Data/mnt-wt/%s/Shared_Group_%x%s";
-
-/// path prefic for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-const char* gSharedPublicCachePath = "/Data/mnt-c/%s/Shared_Public%s";
-
-/// path prefic for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-const char* gSharedPublicWtPath    = "/Data/mnt-wt/%s/Shared_Public%s";
-
-
-/// application id
-char gAppId[MaxAppNameLen];
-
-/// max key value data size [default 16kB]
-int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
 
 
 /// library constructor
