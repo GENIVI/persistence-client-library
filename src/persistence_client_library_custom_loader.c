@@ -17,7 +17,7 @@
  */
 
 #include "persistence_client_library_custom_loader.h"
-#include "../include_protected/persistence_client_library_common_data.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 
 #include <stdio.h>
 #include <errno.h>

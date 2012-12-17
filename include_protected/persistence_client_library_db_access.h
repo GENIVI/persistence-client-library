@@ -27,7 +27,8 @@ extern "C" {
 #define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x03000000U)
 
 
-#include "persistence_client_library_common_data.h"
+#include "persistence_client_library_data_organization.h"
+#include "persistence_client_library_rc_table.h"
 
 
 
@@ -162,7 +163,7 @@ int pers_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out, int bu
  *
  * @return read size (if >= 0), error other way
  */
-int pers_db_cursor_get_key_data(unsigned int handlerDB, char * bufData_out, int bufSize) ;
+int pers_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, int bufSize) ;
 
 /**
  * @brief get the data size of the key pointed by the cursor associated with the database

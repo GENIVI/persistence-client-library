@@ -20,7 +20,8 @@
  * @see            
  */
 
-#include "../include_protected/persistence_client_library_common_data.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
+#include "../include_protected/persistence_client_library_rc_table.h"
 
 /// handle structure definition
 typedef struct _PersistenceHandle_s

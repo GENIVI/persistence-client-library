@@ -16,7 +16,7 @@
  * @see            
  */
 
-#include "../include_protected/persistence_client_library_db_access_ll.h"
+#include "persistence_client_library_db_access_ll.h"
 
 #include <string.h>
 #include <stdio.h>

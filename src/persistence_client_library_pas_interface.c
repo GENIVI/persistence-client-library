@@ -20,7 +20,7 @@
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
 
-#include "../include_protected/persistence_client_library_common_data.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 
 #include <errno.h>
 #include <unistd.h>

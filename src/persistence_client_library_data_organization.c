@@ -9,14 +9,14 @@
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
- * @file           persistence_client_library_data_access_ll.c
+ * @file           persistence_client_library_data_organization.c
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
  * @brief          Implementation of persistence database low level access
  * @see            
  */
 
-#include "../include_protected/persistence_client_library_common_data.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 
 #include <string.h>
 #include <stdio.h>

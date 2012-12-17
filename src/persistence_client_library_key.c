@@ -20,6 +20,7 @@
 #include "persistence_client_library_key.h"
 
 #include "../include_protected/persistence_client_library_db_access.h"
+#include "../include_protected/persistence_client_library_rc_table.h"
 #include "../include_protected/crc32.h"
 
 #include "persistence_client_library_handle.h"

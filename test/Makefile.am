@@ -4,6 +4,7 @@ if DEBUG
 AM_CFLAGS =$(DEPS_CFLAGS) $(CHECK_CFLAGS) -g
 else
 AM_CFLAGS = $(DEPS_CFLAGS) $(CHECK_CFLAGS)
+#AM_CFLAGS = -fprofile-arcs -ftest-coverage $(DEPS_CFLAGS) $(CHECK_CFLAGS)
 endif
 
 

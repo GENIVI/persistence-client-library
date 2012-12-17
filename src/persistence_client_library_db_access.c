@@ -18,6 +18,7 @@
  */
 
 #include "../include_protected/persistence_client_library_db_access.h"
+#include "../include_protected/persistence_client_library_rc_table.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_itzam_errors.h"
 
@@ -579,7 +580,7 @@ int pers_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out, int bu
 
 
 
-int pers_db_cursor_get_key_data(unsigned int handlerDB, char * bufData_out, int bufSize)
+int pers_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, int bufSize)
 {
    int rval = -1;
    KeyValuePair_s search;

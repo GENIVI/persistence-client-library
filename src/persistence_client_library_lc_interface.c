@@ -19,7 +19,7 @@
 
 #include "persistence_client_library_lc_interface.h"
 
-#include "../include_protected/persistence_client_library_common_data.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 #include "../include_protected/persistence_client_library_db_access.h"
 
 #include "persistence_client_library_handle.h"

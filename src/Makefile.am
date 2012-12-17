@@ -5,8 +5,8 @@ if DEBUG
 AM_CFLAGS = $(DEPS_CFLAGS) -g -I../include \
                           -Idbus-1.0
 else
-AM_CFLAGS = $(DEPS_CFLAGS) -I../include \
-                          -Idbus-1.0
+AM_CFLAGS = $(DEPS_CFLAGS) -I../include -Idbus-1.0
+#AM_CFLAGS = -fprofile-arcs -ftest-coverage  $(DEPS_CFLAGS) -I../include -Idbus-1.0
 endif
 
 
@@ -20,7 +20,7 @@ lib_LTLIBRARIES = libpersistence_client_library_common_data.la libpersistence_cl
 
 
 libpersistence_client_library_common_data_la_SOURCES = \
-                                     persistence_client_library_common_data.c
+                                     persistence_client_library_data_organization.c
 
 
 

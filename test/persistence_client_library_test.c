@@ -103,8 +103,7 @@ START_TEST (test_GetDataHandle)
    snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
    // open handle ---------------------------------------------------
-   handle = key_handle_open(0xFF, "posHandle/last_position", 1, 0);
-   printf("Handle: %d\n", handle);
+   handle = key_handle_open(0xFF, "posHandle/last_position", 0, 0);
    fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = key_handle_read_data(handle, buffer, READ_SIZE);
@@ -467,7 +466,7 @@ START_TEST(test_Cursor)
       rval = pers_db_cursor_get_key(handle, bufferKeySrc, 128);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = pers_db_cursor_get_key_data(handle, bufferDataSrc, 128);
+      rval = pers_db_cursor_get_data(handle, bufferDataSrc, 128);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = pers_db_cursor_get_data_size(handle);
@@ -478,7 +477,7 @@ START_TEST(test_Cursor)
       rval = pers_db_cursor_get_key(handle1, bufferKeyDst, 128);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = pers_db_cursor_get_key_data(handle1, bufferDataDst, 128);
+      rval = pers_db_cursor_get_data(handle1, bufferDataDst, 128);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = pers_db_cursor_get_data_size(handle1);
