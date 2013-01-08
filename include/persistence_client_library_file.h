@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_FILEAPI_INTERFACE_VERSION   (0x01030000U)
+#define 	PERSIST_FILEAPI_INTERFACE_VERSION   (0x02000000U)
 
 
 
@@ -85,7 +85,7 @@ void* file_map_data(void* addr, long size, long offset, int fd);
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS, EPERS_MAXHANDLE, EPERS_NOKEY, EPERS_NOKEYDATA, EPERS_NOPRCTABLE or EPERS_COMMON,
  */
-int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no);
+int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 
@@ -116,7 +116,7 @@ int file_read_data(int fd, void * buffer, int buffer_size);
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no);
+int file_remove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 

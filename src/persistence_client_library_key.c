@@ -35,7 +35,7 @@
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-int key_handle_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
+int key_handle_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int handle = 0;
    PersistenceInfo_s dbContext;
@@ -263,7 +263,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
+int key_delete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
 
@@ -307,7 +307,7 @@ int key_delete(unsigned char ldbid, char* resource_id, unsigned char user_no, un
 
 
 // status: OK
-int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
+int key_get_size(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int data_size = 0;
    PersistenceInfo_s dbContext;
@@ -347,7 +347,7 @@ int key_get_size(unsigned char ldbid, char* resource_id, unsigned char user_no, 
 
 
 // status: OK
-int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
+int key_read_data(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                   unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
@@ -392,7 +392,7 @@ int key_read_data(unsigned char ldbid, char* resource_id, unsigned char user_no,
 
 
 
-int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no,
+int key_write_data(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                    unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
@@ -451,7 +451,7 @@ int key_write_data(unsigned char ldbid, char* resource_id, unsigned char user_no
 
 
 // status: TODO implement register on change
-int key_register_notify_on_change(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
+int key_register_notify_on_change(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
    PersistenceInfo_s dbContext;

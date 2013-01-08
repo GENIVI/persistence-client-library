@@ -115,7 +115,7 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
 
 
 // status: OK
-int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
+int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
    int rval = 0, resourceFound = 0, groupId = 0;
 
@@ -177,7 +177,7 @@ int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int
 
 
 // status: OK
-int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
+int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
    int storePolicy = PersistenceStoragePolicy_LastEntry;
 

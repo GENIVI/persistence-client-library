@@ -84,7 +84,7 @@ void* file_map_data(void* addr, long size, long offset, int fd)
 
 
 
-int file_open(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
+int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int handle = -1, shared_DB = 0, flags = O_RDWR;
 
@@ -136,7 +136,7 @@ int file_read_data(int fd, void * buffer, int buffer_size)
 
 
 
-int file_remove(unsigned char ldbid, char* resource_id, unsigned char user_no, unsigned char seat_no)
+int file_remove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
 

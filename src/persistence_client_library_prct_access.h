@@ -40,7 +40,7 @@
  * @return 1 if shared database and 0 if local database or PersistenceStoragePolicy_LastEntry
  *         when no valid database has been found
  */
-int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
+int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 
 
 
@@ -58,7 +58,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, char* resource_id, unsigne
  *
  * @return 0 or a negative value with one of the following errors: EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
-int get_db_context(PersistenceInfo_s* dbContext, char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
+int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 
 
 

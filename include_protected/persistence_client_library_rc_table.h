@@ -57,9 +57,9 @@ typedef enum _PersistenceStorage_e
 /// structure used to manage database context
 typedef struct _PersistenceDbContext_s
 {
-   unsigned char ldbid;
-   unsigned char user_no;
-   unsigned char seat_no;
+   unsigned int ldbid;
+   unsigned int user_no;
+   unsigned int seat_no;
 } PersistenceDbContext_s;
 
 
