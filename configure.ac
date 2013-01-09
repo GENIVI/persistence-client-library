@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([Persistence Client Library], [0.3.1], [not-valid@xse.de])
+AC_INIT([Persistence Client Library], [0.3.3], [not-valid@xse.de])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([dist-bzip2])
 AC_GNU_SOURCE()
