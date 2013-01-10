@@ -210,6 +210,37 @@ END_TEST
 
 
 
+START_TEST(test_SetDataNoPRCT)
+{
+   int ret = 0;
+   unsigned char buffer[READ_SIZE];
+   struct tm *locTime;
+   time_t t = time(0);
+
+   char sysTimeBuffer[128];
+   memset(buffer, 0, READ_SIZE);
+
+   locTime = localtime(&t);
+
+   snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
+                                                                  locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
+
+   ret = key_write_data(0xFF, "NoPRCT", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+   fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
+   printf("Write Buffer : %s\n", sysTimeBuffer);
+
+   // read data again and and verify datat has been written correctly
+   memset(buffer, 0, READ_SIZE);
+   ret = key_read_data(0xFF, "NoPRCT", 1, 2, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
+   fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
+   printf("read buffer  : %s\n", buffer);
+
+}
+END_TEST
+
+
+
 START_TEST(test_GetDataSize)
 {
    int size = 0;
@@ -308,7 +339,10 @@ START_TEST(test_DataFile)
    fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
 
    fd = file_open(0xFF, "media/mediaDBWrite.db", 1, 1);
-   fail_unless(fd == -1, "File can be opend, but should not ==> /media/mediaDBWrite.db");
+   fail_unless(fd != -1, "File can't be opend ==> /media/mediaDBWrite.db");
+
+   ret = file_remove(0xFF, "media/mediaDBWrite.db", 1, 1);
+   fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
 
 
    // map file ------------------------------------------------------
@@ -507,6 +541,9 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persSetData = tcase_create("SetData");
    tcase_add_test(tc_persSetData, test_SetData);
 
+   TCase * tc_persSetDataNoPRCT = tcase_create("SetDataNoPRCT");
+   tcase_add_test(tc_persSetDataNoPRCT, test_SetDataNoPRCT);
+
    TCase * tc_persGetDataSize = tcase_create("GetDataSize");
    tcase_add_test(tc_persGetDataSize, test_GetDataSize);
 
@@ -530,6 +567,7 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetData);
+   suite_add_tcase(s, tc_persSetDataNoPRCT);
    suite_add_tcase(s, tc_persGetDataSize);
    suite_add_tcase(s, tc_persDeleteData);
    suite_add_tcase(s, tc_persGetDataHandle);

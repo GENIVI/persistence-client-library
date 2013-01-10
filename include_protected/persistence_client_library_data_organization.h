@@ -57,7 +57,7 @@ enum _PersistenceConstantDef
    PasMsg_Block            = 1,     /// persistence administration service block access
    PasMsg_WriteBack        = 2,     /// persistence administration service write_back
    PasMsg_Unblock          = 4,     /// persistence administration service unblock access
-   PasErrorStatus_RespPend = 88,    /// persistence administration service msg return status
+   PasErrorStatus_RespPend = 50,    /// persistence administration service msg return status
    PasErrorStatus_OK       = 100,   /// persistence administration service msg return status
    PasErrorStatus_FAIL     = -1,    /// persistence administration service msg return status
 

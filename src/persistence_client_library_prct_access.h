@@ -56,7 +56,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, u
  * @param dbPath the array where the database location path will be stored
  * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
  *
- * @return 0 or a negative value with one of the following errors: EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
+ * @return 0 or a negative value with one of the following errors: EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
 int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 

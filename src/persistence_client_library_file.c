@@ -120,7 +120,66 @@ int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no,
       }
       else
       {
-         printf("file_open ERROR: %s \n", strerror(errno) );
+         // file does not exist, create file and folder
+
+         const char* delimiters = "/\n";   // search for blank and end of line
+         char* tokenArray[24];
+         char createPath[DbPathMaxLen];
+         int numTokens = 0;
+         int i = 0;
+         int validPath = 1;
+
+         tokenArray[numTokens++] = strtok(dbPath, delimiters);
+         while(tokenArray[numTokens-1] != NULL )
+         {
+           tokenArray[numTokens] = strtok(NULL, delimiters);
+           if(tokenArray[numTokens] != NULL)
+           {
+              numTokens++;
+              if(numTokens >= 24)
+              {
+                 validPath = 0;
+                 break;
+              }
+           }
+           else
+           {
+              break;
+           }
+         }
+
+         if(validPath == 1)
+         {
+            memset(createPath, 0, DbPathMaxLen);
+            snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
+            for(i=1; i<numTokens-1; i++)
+            {
+               // create folders
+               strncat(createPath, "/", DbPathMaxLen-1);
+               strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+               mkdir(createPath, 0744);
+            }
+            // finally create the file
+            strncat(createPath, "/", DbPathMaxLen-1);
+            strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+            handle = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+            if(handle != -1)
+            {
+               if(handle < MaxPersHandle)
+               {
+                  __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+               }
+               else
+               {
+                  close(handle);
+                  handle = EPERS_MAXHANDLE;
+               }
+            }
+         }
+         else
+         {
+            printf("file_open ==> no valid path to create: %s\n", dbPath);
+         }
       }
    }
 

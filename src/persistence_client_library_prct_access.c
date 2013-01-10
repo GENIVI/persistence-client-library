@@ -135,6 +135,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          //printf("get_db_context ==> data: %s\n", search.data);
          memset(dbContext->configKey.reponsible,  0, MaxConfKeyLengthResp);
          memset(dbContext->configKey.custom_name, 0, MaxConfKeyLengthCusName);
+
          dbContext->configKey.policy      = search.data.policy;
          dbContext->configKey.storage     = search.data.storage;
          dbContext->configKey.permission  = search.data.permission;
@@ -167,8 +168,18 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
    if(resourceFound == 0)
    {
-      printf("get_db_context - error resource not found %s \n", resource_id);
-      rval = EPERS_NOKEY;
+      //
+      // resource NOT found in resource table ==> default is local cached
+      //
+      dbContext->configKey.policy      = PersistencePolicy_wc;
+      dbContext->configKey.storage     = PersistenceStorage_local;
+      dbContext->configKey.permission  = 0;           // TODO define default permission
+      dbContext->configKey.max_size    = defaultMaxKeyValDataSize;
+      memcpy(dbContext->configKey.reponsible, "default", MaxConfKeyLengthResp);
+      memcpy(dbContext->configKey.custom_name, "default", MaxConfKeyLengthCusName);
+      //printf("get_db_context ==> R E S O U R C E  N O T found: %s \n", resource_id);
+
+      rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
    }
 
    return rval;
