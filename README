@@ -1,0 +1,16 @@
+Environment
+The Persistence Client Library has been developed using Ubuntu 11.10
+
+Required packages
+* automotive-dlt: available via GENIVI projects ==> http://git.projects.genivi.org/?p=dlt-daemon.git;a=summary
+* Itzam/C: download from here ==> http://www.coyotegulch.com/products/itzam/c/index.html
+* dbus-1: install via Synaptic Package Manger or use apt-get
+* autotools: install via Synaptic Package Manger or use apt-get
+* GNU c compiler: install via Synaptic Package Manger or use apt-get
+
+How to compile
+For the Persistence Client Library autotools will be used to generate makefiles.
+To build the client library perform the following steps:
+* "autoreconf -vi"
+* "./configure"
+* "make"
