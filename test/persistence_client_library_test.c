@@ -30,7 +30,9 @@
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_error_def.h"
 
+
 // protected header, should be used only be persistence components
+// included here for testing purpose
 #include "../include_protected/persistence_client_library_db_access.h"
 
 
@@ -38,49 +40,93 @@
 #define NUM_OF_FILES 3
 #define READ_SIZE    1024
 
-
+// definition of weekday
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 
 
+/**
+ * Test the key value interface using different logicalDB id's, users and seats.
+ * Each resource below has an entry in the resource configuration table where the
+ * storage location (cached or write through) and type (e.g. custom) has been configured.
+ */
 START_TEST (test_GetData)
 {
    int ret = 0;
    unsigned char buffer[READ_SIZE];
-
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0xFF with user 0 and seat 0
+    *       ==> local value accessible by all users (user 0, seat 0)
+    */
    ret = key_read_data(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle",
                strlen((char*)buffer)) == 0, "Buffer not correctly read");
    fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0xFF with user 0 and seat 0
+    *       ==> local value accessible by all users (user 0, seat 0)
+    */
    ret = key_read_data(0xFF, "pos/last_position",         0, 0, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "CACHE_ +48° 10' 38.95\", +8° 44' 39.06\"",
                strlen((char*)buffer)) == 0, "Buffer not correctly read");
    fail_unless(ret = strlen("CACHE_ +48° 10' 38.95\", +8° 44' 39.06\""));
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0 with user 3 and seat 0
+    *       ==> public shared user value (user 3, seat 0)
+    */
    ret = key_read_data(0,    "language/current_language", 3, 0, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0xFF with user 3 and seat 2
+    *       ==> local USER value (user 3, seat 2)
+    */
    ret = key_read_data(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0x20 with user 4 and seat 0
+    *       ==> shared user value accessible by a group (user 4 and seat 0)
+    */
    ret = key_read_data(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0xFF with user 0 and seat 0
+    *       ==> local value accessible by ALL USERS (user 0, seat 0)
+    */
    ret = key_read_data(0xFF, "pos/last_satellites",       0, 0, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0x84 with user 4 and seat 0
+    *       ==> shared user value accessible by A GROUP (user 4 and seat 0)
+    */
    ret = key_read_data(0x84, "links/last_link",           2, 0, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0x84 with user 2 and seat 1
+    *       ==> local merge value
+    */
    ret = key_read_data(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 }
@@ -88,6 +134,11 @@ END_TEST
 
 
 
+/**
+ * Test the key value  h a n d l e  interface using different logicalDB id's, users and seats
+ * Each resource below has an entry in the resource configuration table where
+ * the storage location (cached or write through) and type (e.g. custom) has bee configured.
+ */
 START_TEST (test_GetDataHandle)
 {
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
@@ -102,7 +153,13 @@ START_TEST (test_GetDataHandle)
 
    snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
+
+
    // open handle ---------------------------------------------------
+   /**
+    * Logical DB ID: 0xFF with user 0 and seat 0
+    *       ==> local value accessible by ALL USERS (user 0, seat 0)
+    */
    handle = key_handle_open(0xFF, "posHandle/last_position", 0, 0);
    fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
@@ -111,9 +168,14 @@ START_TEST (test_GetDataHandle)
 
    size = key_handle_get_size(handle);
    fail_unless(size = strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   // ---------------------------------------------------------------------------------------------
 
 
    // open handle ---------------------------------------------------
+   /**
+    * Logical DB ID: 0xFF with user 3 and seat 2
+    *       ==> local USER value (user 3, seat 2)
+    */
    handle2 = key_handle_open(0xFF, "statusHandle/open_document", 3, 2);
    fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
@@ -121,9 +183,14 @@ START_TEST (test_GetDataHandle)
    fail_unless(size = strlen(sysTimeBuffer));
    // close
    ret = key_handle_close(handle2);
+   // ---------------------------------------------------------------------------------------------
 
 
    // open handle ---------------------------------------------------
+   /**
+    * Logical DB ID: 0xFF with user 0 and seat 0
+    *       ==> local value accessible by ALL USERS (user 0, seat 0)
+    */
    memset(buffer, 0, READ_SIZE);
    handle4 = key_handle_open(0xFF, "language/country_code", 0, 0);
    fail_unless(handle4 >= 0, "Failed to open handle /language/country_code");
@@ -135,9 +202,14 @@ START_TEST (test_GetDataHandle)
    fail_unless(size = strlen("Custom plugin -> plugin_get_data_handle"));
 
    ret = key_handle_write_data(handle4, (unsigned char*)"Only dummy implementation behind custom library", READ_SIZE);
+   // ---------------------------------------------------------------------------------------------
 
 
    // open handle ---------------------------------------------------
+   /**
+    * Logical DB ID: 0xFF with user 3 and seat 2
+    *       ==> local USER value (user 3, seat 2)
+    */
    handle3 = key_handle_open(0xFF, "statusHandle/open_document", 3, 2);
    fail_unless(handle3 >= 0, "Failed to open handle /statusHandle/open_document");
 
@@ -146,18 +218,23 @@ START_TEST (test_GetDataHandle)
 
    size = key_handle_get_size(handle3);
    fail_unless(size = strlen(sysTimeBuffer));
+   // ---------------------------------------------------------------------------------------------
+
 
    // close handle
    ret = key_handle_close(handle);
    ret = key_handle_close(handle3);
    ret = key_handle_close(handle4);
-
-
 }
 END_TEST
 
 
 
+/*
+ * Write data to a key using the key interface.
+ * First write data to different keys and after
+ * read the data for verification.
+ */
 START_TEST(test_SetData)
 {
    int ret = 0;
@@ -178,29 +255,52 @@ START_TEST(test_SetData)
    snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                  locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
+   /**
+    * Logical DB ID: 0xFF with user 1 and seat 2
+    *       ==> local USER value (user 1, seat 2)
+    * Resource ID: 69
+    */
    ret = key_write_data(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
 
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
+   /**
+    * Logical DB ID: 0xFF with user 1 and seat 2
+    *       ==> local USER value (user 1, seat 2)
+    * Resource ID: 70
+    */
    ret = key_write_data(0xFF, "70", 1, 2, (unsigned char*)write1, strlen(write1));
    fail_unless(ret == strlen(write1), "Wrong write size");
 
    snprintf(write2, 128, "%s %s", "/key_70",  sysTimeBuffer);
+   /**
+    * Logical DB ID: 0xFF with user 1 and seat 2
+    *       ==> local USER value (user 1, seat 2)
+    * Resource ID: key_70
+    */
    ret = key_write_data(0xFF, "key_70", 1, 2, (unsigned char*)write2, strlen(write2));
    fail_unless(ret == strlen(write2), "Wrong write size");
 
-   // read data again and and verify datat has been written correctly
+
+
+   /*
+    * now read the data written in the previous steps to the keys
+    * and verify data has been written correctly.
+    */
    memset(buffer, 0, READ_SIZE);
+
    ret = key_read_data(0xFF, "69", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
+
    ret = key_read_data(0xFF, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write1, strlen(write1)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write1), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
+
    ret = key_read_data(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write2), "Wrong read size");
@@ -210,6 +310,11 @@ END_TEST
 
 
 
+/**
+ * Write data to a key using the key interface.
+ * The key is not in the persistence resource table.
+ * The key sill then be stored to the location local and cached.
+ */
 START_TEST(test_SetDataNoPRCT)
 {
    int ret = 0;
@@ -225,12 +330,17 @@ START_TEST(test_SetDataNoPRCT)
    snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
+   /**
+    * Logical DB ID: 0xFF with user 1 and seat 2
+    *       ==> local USER value (user 1, seat 2)
+    */
    ret = key_write_data(0xFF, "NoPRCT", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
    printf("Write Buffer : %s\n", sysTimeBuffer);
 
    // read data again and and verify datat has been written correctly
    memset(buffer, 0, READ_SIZE);
+
    ret = key_read_data(0xFF, "NoPRCT", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
@@ -241,35 +351,65 @@ END_TEST
 
 
 
+/*
+ * Test the key interface.
+ * Read the size of a key.
+ */
 START_TEST(test_GetDataSize)
 {
    int size = 0;
 
+   /**
+    * Logical DB ID: 0xFF with user 3 and seat 2
+    *       ==> local USER value (user 3, seat 2)
+    */
    size = key_get_size(0xFF, "status/open_document", 3, 2);
    fail_unless(size == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Invalid size");
 
+
+   /**
+    * Logical DB ID: 0x84 with user 2 and seat 1
+    *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
+    */
    size = key_get_size(0x84, "links/last_link", 2, 1);
    fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 }
 END_TEST
 
 
-
+/*
+ * Delete a key using the key value interface.
+ * First read a from a key, the delte the key
+ * and then try to read again. The Last read must fail.
+ */
 START_TEST(test_DeleteData)
 {
    int rval = 0;
    unsigned char buffer[READ_SIZE];
 
+   // read data from key
+   rval = key_read_data(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
+   fail_unless(rval != EPERS_NOKEY, "Read form key key_70 fails");
+
    // delete key
    rval = key_delete(0xFF, "key_70", 1, 2);
    fail_unless(rval == 0, "Failed to delete key");
-   // reading from key must fail now
+
+   // after deleting the key, reading from key must fail now!
    rval = key_read_data(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval == EPERS_NOKEY, "Read form key key_70 works, but should fail");
 
 
+
+   // read data from key
+   rval = key_read_data(0xFF, "70", 1, 2, buffer, READ_SIZE);
+   fail_unless(rval != EPERS_NOKEY, "Read form key 70 fails");
+
+   // delete key
    rval = key_delete(0xFF, "70", 1, 2);
    fail_unless(rval == 0, "Failed to delete key");
+
+   // after deleting the key, reading from key must fail now!
    rval = key_read_data(0xFF, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
 }
@@ -277,6 +417,14 @@ END_TEST
 
 
 
+/*
+ * Test the file interface:
+ * - open file
+ * - read / write
+ * - remove file
+ * - map file
+ * - get size
+ */
 START_TEST(test_DataFile)
 {
    int fd = 0, i = 0, idx = 0;
@@ -366,6 +514,9 @@ END_TEST
 
 
 
+/*
+ * The the handle function of the key and file interface.
+ */
 START_TEST(test_DataHandle)
 {
    int handle1 = 0, handle2 = 0;
@@ -385,6 +536,7 @@ START_TEST(test_DataHandle)
    fail_unless(ret == -1, "Could close file, but should not!!");
 
 
+
    // test key handles
    handle2 = key_handle_open(0xFF, "statusHandle/open_document", 3, 2);
    fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
@@ -399,6 +551,10 @@ END_TEST
 
 
 
+/*
+ * Extended key handle test.
+ * Test have been created after a bug in the key handle function occured.
+ */
 START_TEST(test_DataHandleOpen)
 {
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
@@ -465,6 +621,10 @@ END_TEST
 
 
 
+/**
+ * Test for  i n t e r n a l  structures.
+ * Test the cursor functions.
+ */
 START_TEST(test_Cursor)
 {
    int handle = -1, rval = 0, size = 0, handle1 = 0;
