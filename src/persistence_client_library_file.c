@@ -35,7 +35,7 @@
 
 
 
-int file_close(int fd)
+int pclFileClose(int fd)
 {
    int rval = -1;
 
@@ -49,7 +49,7 @@ int file_close(int fd)
 
 
 
-int file_get_size(int fd)
+int pclFileGetSize(int fd)
 {
    int rval = -1;
 
@@ -66,7 +66,7 @@ int file_get_size(int fd)
 
 
 
-void* file_map_data(void* addr, long size, long offset, int fd)
+void* pclFileMapData(void* addr, long size, long offset, int fd)
 {
    void* ptr = 0;
 
@@ -84,7 +84,7 @@ void* file_map_data(void* addr, long size, long offset, int fd)
 
 
 
-int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int handle = -1, shared_DB = 0, flags = O_RDWR;
 
@@ -188,14 +188,14 @@ int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no,
 
 
 
-int file_read_data(int fd, void * buffer, int buffer_size)
+int pclFileReadData(int fd, void * buffer, int buffer_size)
 {
    return read(fd, buffer, buffer_size);
 }
 
 
 
-int file_remove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
 
@@ -236,7 +236,7 @@ int file_remove(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
 
 
-int file_seek(int fd, long int offset, int whence)
+int pclFileSeek(int fd, long int offset, int whence)
 {
    int rval = 0;
 
@@ -254,7 +254,7 @@ int file_seek(int fd, long int offset, int whence)
 
 
 
-int file_unmap_data(void* address, long size)
+int pclFileUnmapData(void* address, long size)
 {
    int rval = 0;
 
@@ -272,7 +272,7 @@ int file_unmap_data(void* address, long size)
 
 
 
-int file_write_data(int fd, const void * buffer, int buffer_size)
+int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 {
    int size = 0;
 

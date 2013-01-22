@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
    printf("Dbus interface test application\n");
 
-   ret = key_read_data(0,    "/language/current_language", 3, 0, (unsigned char*)buffer, 128);
+   ret = pclKeyReadData(0,    "/language/current_language", 3, 0, (unsigned char*)buffer, 128);
 
    getchar();
 

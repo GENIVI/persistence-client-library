@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_FILEAPI_INTERFACE_VERSION   (0x02000000U)
+#define 	PERSIST_FILEAPI_INTERFACE_VERSION   (0x03000000U)
 
 
 
@@ -43,7 +43,7 @@ extern "C" {
  * @return zero on success. On error a negative value will be returned with th follwoing error codes:
  *                          EPERS_LOCKFS
  */
-int file_close(int fd);
+int pclFileClose(int fd);
 
 
 
@@ -54,7 +54,7 @@ int file_close(int fd);
  *
  * @return positive value. On error the negative value -1 will be returned
  */
-int file_get_size(int fd);
+int pclFileGetSize(int fd);
 
 
 
@@ -69,7 +69,7 @@ int file_get_size(int fd);
  * @return a pointer to the mapped area, or on error the value MAP_FAILED or
  *  EPERS_MAP_FAILEDLOCK if filesystem is currrently locked
  */
-void* file_map_data(void* addr, long size, long offset, int fd);
+void* pclFileMapData(void* addr, long size, long offset, int fd);
 
 
 
@@ -85,7 +85,7 @@ void* file_map_data(void* addr, long size, long offset, int fd);
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS, EPERS_MAXHANDLE, EPERS_NOKEY, EPERS_NOKEYDATA, EPERS_NOPRCTABLE or EPERS_COMMON,
  */
-int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 
@@ -100,7 +100,7 @@ int file_open(unsigned int ldbid, const char* resource_id, unsigned int user_no,
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int file_read_data(int fd, void * buffer, int buffer_size);
+int pclFileReadData(int fd, void * buffer, int buffer_size);
 
 
 
@@ -116,7 +116,7 @@ int file_read_data(int fd, void * buffer, int buffer_size);
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int file_remove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 
@@ -137,7 +137,7 @@ int file_remove(unsigned int ldbid, const char* resource_id, unsigned int user_n
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int file_seek(int fd, long int offset, int whence);
+int pclFileSeek(int fd, long int offset, int whence);
 
 
 
@@ -151,7 +151,7 @@ int file_seek(int fd, long int offset, int whence);
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int file_unmap_data(void* address, long size);
+int pclFileUnmapData(void* address, long size);
 
 
 
@@ -166,7 +166,7 @@ int file_unmap_data(void* address, long size);
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int file_write_data(int fd, const void * buffer, int buffer_size);
+int pclFileWriteData(int fd, const void * buffer, int buffer_size);
 
 
 

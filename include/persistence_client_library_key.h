@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x02000000U)
+#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x03000000U)
 
 
 
@@ -47,7 +47,7 @@ extern "C" {
  * @return positive value: success; On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS
  */
-int key_delete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 
@@ -62,7 +62,7 @@ int key_delete(unsigned int ldbid, const char* resource_id, unsigned int user_no
  * @return positive value: the size; On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS, EPERS_BADPOL, EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
-int key_get_size(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 /**
  * @brief close the access to a key-value identified by key handle
@@ -72,7 +72,7 @@ int key_get_size(unsigned int ldbid, const char* resource_id, unsigned int user_
  * @return positive value: success; On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS
  */
-int key_handle_close(int key_handle);
+int pclKeyHandleClose(int key_handle);
 
 
 
@@ -83,7 +83,7 @@ int key_handle_close(int key_handle);
  *
  * @return positive value: the size; On error a negative value will be returned with th follwoing error codes:
  */
-int key_handle_get_size(int key_handle);
+int pclKeyHandleGetSize(int key_handle);
 
 
 
@@ -98,7 +98,7 @@ int key_handle_get_size(int key_handle);
  * @return positive value: the key handle to access the value;
  * On error a negative value will be returned with th follwoing error codes:
  */
-int key_handle_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 
@@ -112,7 +112,7 @@ int key_handle_open(unsigned int ldbid, const char* resource_id, unsigned int us
  * @return positive value: the bytes read; On error a negative value will be returned with th follwoing error codes:
  *
  */
-int key_handle_read_data(int key_handle, unsigned char* buffer, int buffer_size);
+int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size);
 
 
 
@@ -123,7 +123,7 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, int buffer_size)
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
-int key_handle_register_notify_on_change(int key_handle);
+int pclKeyHandleRegisterNotifyOnChange(int key_handle);
 
 
 
@@ -137,7 +137,7 @@ int key_handle_register_notify_on_change(int key_handle);
  *
  * @return positive value: the bytes written; On error a negative value will be returned with th follwoing error codes:
  */
-int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size);
+int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size);
 
 
 
@@ -153,7 +153,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size
  *
  * @return positive value: the bytes read; On error a negative value will be returned with th follwoing error codes:
  */
-int key_read_data(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
+int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
 
 
 
@@ -167,7 +167,7 @@ int key_read_data(unsigned int ldbid, const char* resource_id, unsigned int user
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
-int key_register_notify_on_change(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
 
 
@@ -184,7 +184,7 @@ int key_register_notify_on_change(unsigned int ldbid, const char* resource_id, u
  *
  * @return positive value: the bytes written; On error a negative value will be returned with th follwoing error codes:
  */
-int key_write_data(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
+int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
 
 
 #ifdef __cplusplus

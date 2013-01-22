@@ -35,7 +35,7 @@
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-int key_handle_open(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int handle = 0;
    PersistenceInfo_s dbContext;
@@ -97,7 +97,7 @@ int key_handle_open(unsigned int ldbid, const char* resource_id, unsigned int us
 
 
 
-int key_handle_close(int key_handle)
+int pclKeyHandleClose(int key_handle)
 {
    int rval = 0;
 
@@ -136,7 +136,7 @@ int key_handle_close(int key_handle)
 
 
 
-int key_handle_get_size(int key_handle)
+int pclKeyHandleGetSize(int key_handle)
 {
    int size = 0;
 
@@ -167,7 +167,7 @@ int key_handle_get_size(int key_handle)
 
 
 
-int key_handle_read_data(int key_handle, unsigned char* buffer, int buffer_size)
+int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = 0;
    if(key_handle < MaxPersHandle)
@@ -197,7 +197,7 @@ int key_handle_read_data(int key_handle, unsigned char* buffer, int buffer_size)
 
 
 
-int key_handle_register_notify_on_change(int key_handle)
+int pclKeyHandleRegisterNotifyOnChange(int key_handle)
 {
    int rval = -1;
 
@@ -206,7 +206,7 @@ int key_handle_register_notify_on_change(int key_handle)
 
 
 
-int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size)
+int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = 0;
 
@@ -263,7 +263,7 @@ int key_handle_write_data(int key_handle, unsigned char* buffer, int buffer_size
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-int key_delete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
 
@@ -307,7 +307,7 @@ int key_delete(unsigned int ldbid, const char* resource_id, unsigned int user_no
 
 
 // status: OK
-int key_get_size(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int data_size = 0;
    PersistenceInfo_s dbContext;
@@ -347,7 +347,7 @@ int key_get_size(unsigned int ldbid, const char* resource_id, unsigned int user_
 
 
 // status: OK
-int key_read_data(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
+int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                   unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
@@ -392,7 +392,7 @@ int key_read_data(unsigned int ldbid, const char* resource_id, unsigned int user
 
 
 
-int key_write_data(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
+int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                    unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
@@ -451,7 +451,7 @@ int key_write_data(unsigned int ldbid, const char* resource_id, unsigned int use
 
 
 // status: TODO implement register on change
-int key_register_notify_on_change(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
    PersistenceInfo_s dbContext;
