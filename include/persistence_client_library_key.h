@@ -42,7 +42,7 @@ extern "C" {
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  *
  * @return positive value: success; On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS
@@ -57,7 +57,7 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  *
  * @return positive value: the size; On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS, EPERS_BADPOL, EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
@@ -93,7 +93,7 @@ int pclKeyHandleGetSize(int key_handle);
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  *
  * @return positive value: the key handle to access the value;
  * On error a negative value will be returned with th follwoing error codes:
@@ -147,7 +147,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  * @param buffer the buffer to read the persistent data
  * @param buffer_size size of buffer for reading
  *
@@ -163,7 +163,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  * @param ldbid logical database ID of the resource to monitor
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
@@ -177,7 +177,7 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  * @param buffer the buffer containing the persistent data to write
  * @param buffer_size the number of bytes to write (default max size is set to 16kB)
  *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes

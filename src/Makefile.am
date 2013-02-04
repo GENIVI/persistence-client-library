@@ -40,6 +40,6 @@ libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library_itzam_errors.c \
                                      crc32.c
 
-libpersistence_client_library_la_LDFLAGS = -export-dynamic $(LDFLAGS)
+libpersistence_client_library_la_LDFLAGS = -export-dynamic $(LDFLAGS) -version-info $(PERS_CLIENT_LIBRARY_VERSION)
 
 

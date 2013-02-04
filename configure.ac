@@ -1,12 +1,32 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([Persistence Client Library], [0.3.3], [not-valid@xse.de])
+
+# create tag version information
+m4_define([pers_client_library_tag_version_major], [0])
+m4_define([pers_client_library_tag_version_minor], [4])
+m4_define([pers_client_library_tag_version_micro], [0])
+m4_define([pers_client_library_tag_version], [pers_client_library_tag_version_major().pers_client_library_tag_version_minor().pers_client_library_tag_version_micro()])
+
+
+AC_INIT([Persistence Client Library], [pers_client_library_tag_version], [not-valid@xse.de])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([dist-bzip2])
 AC_GNU_SOURCE()
 
+
+# create library version information
+m4_define([pers_client_library_version_current],  [3])
+m4_define([pers_client_library_version_revision], [0])
+m4_define([pers_client_library_version_age],      [0])
+m4_define([pers_client_library_version], [pers_client_library_version_current():pers_client_library_version_revision():pers_client_library_version_age()])
+
+PERS_CLIENT_LIBRARY_VERSION=pers_client_library_version()
+AC_SUBST([PERS_CLIENT_LIBRARY_VERSION])
+
+
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 
 # Overwrite the build in defaults
 CFLAGS="-Wall -O2"

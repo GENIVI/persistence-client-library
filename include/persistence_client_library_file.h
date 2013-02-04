@@ -79,7 +79,7 @@ void* pclFileMapData(void* addr, long size, long offset, int fd);
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  *
  * @return positive value: the POSIX file descriptor;
  * On error a negative value will be returned with th follwoing error codes:
@@ -110,7 +110,7 @@ int pclFileReadData(int fd, void * buffer, int buffer_size);
  * @param ldbid logical database ID
  * @param resource_id the resource ID
  * @param user_no  the user ID
- * @param seat_no  the seat number (seat 0 to 3)
+ * @param seat_no  the seat number
  *
  * @return positive value: success;
  * On error a negative value will be returned with th follwoing error codes:
