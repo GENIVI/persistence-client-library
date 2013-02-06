@@ -301,7 +301,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
               printf("load_custom_library - error: %s\n", error);
          }
          // custom_plugin_get_size_handle
-         *(void **) (&customFuncts->custom_plugin_handle_get_size) = dlsym(handle, "plugin_get_size_handle");
+         *(void **) (&customFuncts->custom_plugin_handle_get_size) = dlsym(handle, "plugin_handle_get_size");
          if ((error = dlerror()) != NULL)
          {
             printf("load_custom_library - error: %s\n", error);

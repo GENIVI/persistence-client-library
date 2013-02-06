@@ -66,7 +66,7 @@ typedef struct _Pers_custom_functs_s
    int (*custom_plugin_delete_data)(const char* path);
 
    /// get backup
-   int (*custom_plugin_get_backup)(const char* backup_id, int size);
+   int (*custom_plugin_get_backup)(char* backup_id, int size);
 
    // get the size
    int (*custom_plugin_get_size)(const char* path);
@@ -99,7 +99,7 @@ typedef struct _Pers_custom_functs_s
    int (*custom_plugin_get_status_notification_clbk)(plugin_callback_t pFunct);
 
    // get the size
-   int (*custom_plugin_handle_get_size)(int key_handle);
+   int (*custom_plugin_handle_get_size)(int handle);
 
 }Pers_custom_functs_s;
 
