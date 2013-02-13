@@ -12,5 +12,5 @@ How to compile
 For the Persistence Client Library autotools will be used to generate makefiles.
 To build the client library perform the following steps:
 * "autoreconf -vi"
-* "./configure"
+* "./configure –enable-tests"
 * "make"
