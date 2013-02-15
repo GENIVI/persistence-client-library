@@ -55,7 +55,7 @@ int unregister_lifecycle();
  *
  * @param requestId the requestID
  */
-void process_prepare_shutdown(unsigned char requestId);
+void process_prepare_shutdown(unsigned char requestId, unsigned int status);
 
 
 

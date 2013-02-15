@@ -56,23 +56,24 @@ int isAccessLocked(void)
 int check_pas_request(unsigned int request, unsigned int requestID)
 {
    int rval = 0;
-
    switch(request)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
+         uint64_t cmd;
          // add command and data to queue
-         unsigned long cmd = ( (requestID << 8) | CMD_PAS_BLOCK_AND_WRITE_BACK);
+         cmd = ( ((uint64_t)requestID << 32) | ((uint64_t)request << 16) | CMD_PAS_BLOCK_AND_WRITE_BACK);
 
-         if(sizeof(int)!=write(gPipefds[1], &cmd, sizeof(unsigned long)))
+         if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
          {
-            printf("write failed w/ errno %d\n", errno);
+            printf("write failed w/ errno %d | %s\n", errno, strerror(errno));
             rval = PasErrorStatus_FAIL;
          }
          else
          {
             rval = PasErrorStatus_RespPend;
          }
+         printf("======> check_pas_request(requestID: %u | status: %u ) \n", (unsigned int)(cmd>>32&0xFF), (unsigned int)(cmd>>16&0xFF));
          break;
       }
       case PasMsg_Unblock:
@@ -127,6 +128,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
    errorReturn = check_pas_request(request, requestID);
+
 
    reply = dbus_message_new_method_return(message);
 
@@ -321,7 +323,7 @@ int send_pas_register(const char* method, int notificationFlag)
 
 int send_pas_request(const char* method, unsigned int requestID, int status)
 {
-   int rval = 0, errorCode = 0;
+   int rval = 0;
 
    DBusError error;
    dbus_error_init (&error);
@@ -332,11 +334,13 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
                                                       "/org/genivi/persistence/admin",    // path
                                                        "org.genivi.persistence.admin",    // interface
                                                        method);                  // method
+
+   printf(" =======****> send_pas_request: requestID: %u | status: %u \n", requestID, status);
+
    if(message != NULL)
    {
       dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
                                         DBUS_TYPE_INT32,  &status,
-                                        DBUS_TYPE_INT32,  &errorCode,
                                         DBUS_TYPE_INVALID);
 
       if(conn != NULL)
@@ -391,21 +395,21 @@ int unregister_pers_admin_service(void)
 
 
 
-int pers_admin_service_data_sync_complete(unsigned int requestID)
+int pers_admin_service_data_sync_complete(unsigned int requestID, unsigned int status)
 {
-   return send_pas_request("PersistenceAdminRequestCompleted", requestID, 1);
+   return send_pas_request("PersistenceAdminRequestCompleted", requestID, status);
 }
 
 
 
-void process_block_and_write_data_back(unsigned int requestID)
+void process_block_and_write_data_back(unsigned int requestID, unsigned int status)
 {
    // lock persistence data access
    pers_lock_access();
    // sync data back to memory device
    pers_data_sync();
    // send complete notification
-   pers_admin_service_data_sync_complete(requestID);
+   pers_admin_service_data_sync_complete(requestID, status);
 }
 
 

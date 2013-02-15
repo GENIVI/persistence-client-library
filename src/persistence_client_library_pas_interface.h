@@ -60,7 +60,7 @@ int isAccessLocked(void);
 
 
 /// block persistence access and write data back to device
-void process_block_and_write_data_back(unsigned int requestID);
+void process_block_and_write_data_back(unsigned int requestID, unsigned int status);
 
 
 /**

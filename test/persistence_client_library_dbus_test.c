@@ -18,7 +18,7 @@
 
 #include "../include/persistence_client_library_key.h"
 #include "../include/persistence_client_library_file.h"
-
+#include "../include/persistence_client_library_error_def.h"
 
 #include <stdio.h>
 
@@ -26,12 +26,11 @@
 int main(int argc, char *argv[])
 {
    int ret = 0;
-   char buffer[128];
-
+   unsigned char buffer[1024];
    printf("Dbus interface test application\n");
 
-   ret = pclKeyReadData(0,    "/language/current_language", 3, 0, (unsigned char*)buffer, 128);
-
+   getchar();
+   ret = pclKeyReadData(0xFF, "pos/last_position",         0, 0, buffer, 1024);
    getchar();
 
 

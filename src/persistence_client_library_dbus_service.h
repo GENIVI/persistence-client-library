@@ -22,6 +22,7 @@
 #include <dbus/dbus.h>
 #include <poll.h>
 #include <pthread.h>
+#include <sys/eventfd.h>
 
 /// mutex to make sure main loop is running
 extern pthread_mutex_t gDbusInitializedMtx;
@@ -39,7 +40,7 @@ typedef enum ECmd
 
 
 /// pipe file descriptors
-int gPipefds[2];
+int gEfds;
 
 
 /// returns the dbus connection

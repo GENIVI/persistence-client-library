@@ -8,6 +8,12 @@ Required packages
 * autotools: install via Synaptic Package Manger or use apt-get
 * GNU c compiler: install via Synaptic Package Manger or use apt-get
 
+Known issues:
+* Patch Itzam/C configure.ac file:
+  - replace in the Itzam/C configure.ac GENERIC_LIBRARY_NAME=libitzam with GENERIC_LIBRARY_NAME=itzam
+* copy itzam package confiuration file to /usr/local/lib/pkgconfig
+
+
 How to compile
 For the Persistence Client Library autotools will be used to generate makefiles.
 To build the client library perform the following steps:

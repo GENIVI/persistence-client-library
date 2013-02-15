@@ -314,9 +314,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    {
       dbus_connection_set_exit_on_disconnect (conn, FALSE);
       printf("connected as '%s'\n", dbus_bus_get_unique_name(conn));
-      if (0!=pipe(gPipefds))
+      if (-1 == (gEfds = eventfd(0, 0)))
       {
-         printf("pipe() failed w/ errno %d\n", errno);
+         printf("eventfd() failed w/ errno %d\n", errno);
       }
       else
       {
@@ -325,7 +325,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          memset(&gPollInfo, 0 , sizeof(gPollInfo));
 
          gPollInfo.nfds = 1;
-         gPollInfo.fds[0].fd = gPipefds[0];
+         gPollInfo.fds[0].fd = gEfds;
          gPollInfo.fds[0].events = POLLIN;
 
          dbus_bus_add_match(conn, "type='signal',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
@@ -341,7 +341,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             }
             else
             {
-               char buf[64];
+               uint16_t buf[64];
 
                pthread_cond_signal(&gDbusInitializedCond);
                pthread_mutex_unlock(&gDbusInitializedMtx);
@@ -366,7 +366,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                      {
                         if (0!=gPollInfo.fds[i].revents)
                         {
-                           if (gPollInfo.fds[i].fd==gPipefds[0])
+                           if (gPollInfo.fds[i].fd==gEfds)
                            {
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
@@ -374,17 +374,17 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  while ((-1==(ret=read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR==errno));
                                  if (0>ret)
                                  {
-                                    printf("read() failed w/ errno %d\n", errno);
+                                    printf("read() failed w/ errno %d | %s\n", errno, strerror(errno));
                                  }
-                                 else if (sizeof(int)==ret)
+                                 else if (ret != -1)
                                  {
                                     switch (buf[0])
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
-                                          process_block_and_write_data_back(buf[1]);
+                                          process_block_and_write_data_back((buf[2]), buf[1]);
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
-                                          process_prepare_shutdown(buf[1]);
+                                          process_prepare_shutdown((buf[2]), buf[1]);
                                           break;
                                        case CMD_QUIT:
                                           bContinue = FALSE;
@@ -396,7 +396,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  }
                                  else
                                  {
-                                    printf("read() returned %d (%s)\n", ret, buf);
+                                    printf("read() returned %d \n", ret);
                                  }
                               }
                            }
@@ -434,8 +434,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             dbus_connection_unregister_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
-         close(gPipefds[1]);
-         close(gPipefds[0]);
+         close(gEfds);
       }
       dbus_connection_unref(conn);
       dbus_shutdown();

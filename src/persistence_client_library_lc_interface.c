@@ -45,10 +45,11 @@ int check_lc_request(int request, int requestID)
    {
       case NsmShutdownNormal:
       {
+         uint64_t cmd;
          // add command and data to queue
-         unsigned long cmd = ( (requestID << 8) | CMD_LC_PREPARE_SHUTDOWN);
+         cmd = ( ((uint64_t)requestID << 32) | ((uint64_t)request << 16) | CMD_LC_PREPARE_SHUTDOWN);
 
-         if(sizeof(int)!=write(gPipefds[1], &cmd, sizeof(unsigned long)))
+         if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
          {
             printf("write failed w/ errno %d\n", errno);
             rval = NsmErrorStatus_Fail;
@@ -264,17 +265,15 @@ int unregister_lifecycle()
 }
 
 
-int send_prepare_shutdown_complete(int requestId)
+int send_prepare_shutdown_complete(int requestId, int status)
 {
-   int status    = 1;   // TODO send correct status
-
    return send_lifecycle_request("LifecycleRequestComplete", requestId, status);
 }
 
 
 
 
-void process_prepare_shutdown(unsigned char requestId)
+void process_prepare_shutdown(unsigned char requestId, unsigned int status)
 {
    int i = 0;
    //GvdbTable* resourceTable = NULL;
@@ -324,6 +323,6 @@ void process_prepare_shutdown(unsigned char requestId)
    }
 
    // notify lifecycle shutdown OK
-   send_prepare_shutdown_complete((int)requestId);
+   send_prepare_shutdown_complete((int)requestId, (int)status);
 }
 

@@ -42,24 +42,25 @@ enum _PersistenceConstantDef
    FileClosed           = 0,
    FileOpen             = 1,
 
-   NsmShutdownNormal       = 1,     /// lifecycle shutdown normal
+   NsmShutdownNormal       = 1,        /// lifecycle shutdown normal
    NsmErrorStatus_OK       = 1,
    NsmErrorStatus_Fail     = -1,
 
-   PrctKeySize             = 64,    /// persistence resource config table max key size
-   PrctValueSize           = 256,   /// persistence resource config table max value size
-   PrctDbTableSize         = 1024,  /// number of persistence resource config tables to store
+   PrctKeySize             = 64,       /// persistence resource config table max key size
+   PrctValueSize           = 256,      /// persistence resource config table max value size
+   PrctDbTableSize         = 1024,     /// number of persistence resource config tables to store
 
-   DbKeySize               = 64,    /// database max key size
-   DbValueSize             = 16384, /// database max value size
-   DbTableSize             = 1024,  /// database table size
+   DbKeySize               = 64,       /// database max key size
+   DbValueSize             = 16384,    /// database max value size
+   DbTableSize             = 1024,     /// database table size
 
-   PasMsg_Block            = 1,     /// persistence administration service block access
-   PasMsg_WriteBack        = 2,     /// persistence administration service write_back
-   PasMsg_Unblock          = 4,     /// persistence administration service unblock access
-   PasErrorStatus_RespPend = 50,    /// persistence administration service msg return status
-   PasErrorStatus_OK       = 100,   /// persistence administration service msg return status
-   PasErrorStatus_FAIL     = -1,    /// persistence administration service msg return status
+   PasMsg_Block            = 0x0001,   /// persistence administration service block access
+   PasMsg_Unblock          = 0x0002,   /// persistence administration service unblock access
+   PasMsg_WriteBack        = 0x0010,   /// persistence administration service write_back
+
+   PasErrorStatus_RespPend = 0x0001,   /// persistence administration service msg return status
+   PasErrorStatus_OK       = 0x0002,   /// persistence administration service msg return status
+   PasErrorStatus_FAIL     = 0x8000,   /// persistence administration service msg return status
 
    CustLibMaxLen = 128,             /// max length of the custom library name and path
    DbKeyMaxLen   = 128,             /// max database key length
