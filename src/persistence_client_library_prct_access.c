@@ -175,8 +175,8 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       dbContext->configKey.storage     = PersistenceStorage_local;
       dbContext->configKey.permission  = 0;           // TODO define default permission
       dbContext->configKey.max_size    = defaultMaxKeyValDataSize;
-      memcpy(dbContext->configKey.reponsible, "default", MaxConfKeyLengthResp);
-      memcpy(dbContext->configKey.custom_name, "default", MaxConfKeyLengthCusName);
+      memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
+      memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
       //printf("get_db_context ==> R E S O U R C E  N O T found: %s \n", resource_id);
 
       rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
