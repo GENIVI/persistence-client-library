@@ -130,6 +130,8 @@ void pers_library_init(void)
 
    //printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
    strncpy(gAppId, __progname, MaxAppNameLen);
+   gAppId[MaxAppNameLen-1] = '\0';
+
    // destory mutex
    pthread_mutex_destroy(&gDbusInitializedMtx);
    pthread_cond_destroy(&gDbusInitializedCond);

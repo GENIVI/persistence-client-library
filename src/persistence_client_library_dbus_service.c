@@ -394,10 +394,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           break;
                                     }
                                  }
-                                 else
-                                 {
-                                    printf("read() returned %d \n", ret);
-                                 }
                               }
                            }
                            else

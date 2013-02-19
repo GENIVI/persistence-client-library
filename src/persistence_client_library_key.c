@@ -81,7 +81,9 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
          {
             // remember data in handle array
             strncpy(gHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
-            strncpy(gHandleArray[handle].dbKey, dbKey,   DbKeyMaxLen);
+            strncpy(gHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
+            gHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+            gHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
             gHandleArray[handle].info = dbContext;
          }
          else

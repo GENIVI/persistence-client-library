@@ -515,7 +515,8 @@ int pers_db_cursor_create(char* dbPath)
 int pers_db_cursor_next(unsigned int handlerDB)
 {
    int rval = -1;
-   if(handlerDB < MaxPersHandle && handlerDB >= 0)
+   //if(handlerDB < MaxPersHandle && handlerDB >= 0)
+   if(handlerDB < MaxPersHandle )
    {
       if(gCursorArray[handlerDB].m_empty != 1)
       {
@@ -652,7 +653,13 @@ int pers_db_cursor_destroy(unsigned int handlerDB)
       itzam_btree_cursor_free(&gCursorArray[handlerDB].m_cursor);
       gCursorArray[handlerDB].m_empty = 1;
 
-      itzam_btree_close(&gCursorArray[handlerDB].m_btree);
+      itzam_state state = ITZAM_FAILED;
+      state = itzam_btree_close(&gCursorArray[handlerDB].m_btree);
+      if (state != ITZAM_OKAY)
+      {
+            fprintf(stderr, "pers_db_cursor_destroy ==> Close: Itzam problem: %s\n", STATE_MESSAGES[state]);
+      }
+
       close_cursor_handle(handlerDB);
 
       rval = 0;

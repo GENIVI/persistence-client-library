@@ -163,7 +163,9 @@ int get_custom_libraries()
 
             // get the library name
             token  = strtok (NULL, delimiters);
-            strncpy(gCustomLibArray[i++], token, CustLibMaxLen);
+            strncpy(gCustomLibArray[i], token, CustLibMaxLen);
+            gCustomLibArray[i][CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+            i++;
 
             while( token != NULL )
             {
@@ -191,7 +193,9 @@ int get_custom_libraries()
                token  = strtok (NULL, delimiters);
                if(token != NULL)
                {
-                  strncpy(gCustomLibArray[i++], token, CustLibMaxLen);
+                  strncpy(gCustomLibArray[i], token, CustLibMaxLen);
+                  gCustomLibArray[i][CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+                  i++;
                }
                else
                {
