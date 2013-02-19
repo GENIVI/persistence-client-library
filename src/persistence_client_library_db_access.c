@@ -74,7 +74,8 @@ itzam_btree* pers_db_open(PersistenceInfo_s* info, const char* dbPath)
    // create array index: index is a combination of resource config table type and group
    arrayIdx = info->configKey.storage + info->context.ldbid ;
 
-   if(arrayIdx <= DbTableSize)
+   //if(arrayIdx <= DbTableSize)
+   if(arrayIdx < DbTableSize)
    {
       if(gBtreeCreated[arrayIdx][info->configKey.policy] == 0)
       {

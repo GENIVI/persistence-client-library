@@ -34,7 +34,7 @@
 
 
 
-#define ENABLE_DBUS_INTERFACE 1
+#define ENABLE_DBUS_INTERFACE 0
 
 extern char* __progname;
 
@@ -81,7 +81,7 @@ void pers_library_init(void)
 #endif
 
    // clear the open file descriptor array
-   memset(gOpenFdArray, MaxPersHandle, sizeof(int));
+   memset(gOpenFdArray, 0, MaxPersHandle * sizeof(int));
 
    /// get custom library names to load
    status = get_custom_libraries();

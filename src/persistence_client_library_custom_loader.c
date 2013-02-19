@@ -156,6 +156,8 @@ int get_custom_libraries()
             }
             else
             {
+            	munmap(configFileMap, buffer.st_size); // @CB: Add
+            	close(fd); // @CB: Add // close file descriptor before return
                 return EPERS_OUTOFBOUNDS; // out of array bounds
             }
 
@@ -199,7 +201,6 @@ int get_custom_libraries()
             gNumOfCustomLibraries = i;    // remember the number of loaded libraries
 
             munmap(configFileMap, buffer.st_size);
-            close(fd);
 
             // debugging only
 /*          printf("get_custom_libraries - found [ %d ] libraries \n", gNumOfCustomLibraries);
@@ -214,6 +215,7 @@ int get_custom_libraries()
             rval = EPERS_CONFIGMAPFAILED;
             printf("load config file error - mapping of file failed");
          }
+         close(fd);
       }
       else
       {

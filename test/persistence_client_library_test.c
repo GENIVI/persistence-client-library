@@ -492,6 +492,9 @@ START_TEST(test_DataFile)
    ret = pclFileRemove(0xFF, "media/mediaDBWrite.db", 1, 1);
    fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
 
+   ret = pclFileClose(fd);
+   fail_unless(ret == 0, "Failed to close file");
+
 
    // map file ------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
@@ -507,6 +510,8 @@ START_TEST(test_DataFile)
    size = pclFileGetSize(1024);
    fail_unless(ret == 0, "Got size, but should not");
 
+   ret = pclFileClose(fd);
+   fail_unless(ret == 0, "Failed to close file");
 
    free(writeBuffer);
 }
