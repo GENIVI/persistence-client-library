@@ -332,7 +332,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
          // register for messages
          if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/adminconsumer", &vtable, userData))
-             && (TRUE==dbus_connection_register_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer", &vtable2, userData))
+             && (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer", &vtable2, userData))
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
             if (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
@@ -427,7 +427,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                while (0!=bContinue);
             }
             dbus_connection_unregister_object_path(conn, "/org/genivi/persistence/adminconsumer");
-            dbus_connection_unregister_object_path(conn, "/com/contiautomotive/NodeStateManager/LifecycleConsumer");
+            dbus_connection_unregister_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
          close(gEfds);

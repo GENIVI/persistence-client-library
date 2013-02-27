@@ -140,9 +140,9 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
    //printf("handleObjectPathMessage '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
-   if((0==strncmp("com.contiautomotive.NodeStateManager.LifecycleConsumer", dbus_message_get_interface(message), 20)))
+   if((0==strncmp("org.genivi.NodeStateManager.LifeCycleConsumer", dbus_message_get_interface(message), 20)))
    {
-      if((0==strncmp("NSMLifecycleRequest", dbus_message_get_member(message), 18)))
+      if((0==strncmp("LifecycleRequest", dbus_message_get_member(message), 18)))
       {
          result = msg_lifecycleRequest(connection, message);
       }
@@ -164,12 +164,12 @@ int send_lifecycle_register(const char* method, int shutdownMode)
    dbus_error_init (&error);
    DBusConnection* conn = get_dbus_connection();
 
-   const char* objName = "/com/contiautomotive/NodeStateManager/LifecycleConsumer";
+   const char* objName = "/org/genivi/NodeStateManager/LifeCycleConsumer";
    const char* busName = dbus_bus_get_unique_name(conn);
 
-   DBusMessage* message = dbus_message_new_method_call("com.contiautomotive.NodeStateManager.Consumer",  // destination
-                                                       "/com/contiautomotive/NodeStateManager/Consumer",  // path
-                                                       "com.contiautomotive.NodeStateManager.Consumer",  // interface
+   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager.Consumer",  // destination
+                                                       "/org/genivi/NodeStateManager/Consumer",  // path
+                                                       "org.genivi.NodeStateManager.Consumer",  // interface
                                                        method);                  // method
    if(message != NULL)
    {
@@ -213,9 +213,9 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 
    DBusConnection* conn = get_dbus_connection();
 
-   DBusMessage* message = dbus_message_new_method_call("com.contiautomotive.NodeStateManager.Consumer",  // destination
-                                                      "/com/contiautomotive/NodeStateManager/Consumer",  // path
-                                                       "com.contiautomotive.NodeStateManager.Consumer",  // interface
+   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager.Consumer",  // destination
+                                                      "/org/genivi/NodeStateManager/Consumer",  // path
+                                                       "org.genivi.NodeStateManager.Consumer",  // interface
                                                        method);                  // method
    if(message != NULL)
    {

@@ -34,7 +34,7 @@
 
 
 
-#define ENABLE_DBUS_INTERFACE 0
+#define ENABLE_DBUS_INTERFACE 1
 
 extern char* __progname;
 
