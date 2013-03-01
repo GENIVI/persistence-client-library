@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-static int gTimeoutMs = 500;
+static int gTimeoutMs = 5000; // 5 seconds
 
 int check_lc_request(int request, int requestID)
 {

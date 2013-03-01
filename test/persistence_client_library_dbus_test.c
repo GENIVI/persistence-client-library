@@ -26,11 +26,10 @@
 int main(int argc, char *argv[])
 {
    int ret = 0;
-   unsigned char buffer[1024];
    printf("Dbus interface test application\n");
 
-   getchar();
-   ret = pclKeyReadData(0xFF, "pos/last_position",         0, 0, buffer, 1024);
+   printf("Press a key to end application\n");
+   ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
    getchar();
 
 

@@ -31,12 +31,32 @@
 pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
 
+typedef enum EDBusObjectType
+{
+   OT_NONE = 0,
+   OT_WATCH,
+   OT_TIMEOUT
+} tDBusObjectType;
+
+
+typedef struct SObjectEntry
+{
+   tDBusObjectType objtype; /** libdbus' object */
+   union
+   {
+      DBusWatch * watch;      /** watch "object" */
+      DBusTimeout * timeout;  /** timeout "object" */
+   };
+} tObjectEntry;
+
+
+
 /// polling structure
 typedef struct SPollInfo
 {
    int nfds;
    struct pollfd fds[10];
-   DBusWatch * watches[10];
+   tObjectEntry objects[10];
 } tPollInfo;
 
 
@@ -216,7 +236,7 @@ int setup_dbus_mainloop(void)
    }
    else
    {
-      printf("Use default dbus bus!!!!!!\n");
+      printf("Use default dbus bus (DBUS_BUS_SYSTEM) !!!!!!\n");
       gDbusConn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
    }
 
@@ -245,13 +265,15 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 {
    dbus_bool_t result = FALSE;
 
-   //printf("addWatch called @%08x flags: %08x enabled: %c\n", (unsigned int)watch, dbus_watch_get_flags(watch), TRUE==dbus_watch_get_enabled(watch)?'x':'-');
+   //fprintf(stderr, "addWatch called @%08x flags: %08x enabled: %c\n", (unsigned int)watch, dbus_watch_get_flags(watch), TRUE==dbus_watch_get_enabled(watch)?'x':'-');
 
    if (ARRAY_SIZE(gPollInfo.fds)>gPollInfo.nfds)
    {
       int flags = dbus_watch_get_flags(watch);
 
-      gPollInfo.watches[gPollInfo.nfds] = watch;
+      tObjectEntry * const pEntry = &gPollInfo.objects[gPollInfo.nfds];
+      pEntry->objtype = OT_WATCH;
+      pEntry->watch = watch;
 
       gPollInfo.fds[gPollInfo.nfds].fd = dbus_watch_get_unix_fd(watch);
 
@@ -291,6 +313,97 @@ static void watchToggled(DBusWatch *watch, void *data)
 
 
 
+static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
+{
+   dbus_bool_t ret = FALSE;
+
+   if (ARRAY_SIZE(gPollInfo.fds)>gPollInfo.nfds)
+   {
+      const int interval = dbus_timeout_get_interval(timeout);
+      if ((0<interval)&&(TRUE==dbus_timeout_get_enabled(timeout)))
+      {
+         const int tfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
+         if (-1!=tfd)
+         {
+            const struct itimerspec its = { .it_value= {interval/1000, interval%1000} };
+            if (-1!=timerfd_settime(tfd, 0, &its, NULL))
+            {
+               tObjectEntry * const pEntry = &gPollInfo.objects[gPollInfo.nfds];
+               pEntry->objtype = OT_TIMEOUT;
+               pEntry->timeout = timeout;
+               gPollInfo.fds[gPollInfo.nfds].fd = tfd;
+               gPollInfo.fds[gPollInfo.nfds].events |= POLLIN;
+               ++gPollInfo.nfds;
+               ret = TRUE;
+            }
+            else
+            {
+               fprintf(stderr, "timerfd_settime() failed %d '%s'\n", errno, strerror(errno));
+            }
+         }
+         else
+         {
+            fprintf(stderr, "timerfd_create() failed %d '%s'\n", errno, strerror(errno));
+         }
+      }
+   }
+   else
+   {
+      fprintf(stderr, "cannot create another fd to be poll()'ed\n");
+   }
+
+   return ret;
+}
+
+
+
+static void removeTimeout(DBusTimeout *timeout, void *data)
+{
+
+   int i = gPollInfo.nfds;
+   while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
+
+   if (0<i)
+   {
+      if (-1==close(gPollInfo.fds[i].fd))
+      {
+         fprintf(stderr, "close() timerfd #%d failed %d '%s'\n", gPollInfo.fds[i].fd, errno, strerror(errno));
+      }
+
+      --gPollInfo.nfds;
+      while (gPollInfo.nfds>i)
+      {
+         gPollInfo.fds[i] = gPollInfo.fds[i+1];
+         gPollInfo.objects[i] = gPollInfo.objects[i+1];
+         ++i;
+      }
+
+      gPollInfo.fds[gPollInfo.nfds].fd = -1;
+      gPollInfo.objects[gPollInfo.nfds].objtype = OT_NONE;
+   }
+}
+
+
+
+/** callback for libdbus' when timeout changed */
+static void timeoutToggled(DBusTimeout *timeout, void *data)
+{
+   int i = gPollInfo.nfds;
+   while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
+   fprintf(stderr, "timeoutToggled @%x %c %dms @%d [%d]\n", (int)timeout, dbus_timeout_get_enabled(timeout)?'x':'-', dbus_timeout_get_interval(timeout), i, gPollInfo.nfds);
+   if (0<i)
+   {
+      const int interval = (TRUE==dbus_timeout_get_enabled(timeout))?dbus_timeout_get_interval(timeout):0;
+      const struct itimerspec its = { .it_value= {interval/1000, interval%1000} };
+      if (-1!=timerfd_settime(gPollInfo.fds[i].fd, 0, &its, NULL))
+      {
+         fprintf(stderr, "timerfd_settime() %d failed %d '%s'\n", interval, errno, strerror(errno));
+      }
+   }
+}
+
+
+
 int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
              DBusObjectPathVTable vtableFallback, void* userData)
 {
@@ -313,7 +426,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    else if (NULL != conn)
    {
       dbus_connection_set_exit_on_disconnect (conn, FALSE);
-      printf("connected as '%s'\n", dbus_bus_get_unique_name(conn));
+      //printf("connected as '%s'\n", dbus_bus_get_unique_name(conn));
       if (-1 == (gEfds = eventfd(0, 0)))
       {
          printf("eventfd() failed w/ errno %d\n", errno);
@@ -335,41 +448,63 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
              && (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer", &vtable2, userData))
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
-            if (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
+            if(   (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
+               || (TRUE!=dbus_connection_set_timeout_functions(conn, addTimeout, removeTimeout, timeoutToggled, NULL, NULL)) )
             {
                printf("dbus_connection_set_watch_functions() failed\n");
             }
             else
             {
-               uint16_t buf[64];
-
                pthread_cond_signal(&gDbusInitializedCond);
                pthread_mutex_unlock(&gDbusInitializedMtx);
                do
                {
                   bContinue = 0; /* assume error */
 
-                  while(DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
+                  while (DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
 
-                  while((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, 500)))&&(EINTR==errno));
+                  while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, -1)))&&(EINTR==errno));
 
-                  if(0>ret)
+                  if (0>ret)
                   {
-                     printf("poll() failed w/ errno %d\n", errno);
+                     fprintf(stderr, "poll() failed w/ errno %d\n", errno);
+                  }
+                  else if (0==ret)
+                  {
+                     /* poll time-out */
                   }
                   else
                   {
                      int i;
-                     bContinue = 1;
 
                      for (i=0; gPollInfo.nfds>i; ++i)
                      {
+                        /* anything to do */
                         if (0!=gPollInfo.fds[i].revents)
                         {
-                           if (gPollInfo.fds[i].fd==gEfds)
+                           //fprintf(stderr, "\t[%d] revents 0x%04x\n", i, gPollInfo.fds[i].revents);
+
+                           if (OT_TIMEOUT==gPollInfo.objects[i].objtype)
                            {
+                              /* time-out occured */
+                              unsigned long long nExpCount = 0;
+                              if ((ssize_t)sizeof(nExpCount)!=read(gPollInfo.fds[i].fd, &nExpCount, sizeof(nExpCount)))
+                              {
+                                 fprintf(stderr, "read failed!?\n");
+                              }
+                              fprintf(stderr, "timeout %x #%d!\n", (int)gPollInfo.objects[i].timeout, (int)nExpCount);
+                              if (FALSE==dbus_timeout_handle(gPollInfo.objects[i].timeout))
+                              {
+                                 fprintf(stderr, "dbus_timeout_handle() failed!?\n");
+                              }
+                              bContinue = TRUE;
+                           }
+                           else if (gPollInfo.fds[i].fd==gEfds)
+                           {
+                              /* internal command */
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
+                                 uint16_t buf[64];
                                  bContinue = TRUE;
                                  while ((-1==(ret=read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR==errno));
                                  if (0>ret)
@@ -415,8 +550,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               {
                                  flags |= DBUS_WATCH_HANGUP;
                               }
-                              //printf("handle watch @0x%08x flags: %04x\n", (int)gPollInfo.watches[i], flags);
-                              bContinue = dbus_watch_handle(gPollInfo.watches[i], flags);
+
+                              bContinue = dbus_watch_handle(gPollInfo.objects[i].watch, flags);
                            }
                         }
                      }

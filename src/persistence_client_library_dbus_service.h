@@ -23,6 +23,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <sys/eventfd.h>
+#include <sys/timerfd.h>
 
 /// mutex to make sure main loop is running
 extern pthread_mutex_t gDbusInitializedMtx;

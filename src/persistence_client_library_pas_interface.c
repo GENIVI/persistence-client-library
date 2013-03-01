@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 
-static int gTimeoutMs = 500;
+static int gTimeoutMs = 5000; // 5 seconds
 
 /// flag if access is locked
 static int gLockAccess = 0;
@@ -105,9 +105,9 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
    dbus_error_init (&error);
 
 
-   if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &request,
-                                                DBUS_TYPE_INT32 , &requestID,
-                                                DBUS_TYPE_INVALID))
+   if (!dbus_message_get_args(message, &error, DBUS_TYPE_INT32 , &request,
+                                               DBUS_TYPE_INT32 , &requestID,
+                                               DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
 
@@ -123,7 +123,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
          printf("DBus No memory\n");
       }
 
-      dbus_message_unref (reply);
+      dbus_message_unref(reply);
 
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
@@ -292,16 +292,24 @@ int send_pas_register(const char* method, int notificationFlag)
       if(conn != NULL)
       {
          replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
-         if(dbus_set_error_from_message(&error, replyMsg))
+
+         if(replyMsg != NULL)
          {
-            fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+            if(dbus_set_error_from_message(&error, replyMsg))
+            {
+               fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+            }
+            else
+            {
+               dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
+               printf("send_pas_register ==> REPLY value: %d \n", rval);
+            }
+            dbus_message_unref(replyMsg);
          }
          else
          {
-            dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
+            printf("send_pas_register ==> reply message is NULL!\n     ==> error msg: %s \n", error.message);
          }
-
-         dbus_message_unref(message);
       }
       else
       {
@@ -346,16 +354,22 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
       if(conn != NULL)
       {
          replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
-         if(dbus_set_error_from_message(&error, replyMsg))
+         if(replyMsg != NULL)
          {
-            fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+            if(dbus_set_error_from_message(&error, replyMsg))
+            {
+               fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+            }
+            else
+            {
+               dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
+            }
+            dbus_message_unref(replyMsg );
          }
          else
          {
-            dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
+            fprintf(stderr, "send_pas_request ==> reply messgae is NULL!\n     ==> error msg: %s \n", error.message);
          }
-
-         dbus_message_unref(message);
       }
       else
       {

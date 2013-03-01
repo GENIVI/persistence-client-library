@@ -103,11 +103,20 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
          state = itzam_btree_open(&gResource_table[arrayIdx], filename, itzam_comparator_string, error_handler, 0 , 0);
          if(state != ITZAM_OKAY)
          {
-            fprintf(stderr, "\nget_resource_cfg_table => Itzam problem: %s\n", STATE_MESSAGES[state]);
+            fprintf(stderr, "\n** get_resource_cfg_table => Itzam problem: %s**\n", STATE_MESSAGES[state]);
+            tree = NULL;
          }
-         gResourceOpen[arrayIdx] = 1;  // remember the index has an DB entry
+         else
+         {
+            gResourceOpen[arrayIdx] = 1;  // remember the index has an DB entry
+            tree = &gResource_table[arrayIdx];
+         }
       }
-      tree = &gResource_table[arrayIdx];
+      else
+      {
+         tree = &gResource_table[arrayIdx];
+      }
+
    }
 
    return tree;

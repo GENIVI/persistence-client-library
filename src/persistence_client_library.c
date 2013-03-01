@@ -122,10 +122,6 @@ void pers_library_init(void)
          }
          gPersCustomFuncs[i].custom_plugin_init();
       }
-
-      /// just testing
-      //gPersCustomFuncs[PersCustomLib_early].custom_plugin_open("Hallo", 88, 99);
-      //gPersCustomFuncs[PersCustomLib_early].custom_plugin_close(17);
    }
 
    //printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
