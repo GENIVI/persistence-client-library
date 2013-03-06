@@ -52,9 +52,10 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 
    // get database context: database path and database key
    handle = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-   if(handle >= 0)
+   if(   (handle >= 0)
+      && (dbContext.configKey.type == PersistenceResourceType_key) )          // check if type matches
    {
-      if(dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry)  // check if store policy is valid
+      if(dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry)    // check if store policy is valid
       {
          if(PersistenceStorage_custom ==  dbContext.configKey.storage)
          {
@@ -88,9 +89,13 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
          }
          else
          {
-            printf("key_handle_open: error - handleId out of bounds [%d]\n", handle);
+            printf("pclKeyHandleOpen: error - handleId out of bounds [%d]\n", handle);
          }
       }
+   }
+   else
+   {
+      printf("pclKeyHandleOpen: error - no database context or resource is not a key \n");
    }
 
 
@@ -244,7 +249,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
       }
       else
       {
-         printf("key_handle_write_data: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
+         printf("pclKeyHandleWriteData: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
       }
    }
    else
@@ -285,7 +290,8 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 
      // get database context: database path and database key
      rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-     if(rval >= 0)
+     if(   (rval >= 0)
+        && (dbContext.configKey.type == PersistenceResourceType_key) )  // check if type is matching
      {
         if(   dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry
            && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
@@ -326,7 +332,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 
    // get database context: database path and database key
    data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-   if(data_size >= 0)
+   if(   (data_size >= 0)
+      && (dbContext.configKey.type == PersistenceResourceType_key) )    // check if type matches
    {
       if(   dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry
          && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
@@ -370,7 +377,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
       // get database context: database path and database key
       data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-      if(data_size >= 0)
+      if(   (data_size >= 0)
+         && (dbContext.configKey.type == PersistenceResourceType_key) )
       {
 
          if(   dbContext.configKey.storage <  PersistenceStoragePolicy_LastEntry
@@ -382,6 +390,10 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          {
             data_size = EPERS_BADPOL;
          }
+      }
+      else
+      {
+         printf("pclKeyReadData - error - no database context or resource is not a key\n");
       }
    }
    else
@@ -419,7 +431,8 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
          // get database context: database path and database key
          data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-         if(data_size >= 0)
+         if(   (data_size >= 0)
+            && (dbContext.configKey.type == PersistenceResourceType_key))
          {
             // get hash value of data to verify storing
             hash_val_data = crc32(hash_val_data, buffer, buffer_size);
@@ -435,11 +448,15 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                data_size = EPERS_BADPOL;
             }
          }
+         else
+         {
+            printf("pclKeyWriteData: error - no database context or resource is not a key\n");
+         }
       }
       else
       {
          data_size = EPERS_BUFLIMIT;
-         printf("key_write_data: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
+         printf("pclKeyWriteData: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
       }
    }
    else
@@ -473,7 +490,8 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
 
    // registration is only on shared key possible
-   if(PersistenceStorage_shared == rval)
+   if(   (PersistenceStorage_shared == rval)
+      && (dbContext.configKey.type == PersistenceResourceType_key) )
    {
       rval = persistence_reg_notify_on_change(dbPath, dbKey);
    }

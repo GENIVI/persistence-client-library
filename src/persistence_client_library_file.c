@@ -103,7 +103,8 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
    // get database context: database path and database key
    shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
-   if(shared_DB != -1)  // check valid database context
+   if(   (shared_DB >= 0)                                               // check valid database context
+      && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
    {
       handle = open(dbPath, flags);
       if(handle != -1)
@@ -178,9 +179,14 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          }
          else
          {
-            printf("file_open ==> no valid path to create: %s\n", dbPath);
+            printf("pclFileOpen ==> no valid path to create: %s\n", dbPath);
          }
       }
+   }
+   else
+   {
+      handle = shared_DB;
+      printf("pclFileOpen ==> no valid database context or resource no file\n");
    }
 
    return handle;
@@ -217,13 +223,19 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
       // get database context: database path and database key
       shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
-      if(shared_DB != -1)  // check valid database context
+      if(   (shared_DB >= 0)                                               // check valid database context
+         && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
       {
          rval = remove(dbPath);
          if(rval == -1)
          {
             printf("file_remove ERROR: %s \n", strerror(errno) );
          }
+      }
+      else
+      {
+         rval = shared_DB;
+         printf("pclFileRemove ==> no valid database context or resource not a file\n");
       }
    }
    else

@@ -149,12 +149,13 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          dbContext->configKey.storage     = search.data.storage;
          dbContext->configKey.permission  = search.data.permission;
          dbContext->configKey.max_size    = search.data.max_size;
+         dbContext->configKey.type        = search.data.type;
          memcpy(dbContext->configKey.reponsible, search.data.reponsible, MaxConfKeyLengthResp);
          memcpy(dbContext->configKey.custom_name, search.data.custom_name, MaxConfKeyLengthCusName);
 
          if(dbContext->configKey.storage != PersistenceStorage_custom )
          {
-            rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
+            rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
          }
          else
          {
@@ -178,17 +179,27 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
    if(resourceFound == 0)
    {
       //
-      // resource NOT found in resource table ==> default is local cached
+      // resource NOT found in resource table ==> default is local cached key
       //
       dbContext->configKey.policy      = PersistencePolicy_wc;
       dbContext->configKey.storage     = PersistenceStorage_local;
       dbContext->configKey.permission  = 0;           // TODO define default permission
       dbContext->configKey.max_size    = defaultMaxKeyValDataSize;
+      if(isFile == PersistenceResourceType_file)
+      {
+         dbContext->configKey.type = PersistenceResourceType_file;
+       }
+      else
+      {
+         dbContext->configKey.type  = PersistenceResourceType_key;
+      }
+
+      memcpy(dbContext->configKey.customID, "A_CUSTOM_ID", strlen("A_CUSTOM_ID"));
       memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
       //printf("get_db_context ==> R E S O U R C E  N O T found: %s \n", resource_id);
 
-      rval = get_db_path_and_key(dbContext, resource_id, isFile, dbKey, dbPath);
+      rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
    }
 
    return rval;
@@ -197,7 +208,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
 
 // status: OK
-int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
+int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, char dbKey[], char dbPath[])
 {
    int storePolicy = PersistenceStoragePolicy_LastEntry;
 
@@ -267,14 +278,14 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, u
          //
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
-            if(isFile == ResIsNoFile)
+            if(dbContext->configKey.type == PersistenceResourceType_key)
                snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, gSharedCached);
             else
                snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
-            if(isFile == ResIsNoFile)
+            if(dbContext->configKey.type == PersistenceResourceType_key)
                snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid, gSharedWt);
             else
                snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid, dbKey);
@@ -288,14 +299,14 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, u
          //
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
-            if(isFile == ResIsNoFile)
+            if(dbContext->configKey.type == PersistenceResourceType_key)
                snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, gSharedCached);
             else
                snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
-            if(isFile == ResIsNoFile)
+            if(dbContext->configKey.type == PersistenceResourceType_key)
                snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, gSharedWt);
             else
                snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, dbKey);
@@ -310,14 +321,14 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, u
 
       if(PersistencePolicy_wc == dbContext->configKey.policy)
       {
-         if(isFile == ResIsNoFile)
+         if(dbContext->configKey.type == PersistenceResourceType_key)
             snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, gLocalCached);
          else
             snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, dbKey);
       }
       else if(PersistencePolicy_wt == dbContext->configKey.policy)
       {
-         if(isFile == ResIsNoFile)
+         if(dbContext->configKey.type == PersistenceResourceType_key)
             snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId, gLocalWt);
          else
             snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId, dbKey);

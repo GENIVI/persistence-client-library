@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_DATA_RC_TABLE_INTERFACE_VERSION   (0x01000000U)
+#define  PERSIST_DATA_RC_TABLE_INTERFACE_VERSION   (0x02000000U)
 
 #include "persistence_client_library_data_organization.h"
 
@@ -54,6 +54,20 @@ typedef enum _PersistenceStorage_e
 } PersistenceStorage_e;
 
 
+
+/** specify the type of the resource */
+typedef enum PersistenceResourceType_e_
+{
+   PersistenceResourceType_key    = 0,  /**< key type resource */
+   PersistenceResourceType_file,        /**< file type resource */
+
+   /** insert new entries here ... */
+   PersistenceResourceType_LastEntry      /**< last entry */
+
+} PersistenceResourceType_e;
+
+
+
 /// structure used to manage database context
 typedef struct _PersistenceDbContext_s
 {
@@ -66,12 +80,14 @@ typedef struct _PersistenceDbContext_s
 /// structure used to manage the persistence configuration for a key
 typedef struct _PersistenceConfigurationKey_s
 {
-   PersistencePolicy_e  policy;                                /**< policy  */
-   PersistenceStorage_e storage;                               /**< definition of storage to use */
+   PersistencePolicy_e        policy;                          /**< policy  */
+   PersistenceStorage_e       storage;                         /**< definition of storage to use */
+   PersistenceResourceType_e  type;                            /**< type of the resource - since 4.0.0.0*/
    unsigned int         permission;                            /**< access right, corresponds to UNIX */
    unsigned int         max_size;                              /**< max size expected for the key */
    char                 reponsible[MaxConfKeyLengthResp];      /**< name of responsible application */
    char                 custom_name[MaxConfKeyLengthCusName];  /**< name of the customer plugin */
+   char                 customID[MaxRctLengthCustom_ID];       /**< internal ID for the custom type resource */
 } PersistenceConfigurationKey_s;
 
 

@@ -32,7 +32,6 @@
  * @param resource_id the resource id
  * @param user_no user identification
  * @param seat_no seat identifier
- * @param isFile identifier if this resource is a file
  * @param dbKey the array where the database key will be stored
  * @param dbPath the array where the database location path will be stored
  * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
@@ -40,7 +39,7 @@
  * @return 1 if shared database and 0 if local database or PersistenceStoragePolicy_LastEntry
  *         when no valid database has been found
  */
-int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
+int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, char dbKey[], char dbPath[]);
 
 
 
@@ -51,7 +50,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, u
  * @param resource_id the resource id
  * @param user_no user identification
  * @param seat_no seat identifier
- * @param isFile identifier if this resource is a file
+ * @param isFile identifier if this resource is a file (used for file/key creation if resource does not exist)
  * @param dbKey the array where the database key will be stored
  * @param dbPath the array where the database location path will be stored
  * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
