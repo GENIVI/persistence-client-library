@@ -181,6 +181,10 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
          printf(" ==> org.genivi.persistence.admin - received U N KN O W N-'%s'\n", dbus_message_get_interface(message));
       }
    }
+   else
+   {
+      printf(" ==> org.genivi.persistence - received U N KN O W N-'%s'\n", dbus_message_get_interface(message));
+   }
    return result;
 }
 
@@ -306,7 +310,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
          gPollInfo.fds[0].events = POLLIN;
 
          // register for messages
-         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/admin", &vtable, userData))
+         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence", &vtable, userData))
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
             if (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
@@ -355,9 +359,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
                                     switch (buf[0])
                                     {
                                     case CMD_REQUEST_NAME:
-                                       if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER !=dbus_bus_request_name(conn, "org.genivi.persistence.admin", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
+                                       if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER !=dbus_bus_request_name(conn, "org.genivi.persistence", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
                                        {
-                                          fprintf(stderr, "Cannot acquire name 'org.genivi.persistence.admin': \n    \"(%s)\". Bailing out!\n", err.message);
+                                          fprintf(stderr, "Cannot acquire name 'org.genivi.persistence': \n    \"(%s)\". Bailing out!\n", err.message);
                                           dbus_error_free(&err);
                                           bContinue = FALSE;
                                        }

@@ -167,10 +167,10 @@ int send_lifecycle_register(const char* method, int shutdownMode)
    const char* objName = "/org/genivi/NodeStateManager/LifeCycleConsumer";
    const char* busName = dbus_bus_get_unique_name(conn);
 
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager.Consumer",  // destination
-                                                       "/org/genivi/NodeStateManager/Consumer",  // path
+   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
+                                                       "/org/genivi/NodeStateManager",          // path
                                                        "org.genivi.NodeStateManager.Consumer",  // interface
-                                                       method);                  // method
+                                                       method);                                 // method
    if(message != NULL)
    {
       dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,

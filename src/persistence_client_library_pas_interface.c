@@ -276,10 +276,10 @@ int send_pas_register(const char* method, int notificationFlag)
    const char* objName = "/org/genivi/persistence/adminconsumer";
    const char* busName = dbus_bus_get_unique_name(conn);
 
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",    // destination
-                                                      "/org/genivi/persistence/admin",    // path
-                                                       "org.genivi.persistence.admin",    // interface
-                                                       method);                  // method
+   DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence",       // destination
+                                                      "/org/genivi/persistence",       // path
+                                                       "org.genivi.persistence.admin", // interface
+                                                       method);                        // method
 
    if(message != NULL)
    {
