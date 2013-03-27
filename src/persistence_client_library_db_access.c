@@ -206,7 +206,10 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
 
       if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_get_data != NULL) )
       {
-         gPersCustomFuncs[idx].custom_plugin_get_data(key, (char*)buffer, buffer_size);
+         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+            gPersCustomFuncs[idx].custom_plugin_get_data(key, (char*)buffer, buffer_size);
+         else
+            gPersCustomFuncs[idx].custom_plugin_get_data(info->configKey.customID, (char*)buffer, buffer_size);
       }
       else
       {
@@ -332,7 +335,10 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
       {
-         gPersCustomFuncs[idx].custom_plugin_set_data(key, (char*)buffer, buffer_size);
+         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+            gPersCustomFuncs[idx].custom_plugin_set_data(key, (char*)buffer, buffer_size);
+         else
+            gPersCustomFuncs[idx].custom_plugin_set_data(info->configKey.customID, (char*)buffer, buffer_size);
       }
       else
       {
@@ -394,7 +400,10 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
       {
-         gPersCustomFuncs[idx].custom_plugin_get_size(key);
+         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+            gPersCustomFuncs[idx].custom_plugin_get_size(key);
+         else
+            gPersCustomFuncs[idx].custom_plugin_get_size(info->configKey.customID);
       }
       else
       {
@@ -454,7 +463,10 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
       {
-         gPersCustomFuncs[idx].custom_plugin_delete_data(dbKey);
+         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+            gPersCustomFuncs[idx].custom_plugin_delete_data(dbKey);
+         else
+            gPersCustomFuncs[idx].custom_plugin_delete_data(info->configKey.customID);
       }
       else
       {

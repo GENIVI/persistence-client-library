@@ -83,6 +83,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
             // remember data in handle array
             strncpy(gHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
             strncpy(gHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
+            strncpy(gHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
             gHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
             gHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
             gHandleArray[handle].info = dbContext;
@@ -207,6 +208,14 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, changeNotifyCallback_t callback)
 {
    int rval = -1;
+
+   if(key_handle < MaxPersHandle)
+   {
+      pclKeyRegisterNotifyOnChange(gHandleArray[key_handle].info.context.ldbid,
+                                   gHandleArray[key_handle].resourceID,
+                                   gHandleArray[key_handle].info.context.user_no,
+                                   gHandleArray[key_handle].info.context.seat_no, callback);
+   }
 
    return rval;
 }
@@ -468,8 +477,6 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 }
 
 
-
-// status: TODO implement register on change
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, changeNotifyCallback_t callback)
 {
    int rval = 0;

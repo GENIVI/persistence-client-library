@@ -144,6 +144,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          //printf("get_db_context ==> data: %s\n", search.data);
          memset(dbContext->configKey.reponsible,  0, MaxConfKeyLengthResp);
          memset(dbContext->configKey.custom_name, 0, MaxConfKeyLengthCusName);
+         memset(dbContext->configKey.customID,    0,  MaxRctLengthCustom_ID);
 
          dbContext->configKey.policy      = search.data.policy;
          dbContext->configKey.storage     = search.data.storage;
@@ -152,6 +153,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          dbContext->configKey.type        = search.data.type;
          memcpy(dbContext->configKey.reponsible, search.data.reponsible, MaxConfKeyLengthResp);
          memcpy(dbContext->configKey.custom_name, search.data.custom_name, MaxConfKeyLengthCusName);
+         memcpy(dbContext->configKey.customID, search.data.customID, MaxRctLengthCustom_ID);
 
          if(dbContext->configKey.storage != PersistenceStorage_custom )
          {

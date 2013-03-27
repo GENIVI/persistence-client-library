@@ -26,9 +26,10 @@
 /// handle structure definition
 typedef struct _PersistenceHandle_s
 {
-   PersistenceInfo_s info;    /// persistence info
-   char dbPath[DbPathMaxLen]; /// path to the database
-   char dbKey[DbKeyMaxLen];   /// database key
+   PersistenceInfo_s info;          /// persistence info
+   char dbPath[DbPathMaxLen];       /// path to the database
+   char dbKey[DbKeyMaxLen];         /// database key
+   char resourceID[DbResIDMaxLen];  /// resourceID
 }
 PersistenceHandle_s;
 

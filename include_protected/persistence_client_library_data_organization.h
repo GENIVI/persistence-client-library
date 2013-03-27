@@ -66,6 +66,7 @@ enum _PersistenceConstantDef
 
    CustLibMaxLen = 128,             /// max length of the custom library name and path
    DbKeyMaxLen   = 128,             /// max database key length
+   DbResIDMaxLen = 128,             /// max database key length
    DbPathMaxLen  = 128,             /// max database path length
    MaxAppNameLen = 128,             /// max application name
    MaxPersHandle = 256,             /// max number of parallel open persistence handles
