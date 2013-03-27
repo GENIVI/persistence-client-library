@@ -204,7 +204,7 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
 
 
-int pclKeyHandleRegisterNotifyOnChange(int key_handle)
+int pclKeyHandleRegisterNotifyOnChange(int key_handle, changeNotifyCallback_t callback)
 {
    int rval = -1;
 
@@ -470,7 +470,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
 
 // status: TODO implement register on change
-int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, changeNotifyCallback_t callback)
 {
    int rval = 0;
    PersistenceInfo_s dbContext;
@@ -490,10 +490,14 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
 
    // registration is only on shared key possible
-   if(   (PersistenceStorage_shared == rval)
-      && (dbContext.configKey.type == PersistenceResourceType_key) )
+   if(   (dbContext.configKey.storage == PersistenceStorage_shared)
+      && (dbContext.configKey.type    == PersistenceResourceType_key) )
    {
-      rval = persistence_reg_notify_on_change(dbPath, dbKey);
+      rval = persistence_reg_notify_on_change(dbPath, dbKey, ldbid, user_no, seat_no, callback);
+   }
+   else
+   {
+      printf("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key\n");
    }
 
    return rval;

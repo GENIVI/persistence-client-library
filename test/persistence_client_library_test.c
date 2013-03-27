@@ -282,6 +282,37 @@ START_TEST(test_SetData)
    fail_unless(ret == strlen(write2), "Wrong write size");
 
 
+   /*******************************************************************************************************************************************/
+   /* used for changed notification testing */
+   /*******************************************************************************************************************************************/
+   /**
+    * Logical DB ID: 0x84 with user 2 and seat 1
+    *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
+    *
+    *       ==> used for shared testing
+    */
+   printf("Write data to trigger change notification\n");
+   ret = pclKeyWriteData(0x84, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+
+   /**
+    * Logical DB ID: 0x84 with user 2 and seat 1
+    *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
+    *
+    *       ==> used for shared testing
+    */
+   printf("Write data to trigger change notification\n");
+   ret = pclKeyWriteData(0x84, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+
+   /**
+    * Logical DB ID: 0x84 with user 2 and seat 1
+    *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
+    *
+    *       ==> used for shared testing
+    */
+   printf("Write data to trigger change notification\n");
+   ret = pclKeyWriteData(0x84, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   /*******************************************************************************************************************************************/
+   /*******************************************************************************************************************************************/
 
    /*
     * now read the data written in the previous steps to the keys

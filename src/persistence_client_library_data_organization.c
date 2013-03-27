@@ -77,6 +77,6 @@ char gAppId[MaxAppNameLen];
 int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
 
 
-
+int(* gChangeNotifyCallback)(PersistenceNotification_s * notifyStruct);
 
 

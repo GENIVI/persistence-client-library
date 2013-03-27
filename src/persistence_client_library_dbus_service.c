@@ -20,6 +20,7 @@
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_lc_interface.h"
 #include "persistence_client_library_pas_interface.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -62,7 +63,6 @@ typedef struct SPollInfo
 
 /// polling information
 static tPollInfo gPollInfo;
-
 
 /// dbus connection
 DBusConnection* gDbusConn = NULL;
@@ -107,7 +107,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
    // org.genivi.persistence.admin  S I G N A L
    if((0==strcmp("org.genivi.persistence.admin", dbus_message_get_interface(message))))
    {
-      // printf("checkPersAdminSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
+      printf("checkPersAdminSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
       if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
       {
          printf("  checkPersAdminSignal signal\n");
@@ -123,7 +123,64 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
          }
       }
    }
+   // org.genivi.persistence.admin  S I G N A L
+   else if((0==strcmp("org.genivi.persistence.adminconsumer", dbus_message_get_interface(message))))
+   {
+      printf("checkPersAdminconsumerSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
+      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
+      {
+         if((0==strcmp("PersistenceValueChanged", dbus_message_get_member(message))))
+         {
+            DBusError error;
+            DBusMessage *reply;
+            dbus_error_init (&error);
+            char* ldbid;
+            char* user_no;
+            char* seat_no;
 
+            printf("PersistenceValueChanged signal\n");
+            // to do handle signal
+            PersistenceNotification_s notifyStruct;
+            notifyStruct.pclKeyNotify_Status = pclNotifyStatus_changed;
+
+            if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,
+                                                         DBUS_TYPE_STRING, &ldbid,
+                                                         DBUS_TYPE_STRING, &user_no,
+                                                         DBUS_TYPE_STRING, &seat_no,
+                                                         DBUS_TYPE_INVALID))
+            {
+               reply = dbus_message_new_error(message, error.name, error.message);
+
+               if (reply == 0)
+               {
+                  //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+                  printf("DBus No memory\n");
+               }
+
+               if (!dbus_connection_send(connection, reply, 0))
+               {
+                  //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+                  printf("DBus No memory\n");
+               }
+
+               result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;;
+               dbus_message_unref(reply);
+            }
+            else
+            {
+               notifyStruct.ldbid       = atoi(ldbid);
+               notifyStruct.user_no     = atoi(user_no);
+               notifyStruct.seat_no     = atoi(seat_no);
+
+               // call the registered callback function
+               gChangeNotifyCallback(&notifyStruct);
+
+               result = DBUS_HANDLER_RESULT_HANDLED;
+            }
+            dbus_connection_flush(connection);
+         }
+      }
+   }
    // org.genivi.persistence.admin  P R O P E R T Y
    else  if((0==strcmp("org.freedesktop.DBus.Properties", dbus_message_get_interface(message))))
    {

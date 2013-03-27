@@ -23,15 +23,37 @@
 #include <stdio.h>
 
 
+
+
+int myChangeCallback(PersistenceNotification_s * notifyStruct)
+{
+   printf(" ==> * - * myChangeCallback * - *\n");
+   printf("Notification received ==> lbid: %d | resource_id: %s | seat: %d | user: %d \n", notifyStruct->ldbid,
+         notifyStruct->resource_id,
+         notifyStruct->seat_no,
+         notifyStruct->user_no );
+   printf(" <== * - * myChangeCallback * - *\n");
+
+   return 1;
+}
+
+
 int main(int argc, char *argv[])
 {
    int ret = 0;
+   PersistenceNotification_s notifyValue;
+
    printf("Dbus interface test application\n");
 
    printf("Press a key to end application\n");
    ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
-   getchar();
 
+   printf("Register for change notification\n");
+   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   //ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+
+   getchar();
 
    printf("By\n");
    return ret;

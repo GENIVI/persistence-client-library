@@ -22,6 +22,9 @@
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_itzam_errors.h"
 
+#include "persistence_client_library_dbus_service.h"
+
+#include <dbus/dbus.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -219,8 +222,8 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 {
    int write_size = -1;
 
-   if(   PersistenceStorage_shared == info->configKey.storage
-      || PersistenceStorage_local == info->configKey.storage)
+   if(   PersistenceStorage_local == info->configKey.storage
+      || PersistenceStorage_shared == info->configKey.storage )
    {
       write_size = buffer_size;
       itzam_btree* btree = NULL;
@@ -259,6 +262,46 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
                {
                   fprintf(stderr, "\npersistence_set_data ==> Insert Itzam problem: %s\n", STATE_MESSAGES[state]);
                   write_size = EPERS_DB_ERROR_INTERNAL;
+               }
+
+               if(PersistenceStorage_shared == info->configKey.storage)
+               {
+                  // send changed notification
+                  DBusMessage* message;
+                  char ldbid_array[12];
+                  char user_array[12];
+                  char seat_array[12];
+                  const char* ldbid_ptr = ldbid_array;
+                  const char* user_ptr = user_array;
+                  const char* seat_ptr = seat_array;
+
+                  memset(ldbid_array, 0, 12);
+                  memset(user_array, 0, 12);
+                  memset(seat_array, 0, 12);
+
+                  // dbus_bus_add_match is used for the notification mechanism,
+                  // and this works only for type DBUS_TYPE_STRING as message arguments
+                  // this is the reason to use string instead of integer types directly
+                  snprintf(ldbid_array, 12, "%d", info->context.ldbid);
+                  snprintf(user_array,  12, "%d", info->context.user_no);
+                  snprintf(seat_array,  12, "%d", info->context.seat_no);
+
+                  message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",     // const char *path,
+                                                    "org.genivi.persistence.adminconsumer",      // const char *interface,
+                                                    "PersistenceValueChanged" );                 // const char *name
+
+                  dbus_message_append_args(message,
+                                           DBUS_TYPE_STRING, &key,
+                                           DBUS_TYPE_STRING, &ldbid_ptr,
+                                           DBUS_TYPE_STRING, &user_ptr,
+                                           DBUS_TYPE_STRING, &seat_ptr,
+                                           DBUS_TYPE_INVALID);
+
+                   // Send the signal
+                   dbus_connection_send(get_dbus_connection(), message, NULL);
+
+                   // Free the signal now we have finished with it
+                   dbus_message_unref(message);
                }
             }
             else
@@ -422,9 +465,34 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
 }
 
 
-int persistence_reg_notify_on_change(char* dbPath, char* key)
+int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+                                     changeNotifyCallback_t callback)
 {
    int rval = -1;
+   DBusError error;
+   dbus_error_init (&error);
+   char rule[300];
+   char ldbid_array[12];
+   char user_array[12];
+   char seat_array[12];
+
+   memset(ldbid_array, 0, 12);
+   memset(user_array, 0, 12);
+   memset(seat_array, 0, 12);
+
+   // assign callback
+   gChangeNotifyCallback = callback;
+
+   // dbus_bus_add_match works only for type DBUS_TYPE_STRING as message arguments
+   // this is the reason to use string instead of integer types directly
+   snprintf(ldbid_array, 12, "%d", ldbid);
+   snprintf(user_array,  12, "%d", user_no);
+   snprintf(seat_array,  12, "%d", seat_no);
+
+   snprintf(rule, 256, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceValueChanged',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%s',arg2='%s',arg3='%s'",
+            key, ldbid_array, user_array, seat_array);
+
+   dbus_bus_add_match(get_dbus_connection(), rule, &error);
 
    return rval;
 }

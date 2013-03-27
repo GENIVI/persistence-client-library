@@ -34,7 +34,34 @@ extern "C" {
 
 #define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x03000000U)
 
+/**
+* status returned in notification structure
+*/
+typedef enum _PersistenceNotifyStatus_e
+{
+   pclNotifyStatus_no_changed = 0,
+   pclNotifyStatus_created,
+   pclNotifyStatus_changed,
+   pclNotifyStatus_deleted,
+   /* insert new_ entries here .. */
+   pclNotifyStatus_lastEntry
+} PersistenceNotifyStatus_e;
 
+
+/**
+* structure to return in case of notification
+*/
+typedef struct _PersistenceNotification_s
+{
+   PersistenceNotifyStatus_e pclKeyNotify_Status;
+   unsigned int ldbid;
+   const char * resource_id;
+   unsigned int user_no;
+   unsigned int seat_no;
+} PersistenceNotification_s;
+
+
+typedef int(* changeNotifyCallback_t)(PersistenceNotification_s * notifyStruct);
 
 /**
  * @brief delete persistent data
@@ -120,10 +147,11 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
  * @brief register a change notification for persistent data
  *
  * @param key_handle key value handle return by key_handle_open()
+ * @param callback notification callback
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
-int pclKeyHandleRegisterNotifyOnChange(int key_handle);
+int pclKeyHandleRegisterNotifyOnChange(int key_handle, changeNotifyCallback_t callback);
 
 
 
@@ -164,10 +192,11 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  * @param resource_id the resource ID
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
+ * @param callback notification callback
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
-int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
+int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, changeNotifyCallback_t callback);
 
 
 

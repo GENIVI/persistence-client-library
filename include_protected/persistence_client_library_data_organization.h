@@ -27,6 +27,8 @@ extern "C" {
 #define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01000000U)
 
 #include "../include/persistence_client_library_error_def.h"
+#include "../include/persistence_client_library_key.h"
+
 
 #include <string.h>
 #include <stdio.h>
@@ -126,6 +128,10 @@ extern char gAppId[MaxAppNameLen];
 
 /// max key value data size
 extern int gMaxKeyValDataSize;
+
+
+extern int(* gChangeNotifyCallback)(PersistenceNotification_s * notifyStruct);
+
 
 #ifdef __cplusplus
 }

@@ -156,6 +156,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
    return DBUS_HANDLER_RESULT_HANDLED;
 }
 
+
 int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 {
    int persistenceMode = 0;
@@ -213,35 +214,6 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
    return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-/*
-DBusHandlerResult checkPersAdminSignal(DBusConnection *connection, DBusMessage *message, void *user_data)
-{
-   DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-
-   printf("checkPersAdminSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
-
-   if((0==strcmp("org.genivi.persistence.admin", dbus_message_get_interface(message))))
-   {
-      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
-      {
-         printf("checkPersAdminSignal signal\n");
-         if((0==strcmp("PersistenceModeChanged", dbus_message_get_member(message))))
-         {
-            printf("checkPersAdminSignal signal\n");
-            // to do handle signal
-            result = signal_persModeChange(connection, message);
-         }
-         else
-         {
-            printf("checkPersAdminMsg -> unknown signal '%s'\n", dbus_message_get_interface(message));
-         }
-      }
-   }
-
-   return result;
-}
-*/
-
 
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
@@ -258,6 +230,10 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
       {
          printf("checkPersAdminMsg -> unknown message '%s'\n", dbus_message_get_interface(message));
       }
+   }
+   else
+   {
+      printf("checkPersAdminMsg ELSE -> unknown message '%s'\n", dbus_message_get_interface(message));
    }
    return result;
 }

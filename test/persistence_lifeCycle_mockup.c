@@ -176,6 +176,13 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
          result = checkAdminMsg(connection, message);
       }
+      else if((0==strcmp("LifecycleRequestComplete", dbus_message_get_member(message))))
+      {
+         printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> LifecycleRequestComplete \n");
+
+         result = checkAdminMsg(connection, message);
+      }
+
       else
       {
          printf(" ==> org.genivi.NodeStateManager.Consumer - received U N KN O W N-'%s'\n", dbus_message_get_interface(message));
