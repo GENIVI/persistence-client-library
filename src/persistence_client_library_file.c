@@ -58,7 +58,7 @@ int pclFileClose(int fd)
       if( gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
       {
          // remove bakup file
-         //rval = remove(gFileHandleArray[fd].backupPath );
+         rval = remove(gFileHandleArray[fd].backupPath );
 
          // remove checksum file
          rval = remove(gFileHandleArray[fd].csumPath);
