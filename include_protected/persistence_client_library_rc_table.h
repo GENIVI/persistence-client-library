@@ -23,7 +23,9 @@
 extern "C" {
 #endif
 
-#define  PERSIST_DATA_RC_TABLE_INTERFACE_VERSION   (0x02000000U)
+#include <fcntl.h>      // needed for file open flags
+
+#define  PERSIST_DATA_RC_TABLE_INTERFACE_VERSION   (0x03000000U)
 
 #include "persistence_client_library_data_organization.h"
 
@@ -77,13 +79,25 @@ typedef struct _PersistenceDbContext_s
 } PersistenceDbContext_s;
 
 
+typedef enum PersistencePermission_e_
+{
+    PersistencePermission_ReadWrite = O_RDWR,
+    PersistencePermission_ReadOnly  = O_RDONLY,
+    PersistencePermission_WriteOnly = O_WRONLY,
+
+   /** insert new entries here ... */
+    PersistencePermission_LastEntry            /**< last entry */
+} PersistencePermission_e;
+
+
+
 /// structure used to manage the persistence configuration for a key
 typedef struct _PersistenceConfigurationKey_s
 {
    PersistencePolicy_e        policy;                          /**< policy  */
    PersistenceStorage_e       storage;                         /**< definition of storage to use */
    PersistenceResourceType_e  type;                            /**< type of the resource - since 4.0.0.0*/
-   unsigned int         permission;                            /**< access right, corresponds to UNIX */
+   PersistencePermission_e    permission;                      /**< file access flags*/
    unsigned int         max_size;                              /**< max size expected for the key */
    char                 reponsible[MaxConfKeyLengthResp];      /**< name of responsible application */
    char                 custom_name[MaxConfKeyLengthCusName];  /**< name of the customer plugin */

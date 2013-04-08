@@ -25,7 +25,7 @@
 
 
 
-int myChangeCallback(PersistenceNotification_s * notifyStruct)
+int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
    printf("Notification received ==> lbid: %d | resource_id: %s | seat: %d | user: %d \n", notifyStruct->ldbid,
@@ -41,7 +41,6 @@ int myChangeCallback(PersistenceNotification_s * notifyStruct)
 int main(int argc, char *argv[])
 {
    int ret = 0;
-   PersistenceNotification_s notifyValue;
 
    printf("Dbus interface test application\n");
 

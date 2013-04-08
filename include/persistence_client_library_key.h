@@ -32,12 +32,12 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x03000000U)
+#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x04000000U)
 
 /**
 * status returned in notification structure
 */
-typedef enum _PersistenceNotifyStatus_e
+typedef enum _pclNotifyStatus_e
 {
    pclNotifyStatus_no_changed = 0,
    pclNotifyStatus_created,
@@ -45,23 +45,23 @@ typedef enum _PersistenceNotifyStatus_e
    pclNotifyStatus_deleted,
    /* insert new_ entries here .. */
    pclNotifyStatus_lastEntry
-} PersistenceNotifyStatus_e;
+} pclNotifyStatus_e;
 
 
 /**
 * structure to return in case of notification
 */
-typedef struct _PersistenceNotification_s
+typedef struct _pclNotification_s
 {
-   PersistenceNotifyStatus_e pclKeyNotify_Status;
+   pclNotifyStatus_e pclKeyNotify_Status;
    unsigned int ldbid;
    const char * resource_id;
    unsigned int user_no;
    unsigned int seat_no;
-} PersistenceNotification_s;
+} pclNotification_s;
 
 
-typedef int(* changeNotifyCallback_t)(PersistenceNotification_s * notifyStruct);
+typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
 
 /**
  * @brief delete persistent data
@@ -151,7 +151,7 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
-int pclKeyHandleRegisterNotifyOnChange(int key_handle, changeNotifyCallback_t callback);
+int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback);
 
 
 
@@ -196,7 +196,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
  */
-int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, changeNotifyCallback_t callback);
+int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback);
 
 
 

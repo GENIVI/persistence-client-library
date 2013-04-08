@@ -314,6 +314,7 @@ START_TEST(test_SetData)
    /*******************************************************************************************************************************************/
    /*******************************************************************************************************************************************/
 
+
    /*
     * now read the data written in the previous steps to the keys
     * and verify data has been written correctly.
@@ -458,12 +459,13 @@ END_TEST
  */
 START_TEST(test_DataFile)
 {
-   int fd = 0, i = 0, idx = 0;
+   int fd = 0, i = 0, idx = 0, fd_RW = 0, fd_RO = 0;
    int size = 0, ret = 0;
    int writeSize = 16*1024;
    unsigned char buffer[READ_SIZE];
    const char* refBuffer = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media";
    char* writeBuffer;
+   char* wBuffer = "This is a buffer to write";
    char* fileMap = NULL;
    writeBuffer = malloc(writeSize);
 
@@ -487,7 +489,7 @@ START_TEST(test_DataFile)
              O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
    close(fd);
 
-   // open ----------------------------------------------------------
+   // open ------------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
    fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
 
@@ -495,14 +497,14 @@ START_TEST(test_DataFile)
    fail_unless(size == 68, "Wrong file size");
 
    size = pclFileReadData(fd, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
    fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
 
    ret = pclFileClose(fd);
    fail_unless(ret == 0, "Failed to close file");
 
 
-   // open ----------------------------------------------------------
+   // open ------------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
    fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
 
@@ -517,17 +519,12 @@ START_TEST(test_DataFile)
    ret = pclFileRemove(0xFF, "media/mediaDBWrite.db", 1, 1);
    fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
 
-   fd = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
-   fail_unless(fd != -1, "File can't be opend ==> /media/mediaDBWrite.db");
-
-   ret = pclFileRemove(0xFF, "media/mediaDBWrite.db", 1, 1);
-   fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
-
-   ret = pclFileClose(fd);
-   fail_unless(ret == 0, "Failed to close file");
+   fd = open("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db",O_RDWR);
+   fail_unless(fd == -1, "Failed to remove file, file still exists");
+   close(fd);
 
 
-   // map file ------------------------------------------------------
+   // map file --------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
 
    size = pclFileGetSize(fd);
@@ -543,6 +540,18 @@ START_TEST(test_DataFile)
 
    ret = pclFileClose(fd);
    fail_unless(ret == 0, "Failed to close file");
+
+
+   // test backup creation --------------------------------------------
+   fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
+   fail_unless(fd_RO != -1, "Could not open file ==> /media/mediaDB_ReadOnly.db");
+
+   fd_RW = pclFileOpen(0xFF, "media/mediaDB_ReadWrite.db", 1, 1);
+   fail_unless(fd_RW != -1, "Could not open file ==> /media/mediaDB_ReadWrite.db");
+   pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
+
+   ret = pclFileClose(fd_RW);
+   ret = pclFileClose(fd_RO);
 
    free(writeBuffer);
 }

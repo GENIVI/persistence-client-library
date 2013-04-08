@@ -140,7 +140,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
 
             printf("PersistenceValueChanged signal\n");
             // to do handle signal
-            PersistenceNotification_s notifyStruct;
+            pclNotification_s notifyStruct;
             notifyStruct.pclKeyNotify_Status = pclNotifyStatus_changed;
 
             if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,

@@ -31,8 +31,14 @@ static int gInitialized = 0;
 /// open file descriptor handle array
 int gOpenFdArray[MaxPersHandle];
 
-/// persistence handle array
-PersistenceHandle_s gHandleArray[MaxPersHandle];
+/// persistence key handle array
+PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
+
+
+/// persistence key handle array
+PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
+
+
 /// free handle array
 int gFreeHandleArray[MaxPersHandle];
 

@@ -9,5 +9,7 @@ Name: persistence client library
 Description: persistence client library 
 Version: @VERSION@
 Requires: automotive-dlt
-Libs: -L${libdir} -lrt -ldl
+Requires.private: libitzam dbus-1
+Libs: -L${libdir} -lpersistence_client_library -lrt -ldl
+Libs.private: -lpersistence_client_library_common_data -ldbus
 Cflags: -I${includedir}

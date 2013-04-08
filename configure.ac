@@ -16,8 +16,8 @@ AC_GNU_SOURCE()
 
 
 # create library version information
-m4_define([pers_client_library_version_current],  [3])
-m4_define([pers_client_library_version_revision], [2])
+m4_define([pers_client_library_version_current],  [4])
+m4_define([pers_client_library_version_revision], [0])
 m4_define([pers_client_library_version_age],      [0])
 m4_define([pers_client_library_version], [pers_client_library_version_current():pers_client_library_version_revision():pers_client_library_version_age()])
 

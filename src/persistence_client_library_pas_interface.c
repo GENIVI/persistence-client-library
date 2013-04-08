@@ -319,7 +319,7 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
                                                        "org.genivi.persistence.admin",    // interface
                                                        method);                  // method
 
-   printf(" =======****> send_pas_request: requestID: %u | status: %u \n", requestID, status);
+   printf(" =======****> send_pas_request: requestID: %u | status: %d \n", requestID, status);
 
    if(message != NULL)
    {

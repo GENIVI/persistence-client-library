@@ -81,12 +81,12 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
          if(handle < MaxPersHandle && handle != -1)
          {
             // remember data in handle array
-            strncpy(gHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
-            strncpy(gHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
-            strncpy(gHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
-            gHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-            gHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-            gHandleArray[handle].info = dbContext;
+            strncpy(gKeyHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
+            strncpy(gKeyHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
+            strncpy(gKeyHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
+            gKeyHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+            gKeyHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+            gKeyHandleArray[handle].info = dbContext;
          }
          else
          {
@@ -111,9 +111,9 @@ int pclKeyHandleClose(int key_handle)
 
    if(key_handle < MaxPersHandle)
    {
-      if(PersistenceStorage_custom == gHandleArray[key_handle].info.configKey.storage )
+      if(PersistenceStorage_custom == gKeyHandleArray[key_handle].info.configKey.storage )
       {
-         int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+         int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
 
          if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_close) )
          {
@@ -130,9 +130,9 @@ int pclKeyHandleClose(int key_handle)
       }
 
       // invalidate entries
-      strncpy(gHandleArray[key_handle].dbPath, "", DbPathMaxLen);
-      strncpy(gHandleArray[key_handle].dbKey  ,"", DbKeyMaxLen);
-      gHandleArray[key_handle].info.configKey.storage = -1;
+      strncpy(gKeyHandleArray[key_handle].dbPath, "", DbPathMaxLen);
+      strncpy(gKeyHandleArray[key_handle].dbKey  ,"", DbKeyMaxLen);
+      gKeyHandleArray[key_handle].info.configKey.storage = -1;
    }
    else
    {
@@ -150,13 +150,13 @@ int pclKeyHandleGetSize(int key_handle)
 
    if(key_handle < MaxPersHandle)
    {
-      if(PersistenceStorage_custom ==  gHandleArray[key_handle].info.configKey.storage)
+      if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
       {
-         int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+         int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
 
          if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_get_size) != NULL)
          {
-            gPersCustomFuncs[idx].custom_plugin_get_size(gHandleArray[key_handle].dbPath);
+            gPersCustomFuncs[idx].custom_plugin_get_size(gKeyHandleArray[key_handle].dbPath);
          }
          else
          {
@@ -165,8 +165,8 @@ int pclKeyHandleGetSize(int key_handle)
       }
       else
       {
-         size = pers_db_get_key_size(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                          &gHandleArray[key_handle].info);
+         size = pers_db_get_key_size(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                          &gKeyHandleArray[key_handle].info);
       }
    }
 
@@ -180,9 +180,9 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
    int size = 0;
    if(key_handle < MaxPersHandle)
    {
-      if(PersistenceStorage_custom ==  gHandleArray[key_handle].info.configKey.storage)
+      if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
       {
-         int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+         int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
 
          if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_handle_get_data) != NULL)
          {
@@ -195,8 +195,8 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
       }
       else
       {
-         size = pers_db_read_key(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                     &gHandleArray[key_handle].info, buffer, buffer_size);
+         size = pers_db_read_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                     &gKeyHandleArray[key_handle].info, buffer, buffer_size);
       }
    }
 
@@ -205,16 +205,16 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
 
 
-int pclKeyHandleRegisterNotifyOnChange(int key_handle, changeNotifyCallback_t callback)
+int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
    int rval = -1;
 
    if(key_handle < MaxPersHandle)
    {
-      pclKeyRegisterNotifyOnChange(gHandleArray[key_handle].info.context.ldbid,
-                                   gHandleArray[key_handle].resourceID,
-                                   gHandleArray[key_handle].info.context.user_no,
-                                   gHandleArray[key_handle].info.context.seat_no, callback);
+      pclKeyRegisterNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
+                                   gKeyHandleArray[key_handle].resourceID,
+                                   gKeyHandleArray[key_handle].info.context.user_no,
+                                   gKeyHandleArray[key_handle].info.context.seat_no, callback);
    }
 
    return rval;
@@ -232,9 +232,9 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
       {
          if(key_handle < MaxPersHandle)
          {
-            if(PersistenceStorage_custom ==  gHandleArray[key_handle].info.configKey.storage)
+            if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
             {
-               int idx =  custom_client_name_to_id(gHandleArray[key_handle].dbPath, 1);
+               int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
 
                if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL)
                {
@@ -247,8 +247,8 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
             }
             else
             {
-               size = pers_db_write_key(gHandleArray[key_handle].dbPath, gHandleArray[key_handle].dbKey,
-                                           &gHandleArray[key_handle].info, buffer, buffer_size);
+               size = pers_db_write_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                        &gKeyHandleArray[key_handle].info, buffer, buffer_size);
             }
          }
          else
@@ -477,7 +477,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 }
 
 
-int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, changeNotifyCallback_t callback)
+int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
 {
    int rval = 0;
    PersistenceInfo_s dbContext;

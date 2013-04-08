@@ -186,11 +186,6 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
          {
             read_size = EPERS_NOKEY;
          }
-
-         //
-         // workaround till lifecycle is working correctly
-         //
-         pers_db_close(info);
       }
       else
       {
@@ -244,6 +239,10 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
             dataSize = (int)strlen( (const char*)buffer);
             if(dataSize < DbValueSize)
             {
+               // -----------------------------------------------------------------------------
+               // transaction start
+               itzam_btree_transaction_start(btree);
+
                // key
                memset(insert.m_key, 0, DbKeySize);
                memcpy(insert.m_key, key, keySize);
@@ -266,6 +265,11 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
                   fprintf(stderr, "\npersistence_set_data ==> Insert Itzam problem: %s\n", STATE_MESSAGES[state]);
                   write_size = EPERS_DB_ERROR_INTERNAL;
                }
+
+
+               itzam_btree_transaction_commit(btree);
+               // transaction end
+               // -----------------------------------------------------------------------------
 
                if(PersistenceStorage_shared == info->configKey.storage)
                {
@@ -312,11 +316,6 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
                fprintf(stderr, "\npersistence_set_data ==> set_value_to_table_itzam => data to long » size %d | maxSize: %d\n", dataSize, DbKeySize);
                write_size = EPERS_DB_VALUE_SIZE;
             }
-
-            //
-            // workaround till lifecycle is working correctly
-            //
-            pers_db_close(info);
          }
          else
          {
@@ -372,7 +371,7 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
             memcpy(search.m_key, key, keySize);
             if(itzam_true == itzam_btree_find(btree, key, &search))
             {
-               read_size = strlen(search.m_data);
+               read_size = search.m_data_size;
             }
             else
             {
@@ -384,10 +383,6 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
             fprintf(stderr, "persistence_get_data_size => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
             read_size = EPERS_DB_KEY_SIZE;
          }
-         //
-         // workaround till lifecycle is working correctly
-         //
-         pers_db_close(info);
       }
       else
       {
@@ -431,6 +426,10 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
          keySize = (int)strlen((const char*)dbKey);
          if(keySize < DbKeySize)
          {
+            // -----------------------------------------------------------------------------
+            // transaction start
+            itzam_btree_transaction_start(btree);
+
             itzam_state  state;
 
             memset(delete.m_key,0, DbKeySize);
@@ -441,16 +440,15 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
                fprintf(stderr, "persistence_delete_data ==> Remove Itzam problem: %s\n", STATE_MESSAGES[state]);
                ret = EPERS_DB_ERROR_INTERNAL;
             }
+            itzam_btree_transaction_commit(btree);
+            // transaction end
+            // -----------------------------------------------------------------------------
          }
          else
          {
             fprintf(stderr, "persistence_delete_data => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
             ret = EPERS_DB_KEY_SIZE;
          }
-         //
-         // workaround till lifecycle is working correctly
-         //
-         pers_db_close(info);
       }
       else
       {
@@ -478,7 +476,7 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
 
 
 int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
-                                     changeNotifyCallback_t callback)
+                                     pclChangeNotifyCallback_t callback)
 {
    int rval = -1;
    DBusError error;
@@ -497,9 +495,9 @@ int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid
 
    // dbus_bus_add_match works only for type DBUS_TYPE_STRING as message arguments
    // this is the reason to use string instead of integer types directly
-   snprintf(ldbid_array, 12, "%d", ldbid);
-   snprintf(user_array,  12, "%d", user_no);
-   snprintf(seat_array,  12, "%d", seat_no);
+   snprintf(ldbid_array, 12, "%u", ldbid);
+   snprintf(user_array,  12, "%u", user_no);
+   snprintf(seat_array,  12, "%u", seat_no);
 
    snprintf(rule, 256, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceValueChanged',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%s',arg2='%s',arg3='%s'",
             key, ldbid_array, user_array, seat_array);
@@ -567,7 +565,7 @@ int pers_db_cursor_create(char* dbPath)
    if(handle < MaxPersHandle && handle >= 0)
    {
       // open database
-      state = itzam_btree_open(&gCursorArray[handle].m_btree, dbPath, itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
+      state = itzam_btree_open(&gCursorArray[handle].m_btree, dbPath, itzam_comparator_string, error_handler, 1/*recover*/, 0/*read_only*/);
       if (state != ITZAM_OKAY)
       {
          fprintf(stderr, "pers_db_open ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);

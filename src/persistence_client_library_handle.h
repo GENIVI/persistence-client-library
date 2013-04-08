@@ -23,19 +23,35 @@
 #include "../include_protected/persistence_client_library_data_organization.h"
 #include "../include_protected/persistence_client_library_rc_table.h"
 
-/// handle structure definition
-typedef struct _PersistenceHandle_s
+
+/// key handle structure definition
+typedef struct _PersistenceKeyHandle_s
 {
    PersistenceInfo_s info;          /// persistence info
    char dbPath[DbPathMaxLen];       /// path to the database
    char dbKey[DbKeyMaxLen];         /// database key
    char resourceID[DbResIDMaxLen];  /// resourceID
 }
-PersistenceHandle_s;
+PersistenceKeyHandle_s;
 
 
-/// persistence handle array
-extern PersistenceHandle_s gHandleArray[MaxPersHandle];
+/// file handle structure definition
+typedef struct _PersistenceFileHandle_s
+{
+   PersistencePermission_e permission;    /// access permission read/write
+   int backupCreated;                     /// flag to indicate if a backup has already been created
+   char backupPath[DbPathMaxLen];         /// path to the backup file
+   char csumPath[DbPathMaxLen];           /// path to the checksum file
+}
+PersistenceFileHandle_s;
+
+
+/// persistence key handle array
+extern PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
+
+
+/// persistence file handle array
+extern PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
 
 
 /// open file descriptor handle array

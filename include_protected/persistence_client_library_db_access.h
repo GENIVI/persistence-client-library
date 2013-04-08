@@ -118,7 +118,7 @@ void pers_db_close_all();
  * @return 0 of registration was successfull; -1 if registration failes
  */
 int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
-                                     changeNotifyCallback_t callback);
+                                     pclChangeNotifyCallback_t callback);
 
 
 

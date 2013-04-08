@@ -48,6 +48,8 @@ enum _PersistenceConstantDef
    NsmErrorStatus_OK       = 1,
    NsmErrorStatus_Fail     = -1,
 
+   ChecksumBufSize         = 64,
+
    PrctKeySize             = 64,       /// persistence resource config table max key size
    PrctValueSize           = 256,      /// persistence resource config table max value size
    PrctDbTableSize         = 1024,     /// number of persistence resource config tables to store
@@ -131,7 +133,7 @@ extern char gAppId[MaxAppNameLen];
 extern int gMaxKeyValDataSize;
 
 
-extern int(* gChangeNotifyCallback)(PersistenceNotification_s * notifyStruct);
+extern int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
 
 #ifdef __cplusplus
