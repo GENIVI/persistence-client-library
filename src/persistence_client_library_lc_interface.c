@@ -156,7 +156,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
 
 
-int send_lifecycle_register(const char* method, int shutdownMode)
+int send_lifecycle_register(const char* method, int shutdownMode, int reg)
 {
    int rval = 0;
 
@@ -168,16 +168,25 @@ int send_lifecycle_register(const char* method, int shutdownMode)
    const char* busName = dbus_bus_get_unique_name(conn);
 
    DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
-                                                       "/org/genivi/NodeStateManager",          // path
+                                                       "/org/genivi/NodeStateManager/Consumer", // path
                                                        "org.genivi.NodeStateManager.Consumer",  // interface
                                                        method);                                 // method
    if(message != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                        DBUS_TYPE_STRING, &objName,
-                                        DBUS_TYPE_INT32, &shutdownMode,
-                                        DBUS_TYPE_INT32, &gTimeoutMs,
-                                        DBUS_TYPE_INVALID);
+      if(reg == 1)   // register
+      {
+         dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
+                                           DBUS_TYPE_STRING, &objName,
+                                           DBUS_TYPE_INT32, &shutdownMode,
+                                           DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
+      }
+      else           // unregister
+      {
+         dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
+                                           DBUS_TYPE_STRING, &objName,
+                                           DBUS_TYPE_INT32, &shutdownMode, DBUS_TYPE_INVALID);
+
+      }
 
       if(conn != NULL)
       {
@@ -248,20 +257,16 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 
 
 
-int register_lifecycle()
+int register_lifecycle(int shutdownMode)
 {
-   int shutdownMode = 1;  // TODO send correct mode
-
-   return send_lifecycle_register("RegisterShutdownClient", shutdownMode);
+   return send_lifecycle_register("RegisterShutdownClient", shutdownMode, 1);
 }
 
 
 
-int unregister_lifecycle()
+int unregister_lifecycle(int shutdownMode)
 {
-   int shutdownMode = 1;     // TODO send correct mode
-
-   return send_lifecycle_register("UnRegisterShutdownClient", shutdownMode);
+   return send_lifecycle_register("UnRegisterShutdownClient", shutdownMode, 0);
 }
 
 

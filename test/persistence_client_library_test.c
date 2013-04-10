@@ -459,13 +459,12 @@ END_TEST
  */
 START_TEST(test_DataFile)
 {
-   int fd = 0, i = 0, idx = 0, fd_RW = 0, fd_RO = 0;
+   int fd = 0, i = 0, idx = 0;
    int size = 0, ret = 0;
    int writeSize = 16*1024;
    unsigned char buffer[READ_SIZE];
    const char* refBuffer = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media";
    char* writeBuffer;
-   char* wBuffer = "This is a buffer to write";
    char* fileMap = NULL;
    writeBuffer = malloc(writeSize);
 
@@ -541,6 +540,18 @@ START_TEST(test_DataFile)
    ret = pclFileClose(fd);
    fail_unless(ret == 0, "Failed to close file");
 
+   free(writeBuffer);
+}
+END_TEST
+
+
+
+
+START_TEST(test_DataFileRecovery)
+{
+   int fd_RW = 0, fd_RO = 0;
+   int ret = 0;
+   char* wBuffer = "This is a buffer to write";
 
    // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
@@ -553,11 +564,8 @@ START_TEST(test_DataFile)
    ret = pclFileClose(fd_RW);
    ret = pclFileClose(fd_RO);
 
-   free(writeBuffer);
 }
 END_TEST
-
-
 
 /*
  * The the handle function of the key and file interface.
@@ -767,6 +775,9 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
 
+   TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
+   tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
+
    TCase * tc_Cursor = tcase_create("Cursor");
    tcase_add_test(tc_Cursor, test_Cursor);
 
@@ -779,6 +790,7 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_persDataHandle);
    suite_add_tcase(s, tc_persDataHandleOpen);
    suite_add_tcase(s, tc_persDataFile);
+   suite_add_tcase(s, tc_persDataFileRecovery);
    suite_add_tcase(s, tc_Cursor);
 
    return s;

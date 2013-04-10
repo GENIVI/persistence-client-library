@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01000000U)
+#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01100000U)
 
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
@@ -76,6 +76,9 @@ enum _PersistenceConstantDef
    MaxConfKeyLengthResp    = 32,    /// length of the config key responsible name
    MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
    MaxRctLengthCustom_ID   = 64,    /// length of the customer ID
+
+   NSM_SHUTDOWN_TYPE_FAST   = 2,    /// Client registered for fast shutdown
+   NSM_SHUTDOWN_TYPE_NORMAL = 1,    /// Client registered for normal shutdown
 
    defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };

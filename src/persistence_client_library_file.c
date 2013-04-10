@@ -138,7 +138,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
       {
          snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-         snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, ".cs");
+         snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
          if((handle = pcl_verify_consistency(dbPath, backupPath, csumPath, flags)) == -1)
          {
@@ -423,15 +423,13 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
                   if(handle != -1)
                   {
                      pcl_calc_crc32_checksum(handle, origCsumBuf);
-                     if(strcmp(csumBuf, origCsumBuf)  == 0)
-                     {
-                        // checksum matches ==> keep original file
-                     }
-                     else
+                     if(strcmp(csumBuf, origCsumBuf)  != 0)
                      {
                         close(handle);
                         handle = -1;  // error: file corrupt
                      }
+                     // else case: checksum matches ==> keep original file ==> nothing to do
+
                   }
                   else
                   {
@@ -442,7 +440,7 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
             }
             else
             {
-               printf("verifyConsistency ==> checksum invalid size\n");
+               printf("verifyConsistency ==> checksum has invalid size\n");
             }
             close(fdCsum);
          }
@@ -475,19 +473,18 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
          }
          close(fdCsum);
 
-         // calculate the checksum form the original file
+         // calculate the checksum form the original file to see if it matches
          handle = open(origPath, flags);
          if(handle != -1)
          {
             pcl_calc_crc32_checksum(handle, origCsumBuf);
 
-            // checksum does NOT match ==> error: file corrupt
-            // checksum matches ==> keep original file
             if(strcmp(csumBuf, origCsumBuf)  != 0)
             {
                 close(handle);
-                handle = -1;  // error: file corrupt
+                handle = -1;  // checksum does NOT match ==> error: file corrupt
             }
+            // else case: checksum matches ==> keep original file ==> nothing to do
          }
          else
          {
@@ -514,23 +511,19 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
          pcl_calc_crc32_checksum(fdBackup, backCsumBuf);
          close(fdBackup);
 
-         // calculate the checksum form the original file
+         // calculate the checksum form the original file to see if it matches
          handle = open(origPath, flags);
          if(handle != -1)
          {
             pcl_calc_crc32_checksum(handle, origCsumBuf);
 
-            // checksum does NOT match ==> error: file corrupt
-            // if checksum matches ==> keep original file
             if(strcmp(backCsumBuf, origCsumBuf)  != 0)
             {
                close(handle);
-               handle = -1;   // error: file corrupt
+               handle = -1;   // checksum does NOT match ==> error: file corrupt
             }
-            /*else
-            {
-               printf("   original file is OK, keep it\n");
-            }*/
+            // else case: checksum matches ==> keep original file ==> nothing to do
+
          }
          else
          {

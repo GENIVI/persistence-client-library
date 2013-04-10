@@ -117,7 +117,7 @@ int pclKeyHandleClose(int key_handle)
 
          if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_close) )
          {
-            gPersCustomFuncs[idx].custom_plugin_handle_close(key_handle);
+            rval = gPersCustomFuncs[idx].custom_plugin_handle_close(key_handle);
          }
          else
          {
@@ -156,7 +156,7 @@ int pclKeyHandleGetSize(int key_handle)
 
          if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_get_size) != NULL)
          {
-            gPersCustomFuncs[idx].custom_plugin_get_size(gKeyHandleArray[key_handle].dbPath);
+            size = gPersCustomFuncs[idx].custom_plugin_get_size(gKeyHandleArray[key_handle].dbPath);
          }
          else
          {
@@ -186,7 +186,7 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
          if(idx < PersCustomLib_LastEntry && &(gPersCustomFuncs[idx].custom_plugin_handle_get_data) != NULL)
          {
-            gPersCustomFuncs[idx].custom_plugin_handle_get_data(key_handle, (char*)buffer, buffer_size-1);
+            size = gPersCustomFuncs[idx].custom_plugin_handle_get_data(key_handle, (char*)buffer, buffer_size-1);
          }
          else
          {
@@ -238,7 +238,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
                if(idx < PersCustomLib_LastEntry && *gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL)
                {
-                  gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
+                  size = gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
                }
                else
                {

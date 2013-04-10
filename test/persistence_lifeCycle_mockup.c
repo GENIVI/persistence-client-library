@@ -90,7 +90,7 @@ void sigHandler(int signo)
 
 
 
-int checkAdminMsg(DBusConnection *connection, DBusMessage *message)
+int checkAdminMsg(DBusConnection *connection, DBusMessage *message, int reg)
 {
    char* busName   = NULL;
    char* objName = NULL;
@@ -102,29 +102,58 @@ int checkAdminMsg(DBusConnection *connection, DBusMessage *message)
    DBusError error;
    dbus_error_init (&error);
 
-   if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &busName,  // bus name
-                                                DBUS_TYPE_STRING, &objName,
-                                                DBUS_TYPE_INT32,  &notificationFlag,
-                                                DBUS_TYPE_UINT32, &gTimeoutMs,
-                                                DBUS_TYPE_INVALID))
+   if(reg == 1)
    {
-      reply = dbus_message_new_error(message, error.name, error.message);
-
-      if (reply == 0)
+      if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &busName,  // bus name
+                                                   DBUS_TYPE_STRING, &objName,
+                                                   DBUS_TYPE_INT32,  &notificationFlag,
+                                                   DBUS_TYPE_UINT32, &gTimeoutMs,
+                                                   DBUS_TYPE_INVALID))
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
-      }
+         reply = dbus_message_new_error(message, error.name, error.message);
 
-      if (!dbus_connection_send(connection, reply, 0))
+         if (reply == 0)
+         {
+            //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+            printf("DBus No memory\n");
+         }
+
+         if (!dbus_connection_send(connection, reply, 0))
+         {
+            //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+            printf("DBus No memory\n");
+         }
+
+         dbus_message_unref(reply);
+
+         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+      }
+   }
+   else if(reg == 0)
+   {
+      if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &busName,  // bus name
+                                                   DBUS_TYPE_STRING, &objName,
+                                                   DBUS_TYPE_INT32,  &notificationFlag,
+                                                   DBUS_TYPE_INVALID))
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         reply = dbus_message_new_error(message, error.name, error.message);
+
+         if (reply == 0)
+         {
+            //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+            printf("DBus No memory\n");
+         }
+
+         if (!dbus_connection_send(connection, reply, 0))
+         {
+            //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
+            printf("DBus No memory\n");
+         }
+
+         dbus_message_unref(reply);
+
+         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
       }
-
-      dbus_message_unref(reply);
-
-      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
 
 
@@ -168,19 +197,19 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
       {
          printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> RegisterShutdownClient \n");
 
-         result = checkAdminMsg(connection, message);
+         result = checkAdminMsg(connection, message, 1);
       }
       else if((0==strcmp("UnRegisterShutdownClient", dbus_message_get_member(message))))
       {
          printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> UnRegisterShutdownClient \n");
 
-         result = checkAdminMsg(connection, message);
+         result = checkAdminMsg(connection, message, 0);
       }
       else if((0==strcmp("LifecycleRequestComplete", dbus_message_get_member(message))))
       {
          printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> LifecycleRequestComplete \n");
 
-         result = checkAdminMsg(connection, message);
+         result = checkAdminMsg(connection, message, 0);
       }
 
       else

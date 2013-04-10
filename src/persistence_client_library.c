@@ -55,6 +55,7 @@ void pers_library_init(void)
 {
    int status = 0;
    int i = 0;
+   int shutdownMode = NSM_SHUTDOWN_TYPE_NORMAL;
 
    DLT_REGISTER_APP("Persistence Client Library","persClientLib");
    DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
@@ -76,7 +77,7 @@ void pers_library_init(void)
    setup_dbus_mainloop();
 
    // register for lifecycle and persistence admin service dbus messages
-   register_lifecycle();
+   register_lifecycle(shutdownMode);
    register_pers_admin_service();
 #endif
 
@@ -124,7 +125,7 @@ void pers_library_init(void)
       }
    }
 
-   //printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
+   printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
    strncpy(gAppId, __progname, MaxAppNameLen);
    gAppId[MaxAppNameLen-1] = '\0';
 
@@ -137,10 +138,11 @@ void pers_library_init(void)
 
 void pers_library_destroy(void)
 {
+   int shutdownMode = NSM_SHUTDOWN_TYPE_NORMAL;
 
 #if ENABLE_DBUS_INTERFACE == 1
    // unregister for lifecycle and persistence admin service dbus messages
-   unregister_lifecycle();
+   unregister_lifecycle(shutdownMode);
    unregister_pers_admin_service();
 #endif
 
