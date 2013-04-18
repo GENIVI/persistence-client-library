@@ -20,6 +20,7 @@
 
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_itzam_errors.h"
+#include "../include_protected/persistence_client_library_db_access.h"
 #include <stdlib.h>
 
 
@@ -201,6 +202,9 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
       //printf("get_db_context ==> R E S O U R C E  N O T found: %s \n", resource_id);
 
+      // send create notification
+      rval = pers_send_Notification_Signal(dbKey, &dbContext->context, pclNotifyStatus_created);
+
       rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
    }
 
@@ -212,7 +216,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 // status: OK
 int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, char dbKey[], char dbPath[])
 {
-   int storePolicy = PersistenceStoragePolicy_LastEntry;
+   int storePolicy = PersistenceStorage_LastEntry;
 
    //
    // create resource database key

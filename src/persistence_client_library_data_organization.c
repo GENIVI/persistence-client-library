@@ -54,21 +54,24 @@ const char* gUser = "/user/";
 const char* gSeat = "/seat/";
 
 
-/// path prefic for local cached database: /Data/mnt_c/<appId>/<database_name>
+/// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
 const char* gLocalCachePath        = "/Data/mnt-c/%s%s";
-/// path prefic for local write through database /Data/mnt_wt/<appId>/<database_name>
+/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
 const char* gLocalWtPath           = "/Data/mnt-wt/%s%s";
-/// path prefic for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
 const char* gSharedCachePath       = "/Data/mnt-c/%s/Shared_Group_%x%s";
-/// path prefic for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
 const char* gSharedWtPath          = "/Data/mnt-wt/%s/Shared_Group_%x%s";
 
-/// path prefic for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
 const char* gSharedPublicCachePath = "/Data/mnt-c/%s/Shared_Public%s";
 
-/// path prefic for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
 const char* gSharedPublicWtPath    = "/Data/mnt-wt/%s/Shared_Public%s";
 
+
+/// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
+const char* gLocalCacheFilePath        = "/Data/mnt-c/%s/user/%d/seat/%d/%s";
 
 /// application id
 char gAppId[MaxAppNameLen];

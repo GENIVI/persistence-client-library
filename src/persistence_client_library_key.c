@@ -55,7 +55,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
    if(   (handle >= 0)
       && (dbContext.configKey.type == PersistenceResourceType_key) )          // check if type matches
    {
-      if(dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry)    // check if store policy is valid
+      if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
       {
          if(PersistenceStorage_custom ==  dbContext.configKey.storage)
          {
@@ -211,7 +211,7 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
 
    if(key_handle < MaxPersHandle)
    {
-      pclKeyRegisterNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
+      rval = pclKeyRegisterNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
                                    gKeyHandleArray[key_handle].resourceID,
                                    gKeyHandleArray[key_handle].info.context.user_no,
                                    gKeyHandleArray[key_handle].info.context.seat_no, callback);
@@ -302,7 +302,7 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
      if(   (rval >= 0)
         && (dbContext.configKey.type == PersistenceResourceType_key) )  // check if type is matching
      {
-        if(   dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry
+        if(   dbContext.configKey.storage < PersistenceStorage_LastEntry
            && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
         {
            rval = pers_db_delete_key(dbPath, dbKey, &dbContext);
@@ -344,7 +344,7 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
    if(   (data_size >= 0)
       && (dbContext.configKey.type == PersistenceResourceType_key) )    // check if type matches
    {
-      if(   dbContext.configKey.storage < PersistenceStoragePolicy_LastEntry
+      if(   dbContext.configKey.storage < PersistenceStorage_LastEntry
          && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
       {
          data_size = pers_db_get_key_size(dbPath, dbKey, &dbContext);
@@ -390,7 +390,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          && (dbContext.configKey.type == PersistenceResourceType_key) )
       {
 
-         if(   dbContext.configKey.storage <  PersistenceStoragePolicy_LastEntry
+         if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry
             && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
          {
             data_size = pers_db_read_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
@@ -447,7 +447,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             hash_val_data = crc32(hash_val_data, buffer, buffer_size);
 
             // store data
-            if(   dbContext.configKey.storage <  PersistenceStoragePolicy_LastEntry
+            if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry
                && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
             {
                data_size = pers_db_write_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
@@ -505,6 +505,7 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    else
    {
       printf("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key\n");
+      rval = EPERS_RES_NO_KEY;
    }
 
    return rval;

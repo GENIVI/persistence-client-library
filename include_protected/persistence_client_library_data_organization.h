@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01100000U)
+#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01020000U)
 
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
@@ -48,11 +48,16 @@ enum _PersistenceConstantDef
    NsmErrorStatus_OK       = 1,
    NsmErrorStatus_Fail     = -1,
 
-   ChecksumBufSize         = 64,
+   ChecksumBufSize         = 64,       /// max checksum size
+
+   DbusSubMatchSize        = 12,       /// max character sub match size
+   DbusMatchRuleSize       = 300,      /// max character size of the dbus match rule size
 
    PrctKeySize             = 64,       /// persistence resource config table max key size
    PrctValueSize           = 256,      /// persistence resource config table max value size
    PrctDbTableSize         = 1024,     /// number of persistence resource config tables to store
+
+   RDRWBufferSize          = 1024,     /// write buffer size
 
    DbKeySize               = 64,       /// database max key size
    DbValueSize             = 16384,    /// database max value size
@@ -76,9 +81,6 @@ enum _PersistenceConstantDef
    MaxConfKeyLengthResp    = 32,    /// length of the config key responsible name
    MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
    MaxRctLengthCustom_ID   = 64,    /// length of the customer ID
-
-   NSM_SHUTDOWN_TYPE_FAST   = 2,    /// Client registered for fast shutdown
-   NSM_SHUTDOWN_TYPE_NORMAL = 1,    /// Client registered for normal shutdown
 
    defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };
@@ -115,19 +117,21 @@ extern const char* gUser;
 extern const char* gSeat;
 
 
-/// path prefic for local cached database: /Data/mnt_c/<appId>/<database_name>
+/// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
 extern const char* gLocalCachePath;
-/// path prefic for local write through database /Data/mnt_wt/<appId>/<database_name>
+/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
 extern const char* gLocalWtPath;
-/// path prefic for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
 extern const char* gSharedCachePath;
-/// path prefic for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
 extern const char* gSharedWtPath;
-/// path prefic for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
 extern const char* gSharedPublicCachePath;
-/// path prefic for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
 extern const char* gSharedPublicWtPath;
 
+/// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/>userno>/<seat>/>seatno>/<resource>
+extern const char* gLocalCacheFilePath;
 
 /// application id
 extern char gAppId[MaxAppNameLen];
@@ -136,6 +140,11 @@ extern char gAppId[MaxAppNameLen];
 extern int gMaxKeyValDataSize;
 
 
+/**
+ * @brief definition of change callback function
+ *
+ * @param pclNotification_s callback notification structure
+ */
 extern int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
 

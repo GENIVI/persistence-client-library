@@ -83,6 +83,10 @@ extern "C" {
 #define EPERS_DB_KEY_SIZE        (-28)
 /// db value size is to long
 #define EPERS_DB_VALUE_SIZE      (-29)
+/// resource is not a key
+#define EPERS_RES_NO_KEY         (-30)
+/// chnage notification signal could ne be sent
+#define EPERS_NOTIFY_SIG         (-30)
 
 
 /**

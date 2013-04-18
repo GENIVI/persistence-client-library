@@ -129,7 +129,26 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
       printf("checkPersAdminconsumerSignalInterface '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
       if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
       {
-         if((0==strcmp("PersistenceValueChanged", dbus_message_get_member(message))))
+         pclNotification_s notifyStruct;
+         int validMessage = 0;
+
+         if((0==strcmp("PersistenceResChange", dbus_message_get_member(message))))
+         {
+            notifyStruct.pclKeyNotify_Status = pclNotifyStatus_changed;
+            validMessage = 1;
+         }
+         else if((0==strcmp("PersistenceResDelete", dbus_message_get_member(message))))
+         {
+            notifyStruct.pclKeyNotify_Status = pclNotifyStatus_deleted;
+            validMessage = 1;
+         }
+         else if((0==strcmp("PersistenceRes", dbus_message_get_member(message))))
+         {
+            notifyStruct.pclKeyNotify_Status = pclNotifyStatus_created;
+            validMessage = 1;
+         }
+
+         if(validMessage == 1)
          {
             DBusError error;
             DBusMessage *reply;
@@ -137,11 +156,6 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
             char* ldbid;
             char* user_no;
             char* seat_no;
-
-            printf("PersistenceValueChanged signal\n");
-            // to do handle signal
-            pclNotification_s notifyStruct;
-            notifyStruct.pclKeyNotify_Status = pclNotifyStatus_changed;
 
             if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,
                                                          DBUS_TYPE_STRING, &ldbid,

@@ -51,7 +51,7 @@ typedef enum _PersistenceStorage_e
    PersistenceStorage_custom   = 2,  /**< the data is managed over custom client implementation */
 
    /** insert new entries here ... */
-   PersistenceStoragePolicy_LastEntry         /**< last entry */
+   PersistenceStorage_LastEntry         /**< last entry */
 
 } PersistenceStorage_e;
 

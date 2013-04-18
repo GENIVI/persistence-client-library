@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x04000000U)
+#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x04100000U)
 
 /**
 * status returned in notification structure
@@ -53,15 +53,30 @@ typedef enum _pclNotifyStatus_e
 */
 typedef struct _pclNotification_s
 {
-   pclNotifyStatus_e pclKeyNotify_Status;
-   unsigned int ldbid;
-   const char * resource_id;
-   unsigned int user_no;
-   unsigned int seat_no;
+   pclNotifyStatus_e pclKeyNotify_Status;    /// notification status
+   unsigned int ldbid;                       /// logical db id
+   const char * resource_id;                 /// resource id
+   unsigned int user_no;                     /// user id
+   unsigned int seat_no;                     /// seat id
 } pclNotification_s;
 
 
+enum pclShutdownTypeNotification
+{
+   NSM_SHUTDOWN_TYPE_FAST   = 2,    /// Client registered for fast lifecycle shutdown
+   NSM_SHUTDOWN_TYPE_NORMAL = 1     /// Client registered for normal lifecycle shutdown
+};
+
+
+/// defiinition of the change callback
 typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
+
+/// library constructor
+void pclLibraryConstructor(void) __attribute__((constructor));
+
+/// library deconstructor
+void pclLibraryDestructor(void) __attribute__((destructor));
+
 
 /**
  * @brief delete persistent data
@@ -195,6 +210,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  * @param callback notification callback
  *
  * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
+ *                         EPERS_RES_NO_KEY EPERS_NOKEYDATA  EPERS_NOPRCTABLE
  */
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback);
 

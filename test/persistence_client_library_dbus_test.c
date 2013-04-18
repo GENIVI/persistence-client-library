@@ -28,10 +28,11 @@
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
-   printf("Notification received ==> lbid: %d | resource_id: %s | seat: %d | user: %d \n", notifyStruct->ldbid,
+   printf("Notification received ==> lbid: %d | resource_id: %s | seat: %d | user: %d | status: %d \n", notifyStruct->ldbid,
          notifyStruct->resource_id,
          notifyStruct->seat_no,
-         notifyStruct->user_no );
+         notifyStruct->user_no,
+         notifyStruct->pclKeyNotify_Status );
    printf(" <== * - * myChangeCallback * - *\n");
 
    return 1;
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
 
    printf("Register for change notification\n");
    ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
-   //ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
    getchar();

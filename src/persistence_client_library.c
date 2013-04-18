@@ -23,6 +23,7 @@
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_custom_loader.h"
+#include "persistence_client_library_key.h"
 
 #include <string.h>
 #include <errno.h>
@@ -41,21 +42,44 @@ extern char* __progname;
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(persClientLibCtx);
 
+/**
+ * @brief itialize client library
+ *
+ * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
+ *
+ */
+void pclInit(int shutdownMode);
 
 
-/// library constructor
-void pers_library_init(void) __attribute__((constructor));
 
-/// library deconstructor
-void pers_library_destroy(void) __attribute__((destructor));
+/**
+ * @brief deinitialize client library
+ *
+ * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
+ */
+void pclDeinit(int shutdownMode);
 
 
 
-void pers_library_init(void)
+void pclLibraryConstructor(void)
+{
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   pclInit(shutdownReg);
+}
+
+
+void pclLibraryDestructor(void)
+{
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   pclDeinit(shutdownReg);
+}
+
+
+
+void pclInit(int shutdownMode)
 {
    int status = 0;
    int i = 0;
-   int shutdownMode = NSM_SHUTDOWN_TYPE_NORMAL;
 
    DLT_REGISTER_APP("Persistence Client Library","persClientLib");
    DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
@@ -136,9 +160,8 @@ void pers_library_init(void)
 
 
 
-void pers_library_destroy(void)
+void pclDeinit(int shutdownMode)
 {
-   int shutdownMode = NSM_SHUTDOWN_TYPE_NORMAL;
 
 #if ENABLE_DBUS_INTERFACE == 1
    // unregister for lifecycle and persistence admin service dbus messages

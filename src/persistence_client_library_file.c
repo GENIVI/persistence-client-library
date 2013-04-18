@@ -37,13 +37,18 @@
 
 
 // header prototype definition of internal functions
-int pcl_create_backup(const char* srcPath, int srcfd, const char* csumPath, const char* csumBuf);
+int pclCreateFile(const char* path);
 
-int pcl_recover_from_backup(int backupFd, const char* original);
+int pclCreateBackup(const char* srcPath, int srcfd, const char* csumPath, const char* csumBuf);
 
-int pcl_calc_crc32_checksum(int fd, char crc32sum[]);
+int pclRecoverFromBackup(int backupFd, const char* original);
 
-int pcl_verify_consistency(const char* origPath, const char* backupPath, const char* csumPath, int flags);
+int pclCalcCrc32Csum(int fd, char crc32sum[]);
+
+int pclVerifyConsistency(const char* origPath, const char* backupPath, const char* csumPath, int openFlags);
+
+int pclBackupNeeded(const char* path);
+
 //-------------------------------------------------------------
 
 
@@ -58,10 +63,16 @@ int pclFileClose(int fd)
       if( gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
       {
          // remove bakup file
-         rval = remove(gFileHandleArray[fd].backupPath );
+         if(remove(gFileHandleArray[fd].backupPath ) == -1)
+         {
+            printf("pclFileClose ==> failed to remove backup file\n");
+         }
 
          // remove checksum file
-         rval = remove(gFileHandleArray[fd].csumPath);
+         if(remove(gFileHandleArray[fd].csumPath) == -1)
+         {
+            printf("pclFileClose ==> failed to remove checksum file\n");
+         }
       }
       __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
       rval = close(fd);
@@ -111,8 +122,10 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
    int handle = -1, shared_DB = 0;
    PersistenceInfo_s dbContext;
 
-   char dbKey[DbKeyMaxLen];      // database key
-   char dbPath[DbPathMaxLen];    // database location
+   char dbKey[DbKeyMaxLen];         // database key
+   char dbPath[DbPathMaxLen];       // database location
+   char backupPath[DbKeyMaxLen];    // backup file
+   char csumPath[DbPathMaxLen];     // checksum file
 
    memset(dbKey, 0, DbKeyMaxLen);
    memset(dbPath, 0, DbPathMaxLen);
@@ -128,19 +141,18 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
    {
       int flags = dbContext.configKey.permission;
-      char backupPath[DbKeyMaxLen];    // backup file
-      char csumPath[DbPathMaxLen];     // checksum file
-
-      memset(backupPath, 0, DbKeyMaxLen);
-      memset(csumPath, 0, DbPathMaxLen);
 
       // file will be opend writable, so check about data consistency
-      if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+      if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
+         && pclBackupNeeded(dbPath) )
       {
+         memset(backupPath, 0, DbKeyMaxLen);
+         memset(csumPath, 0, DbPathMaxLen);
+
          snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
          snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
-         if((handle = pcl_verify_consistency(dbPath, backupPath, csumPath, flags)) == -1)
+         if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
          {
             printf("pclFileOpen: error => file inconsistent, recovery  N O T  possible!\n");
             return -1;
@@ -160,6 +172,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             {
                strcpy(gFileHandleArray[handle].backupPath, backupPath);
                strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+
                gFileHandleArray[handle].backupCreated = 0;
                gFileHandleArray[handle].permission = dbContext.configKey.permission;
             }
@@ -172,69 +185,37 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       }
       else  // file does not exist, create file and folder
       {
-         const char* delimiters = "/\n";   // search for blank and end of line
-         char* tokenArray[24];
-         char* thePath = dbPath;
-         char createPath[DbPathMaxLen];
-         int numTokens = 0, i = 0, validPath = 1;
-
-         tokenArray[numTokens++] = strtok(thePath, delimiters);
-         while(tokenArray[numTokens-1] != NULL )
-         {
-           tokenArray[numTokens] = strtok(NULL, delimiters);
-           if(tokenArray[numTokens] != NULL)
-           {
-              numTokens++;
-              if(numTokens >= 24)
-              {
-                 validPath = 0;
-                 break;
-              }
-           }
-           else
-           {
-              break;
-           }
-         }
-
-         if(validPath == 1)
-         {
-            memset(createPath, 0, DbPathMaxLen);
-            snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
-            for(i=1; i<numTokens-1; i++)
-            {
-               // create folders
-               strncat(createPath, "/", DbPathMaxLen-1);
-               strncat(createPath, tokenArray[i], DbPathMaxLen-1);
-               mkdir(createPath, 0744);
-            }
-            // finally create the file
-            strncat(createPath, "/", DbPathMaxLen-1);
-            strncat(createPath, tokenArray[i], DbPathMaxLen-1);
-            handle = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-            if(handle != -1)
-            {
-               if(handle < MaxPersHandle)
-               {
-                  __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-               }
-               else
-               {
-                  close(handle);
-                  handle = EPERS_MAXHANDLE;
-               }
-            }
-         }
-         else
-         {
-            printf("pclFileOpen ==> no valid path to create: %s\n", dbPath);
-         }
+         handle = pclCreateFile(dbPath);
       }
    }
    else
    {
-      handle = shared_DB;
-      printf("pclFileOpen ==> no valid database context or resource no file\n");
+      // assemble file string for local cached location
+      snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+      handle = pclCreateFile(dbPath);
+
+      if(handle != -1)
+      {
+         if(handle < MaxPersHandle)
+         {
+            memset(backupPath, 0, DbKeyMaxLen);
+            memset(csumPath, 0, DbPathMaxLen);
+
+            snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+            snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+            strcpy(gFileHandleArray[handle].backupPath, backupPath);
+            strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+            gFileHandleArray[handle].backupCreated = 0;
+            gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+         }
+         else
+         {
+            close(handle);
+            handle = EPERS_MAXHANDLE;
+         }
+      }
    }
 
    return handle;
@@ -344,14 +325,14 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
          if(   gFileHandleArray[fd].permission != PersistencePermission_ReadOnly
             && gFileHandleArray[fd].backupCreated == 0)
          {
-            char csumBuf[64];
-            memset(csumBuf, 0, 64);
+            char csumBuf[ChecksumBufSize];
+            memset(csumBuf, 0, ChecksumBufSize);
 
             // calculate checksum
-            pcl_calc_crc32_checksum(fd, csumBuf);
+            pclCalcCrc32Csum(fd, csumBuf);
 
             // create checksum and backup file
-            pcl_create_backup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
+            pclCreateBackup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
 
             gFileHandleArray[fd].backupCreated = 1;
          }
@@ -373,19 +354,84 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
  * Functions to create backup files
  ****************************************************************************************/
 
-int pcl_verify_consistency(const char* origPath, const char* backupPath, const char* csumPath, int flags)
+int pclCreateFile(const char* path)
+{
+   const char* delimiters = "/\n";   // search for blank and end of line
+   char* tokenArray[24];
+   char* thePath = (char*)path;
+   char createPath[DbPathMaxLen];
+   int numTokens = 0, i = 0, validPath = 1;
+   int handle = 0;
+
+   tokenArray[numTokens++] = strtok(thePath, delimiters);
+   while(tokenArray[numTokens-1] != NULL )
+   {
+     tokenArray[numTokens] = strtok(NULL, delimiters);
+     if(tokenArray[numTokens] != NULL)
+     {
+        numTokens++;
+        if(numTokens >= 24)
+        {
+           validPath = 0;
+           break;
+        }
+     }
+     else
+     {
+        break;
+     }
+   }
+
+   if(validPath == 1)
+   {
+      memset(createPath, 0, DbPathMaxLen);
+      snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
+      for(i=1; i<numTokens-1; i++)
+      {
+         // create folders
+         strncat(createPath, "/", DbPathMaxLen-1);
+         strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+         mkdir(createPath, 0744);
+      }
+      // finally create the file
+      strncat(createPath, "/", DbPathMaxLen-1);
+      strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+      handle = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      if(handle != -1)
+      {
+         if(handle < MaxPersHandle)
+         {
+            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+         }
+         else
+         {
+            close(handle);
+            handle = EPERS_MAXHANDLE;
+         }
+      }
+   }
+   else
+   {
+      printf("pclCreatePathAndFile ==> no valid path to create: %s\n", path);
+   }
+
+   return handle;
+}
+
+
+int pclVerifyConsistency(const char* origPath, const char* backupPath, const char* csumPath, int openFlags)
 {
    int handle = 0, readSize = 0;
    int backupAvail = 0, csumAvail = 0;
    int fdCsum = 0, fdBackup = 0;
 
-   char origCsumBuf[64];
-   char backCsumBuf[64];
-   char csumBuf[64];
+   char origCsumBuf[ChecksumBufSize];
+   char backCsumBuf[ChecksumBufSize];
+   char csumBuf[ChecksumBufSize];
 
-   memset(origCsumBuf, 0, 64);
-   memset(backCsumBuf, 0, 64);
-   memset(csumBuf, 0, 64);
+   memset(origCsumBuf, 0, ChecksumBufSize);
+   memset(backCsumBuf, 0, ChecksumBufSize);
+   memset(csumBuf, 0, ChecksumBufSize);
 
    // check if we have a backup and checksum file
    backupAvail = access(backupPath, F_OK);
@@ -403,26 +449,26 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
       fdBackup = open(backupPath,  O_RDONLY);
       if(fdBackup != -1)
       {
-         pcl_calc_crc32_checksum(fdBackup, backCsumBuf);
+         pclCalcCrc32Csum(fdBackup, backCsumBuf);
 
          fdCsum = open(csumPath,  O_RDONLY);
          if(fdCsum != -1)
          {
-            readSize = read(fdCsum, csumBuf, 64);
+            readSize = read(fdCsum, csumBuf, ChecksumBufSize);
             if(readSize > 0)
             {
                if(strcmp(csumBuf, backCsumBuf)  == 0)
                {
                   // checksum matches ==> replace with original file
-                  handle = pcl_recover_from_backup(fdBackup, origPath);
+                  handle = pclRecoverFromBackup(fdBackup, origPath);
                }
                else
                {
                   // checksum does not match, check checksum with original file
-                  handle = open(origPath, flags);
+                  handle = open(origPath, openFlags);
                   if(handle != -1)
                   {
-                     pcl_calc_crc32_checksum(handle, origCsumBuf);
+                     pclCalcCrc32Csum(handle, origCsumBuf);
                      if(strcmp(csumBuf, origCsumBuf)  != 0)
                      {
                         close(handle);
@@ -466,18 +512,18 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
       fdCsum = open(csumPath,  O_RDONLY);
       if(fdCsum != -1)
       {
-         readSize = read(fdCsum, csumBuf, 64);
-         if(readSize != 64)
+         readSize = read(fdCsum, csumBuf, ChecksumBufSize);
+         if(readSize != ChecksumBufSize)
          {
             printf("verifyConsistency ==> read checksum: invalid readSize\n");
          }
          close(fdCsum);
 
          // calculate the checksum form the original file to see if it matches
-         handle = open(origPath, flags);
+         handle = open(origPath, openFlags);
          if(handle != -1)
          {
-            pcl_calc_crc32_checksum(handle, origCsumBuf);
+            pclCalcCrc32Csum(handle, origCsumBuf);
 
             if(strcmp(csumBuf, origCsumBuf)  != 0)
             {
@@ -508,14 +554,14 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
       fdBackup = open(backupPath,  O_RDONLY);
       if(fdBackup != -1)
       {
-         pcl_calc_crc32_checksum(fdBackup, backCsumBuf);
+         pclCalcCrc32Csum(fdBackup, backCsumBuf);
          close(fdBackup);
 
          // calculate the checksum form the original file to see if it matches
-         handle = open(origPath, flags);
+         handle = open(origPath, openFlags);
          if(handle != -1)
          {
-            pcl_calc_crc32_checksum(handle, origCsumBuf);
+            pclCalcCrc32Csum(handle, origCsumBuf);
 
             if(strcmp(backCsumBuf, origCsumBuf)  != 0)
             {
@@ -552,17 +598,17 @@ int pcl_verify_consistency(const char* origPath, const char* backupPath, const c
 }
 
 
-int pcl_recover_from_backup(int backupFd, const char* original)
+int pclRecoverFromBackup(int backupFd, const char* original)
 {
    int handle = 0;
    int readSize = 0;
-   char buffer[1024];
+   char buffer[RDRWBufferSize];
 
    handle = open(original, O_TRUNC | O_RDWR);
    if(handle != -1)
    {
       // copy data from one file to another
-      while((readSize = read(backupFd, buffer, 1024)) > 0)
+      while((readSize = read(backupFd, buffer, RDRWBufferSize)) > 0)
       {
          if(write(handle, buffer, readSize) != readSize)
          {
@@ -576,11 +622,11 @@ int pcl_recover_from_backup(int backupFd, const char* original)
    return handle;
 }
 
-int pcl_create_backup(const char* dstPath, int srcfd, const char* csumPath, const char* csumBuf)
+int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const char* csumBuf)
 {
    int dstFd = 0, csfd = 0;
    int readSize = -1;
-   char buffer[1024];
+   char buffer[RDRWBufferSize];
 
    // create checksum file and and write checksum
    //printf("   pcl_create_backu => create checksum file: %s \n", csumPath);
@@ -610,7 +656,7 @@ int pcl_create_backup(const char* dstPath, int srcfd, const char* csumPath, cons
       curPos = lseek(srcfd, 0, SEEK_CUR);
 
       // copy data from one file to another
-      while((readSize = read(srcfd, buffer, 1024)) > 0)
+      while((readSize = read(srcfd, buffer, RDRWBufferSize)) > 0)
       {
          if(write(dstFd, buffer, readSize) != readSize)
          {
@@ -638,7 +684,7 @@ int pcl_create_backup(const char* dstPath, int srcfd, const char* csumPath, cons
 
 
 
-int pcl_calc_crc32_checksum(int fd, char crc32sum[])
+int pclCalcCrc32Csum(int fd, char crc32sum[])
 {
    int rval = 1;
 
@@ -676,6 +722,16 @@ int pcl_calc_crc32_checksum(int fd, char crc32sum[])
       }
    }
    return rval;
+}
+
+
+
+int pclBackupNeeded(const char* path)
+{
+   int needBackup = 1;
+
+
+   return needBackup;
 }
 
 

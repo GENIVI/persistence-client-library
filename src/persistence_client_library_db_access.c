@@ -69,6 +69,10 @@ static itzam_btree gBtree[DbTableSize][PersistencePolicy_LastEntry];
 static int gBtreeCreated[DbTableSize][PersistencePolicy_LastEntry] = { {0} };
 
 
+// function prototype
+int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, unsigned int reason);
+
+
 itzam_btree* pers_db_open(PersistenceInfo_s* info, const char* dbPath)
 {
    int arrayIdx = 0;
@@ -199,12 +203,12 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
       snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
-      if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_get_data != NULL) )
+      if( (idx < PersCustomLib_LastEntry) && (*gPersCustomFuncs[idx].custom_plugin_handle_get_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-            gPersCustomFuncs[idx].custom_plugin_get_data(key, (char*)buffer, buffer_size);
+            read_size = gPersCustomFuncs[idx].custom_plugin_get_data(key, (char*)buffer, buffer_size);
          else
-            gPersCustomFuncs[idx].custom_plugin_get_data(info->configKey.customID, (char*)buffer, buffer_size);
+            read_size = gPersCustomFuncs[idx].custom_plugin_get_data(info->configKey.customID, (char*)buffer, buffer_size);
       }
       else
       {
@@ -273,42 +277,7 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
                if(PersistenceStorage_shared == info->configKey.storage)
                {
-                  // send changed notification
-                  DBusMessage* message;
-                  char ldbid_array[12];
-                  char user_array[12];
-                  char seat_array[12];
-                  const char* ldbid_ptr = ldbid_array;
-                  const char* user_ptr = user_array;
-                  const char* seat_ptr = seat_array;
-
-                  memset(ldbid_array, 0, 12);
-                  memset(user_array, 0, 12);
-                  memset(seat_array, 0, 12);
-
-                  // dbus_bus_add_match is used for the notification mechanism,
-                  // and this works only for type DBUS_TYPE_STRING as message arguments
-                  // this is the reason to use string instead of integer types directly
-                  snprintf(ldbid_array, 12, "%d", info->context.ldbid);
-                  snprintf(user_array,  12, "%d", info->context.user_no);
-                  snprintf(seat_array,  12, "%d", info->context.seat_no);
-
-                  message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",     // const char *path,
-                                                    "org.genivi.persistence.adminconsumer",      // const char *interface,
-                                                    "PersistenceValueChanged" );                 // const char *name
-
-                  dbus_message_append_args(message,
-                                           DBUS_TYPE_STRING, &key,
-                                           DBUS_TYPE_STRING, &ldbid_ptr,
-                                           DBUS_TYPE_STRING, &user_ptr,
-                                           DBUS_TYPE_STRING, &seat_ptr,
-                                           DBUS_TYPE_INVALID);
-
-                   // Send the signal
-                   dbus_connection_send(get_dbus_connection(), message, NULL);
-
-                   // Free the signal now we have finished with it
-                   dbus_message_unref(message);
+                  pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
                }
             }
             else
@@ -332,12 +301,12 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
+      if((idx < PersCustomLib_LastEntry) && (*gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-            gPersCustomFuncs[idx].custom_plugin_set_data(key, (char*)buffer, buffer_size);
+            write_size = gPersCustomFuncs[idx].custom_plugin_set_data(key, (char*)buffer, buffer_size);
          else
-            gPersCustomFuncs[idx].custom_plugin_set_data(info->configKey.customID, (char*)buffer, buffer_size);
+            write_size = gPersCustomFuncs[idx].custom_plugin_set_data(info->configKey.customID, (char*)buffer, buffer_size);
       }
       else
       {
@@ -393,12 +362,12 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
+      if((idx < PersCustomLib_LastEntry) && (*gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-            gPersCustomFuncs[idx].custom_plugin_get_size(key);
+            read_size = gPersCustomFuncs[idx].custom_plugin_get_size(key);
          else
-            gPersCustomFuncs[idx].custom_plugin_get_size(info->configKey.customID);
+            read_size = gPersCustomFuncs[idx].custom_plugin_get_size(info->configKey.customID);
       }
       else
       {
@@ -443,6 +412,11 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
             itzam_btree_transaction_commit(btree);
             // transaction end
             // -----------------------------------------------------------------------------
+
+            if(PersistenceStorage_shared == info->configKey.storage)
+            {
+               pers_send_Notification_Signal(dbKey, &info->context, pclNotifyStatus_changed);
+            }
          }
          else
          {
@@ -459,12 +433,12 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
    else   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data) )
+      if((idx < PersCustomLib_LastEntry) && (*gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-            gPersCustomFuncs[idx].custom_plugin_delete_data(dbKey);
+            ret = gPersCustomFuncs[idx].custom_plugin_delete_data(dbKey);
          else
-            gPersCustomFuncs[idx].custom_plugin_delete_data(info->configKey.customID);
+            ret = gPersCustomFuncs[idx].custom_plugin_delete_data(info->configKey.customID);
       }
       else
       {
@@ -478,35 +452,119 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
 int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                      pclChangeNotifyCallback_t callback)
 {
-   int rval = -1;
+   int rval = 0;
    DBusError error;
    dbus_error_init (&error);
-   char rule[300];
-   char ldbid_array[12];
-   char user_array[12];
-   char seat_array[12];
-
-   memset(ldbid_array, 0, 12);
-   memset(user_array, 0, 12);
-   memset(seat_array, 0, 12);
+   char ruleChanged[DbusMatchRuleSize];
+   char ruleDeleted[DbusMatchRuleSize];
 
    // assign callback
    gChangeNotifyCallback = callback;
 
-   // dbus_bus_add_match works only for type DBUS_TYPE_STRING as message arguments
-   // this is the reason to use string instead of integer types directly
-   snprintf(ldbid_array, 12, "%u", ldbid);
-   snprintf(user_array,  12, "%u", user_no);
-   snprintf(seat_array,  12, "%u", seat_no);
+   // add match for  c h a n g e
+   snprintf(ruleChanged, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
+            key, ldbid, user_no, seat_no);
+   dbus_bus_add_match(get_dbus_connection(), ruleChanged, &error);
 
-   snprintf(rule, 256, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceValueChanged',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%s',arg2='%s',arg3='%s'",
-            key, ldbid_array, user_array, seat_array);
 
-   dbus_bus_add_match(get_dbus_connection(), rule, &error);
+   // add match for  d e l e t e
+   snprintf(ruleDeleted, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResDelete',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
+            key, ldbid, user_no, seat_no);
+   dbus_bus_add_match(get_dbus_connection(), ruleDeleted, &error);
+
+
+   // add match for  c r e a t e
+   snprintf(ruleDeleted, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResCreate',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
+            key, ldbid, user_no, seat_no);
+   dbus_bus_add_match(get_dbus_connection(), ruleDeleted, &error);
 
    return rval;
 }
 
+
+int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, pclNotifyStatus_e reason)
+{
+   DBusMessage* message;
+   dbus_bool_t ret;
+   int rval = 0;
+   char ldbid_array[DbusSubMatchSize];
+   char user_array[DbusSubMatchSize];
+   char seat_array[DbusSubMatchSize];
+   const char* ldbid_ptr = ldbid_array;
+   const char* user_ptr = user_array;
+   const char* seat_ptr = seat_array;
+
+   char* changeSignal = "PersistenceResChange";
+   char* deleteSignal = "PersistenceResDelete";
+   char* createSignal = "PersistenceResCreate";
+   char* theReason = NULL;
+
+   memset(ldbid_array, 0, DbusSubMatchSize);
+   memset(user_array, 0, DbusSubMatchSize);
+   memset(seat_array, 0, DbusSubMatchSize);
+
+
+   // dbus_bus_add_match is used for the notification mechanism,
+   // and this works only for type DBUS_TYPE_STRING as message arguments
+   // this is the reason to use string instead of integer types directly
+   snprintf(ldbid_array, DbusSubMatchSize, "%d", context->ldbid);
+   snprintf(user_array,  DbusSubMatchSize, "%d", context->user_no);
+   snprintf(seat_array,  DbusSubMatchSize, "%d", context->seat_no);
+
+   switch(reason)
+   {
+      case pclNotifyStatus_deleted:
+         theReason = deleteSignal;
+         break;
+      case  pclNotifyStatus_created:
+         theReason = createSignal;
+         break;
+      case pclNotifyStatus_changed:
+         theReason = changeSignal;
+         break;
+      default:
+         theReason = changeSignal;
+         break;
+   }
+
+   if(theReason != NULL)
+   {
+      message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",    // const char *path,
+                                        "org.genivi.persistence.adminconsumer",     // const char *interface,
+                                        theReason);                                 // const char *name
+
+      ret = dbus_message_append_args(message,
+                               DBUS_TYPE_STRING, &key,
+                               DBUS_TYPE_STRING, &ldbid_ptr,
+                               DBUS_TYPE_STRING, &user_ptr,
+                               DBUS_TYPE_STRING, &seat_ptr,
+                               DBUS_TYPE_INVALID);
+      if(ret == TRUE)
+      {
+         // Send the signal
+         if(dbus_connection_send(get_dbus_connection(), message, NULL) == TRUE)
+         {
+            // Free the signal now we have finished with it
+            dbus_message_unref(message);
+         }
+         else
+         {
+            rval = EPERS_NOTIFY_SIG;
+         }
+      }
+      else
+      {
+         printf("pers_send_Notification_Signal: \n");
+         rval = EPERS_NOTIFY_SIG;
+      }
+   }
+   else
+   {
+      rval = EPERS_NOTIFY_SIG;
+   }
+
+   return rval;
+}
 
 
 //---------------------------------------------------------------------------------------------------------

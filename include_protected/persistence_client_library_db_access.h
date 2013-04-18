@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x03000000U)
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x04010000U)
 
 
 #include "persistence_client_library_data_organization.h"
@@ -121,6 +121,17 @@ int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid
                                      pclChangeNotifyCallback_t callback);
 
 
+
+/**
+ * @brief send a notification signal
+ *
+ * @param key the database key to register on
+ * @param context the database context
+ * @param reason the reason of the signal, values see pclNotifyStatus_e.
+ *
+ * @return 0 of registration was successfull; -1 if registration failes
+ */
+int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, pclNotifyStatus_e reason);
 
 //---------------------------------------------------------------------------------------------
 // C U R S O R    F U N C T I O N S
