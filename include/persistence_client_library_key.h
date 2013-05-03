@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x04100000U)
+#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x05000000U)
 
 /**
 * status returned in notification structure
@@ -61,6 +61,10 @@ typedef struct _pclNotification_s
 } pclNotification_s;
 
 
+/**
+ * shutdown notification type definitions
+ *  according to Node State Manager component
+ */
 enum pclShutdownTypeNotification
 {
    NSM_SHUTDOWN_TYPE_FAST   = 2,    /// Client registered for fast lifecycle shutdown
@@ -71,11 +75,23 @@ enum pclShutdownTypeNotification
 /// defiinition of the change callback
 typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
 
-/// library constructor
-void pclLibraryConstructor(void) __attribute__((constructor));
+/**
+ * @brief itialize client library
+ *
+ * @param application name
+ * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
+ *
+ */
+void pclInitLibrary(const char* appname, int shutdownMode);
 
-/// library deconstructor
-void pclLibraryDestructor(void) __attribute__((destructor));
+
+
+/**
+ * @brief deinitialize client library
+ *
+ * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
+ */
+void pclDeinitLibrary(int shutdownMode);
 
 
 /**

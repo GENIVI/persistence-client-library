@@ -169,7 +169,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       else
       {
          printf("get_db_context - resource_table: no value for key: %s \n", resource_id);
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context => itzam_btree_open => resource_table: no value for key"), DLT_STRING(resource_id) );
+         DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("get_db_context => itzam_btree_open => resource_table: no value for key:"), DLT_STRING(resource_id) );
          rval = EPERS_NOKEYDATA;
       }
    }  // resource table
@@ -201,7 +201,8 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       memcpy(dbContext->configKey.customID, "A_CUSTOM_ID", strlen("A_CUSTOM_ID"));
       memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
-      //printf("get_db_context ==> R E S O U R C E  N O T found: %s \n", resource_id);
+
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => create resource not in PRCT => key:"), DLT_STRING(resource_id) );
 
       // send create notification
       rval = pers_send_Notification_Signal(dbKey, &dbContext->context, pclNotifyStatus_created);

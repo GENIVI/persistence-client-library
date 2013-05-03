@@ -22,7 +22,8 @@
 
 #include <stdio.h>
 
-
+#include <dlt/dlt.h>
+#include <dlt/dlt_common.h>
 
 
 int myChangeCallback(pclNotification_s * notifyStruct)
@@ -42,8 +43,14 @@ int myChangeCallback(pclNotification_s * notifyStruct)
 int main(int argc, char *argv[])
 {
    int ret = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
 
    printf("Dbus interface test application\n");
+
+   /// debug log and trace (DLT) setup
+   DLT_REGISTER_APP("noty","tests the persistence client library");
+   pclInitLibrary("lt-persistence_client_library_dbus_test", shutdownReg);
+
 
    printf("Press a key to end application\n");
    ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
@@ -54,6 +61,12 @@ int main(int argc, char *argv[])
    ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
    getchar();
+
+   pclDeinitLibrary(shutdownReg);
+
+
+   // unregister debug log and trace
+   DLT_UNREGISTER_APP();
 
    printf("By\n");
    return ret;

@@ -43,6 +43,9 @@
 #define NUM_OF_FILES 3
 #define READ_SIZE    1024
 
+/// application id
+char gTheAppId[MaxAppNameLen];
+
 // definition of weekday
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
@@ -56,7 +59,12 @@ char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 START_TEST (test_GetData)
 {
    int ret = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
    unsigned char buffer[READ_SIZE];
+
+   pclInitLibrary(gTheAppId, shutdownReg);
+
    memset(buffer, 0, READ_SIZE);
 
    /**
@@ -132,6 +140,8 @@ START_TEST (test_GetData)
     */
    ret = pclKeyReadData(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -145,11 +155,16 @@ END_TEST
 START_TEST (test_GetDataHandle)
 {
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
    unsigned char buffer[READ_SIZE];
    struct tm *locTime;
-   time_t t = time(0);
 
    char sysTimeBuffer[128];
+
+   pclInitLibrary(gTheAppId, shutdownReg);
+
+   time_t t = time(0);
    memset(buffer, 0, READ_SIZE);
 
    locTime = localtime(&t);
@@ -228,6 +243,8 @@ START_TEST (test_GetDataHandle)
    ret = pclKeyHandleClose(handle);
    ret = pclKeyHandleClose(handle3);
    ret = pclKeyHandleClose(handle4);
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -241,12 +258,16 @@ END_TEST
 START_TEST(test_SetData)
 {
    int ret = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE];
    char write1[READ_SIZE];
    char write2[READ_SIZE];
    char sysTimeBuffer[256];
 
    struct tm *locTime;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
+
    time_t t = time(0);
 
    locTime = localtime(&t);
@@ -340,6 +361,7 @@ START_TEST(test_SetData)
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write2), "Wrong read size");
 
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -353,8 +375,11 @@ END_TEST
 START_TEST(test_SetDataNoPRCT)
 {
    int ret = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE];
    struct tm *locTime;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
    time_t t = time(0);
 
    char sysTimeBuffer[128];
@@ -381,6 +406,7 @@ START_TEST(test_SetDataNoPRCT)
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
    printf("read buffer  : %s\n", buffer);
 
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -393,6 +419,10 @@ END_TEST
 START_TEST(test_GetDataSize)
 {
    int size = 0;
+
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
 
    /**
     * Logical DB ID: 0xFF with user 3 and seat 2
@@ -408,6 +438,8 @@ START_TEST(test_GetDataSize)
     */
    size = pclKeyGetSize(0x84, "links/last_link", 2, 1);
    fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -421,6 +453,9 @@ START_TEST(test_DeleteData)
 {
    int rval = 0;
    unsigned char buffer[READ_SIZE];
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
 
    // read data from key
    rval = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
@@ -447,6 +482,8 @@ START_TEST(test_DeleteData)
    // after deleting the key, reading from key must fail now!
    rval = pclKeyReadData(0xFF, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -465,10 +502,15 @@ START_TEST(test_DataFile)
    int fd = 0, i = 0, idx = 0;
    int size = 0, ret = 0;
    int writeSize = 16*1024;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
    unsigned char buffer[READ_SIZE];
    const char* refBuffer = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media";
    char* writeBuffer;
    char* fileMap = NULL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
+
    writeBuffer = malloc(writeSize);
 
 
@@ -544,6 +586,8 @@ START_TEST(test_DataFile)
    fail_unless(ret == 0, "Failed to close file");
 
    free(writeBuffer);
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -555,6 +599,9 @@ START_TEST(test_DataFileRecovery)
    int fd_RW = 0, fd_RO = 0;
    int ret = 0;
    char* wBuffer = "This is a buffer to write";
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
 
    // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
@@ -567,6 +614,7 @@ START_TEST(test_DataFileRecovery)
    ret = pclFileClose(fd_RW);
    ret = pclFileClose(fd_RO);
 
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -577,6 +625,9 @@ START_TEST(test_DataHandle)
 {
    int handle1 = 0, handle2 = 0;
    int ret = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
 
    // test file handles
    handle1 = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
@@ -602,6 +653,8 @@ START_TEST(test_DataHandle)
 
    ret = pclKeyHandleClose(1024);
    fail_unless(ret == -1, "Could close, but should not!!");
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -614,6 +667,9 @@ END_TEST
 START_TEST(test_DataHandleOpen)
 {
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
 
    // open handles ----------------------------------------------------
    hd1 = pclKeyHandleOpen(0xFF, "posHandle/last_position1", 0, 0);
@@ -672,6 +728,8 @@ START_TEST(test_DataHandleOpen)
 
    ret = pclKeyHandleClose(hd9);
    fail_unless(ret != -1, "Failed to close handle!!");
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -688,6 +746,9 @@ START_TEST(test_Cursor)
    char bufferDataSrc[READ_SIZE];
    char bufferKeyDst[READ_SIZE];
    char bufferDataDst[READ_SIZE];
+   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+
+   pclInitLibrary(gTheAppId, shutdownReg);
 
    memset(bufferKeySrc, 0, READ_SIZE);
    memset(bufferDataSrc, 0, READ_SIZE);
@@ -742,6 +803,8 @@ START_TEST(test_Cursor)
 
    rval = pers_db_cursor_destroy(handle1);
    fail_unless(rval != -1, "Failed to destroy cursor!!");
+
+   pclDeinitLibrary(shutdownReg);
 }
 END_TEST
 
@@ -806,12 +869,25 @@ int main(int argc, char *argv[])
 {
    int nr_failed = 0;
 
+   // assign application name
+   strncpy(gTheAppId, "lt-persistence_client_library_test", MaxAppNameLen);
+   gTheAppId[MaxAppNameLen-1] = '\0';
+
+   printf("A p p l i c a t i o n   n a m e => %s \n", gTheAppId /*program_invocation_short_name*/);
+
+   /// debug log and trace (DLT) setup
+   DLT_REGISTER_APP("test","tests the persistence client library");
+
    Suite * s = persistencyClientLib_suite();
    SRunner * sr = srunner_create(s);
    srunner_run_all(sr, CK_VERBOSE);
    nr_failed = srunner_ntests_failed(sr);
 
    srunner_free(sr);
+
+   // unregister debug log and trace
+   DLT_UNREGISTER_APP();
+
    return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
 
 }

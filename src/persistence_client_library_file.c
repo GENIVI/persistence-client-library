@@ -64,19 +64,12 @@ int pclFileClose(int fd)
       // check if a backup and checksum file needs to bel deleted
       if( gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
       {
-         // remove bakup file
-         if(remove(gFileHandleArray[fd].backupPath ) == -1)
-         {
-            printf("pclFileClose ==> failed to remove backup file\n");
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileClose ==> failed to remove backup file"), DLT_STRING(gFileHandleArray[fd].backupPath));
-         }
+         // remove backup file
+         remove(gFileHandleArray[fd].backupPath);  // we don't care about return value
 
          // remove checksum file
-         if(remove(gFileHandleArray[fd].csumPath) == -1)
-         {
-            printf("pclFileClose ==> failed to remove checksum file\n");
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileClose ==> failed to remove checksum file"), DLT_STRING(gFileHandleArray[fd].csumPath));
-         }
+         remove(gFileHandleArray[fd].csumPath);    // we don't care about return value
+
       }
       __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
       rval = close(fd);
@@ -94,7 +87,7 @@ int pclFileGetSize(int fd)
    int ret = 0;
    ret = fstat(fd, &buf);
 
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
 
    if(ret != -1)
    {
@@ -246,7 +239,7 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 {
    int rval = 0;
 
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -317,7 +310,7 @@ int pclFileUnmapData(void* address, long size)
 {
    int rval = 0;
 
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
