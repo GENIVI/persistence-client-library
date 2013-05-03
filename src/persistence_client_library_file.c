@@ -57,6 +57,8 @@ int pclFileClose(int fd)
 {
    int rval = -1;
 
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
+
    if(fd < MaxPersHandle)
    {
       // check if a backup and checksum file needs to bel deleted
@@ -66,12 +68,14 @@ int pclFileClose(int fd)
          if(remove(gFileHandleArray[fd].backupPath ) == -1)
          {
             printf("pclFileClose ==> failed to remove backup file\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileClose ==> failed to remove backup file"), DLT_STRING(gFileHandleArray[fd].backupPath));
          }
 
          // remove checksum file
          if(remove(gFileHandleArray[fd].csumPath) == -1)
          {
             printf("pclFileClose ==> failed to remove checksum file\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileClose ==> failed to remove checksum file"), DLT_STRING(gFileHandleArray[fd].csumPath));
          }
       }
       __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
@@ -90,6 +94,8 @@ int pclFileGetSize(int fd)
    int ret = 0;
    ret = fstat(fd, &buf);
 
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
+
    if(ret != -1)
    {
       rval = buf.st_size;
@@ -102,6 +108,8 @@ int pclFileGetSize(int fd)
 void* pclFileMapData(void* addr, long size, long offset, int fd)
 {
    void* ptr = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -126,6 +134,8 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
    char dbPath[DbPathMaxLen];       // database location
    char backupPath[DbKeyMaxLen];    // backup file
    char csumPath[DbPathMaxLen];     // checksum file
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
    memset(dbKey, 0, DbKeyMaxLen);
    memset(dbPath, 0, DbPathMaxLen);
@@ -155,6 +165,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
          {
             printf("pclFileOpen: error => file inconsistent, recovery  N O T  possible!\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
             return -1;
          }
       }
@@ -225,6 +236,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
 int pclFileReadData(int fd, void * buffer, int buffer_size)
 {
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
    return read(fd, buffer, buffer_size);
 }
 
@@ -233,6 +245,8 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
 int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
+
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -258,13 +272,15 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
          rval = remove(dbPath);
          if(rval == -1)
          {
-            printf("file_remove ERROR: %s \n", strerror(errno) );
+            printf("pclFileRemove => remove ERROR: %s \n", strerror(errno) );
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove => remove ERROR"), DLT_STRING(strerror(errno)) );
          }
       }
       else
       {
          rval = shared_DB;
          printf("pclFileRemove ==> no valid database context or resource not a file\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove ==> no valid database context or resource not a file"));
       }
    }
    else
@@ -280,6 +296,8 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 int pclFileSeek(int fd, long int offset, int whence)
 {
    int rval = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileSeek fd:"), DLT_INT(fd));
 
    if(AccessNoLock == isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -299,6 +317,8 @@ int pclFileUnmapData(void* address, long size)
 {
    int rval = 0;
 
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
+
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
       rval =  munmap(address, size);
@@ -316,6 +336,8 @@ int pclFileUnmapData(void* address, long size)
 int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 {
    int size = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -412,7 +434,8 @@ int pclCreateFile(const char* path)
    }
    else
    {
-      printf("pclCreatePathAndFile ==> no valid path to create: %s\n", path);
+      printf("pclCreateFile ==> no valid path to create: %s\n", path);
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateFile ==> no valid path to create: "), DLT_STRING(path) );
    }
 
    return handle;
@@ -437,14 +460,13 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    backupAvail = access(backupPath, F_OK);
    csumAvail   = access(csumPath, F_OK);
 
-   //printf("verifyConsistency ==> backup: %d | csum: %d \n", backupAvail, csumAvail);
-
    // *************************************************
    // there is a backup file and a checksum
    // *************************************************
    if( (backupAvail == 0) && (csumAvail == 0) )
    {
-      printf("verifyConsistency => there is a backup file AND a checksum\n");
+      printf("pclVerifyConsistency => there is a backup file AND a checksum\n");
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is a backup file AND a checksum"));
       // calculate checksum form backup file
       fdBackup = open(backupPath,  O_RDONLY);
       if(fdBackup != -1)
@@ -484,10 +506,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
                   }
                }
             }
-            else
-            {
-               printf("verifyConsistency ==> checksum has invalid size\n");
-            }
             close(fdCsum);
          }
          else
@@ -507,15 +525,17 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(csumAvail == 0)
    {
-      //printf("verifyConsistency => there is ONLY a checksum file\n");
+      printf("verifyConsistency => there is ONLY a checksum file\n");
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a checksum file"));
 
       fdCsum = open(csumPath,  O_RDONLY);
       if(fdCsum != -1)
       {
          readSize = read(fdCsum, csumBuf, ChecksumBufSize);
-         if(readSize != ChecksumBufSize)
+         if(readSize <= 0)
          {
             printf("verifyConsistency ==> read checksum: invalid readSize\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclVerifyConsistency => read checksum: invalid readSize"));
          }
          close(fdCsum);
 
@@ -549,7 +569,9 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(backupAvail == 0)
    {
-      //printf("verifyConsistency => there is ONLY a backup file\n");
+      printf("verifyConsistency => there is ONLY a backup file\n");
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a backup file"));
+
       // calculate checksum form backup file
       fdBackup = open(backupPath,  O_RDONLY);
       if(fdBackup != -1)
@@ -612,7 +634,8 @@ int pclRecoverFromBackup(int backupFd, const char* original)
       {
          if(write(handle, buffer, readSize) != readSize)
          {
-            printf("pcl_recover_from_backup => couldn't write whole buffer\n");
+            printf("pclRecoverFromBackup => couldn't write whole buffer\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclRecoverFromBackup => couldn't write whole buffer"));
             break;
          }
       }
@@ -636,13 +659,15 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       int csumSize = strlen(csumBuf);
       if(write(csfd, csumBuf, csumSize) != csumSize)
       {
-         printf("pcl_create_backup: failed to write checksum to file\n");
+         printf("pclCreateBackup: failed to write checksum to file\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to write checksum to file"));
       }
       close(csfd);
    }
    else
    {
-      printf("pcl_create_backup => failed to create checksum file: %s | %s\n", csumPath, strerror(errno));
+      printf("pclCreateBackup => failed to create checksum file: %s | %s\n", csumPath, strerror(errno));
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to create checksum file:"), DLT_STRING(strerror(errno)) );
    }
 
 
@@ -660,7 +685,8 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       {
          if(write(dstFd, buffer, readSize) != readSize)
          {
-            printf("pcl_create_backup => couldn't write whole buffer\n");
+            printf("pclCreateBackup => couldn't write whole buffer\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => couldn't write whole buffer"));
             break;
          }
       }
@@ -676,7 +702,9 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    }
    else
    {
-      printf("pcl_create_backup => failed to open backup file: %s | %s \n", dstPath, strerror(errno));
+      printf("pclCreateBackup => failed to open backup file: %s | %s \n", dstPath, strerror(errno));
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to open backup file"),
+             DLT_STRING(dstPath), DLT_STRING(strerror(errno)));
    }
 
    return readSize;
@@ -729,8 +757,6 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 int pclBackupNeeded(const char* path)
 {
    int needBackup = 1;
-
-
    return needBackup;
 }
 

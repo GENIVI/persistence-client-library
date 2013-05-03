@@ -80,6 +80,8 @@ char gAppId[MaxAppNameLen];
 int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
 
 
+DltContext gDLTContext;
+
 int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
 

@@ -29,7 +29,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 
 # Overwrite the build in defaults
-CFLAGS="-Wall -O2"
+#CFLAGS="-Wall -O2"
 
 # Checks for programs.
 AC_PROG_CC

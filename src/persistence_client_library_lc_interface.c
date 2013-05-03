@@ -51,7 +51,7 @@ int check_lc_request(int request, int requestID)
 
          if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
          {
-            printf("write failed w/ errno %d\n", errno);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
             rval = NsmErrorStatus_Fail;
          }
          else
@@ -62,7 +62,7 @@ int check_lc_request(int request, int requestID)
       }
       default:
       {
-         printf("Unknown lifecycle message!\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => Unknown lifecycle message"), DLT_INT(request));
          break;
       }
    }
@@ -89,17 +89,15 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
       if (reply == 0)
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
       }
 
-      dbus_message_unref (reply);
+      dbus_message_unref(reply);
 
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
@@ -110,20 +108,17 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
    if (reply == 0)
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &msgReturn, DBUS_TYPE_INVALID))
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -139,7 +134,6 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-   //printf("handleObjectPathMessage '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
    if((0==strncmp("org.genivi.NodeStateManager.LifeCycleConsumer", dbus_message_get_interface(message), 20)))
    {
       if((0==strncmp("LifecycleRequest", dbus_message_get_member(message), 18)))
@@ -148,7 +142,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
       }
       else
       {
-          printf("checkLifecycleMsg -> unknown message '%s'\n", dbus_message_get_interface(message));
+          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("checkLifecycleMsg -> unknown message "), DLT_STRING(dbus_message_get_interface(message)));
       }
    }
    return result;
@@ -164,48 +158,55 @@ int send_lifecycle_register(const char* method, int shutdownMode, int reg)
    dbus_error_init (&error);
    DBusConnection* conn = get_dbus_connection();
 
-   const char* objName = "/org/genivi/NodeStateManager/LifeCycleConsumer";
-   const char* busName = dbus_bus_get_unique_name(conn);
-
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
-                                                       "/org/genivi/NodeStateManager/Consumer", // path
-                                                       "org.genivi.NodeStateManager.Consumer",  // interface
-                                                       method);                                 // method
-   if(message != NULL)
+   if(conn != NULL)
    {
-      if(reg == 1)   // register
-      {
-         dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                           DBUS_TYPE_STRING, &objName,
-                                           DBUS_TYPE_INT32, &shutdownMode,
-                                           DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
-      }
-      else           // unregister
-      {
-         dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                           DBUS_TYPE_STRING, &objName,
-                                           DBUS_TYPE_INT32, &shutdownMode, DBUS_TYPE_INVALID);
+      const char* objName = "/org/genivi/NodeStateManager/LifeCycleConsumer";
+      const char* busName = dbus_bus_get_unique_name(conn);
 
-      }
-
-      if(conn != NULL)
+      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
+                                                          "/org/genivi/NodeStateManager/Consumer", // path
+                                                          "org.genivi.NodeStateManager.Consumer",  // interface
+                                                          method);                                 // method
+      if(message != NULL)
       {
-         if(!dbus_connection_send(conn, message, 0))
+         if(reg == 1)   // register
          {
-            fprintf(stderr, "send_lifecycle ==> Access denied: %s \n", error.message);
+            dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
+                                              DBUS_TYPE_STRING, &objName,
+                                              DBUS_TYPE_INT32, &shutdownMode,
+                                              DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
+         }
+         else           // unregister
+         {
+            dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
+                                              DBUS_TYPE_STRING, &objName,
+                                              DBUS_TYPE_INT32, &shutdownMode, DBUS_TYPE_INVALID);
+
          }
 
-         dbus_connection_flush(conn);
+         if(conn != NULL)
+         {
+            if(!dbus_connection_send(conn, message, 0))
+            {
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
+            }
+
+            dbus_connection_flush(conn);
+         }
+         else
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid connection"));
+         }
+         dbus_message_unref(message);
       }
       else
       {
-         fprintf(stderr, "send_lifecycle ==> ERROR: Invalid connection!! \n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid message"));
       }
-      dbus_message_unref(message);
    }
    else
    {
-      fprintf(stderr, "send_lifecycle ==> ERROR: Invalid message!! \n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: connection isn NULL"));
    }
 
    return rval;
@@ -222,34 +223,41 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 
    DBusConnection* conn = get_dbus_connection();
 
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager.Consumer",  // destination
-                                                      "/org/genivi/NodeStateManager/Consumer",  // path
-                                                       "org.genivi.NodeStateManager.Consumer",  // interface
-                                                       method);                  // method
-   if(message != NULL)
+   if(conn != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
-                                        DBUS_TYPE_INT32, &status,
-                                        DBUS_TYPE_INVALID);
-
-      if(conn != NULL)
+      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager.Consumer",  // destination
+                                                         "/org/genivi/NodeStateManager/Consumer",  // path
+                                                          "org.genivi.NodeStateManager.Consumer",  // interface
+                                                          method);                  // method
+      if(message != NULL)
       {
-         if(!dbus_connection_send(conn, message, 0))
-         {
-            fprintf(stderr, "send_lifecycle ==> Access denied: %s \n", error.message);
-         }
+         dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
+                                           DBUS_TYPE_INT32, &status,
+                                           DBUS_TYPE_INVALID);
 
-         dbus_connection_flush(conn);
+         if(conn != NULL)
+         {
+            if(!dbus_connection_send(conn, message, 0))
+            {
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
+            }
+
+            dbus_connection_flush(conn);
+         }
+         else
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid connection"));
+         }
+         dbus_message_unref(message);
       }
       else
       {
-         fprintf(stderr, "send_lifecycle ==> ERROR: Invalid connection!! \n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid message"));
       }
-      dbus_message_unref(message);
    }
    else
    {
-      fprintf(stderr, "send_lifecycle ==> ERROR: Invalid message!! \n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: connection isn NULL"));
    }
 
    return rval;
@@ -309,7 +317,7 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
         state = itzam_btree_close(resourceTable);
         if (state != ITZAM_OKAY)
         {
-           fprintf(stderr, "\nOpen Itzam problem: %s\n", STATE_MESSAGES[state]);
+           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => itzam_btree_close: Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
         }
      }
    }

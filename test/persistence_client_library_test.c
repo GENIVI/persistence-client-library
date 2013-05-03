@@ -26,6 +26,9 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include <dlt/dlt.h>
+#include <dlt/dlt_common.h>
+
 #include "../include/persistence_client_library_key.h"
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_error_def.h"

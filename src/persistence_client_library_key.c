@@ -43,6 +43,8 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
    char dbKey[DbKeyMaxLen];      // database key
    char dbPath[DbPathMaxLen];    // database location
 
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
    memset(dbKey, 0, DbKeyMaxLen);
    memset(dbPath, 0, DbPathMaxLen);
 
@@ -91,12 +93,14 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
          else
          {
             printf("pclKeyHandleOpen: error - handleId out of bounds [%d]\n", handle);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
          }
       }
    }
    else
    {
       printf("pclKeyHandleOpen: error - no database context or resource is not a key \n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - no database context or resource is not a key "));
    }
 
 
@@ -108,6 +112,10 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 int pclKeyHandleClose(int key_handle)
 {
    int rval = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleClose: "),
+   //                DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+
 
    if(key_handle < MaxPersHandle)
    {
@@ -148,6 +156,9 @@ int pclKeyHandleGetSize(int key_handle)
 {
    int size = 0;
 
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleGetSize: "),
+   //                DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+
    if(key_handle < MaxPersHandle)
    {
       if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
@@ -178,6 +189,10 @@ int pclKeyHandleGetSize(int key_handle)
 int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleReadData: "),
+   //             DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+
    if(key_handle < MaxPersHandle)
    {
       if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
@@ -209,6 +224,9 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
 {
    int rval = -1;
 
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
+   //             DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+
    if(key_handle < MaxPersHandle)
    {
       rval = pclKeyRegisterNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
@@ -225,6 +243,9 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
 int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleWriteData: "),
+   //                DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
 
    if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
    {
@@ -259,6 +280,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
       else
       {
          printf("pclKeyHandleWriteData: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
       }
    }
    else
@@ -282,6 +304,8 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int rval = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyDelete: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -339,6 +363,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
    dbContext.context.seat_no = seat_no;
    dbContext.context.user_no = user_no;
 
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyGetSize: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
    // get database context: database path and database key
    data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
    if(   (data_size >= 0)
@@ -369,6 +395,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
                   unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyReadData: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
    if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
    {
@@ -403,6 +431,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
       else
       {
          printf("pclKeyReadData - error - no database context or resource is not a key\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - error - no database context or resource is not a key"));
       }
    }
    else
@@ -419,6 +448,8 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                    unsigned char* buffer, int buffer_size)
 {
    int data_size = 0;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyWriteData: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
    if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
    {
@@ -460,12 +491,14 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
          else
          {
             printf("pclKeyWriteData: error - no database context or resource is not a key\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - error - no database context or resource is not a key"));
          }
       }
       else
       {
          data_size = EPERS_BUFLIMIT;
          printf("pclKeyWriteData: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
       }
    }
    else
@@ -489,6 +522,8 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    memset(dbKey, 0, DbKeyMaxLen);
    memset(dbPath, 0, DbPathMaxLen);
 
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
    dbContext.context.ldbid   = ldbid;
    dbContext.context.seat_no = seat_no;
    dbContext.context.user_no = user_no;
@@ -505,6 +540,7 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    else
    {
       printf("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key"));
       rval = EPERS_RES_NO_KEY;
    }
 

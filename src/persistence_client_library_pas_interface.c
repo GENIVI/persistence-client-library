@@ -73,7 +73,6 @@ int check_pas_request(unsigned int request, unsigned int requestID)
          {
             rval = PasErrorStatus_RespPend;
          }
-         printf("======> check_pas_request(requestID: %u | status: %u ) \n", (unsigned int)(cmd>>32&0xFF), (unsigned int)(cmd>>16&0xFF));
          break;
       }
       case PasMsg_Unblock:
@@ -113,14 +112,12 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
       if(reply == 0)
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
       }
 
       dbus_message_unref(reply);
@@ -134,20 +131,17 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
    if (reply == 0)
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorReturn, DBUS_TYPE_INVALID))
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -173,14 +167,12 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 
       if(reply == 0)
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-         printf("DBus No memory\n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
       }
 
       dbus_message_unref (reply);
@@ -192,20 +184,17 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 
    if (reply == 0)
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-     //DLT_LOG(mgrContext, DLT_LOG_ERROR, DLT_STRING("DBus No memory"));
-      printf("DBus No memory\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -219,7 +208,6 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-   //printf("checkPersAdminMsg '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
    if((0==strcmp("org.genivi.persistence.adminconsumer", dbus_message_get_interface(message))))
    {
       if((0==strcmp("PersistenceAdminRequest", dbus_message_get_member(message))))
@@ -228,12 +216,12 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
       }
       else
       {
-         printf("checkPersAdminMsg -> unknown message '%s'\n", dbus_message_get_interface(message));
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg => unknown message"), DLT_STRING(dbus_message_get_member(message)));
       }
    }
    else
    {
-      printf("checkPersAdminMsg ELSE -> unknown message '%s'\n", dbus_message_get_interface(message));
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg => unknown message"), DLT_STRING(dbus_message_get_interface(message)));
    }
    return result;
 }
@@ -264,7 +252,6 @@ int send_pas_register(const char* method, int notificationFlag)
                                         DBUS_TYPE_INT32,  &notificationFlag,
                                         DBUS_TYPE_UINT32, &gTimeoutMs,
                                         DBUS_TYPE_INVALID);
-
       if(conn != NULL)
       {
          replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
@@ -273,30 +260,29 @@ int send_pas_register(const char* method, int notificationFlag)
          {
             if(dbus_set_error_from_message(&error, replyMsg))
             {
-               fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => Access denied"), DLT_STRING(error.message) );
             }
             else
             {
                dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
-               printf("send_pas_register ==> REPLY value: %d \n", rval);
             }
             dbus_message_unref(replyMsg);
          }
          else
          {
-            printf("send_pas_register ==> reply message is NULL!\n     ==> error msg: %s \n", error.message);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => reply message is NULL!"), DLT_STRING(error.message) );
          }
       }
       else
       {
-         fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid connection!! \n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid connection") );
          rval = -1;
       }
       dbus_message_unref(message);
    }
    else
    {
-      fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid message!! \n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid message") );
       rval = -1;
    }
 
@@ -318,9 +304,6 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
                                                       "/org/genivi/persistence/admin",    // path
                                                        "org.genivi.persistence.admin",    // interface
                                                        method);                  // method
-
-   printf(" =======****> send_pas_request: requestID: %u | status: %d \n", requestID, status);
-
    if(message != NULL)
    {
       dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
@@ -334,7 +317,7 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
          {
             if(dbus_set_error_from_message(&error, replyMsg))
             {
-               fprintf(stderr, "sendDBusMessage ==> Access denied: %s \n", error.message);
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => Access denied"), DLT_STRING(error.message) );
             }
             else
             {
@@ -344,19 +327,19 @@ int send_pas_request(const char* method, unsigned int requestID, int status)
          }
          else
          {
-            fprintf(stderr, "send_pas_request ==> reply messgae is NULL!\n     ==> error msg: %s \n", error.message);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => reply messgae is NULL"), DLT_STRING(error.message) );
          }
       }
       else
       {
-         fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid connection!! \n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid connection") );
          rval = -1;
       }
       dbus_message_unref(message);
    }
    else
    {
-      fprintf(stderr, "send_pers_admin_service ==> ERROR: Invalid message!! \n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid message") );
       rval = -1;
    }
 

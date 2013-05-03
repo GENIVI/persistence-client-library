@@ -29,6 +29,8 @@ extern "C" {
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
 
+#include <dlt/dlt.h>
+#include <dlt/dlt_common.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -138,6 +140,9 @@ extern char gAppId[MaxAppNameLen];
 
 /// max key value data size
 extern int gMaxKeyValDataSize;
+
+// the DLT context
+extern DltContext gDLTContext;
 
 
 /**

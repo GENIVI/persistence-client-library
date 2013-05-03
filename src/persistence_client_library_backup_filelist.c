@@ -19,6 +19,7 @@
 #include "persistence_client_library_backup_filelist.h"
 #include "rbtree.h"
 #include "../include_protected/crc32.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 
 
 #include <fcntl.h>
@@ -166,15 +167,17 @@ int readBlacklistConfigFile(const char* filename)
    if (fd == -1)
    {
       printf("configReader::readConfigFile ==> Error file open: %s | error: %s \n", filename, strerror(errno));
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
 
       return -1;
    }
 
-
    // check for empty file
    if(gConfigFileSize == 0)
    {
-      printf("configReader::readConfigFile ==> Error file size is 0: %s | buffer.st_size: %d \n", filename, (int)buffer.st_size);
+      printf("configReader::readConfigFile ==> Error file size is 0: %s \n", filename);
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
+
       close(fd);
       return -1;
    }
@@ -187,6 +190,8 @@ int readBlacklistConfigFile(const char* filename)
       gpConfigFileMap = 0;
       close(fd);
       printf("configReader::readConfigFile ==> Error mapping the file: %s | error: %s \n", filename, strerror(errno));
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+
       return -1;
    }
 
@@ -237,6 +242,7 @@ int need_backup_key(unsigned int key)
 
       rval = -1;
       printf("need_backup_key ==> item or gRb_tree_bl is NULL\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("need_backup_key ==> item or gRb_tree_bl is NULL"));
    }
 
    return rval;

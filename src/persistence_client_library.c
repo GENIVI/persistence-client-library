@@ -34,13 +34,12 @@
 #include <dbus/dbus.h>
 
 
-
 #define ENABLE_DBUS_INTERFACE 1
 
 extern char* __progname;
 
 /// debug log and trace (DLT) setup
-DLT_DECLARE_CONTEXT(persClientLibCtx);
+DLT_DECLARE_CONTEXT(gDLTContext);
 
 /**
  * @brief itialize client library
@@ -48,7 +47,7 @@ DLT_DECLARE_CONTEXT(persClientLibCtx);
  * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
  *
  */
-void pclInit(int shutdownMode);
+void pclInit(const char* appname, int shutdownMode);
 
 
 
@@ -64,7 +63,12 @@ void pclDeinit(int shutdownMode);
 void pclLibraryConstructor(void)
 {
    int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
-   pclInit(shutdownReg);
+
+   DLT_REGISTER_APP("test","tests the persistence client library");
+   /// debug log and trace (DLT) setup
+
+   printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);
+   pclInit(__progname, shutdownReg);
 }
 
 
@@ -76,15 +80,13 @@ void pclLibraryDestructor(void)
 
 
 
-void pclInit(int shutdownMode)
+void pclInit(const char* appName, int shutdownMode)
 {
    int status = 0;
    int i = 0;
 
-   DLT_REGISTER_APP("Persistence Client Library","persClientLib");
-   DLT_REGISTER_CONTEXT(persClientLibCtx,"persClientLib","Context for Logging");
-
-   DLT_LOG(persClientLibCtx, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
+   DLT_REGISTER_CONTEXT(gDLTContext,"pers","Context for persistence client library logging");
+   DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("Initialize Persistence Client Library!!!!"));
 
    /// environment variable for on demand loading of custom libraries
    const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
@@ -149,9 +151,11 @@ void pclInit(int shutdownMode)
       }
    }
 
-   printf("A p p l i c a t i o n   n a m e => %s \n", __progname /*program_invocation_short_name*/);   // TODO: only temp solution for application name
-   strncpy(gAppId, __progname, MaxAppNameLen);
+   // assign application name
+   strncpy(gAppId, appName, MaxAppNameLen);
    gAppId[MaxAppNameLen-1] = '\0';
+
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInit -> initialized client library:"), DLT_STRING(gAppId) );
 
    // destory mutex
    pthread_mutex_destroy(&gDbusInitializedMtx);
@@ -169,7 +173,9 @@ void pclDeinit(int shutdownMode)
    unregister_pers_admin_service();
 #endif
 
-   DLT_UNREGISTER_CONTEXT(persClientLibCtx);
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinit -> deinit client library:"), DLT_STRING(gAppId));
+
+   DLT_UNREGISTER_CONTEXT(gDLTContext);
    DLT_UNREGISTER_APP();
    dlt_free();
 }

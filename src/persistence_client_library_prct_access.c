@@ -100,11 +100,10 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
             break;
          }
 
-         //printf("get_resource_cfg_table => %s \n", filename);
          state = itzam_btree_open(&gResource_table[arrayIdx], filename, itzam_comparator_string, error_handler, 0 , 0);
          if(state != ITZAM_OKAY)
          {
-            fprintf(stderr, "\n** get_resource_cfg_table => Itzam problem: %s**\n", STATE_MESSAGES[state]);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table => itzam_btree_open => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]) );
             tree = NULL;
          }
          else
@@ -170,12 +169,14 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       else
       {
          printf("get_db_context - resource_table: no value for key: %s \n", resource_id);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context => itzam_btree_open => resource_table: no value for key"), DLT_STRING(resource_id) );
          rval = EPERS_NOKEYDATA;
       }
    }  // resource table
    else
    {
       printf("get_db_context - error resource table\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context =>error resource table"));
       rval = EPERS_NOPRCTABLE;
    }
 

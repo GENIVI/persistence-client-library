@@ -91,7 +91,8 @@ itzam_btree* pers_db_open(PersistenceInfo_s* info, const char* dbPath)
                                   itzam_comparator_string, error_handler, 0/*recover*/, 0/*read_only*/);
          if (state != ITZAM_OKAY)
          {
-            fprintf(stderr, "pers_db_open ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
+            printf("pers_db_open ==> itzam_btree_open => Itzam problem: %s\n", STATE_MESSAGES[state]);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_open ==> itzam_btree_open => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
          }
          gBtreeCreated[arrayIdx][info->configKey.policy] = 1;
       }
@@ -100,7 +101,8 @@ itzam_btree* pers_db_open(PersistenceInfo_s* info, const char* dbPath)
    }
    else
    {
-      printf("btree_get ==> invalid storage type\n");
+      printf("pers_db_open ==> invalid storage type\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_open ==> invalid storage type"), DLT_STRING(dbPath));
    }
    return btree;
 }
@@ -117,13 +119,15 @@ void pers_db_close(PersistenceInfo_s* info)
       state = itzam_btree_close(&gBtree[arrayIdx][info->configKey.policy]);
       if (state != ITZAM_OKAY)
       {
-         fprintf(stderr, "pers_db_close ==> Close Itzam problem: %s\n", STATE_MESSAGES[state]);
+         printf("pers_db_close ==> Close Itzam problem: %s\n", STATE_MESSAGES[state]);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_close ==> itzam_btree_close => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
       }
       gBtreeCreated[arrayIdx][info->configKey.policy] = 0;
    }
    else
    {
       printf("pers_db_close ==> invalid storage type\n");
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_close ==> invalid storage type"), DLT_INT(info->context.ldbid ));
    }
 }
 
@@ -142,7 +146,8 @@ void pers_db_close_all()
          state = itzam_btree_close(&gBtree[i][PersistencePolicy_wc]);
          if (state != ITZAM_OKAY)
          {
-            fprintf(stderr, "pers_db_close_all ==> Close WC: Itzam problem: %s\n", STATE_MESSAGES[state]);
+            printf("pers_db_close_all ==> itzam_btree_close => Itzam problem: %s\n", STATE_MESSAGES[state]);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_close_all ==> itzam_btree_close => Itzam problem:"), DLT_STRING(STATE_MESSAGES[state]) );
          }
          gBtreeCreated[i][PersistencePolicy_wc] = 0;
       }
@@ -154,7 +159,8 @@ void pers_db_close_all()
          state = itzam_btree_close(&gBtree[i][PersistencePolicy_wt]);
          if (state != ITZAM_OKAY)
          {
-            fprintf(stderr, "pers_db_close_all ==> Close WT: Itzam problem: %s\n", STATE_MESSAGES[state]);
+            printf("pers_db_close_all ==> itzam_btree_close => Itzam problem: %s\n", STATE_MESSAGES[state]);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_close_all ==>itzam_btree_close => Itzam problem:"), DLT_STRING(STATE_MESSAGES[state]));
          }
          gBtreeCreated[i][PersistencePolicy_wt] = 0;
       }
@@ -193,8 +199,9 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       }
       else
       {
+         printf("pers_db_read_key ==> no resource config table %s | %s \n", dbPath, key);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==>no resource config table"), DLT_STRING(dbPath), DLT_STRING(key) );
          read_size = EPERS_NOPRCTABLE;
-         fprintf(stderr, "\npersistence_get_data ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
@@ -266,7 +273,8 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
                state = itzam_btree_insert(btree,(const void *)&insert);
                if (state != ITZAM_OKAY)
                {
-                  fprintf(stderr, "\npersistence_set_data ==> Insert Itzam problem: %s\n", STATE_MESSAGES[state]);
+                  printf("pers_db_write_key ==> itzam_btree_insert => Itzam problem: %s\n", STATE_MESSAGES[state]);
+                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_write_key ==> itzam_btree_insert => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]) );
                   write_size = EPERS_DB_ERROR_INTERNAL;
                }
 
@@ -282,20 +290,23 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
             }
             else
             {
-               fprintf(stderr, "\npersistence_set_data ==> set_value_to_table_itzam => data to long » size %d | maxSize: %d\n", dataSize, DbKeySize);
+               printf("pers_db_write_key ==> data to long » size %d | maxSize: %d\n", dataSize, DbValueSize);
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_write_key ==> data to long » size:"), DLT_INT(dataSize), DLT_INT(DbValueSize) );
                write_size = EPERS_DB_VALUE_SIZE;
             }
          }
          else
          {
-            fprintf(stderr, "\nset_value_to_table_itzam => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
+            printf("pers_db_write_key => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_write_key ==> key to long » size"), DLT_INT(keySize), DLT_INT(DbKeySize) );
             write_size = EPERS_DB_KEY_SIZE;
          }
       }
       else
       {
+         printf("pers_db_write_key ==> no resource config table: %s | %s\n", dbPath, key);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_write_key ==> no resource config table"), DLT_STRING(dbPath), DLT_STRING(key));
          write_size = EPERS_NOPRCTABLE;
-         fprintf(stderr, "\npersistence_set_data ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
@@ -349,14 +360,16 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
          }
          else
          {
-            fprintf(stderr, "persistence_get_data_size => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
+            printf("pers_db_get_key_size => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_get_key_size ==> key to long"), DLT_INT(keySize), DLT_INT(DbKeySize));
             read_size = EPERS_DB_KEY_SIZE;
          }
       }
       else
       {
+         printf("pers_db_get_key_size ==> no resource config table: %s | %s\n", dbPath, key);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_get_key_size ==> no config table"), DLT_STRING(dbPath), DLT_STRING(key));
          read_size = EPERS_NOPRCTABLE;
-         fprintf(stderr, "\npersistence_get_data_size ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
       }
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
@@ -406,7 +419,8 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
             state = itzam_btree_remove(btree, (const void *)&delete);
             if (state != ITZAM_OKAY)
             {
-               fprintf(stderr, "persistence_delete_data ==> Remove Itzam problem: %s\n", STATE_MESSAGES[state]);
+               printf("pers_db_delete_key ==> itzam_btree_remove => Itzam problem: %s \n", STATE_MESSAGES[state]);
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_delete_key ==> itzam_btree_remove => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
                ret = EPERS_DB_ERROR_INTERNAL;
             }
             itzam_btree_transaction_commit(btree);
@@ -420,13 +434,15 @@ int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info)
          }
          else
          {
-            fprintf(stderr, "persistence_delete_data => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
+            printf("pers_db_delete_key => key to long » size: %d | maxSize: %d\n", keySize, DbKeySize);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_delete_key ==> key to long"), DLT_INT(keySize), DLT_INT(DbKeySize));
             ret = EPERS_DB_KEY_SIZE;
          }
       }
       else
       {
-         fprintf(stderr, "persistence_delete_data => no prct table\n");
+         printf("pers_db_delete_key ==> no resource config table: %s | %s\n", dbPath, dbKey);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_delete_key ==> no resource config table"), DLT_STRING(dbPath), DLT_STRING(dbKey));
          ret = EPERS_NOPRCTABLE;
       }
    }
@@ -499,6 +515,8 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    char* createSignal = "PersistenceResCreate";
    char* theReason = NULL;
 
+   DBusConnection* conn = get_dbus_connection();
+
    memset(ldbid_array, 0, DbusSubMatchSize);
    memset(user_array, 0, DbusSubMatchSize);
    memset(seat_array, 0, DbusSubMatchSize);
@@ -542,19 +560,28 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
       if(ret == TRUE)
       {
          // Send the signal
-         if(dbus_connection_send(get_dbus_connection(), message, NULL) == TRUE)
+         if(conn != NULL)
          {
-            // Free the signal now we have finished with it
-            dbus_message_unref(message);
+            if(dbus_connection_send(conn, message, 0) == TRUE)
+            {
+               // Free the signal now we have finished with it
+               dbus_message_unref(message);
+            }
+            else
+            {
+               rval = EPERS_NOTIFY_SIG;
+            }
          }
          else
          {
-            rval = EPERS_NOTIFY_SIG;
+            printf("pers_send_Notification_Signal ==> E R R O R  C O N E C T I O N  NULL!!\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal ==> E R R O R  C O N E C T I O N  NULL!!"));
          }
       }
       else
       {
-         printf("pers_send_Notification_Signal: \n");
+         printf("pers_send_Notification_Signal: ERROR \n");
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal ==> ERROR dbus_message_append_args"));
          rval = EPERS_NOTIFY_SIG;
       }
    }
@@ -589,8 +616,9 @@ int get_cursor_handle()
          }
          else
          {
+            printf("get_cursor_handle => Reached maximum of open handles: %d \n", MaxPersHandle);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_cursor_handle ==> Reached maximum of open handles:"), DLT_INT(MaxPersHandle));
             handle = -1;
-            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", MaxPersHandle);
          }
       }
       pthread_mutex_unlock(&gMtx);
@@ -626,7 +654,8 @@ int pers_db_cursor_create(char* dbPath)
       state = itzam_btree_open(&gCursorArray[handle].m_btree, dbPath, itzam_comparator_string, error_handler, 1/*recover*/, 0/*read_only*/);
       if (state != ITZAM_OKAY)
       {
-         fprintf(stderr, "pers_db_open ==> Open Itzam problem: %s\n", STATE_MESSAGES[state]);
+         printf("pers_db_cursor_create ==> itzam_btree_open: %s\n", STATE_MESSAGES[state]);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_create ==> itzam_btree_open"), DLT_STRING(STATE_MESSAGES[state]));
       }
       else
       {
@@ -670,12 +699,14 @@ int pers_db_cursor_next(unsigned int handlerDB)
       }
       else
       {
-         printf("persistence_db_cursor_get_key ==> invalid handle: %u \n", handlerDB);
+         printf("pers_db_cursor_next ==> invalid handle: %u \n", handlerDB);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_next ==> invalid handle: "), DLT_INT(handlerDB));
       }
    }
    else
    {
-      printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
+      printf("pers_db_cursor_next ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_next ==> handle bigger than max:"), DLT_INT(MaxPersHandle));
    }
    return rval;
 }
@@ -701,17 +732,20 @@ int pers_db_cursor_get_key(unsigned int handlerDB, char * bufKeyName_out, int bu
          }
          else
          {
-            printf("persistence_db_cursor_get_key ==> buffer to small » keySize: %d | bufSize: %d \n", length, bufSize);
+            printf("pers_db_cursor_get_key ==> buffer to small » keySize: %d | bufSize: %d \n", length, bufSize);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_get_key  ==> buffer to small » keySize: "), DLT_INT(bufSize));
          }
       }
       else
       {
          printf("persistence_db_cursor_get_key ==> invalid handle: %u \n", handlerDB);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_db_cursor_get_key  ==>  invalid handle:"), DLT_INT(handlerDB));
       }
    }
    else
    {
       printf("persistence_db_cursor_get_key ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_db_cursor_get_key ==> handle bigger than max:"), DLT_INT(MaxPersHandle));
    }
    return rval;
 }
@@ -738,17 +772,20 @@ int pers_db_cursor_get_data(unsigned int handlerDB, char * bufData_out, int bufS
          }
          else
          {
-            printf("persistence_db_cursor_get_data ==> buffer to small » keySize: %d | bufSize: %d \n", length, bufSize);
+            printf("pers_db_cursor_get_data ==> buffer to small » keySize: %d | bufSize: %d \n", length, bufSize);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_get_data  ==> buffer to small » keySize: "), DLT_INT(bufSize));
          }
       }
       else
       {
          printf("persistence_db_cursor_get_data ==> invalid handle: %u \n", handlerDB);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_db_cursor_get_data  ==>  invalid handle:"), DLT_INT(handlerDB));
       }
    }
    else
    {
       printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_db_cursor_get_data ==> handle bigger than max:"), DLT_INT(MaxPersHandle));
    }
    return rval;
 }
@@ -769,12 +806,14 @@ int pers_db_cursor_get_data_size(unsigned int handlerDB)
       }
       else
       {
-         printf("persistence_db_cursor_get_data ==> invalid handle: %u \n", handlerDB);
+         printf("pers_db_cursor_get_data_size ==> invalid handle: %u \n", handlerDB);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_get_data_size  ==>  invalid handle:"), DLT_INT(handlerDB));
       }
    }
    else
    {
       printf("persistence_db_cursor_get_data ==> handle bigger than max » handleDB: %u | max: : %d \n", handlerDB, MaxPersHandle);
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_db_cursor_get_data  ==>  handle bigger than max:"), DLT_INT(MaxPersHandle));
    }
    return size;
 }
@@ -793,7 +832,8 @@ int pers_db_cursor_destroy(unsigned int handlerDB)
       state = itzam_btree_close(&gCursorArray[handlerDB].m_btree);
       if (state != ITZAM_OKAY)
       {
-            fprintf(stderr, "pers_db_cursor_destroy ==> Close: Itzam problem: %s\n", STATE_MESSAGES[state]);
+            printf("pers_db_cursor_destroy ==> itzam_btree_close: Itzam problem: %s\n", STATE_MESSAGES[state]);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_destroy  ==>  itzam_btree_close: Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
       }
 
       close_cursor_handle(handlerDB);

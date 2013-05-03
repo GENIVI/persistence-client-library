@@ -73,7 +73,7 @@ int get_persistence_handle_idx()
          else
          {
             handle = -1;
-            printf("get_persistence_handle_idx => Reached maximum of open handles: %d \n", MaxPersHandle);
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_persistence_handle_idx => Reached maximum of open handles: "), DLT_INT(MaxPersHandle));
          }
       }
       pthread_mutex_unlock(&gMtx);
