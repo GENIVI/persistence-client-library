@@ -1,33 +1,76 @@
+----------------------------
 Environment
+----------------------------
 The Persistence Client Library has been developed using Ubuntu 11.10
-
-
 Required packages
-* automotive-dlt: available via GENIVI projects ==> http://git.projects.genivi.org/?p=dlt-daemon.git;a=summary
-* Itzam/C: download from here ==> http://www.coyotegulch.com/products/itzam/c/index.html
-* dbus-1: install via Synaptic Package Manger or use apt-get
-* autotools: install via Synaptic Package Manger or use apt-get
-* GNU c compiler: install via Synaptic Package Manger or use apt-get
+
+- automotive-dlt: available via GENIVI projects
+- Itzam/C: download from here
+     In order to work with the PCL package config replace in the Itzam/C configure.ac GENERIC_LIBRARY_NAME=libitzam with GENERIC_LIBRARY_NAME=itzam
+     copy itzam package confiuration file libitzam.pc into folder /usr/local/lib/pkgconfig
+     There is an error like: "aclocal: couldn't open directory `m4': No such file or directory" just create the 'm4' directory
+     Autotools will also complain that COPYING, NEWS, README and AUTHORS file is missing, just create also these files
+-dbus-1: install via Synaptic Package Manger or use apt-get
+- autotools: install via Synaptic Package Manger or use apt-get
+- libtool: install via Synaptic Package Manger or use apt-get
+- GNU c compiler: install via Synaptic Package Manger or use apt-get
 
 
-Known issues:
-* Patch Itzam/C configure.ac file:
-  - replace in the Itzam/C configure.ac GENERIC_LIBRARY_NAME=libitzam with GENERIC_LIBRARY_NAME=itzam
-* copy itzam package confiuration file to /usr/local/lib/pkgconfig
-
-
+----------------------------
 How to compile
+----------------------------
 For the Persistence Client Library autotools will be used to generate makefiles.
 To build the client library perform the following steps:
-* "autoreconf -vi"
-* "./configure --enable-tests"
-* "make"
+
+    "autoreconf -vi"
+    "./configure --enable-test"
+        --enable-test will be needed to enable the building of the test code
+    "make"
 
 
-How to run:
+----------------------------
+How to run
+----------------------------
+
+- Simulation of required dbus interfaces
+The PCL requires to communicate with the lifcycle and the persistence administration service dbus interface.
+As this components may not yet available on you platform the PCL brings to mockup applications simulation this two interfaces.
+The two applications are located in the test folder:
+
+    persistence_lifeCycle_mockup
+    persistence_admin_service_mockup
+
+You need to register the admin service and the lifecycle dbus interface.
+for this just copy the service files (org.genivi.NodeStateManager.conf and org.genivi.persistence.admin.conf) into /ets/dbus-1/system.d/ folder.
+
+The Lifecycle service file can be found in the NodeStateManager gir repo the folder /NodeStateManager/config/.
+For the Pers Admin Service the following service file can be used.
+
+- Run the test application
 After building the client library and the test code the test data needs to be copied to the appropriate place.
 The test data is located in the test subdirectory test/data/Data.tar.gz and needs be extracted to the root/Data folder.
+The data structure must look like similar like this, section Data organization.
 
 
+Now run the test application ./persistence_client_library_test.
+The output should look like the following:
+100%: Checks: 10, Failures: 0, Errors: 0
+persistence_client_library_test.c:85:P:GetData:test_GetData:0: Passed
+persistence_client_library_test.c:206:P:SetData:test_SetData:0: Passed
+persistence_client_library_test.c:236:P:SetDataNoPRCT:test_SetDataNoPRCT:0: Passed
+persistence_client_library_test.c:252:P:GetDataSize:test_GetDataSize:0: Passed
+persistence_client_library_test.c:274:P:DeleteData:test_DeleteData:0: Passed
+persistence_client_library_test.c:148:P:GetDataHandle:test_GetDataHandle:0: Passed
+persistence_client_library_test.c:396:P:DataHandle:test_DataHandle:0: Passed
+persistence_client_library_test.c:462:P:DataHandleOpen:test_DataHandleOpen:0: Passed
+persistence_client_library_test.c:360:P:DataFile:test_DataFile:0: Passed
+persistence_client_library_test.c:528:P:Cursor:test_Cursor:0: Passed
 
 
+If there are also some error messages like:
+process 19908: arguments to dbus_message_get_args() were incorrect, assertion "message != NULL" failed in file ../../dbus/dbus-message.c line 1848.
+This is normally a bug in some application using the D-Bus library.
+
+This is OK unless lifecycle management and the persistence administration service are not running.
+The persistence client library registers to lifecycle management and the persistence administration service.
+If the components are not available and do not respond to the dbus register message, the error message above will be created.
