@@ -161,21 +161,29 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          }
          else
          {
-            // if customer storage, we use the custom name as path
+            int len = strlen(resource_id);
+
+            // if customer storage, we use the custom name as dbPath
             strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
+
+            if(len > DbKeyMaxLen)
+            {
+               len = DbKeyMaxLen;
+            }
+            // and the resource_id as dbKey
+            strncpy(dbKey, resource_id, len);
+
          }
          resourceFound = 1;
       }
       else
       {
-         printf("get_db_context - resource_table: no value for key: %s \n", resource_id);
          DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("get_db_context => itzam_btree_open => resource_table: no value for key:"), DLT_STRING(resource_id) );
          rval = EPERS_NOKEYDATA;
       }
    }  // resource table
    else
    {
-      printf("get_db_context - error resource table\n");
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context =>error resource table"));
       rval = EPERS_NOPRCTABLE;
    }

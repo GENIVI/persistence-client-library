@@ -79,6 +79,8 @@ char gAppId[MaxAppNameLen];
 /// max key value data size [default 16kB]
 int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
 
+unsigned int gPclInitialized = PCLnotInitialized;
+
 
 DltContext gDLTContext;
 

@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01030000U)
+#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01040000U)
 
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
@@ -42,6 +42,9 @@ enum _PersistenceConstantDef
    ResIsNoFile          = 0,        /// flag to identify that resource a not file
    ResIsFile            = 1,        /// flag to identify that resource a file
    AccessNoLock         = 1,        /// flag to indicate that access is not locked
+
+   PCLnotInitialized    = 0,        /// 
+   PCLinitialized       = 1,        ///
 
    FileClosed           = 0,
    FileOpen             = 1,
@@ -141,8 +144,11 @@ extern char gAppId[MaxAppNameLen];
 /// max key value data size
 extern int gMaxKeyValDataSize;
 
-// the DLT context
+/// the DLT context
 extern DltContext gDLTContext;
+
+/// flag to indicate if client library has been initialized
+extern unsigned int gPclInitialized;
 
 
 /**

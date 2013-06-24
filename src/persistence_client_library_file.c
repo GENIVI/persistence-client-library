@@ -55,25 +55,33 @@ int pclBackupNeeded(const char* path);
 
 int pclFileClose(int fd)
 {
-   int rval = -1;
+   int rval = EPERS_NOT_INITIALIZED;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
 
-   if(fd < MaxPersHandle)
+   if(gPclInitialized >= PCLinitialized)
    {
-      // check if a backup and checksum file needs to bel deleted
-      if( gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
+      if(fd < MaxPersHandle)
       {
-         // remove backup file
-         remove(gFileHandleArray[fd].backupPath);  // we don't care about return value
+         // check if a backup and checksum file needs to bel deleted
+         if( gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
+         {
+            // remove backup file
+            remove(gFileHandleArray[fd].backupPath);  // we don't care about return value
 
-         // remove checksum file
-         remove(gFileHandleArray[fd].csumPath);    // we don't care about return value
+            // remove checksum file
+            remove(gFileHandleArray[fd].csumPath);    // we don't care about return value
 
+         }
+         __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
+         rval = close(fd);
       }
-      __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
-      rval = close(fd);
+      else
+      {
+    	  rval = -1;
+      }
    }
+
    return rval;
 }
 
@@ -81,18 +89,22 @@ int pclFileClose(int fd)
 
 int pclFileGetSize(int fd)
 {
-   int rval = -1;
+   int rval = EPERS_NOT_INITIALIZED;
 
-   struct stat buf;
-   int ret = 0;
-   ret = fstat(fd, &buf);
-
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
-
-   if(ret != -1)
+   if(gPclInitialized >= PCLinitialized)
    {
-      rval = buf.st_size;
+      struct stat buf;
+      int ret = 0;
+      ret = fstat(fd, &buf);
+
+      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
+
+      if(ret != -1)
+      {
+         rval = buf.st_size;
+      }
    }
+
    return rval;
 }
 
@@ -104,15 +116,19 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
 
-   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(gPclInitialized >= PCLinitialized)
    {
-      int mapFlag = PROT_WRITE | PROT_READ;
-      ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
+      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      {
+         int mapFlag = PROT_WRITE | PROT_READ;
+         ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
+      }
+      else
+      {
+         ptr = EPERS_MAP_LOCKFS;
+      }
    }
-   else
-   {
-      ptr = EPERS_MAP_LOCKFS;
-   }
+
    return ptr;
 }
 
@@ -120,134 +136,19 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 
 int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
-   int handle = -1, shared_DB = 0;
-   PersistenceInfo_s dbContext;
+   int handle = EPERS_NOT_INITIALIZED;
 
-   char dbKey[DbKeyMaxLen];         // database key
-   char dbPath[DbPathMaxLen];       // database location
-   char backupPath[DbKeyMaxLen];    // backup file
-   char csumPath[DbPathMaxLen];     // checksum file
-
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
-
-   memset(dbKey, 0, DbKeyMaxLen);
-   memset(dbPath, 0, DbPathMaxLen);
-
-   dbContext.context.ldbid   = ldbid;
-   dbContext.context.seat_no = seat_no;
-   dbContext.context.user_no = user_no;
-
-   // get database context: database path and database key
-   shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
-
-   if(   (shared_DB >= 0)                                               // check valid database context
-      && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
-   {
-      int flags = dbContext.configKey.permission;
-
-      // file will be opend writable, so check about data consistency
-      if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
-         && pclBackupNeeded(dbPath) )
-      {
-         memset(backupPath, 0, DbKeyMaxLen);
-         memset(csumPath, 0, DbPathMaxLen);
-
-         snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-         snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
-
-         if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
-         {
-            printf("pclFileOpen: error => file inconsistent, recovery  N O T  possible!\n");
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
-            return -1;
-         }
-      }
-
-      if(handle <= 0)   // check if open is needed or already done in verifyConsistency
-         handle = open(dbPath, flags);
-
-      if(handle != -1)
-      {
-         if(handle < MaxPersHandle)
-         {
-            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-
-            if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
-            {
-               strcpy(gFileHandleArray[handle].backupPath, backupPath);
-               strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-
-               gFileHandleArray[handle].backupCreated = 0;
-               gFileHandleArray[handle].permission = dbContext.configKey.permission;
-            }
-         }
-         else
-         {
-            close(handle);
-            handle = EPERS_MAXHANDLE;
-         }
-      }
-      else  // file does not exist, create file and folder
-      {
-         handle = pclCreateFile(dbPath);
-      }
-   }
-   else
-   {
-      // assemble file string for local cached location
-      snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
-      handle = pclCreateFile(dbPath);
-
-      if(handle != -1)
-      {
-         if(handle < MaxPersHandle)
-         {
-            memset(backupPath, 0, DbKeyMaxLen);
-            memset(csumPath, 0, DbPathMaxLen);
-
-            snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-            snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
-
-            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-            strcpy(gFileHandleArray[handle].backupPath, backupPath);
-            strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-            gFileHandleArray[handle].backupCreated = 0;
-            gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
-         }
-         else
-         {
-            close(handle);
-            handle = EPERS_MAXHANDLE;
-         }
-      }
-   }
-
-   return handle;
-}
-
-
-
-int pclFileReadData(int fd, void * buffer, int buffer_size)
-{
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
-   return read(fd, buffer, buffer_size);
-}
-
-
-
-int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
-{
-   int rval = 0;
-
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
-
-   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(gPclInitialized >= PCLinitialized)
    {
       int shared_DB = 0;
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen];      // database key
-      char dbPath[DbPathMaxLen];    // database location
+      char dbKey[DbKeyMaxLen];         // database key
+      char dbPath[DbPathMaxLen];       // database location
+      char backupPath[DbKeyMaxLen];    // backup file
+      char csumPath[DbPathMaxLen];     // checksum file
+
+      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
       memset(dbKey, 0, DbKeyMaxLen);
       memset(dbPath, 0, DbPathMaxLen);
@@ -262,23 +163,153 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
       if(   (shared_DB >= 0)                                               // check valid database context
          && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
       {
-         rval = remove(dbPath);
-         if(rval == -1)
+         int flags = dbContext.configKey.permission;
+
+         // file will be opened writable, so check about data consistency
+         if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
+            && pclBackupNeeded(dbPath) )
          {
-            printf("pclFileRemove => remove ERROR: %s \n", strerror(errno) );
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove => remove ERROR"), DLT_STRING(strerror(errno)) );
+            memset(backupPath, 0, DbKeyMaxLen);
+            memset(csumPath, 0, DbPathMaxLen);
+
+            snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+            snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+            if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+            {
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
+               return -1;
+            }
+         }
+
+         if(handle <= 0)   // check if open is needed or already done in verifyConsistency
+         {
+            handle = open(dbPath, flags);
+         }
+
+         if(handle != -1)
+         {
+            if(handle < MaxPersHandle)
+            {
+               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+
+               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+               {
+                  strcpy(gFileHandleArray[handle].backupPath, backupPath);
+                  strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+
+                  gFileHandleArray[handle].backupCreated = 0;
+                  gFileHandleArray[handle].permission = dbContext.configKey.permission;
+               }
+            }
+            else
+            {
+               close(handle);
+               handle = EPERS_MAXHANDLE;
+            }
+         }
+         else  // file does not exist, create file and folder
+         {
+            handle = pclCreateFile(dbPath);
          }
       }
       else
       {
-         rval = shared_DB;
-         printf("pclFileRemove ==> no valid database context or resource not a file\n");
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove ==> no valid database context or resource not a file"));
+         // assemble file string for local cached location
+         snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+         handle = pclCreateFile(dbPath);
+
+         if(handle != -1)
+         {
+            if(handle < MaxPersHandle)
+            {
+               memset(backupPath, 0, DbKeyMaxLen);
+               memset(csumPath, 0, DbPathMaxLen);
+
+               snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+               snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+               strcpy(gFileHandleArray[handle].backupPath, backupPath);
+               strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+               gFileHandleArray[handle].backupCreated = 0;
+               gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+            }
+            else
+            {
+               close(handle);
+               handle = EPERS_MAXHANDLE;
+            }
+         }
       }
    }
-   else
+
+   return handle;
+}
+
+
+
+int pclFileReadData(int fd, void * buffer, int buffer_size)
+{
+   int readSize = EPERS_NOT_INITIALIZED;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
+   if(gPclInitialized >= PCLinitialized)
    {
-      rval = EPERS_LOCKFS;
+      readSize = read(fd, buffer, buffer_size);
+   }
+   return readSize;
+}
+
+
+
+int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
+{
+   int rval = EPERS_NOT_INITIALIZED;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
+
+   if(gPclInitialized >= PCLinitialized)
+   {
+      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      {
+         int shared_DB = 0;
+         PersistenceInfo_s dbContext;
+
+         char dbKey[DbKeyMaxLen];      // database key
+         char dbPath[DbPathMaxLen];    // database location
+
+         memset(dbKey, 0, DbKeyMaxLen);
+         memset(dbPath, 0, DbPathMaxLen);
+
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
+
+         // get database context: database path and database key
+         shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
+
+         if(   (shared_DB >= 0)                                               // check valid database context
+            && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
+         {
+            rval = remove(dbPath);
+            if(rval == -1)
+            {
+               printf("pclFileRemove => remove ERROR: %s \n", strerror(errno) );
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove => remove ERROR"), DLT_STRING(strerror(errno)) );
+            }
+         }
+         else
+         {
+            rval = shared_DB;
+            printf("pclFileRemove ==> no valid database context or resource not a file\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove ==> no valid database context or resource not a file"));
+         }
+      }
+      else
+      {
+         rval = EPERS_LOCKFS;
+      }
    }
 
    return rval;
@@ -288,17 +319,20 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 
 int pclFileSeek(int fd, long int offset, int whence)
 {
-   int rval = 0;
+   int rval = EPERS_NOT_INITIALIZED;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileSeek fd:"), DLT_INT(fd));
 
-   if(AccessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+   if(gPclInitialized >= PCLinitialized)
    {
-      rval = lseek(fd, offset, whence);
-   }
-   else
-   {
-      rval = EPERS_LOCKFS;
+      if(AccessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+      {
+         rval = lseek(fd, offset, whence);
+      }
+      else
+      {
+         rval = EPERS_LOCKFS;
+      }
    }
 
    return rval;
@@ -308,17 +342,20 @@ int pclFileSeek(int fd, long int offset, int whence)
 
 int pclFileUnmapData(void* address, long size)
 {
-   int rval = 0;
+   int rval = EPERS_NOT_INITIALIZED;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
 
-   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(gPclInitialized >= PCLinitialized)
    {
-      rval =  munmap(address, size);
-   }
-   else
-   {
-      rval = EPERS_LOCKFS;
+      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      {
+         rval =  munmap(address, size);
+      }
+      else
+      {
+         rval = EPERS_LOCKFS;
+      }
    }
 
    return rval;
@@ -328,36 +365,39 @@ int pclFileUnmapData(void* address, long size)
 
 int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 {
-   int size = 0;
+   int size = EPERS_NOT_INITIALIZED;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
 
-   if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+   if(gPclInitialized >= PCLinitialized)
    {
-      if(fd < MaxPersHandle)
+      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
-         // check if a backup file has to be created
-         if(   gFileHandleArray[fd].permission != PersistencePermission_ReadOnly
-            && gFileHandleArray[fd].backupCreated == 0)
+         if(fd < MaxPersHandle)
          {
-            char csumBuf[ChecksumBufSize];
-            memset(csumBuf, 0, ChecksumBufSize);
+            // check if a backup file has to be created
+            if(   gFileHandleArray[fd].permission != PersistencePermission_ReadOnly
+               && gFileHandleArray[fd].backupCreated == 0)
+            {
+               char csumBuf[ChecksumBufSize];
+               memset(csumBuf, 0, ChecksumBufSize);
 
-            // calculate checksum
-            pclCalcCrc32Csum(fd, csumBuf);
+               // calculate checksum
+               pclCalcCrc32Csum(fd, csumBuf);
 
-            // create checksum and backup file
-            pclCreateBackup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
+               // create checksum and backup file
+               pclCreateBackup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
 
-            gFileHandleArray[fd].backupCreated = 1;
+               gFileHandleArray[fd].backupCreated = 1;
+            }
+
+            size = write(fd, buffer, buffer_size);
          }
-
-         size = write(fd, buffer, buffer_size);
       }
-   }
-   else
-   {
-      size = EPERS_LOCKFS;
+      else
+      {
+         size = EPERS_LOCKFS;
+      }
    }
 
    return size;
@@ -453,12 +493,15 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    backupAvail = access(backupPath, F_OK);
    csumAvail   = access(csumPath, F_OK);
 
+   //printf("pclVerifyConsistency => backup path: %s | backupAvail: %d \n", backupPath, backupAvail);
+   //printf("pclVerifyConsistency =>   csum path: %s | csumAvail  : %d \n", csumPath, csumAvail);
+
    // *************************************************
    // there is a backup file and a checksum
    // *************************************************
    if( (backupAvail == 0) && (csumAvail == 0) )
    {
-      printf("pclVerifyConsistency => there is a backup file AND a checksum\n");
+      //printf("pclVerifyConsistency => there is a backup file AND a checksum\n");
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is a backup file AND a checksum"));
       // calculate checksum form backup file
       fdBackup = open(backupPath,  O_RDONLY);
@@ -518,7 +561,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(csumAvail == 0)
    {
-      printf("verifyConsistency => there is ONLY a checksum file\n");
+      //printf("verifyConsistency => there is ONLY a checksum file\n");
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a checksum file"));
 
       fdCsum = open(csumPath,  O_RDONLY);
@@ -527,7 +570,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
          readSize = read(fdCsum, csumBuf, ChecksumBufSize);
          if(readSize <= 0)
          {
-            printf("verifyConsistency ==> read checksum: invalid readSize\n");
+            //printf("verifyConsistency ==> read checksum: invalid readSize\n");
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclVerifyConsistency => read checksum: invalid readSize"));
          }
          close(fdCsum);
@@ -562,7 +605,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(backupAvail == 0)
    {
-      printf("verifyConsistency => there is ONLY a backup file\n");
+      //printf("verifyConsistency => there is ONLY a backup file\n");
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a backup file"));
 
       // calculate checksum form backup file
@@ -604,6 +647,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // if we are in an inconsistent state: delete file, backup and checksum
    if(handle == -1)
    {
+      //printf("    =====> remove\n");
       remove(origPath);
       remove(backupPath);
       remove(csumPath);

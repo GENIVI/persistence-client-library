@@ -24,12 +24,12 @@
 extern "C" {
 #endif
 
-#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x04010000U)
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x04020000U)
 
 
 #include "persistence_client_library_data_organization.h"
 #include "persistence_client_library_rc_table.h"
-#include "persistence_client_library_key.h"
+#include "../include/persistence_client_library_key.h"
 
 
 
@@ -89,7 +89,7 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info);
  * @return 0 if deletion was successfull;
  *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
  */
-int pers_db_delete_key(char* dbPath, char* dbKey, PersistenceInfo_s* info);
+int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info);
 
 
 

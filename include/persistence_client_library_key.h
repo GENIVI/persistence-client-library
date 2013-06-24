@@ -14,16 +14,20 @@
  /**
  * @file           persistence_client_library_key.h
  * @ingroup        Persistence client library
- * @author         Ingo Huerner (XSe) / Guy Sagnes (Continental)
+ * vauthor         Ingo Huerner (XSe) / Guy Sagnes (Continental)
  * @brief          Header of the persistence client library.
  *                 Library provides an API to access persistent data
- * @see            
+ * @par change history
+ * Date     Author          Version
+ * 27/03/13 Ingo Hürner     4.0.0 - Add registration for callback notification
+ * 28/05/13 Ingo Hürner     5.0.0 - Add pclInitLibrary(), pcl DeInitLibrary() incl. shutdown notification
+ * 05/06/13 Oliver Bach     6.0.0 - Rework of Init functions
  */
-/** \ingroup SSW_PERS */
-/** \defgroup SSW_PERS_KEYVALUE Client: Key-value access
+/** \ingroup GEN_PERS */
+/** \defgroup PERS_KEYVALUE Client: Key-value access
  *  \{
  */
-/** \defgroup SSW_PERS_KEYVALUE_INTERFACE API document
+/** \defgroup PERS_KEYVALUE_INTERFACE API document
  *  \{
  */
 
@@ -31,8 +35,14 @@
 extern "C" {
 #endif
 
+/** \defgroup PCL_DEFINES_KEYVALUE Defines, Struct, Enum
+ * \{
+ */
 
-#define 	PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x05000000U)
+#define  PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x06000000U)
+
+#include "persistence_client_library.h"
+
 
 /**
 * status returned in notification structure
@@ -60,39 +70,31 @@ typedef struct _pclNotification_s
    unsigned int seat_no;                     /// seat id
 } pclNotification_s;
 
-
-/**
- * shutdown notification type definitions
+/** \defgroup SHUTDOWN_TYPE shutdown notification type definitions
  *  according to Node State Manager component
+ * \{
  */
-enum pclShutdownTypeNotification
-{
-   NSM_SHUTDOWN_TYPE_FAST   = 2,    /// Client registered for fast lifecycle shutdown
-   NSM_SHUTDOWN_TYPE_NORMAL = 1     /// Client registered for normal lifecycle shutdown
-};
 
+#define PCL_SHUTDOWN_TYPE_FAST   2      /// Client registered for fast lifecycle shutdown
+#define PCL_SHUTDOWN_TYPE_NORMAL 1      /// Client registered for normal lifecycle shutdown
 
-/// defiinition of the change callback
+/** \} */
+
+/** \} */
+
+/** definition of the change callback
+ *
+ * @param notifyStruct structure for notifcation
+ *
+ * @return positive value: success;
+ *   On error a negative value will be returned with the following error codes: ::EPERS_LOCKFS
+*/
 typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
 
-/**
- * @brief itialize client library
- *
- * @param application name
- * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
- *
+
+/** \defgroup PCL_KEYVALUE functions Key-Value access
+ * \{
  */
-void pclInitLibrary(const char* appname, int shutdownMode);
-
-
-
-/**
- * @brief deinitialize client library
- *
- * @param shutdown mode NSM_SHUTDOWN_TYPE_FAST or NSM_SHUTDOWN_TYPE_NORMAL
- */
-void pclDeinitLibrary(int shutdownMode);
-
 
 /**
  * @brief delete persistent data
@@ -102,8 +104,8 @@ void pclDeinitLibrary(int shutdownMode);
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: success; On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS
+ * @return positive value: success; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -117,8 +119,8 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: the size; On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS, EPERS_BADPOL, EPERS_NOKEY, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
+ * @return positive value: the size; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS, ::EPERS_BADPOL, ::EPERS_NOKEY, ::EPERS_NOKEYDATA or ::EPERS_NOPRCTABLE
  */
 int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -127,8 +129,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
  *
  * @param key_handle key value handle return by key_handle_open()
  *
- * @return positive value: success; On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS
+ * @return positive value: success; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyHandleClose(int key_handle);
 
@@ -139,7 +141,8 @@ int pclKeyHandleClose(int key_handle);
  *
  * @param key_handle key value handle return by key_handle_open()
  *
- * @return positive value: the size; On error a negative value will be returned with th follwoing error codes:
+ * @return positive value: the size; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyHandleGetSize(int key_handle);
 
@@ -154,7 +157,8 @@ int pclKeyHandleGetSize(int key_handle);
  * @param seat_no  the seat number
  *
  * @return positive value: the key handle to access the value;
- * On error a negative value will be returned with th follwoing error codes:
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -167,8 +171,8 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
  * @param buffer the buffer for persistent data
  * @param buffer_size size of buffer for reading
  *
- * @return positive value: the bytes read; On error a negative value will be returned with th follwoing error codes:
- *
+ * @return positive value: the bytes read; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size);
 
@@ -180,7 +184,8 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
  * @param key_handle key value handle return by key_handle_open()
  * @param callback notification callback
  *
- * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
+ * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback);
 
@@ -194,7 +199,8 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
  * @param buffer_size the number of bytes to write (default max size is set to 16kB)
  *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
- * @return positive value: the bytes written; On error a negative value will be returned with th follwoing error codes:
+ * @return positive value: the bytes written; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size);
 
@@ -211,6 +217,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
  * @param buffer_size size of buffer for reading
  *
  * @return positive value: the bytes read; On error a negative value will be returned with th follwoing error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
 
@@ -225,8 +232,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  * @param seat_no  the seat number
  * @param callback notification callback
  *
- * @return positive value: registration OK; On error a negative value will be returned with th follwoing error codes:
- *                         EPERS_RES_NO_KEY EPERS_NOKEYDATA  EPERS_NOPRCTABLE
+ * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
+ *                         ::EPERS_RES_NO_KEY ::EPERS_NOKEYDATA  ::EPERS_NOPRCTABLE
  */
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback);
 
@@ -243,10 +250,12 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
  * @param buffer_size the number of bytes to write (default max size is set to 16kB)
  *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
- * @return positive value: the bytes written; On error a negative value will be returned with th follwoing error codes:
+ * @return positive value: the bytes written; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
  */
 int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
 
+/** \} */
 
 #ifdef __cplusplus
 }
@@ -256,4 +265,3 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 /** \} */ /* End of MODULE */
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_KEY_H */
-

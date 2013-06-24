@@ -158,15 +158,8 @@ int load_all_custom_libraries();
  *
  * @return the array position or -1 if the position can't be found
  */
-int get_custom_client_position_in_array(PersistenceCustomLibs_e customLib);
+int check_valid_idx(int idx);
 
-
-/**
- * @brief gget the number of available custom client libraries
- *
- * @return the number of the client libraries
- */
-int get_num_custom_client_libs();
 
 
 /**

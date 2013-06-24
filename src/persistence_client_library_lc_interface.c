@@ -225,7 +225,7 @@ int send_lifecycle_request(const char* method, int requestId, int status)
 
    if(conn != NULL)
    {
-      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager.Consumer",  // destination
+      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
                                                          "/org/genivi/NodeStateManager/Consumer",  // path
                                                           "org.genivi.NodeStateManager.Consumer",  // interface
                                                           method);                  // method
@@ -327,12 +327,15 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
 
 
    // unload custom client libraries
-   for(i=0; i<get_num_custom_client_libs(); i++)
+   for(i=0; i<PersCustomLib_LastEntry; i++)
    {
-      // deinitialize plugin
-      gPersCustomFuncs[i].custom_plugin_deinit();
-      // close library handle
-      dlclose(gPersCustomFuncs[i].handle);
+      if(gPersCustomFuncs[i].custom_plugin_init != NULL)
+      {
+         // deinitialize plugin
+         gPersCustomFuncs[i].custom_plugin_deinit();
+         // close library handle
+         dlclose(gPersCustomFuncs[i].handle);
+      }
    }
 
    // notify lifecycle shutdown OK

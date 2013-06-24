@@ -17,13 +17,13 @@
  * @author         Ingo Huerner (XSe) / Guy Sagnes (Continental)
  * @brief          Header of the persistence client library.
  *                 Library provides an API to access persistent data
- * @see            
+ * @see
  */
-/** \ingroup SSW_PERS */
-/** \defgroup SSW_PERS_FILE Client: File access
+/** \ingroup GEN_PERS */
+/** \defgroup PERS_FILE Client: File access
  *  \{
  */
-/** \defgroup SSW_PERS_FILE_INTERFACE API document
+/** \defgroup PERS_FILE_INTERFACE API document
  *  \{
  */
 #ifdef __cplusplus
@@ -31,9 +31,13 @@ extern "C" {
 #endif
 
 
-#define 	PERSIST_FILEAPI_INTERFACE_VERSION   (0x03000000U)
+#define  PERSIST_FILEAPI_INTERFACE_VERSION   (0x03000000U)
 
+#include "persistence_client_library.h"
 
+/** \defgroup PCL_FILE functions file access
+ * \{
+ */
 
 /**
  * @brief close the given POSIX file descriptor
@@ -168,11 +172,7 @@ int pclFileUnmapData(void* address, long size);
  */
 int pclFileWriteData(int fd, const void * buffer, int buffer_size);
 
-
-
-
-
-
+/** \} */ 
 
 #ifdef __cplusplus
 }
@@ -184,4 +184,3 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size);
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_FILE_H */
-

@@ -23,7 +23,7 @@
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_custom_loader.h"
-#include "persistence_client_library_key.h"
+#include "persistence_client_library.h"
 
 #include <string.h>
 #include <errno.h>
@@ -34,102 +34,186 @@
 
 #include <dbus/dbus.h>
 
+#define USE_DBUS 1
 
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gDLTContext);
 
+static int gShutdownMode = 0;
 
+/// loical function declaration
+void invalidateCustomPlugin(int idx);
 
-void pclInitLibrary(const char* appName, int shutdownMode)
+int pclInitLibrary(const char* appName, int shutdownMode)
 {
    int status = 0;
-   int i = 0;
+   int i = 0, rval = 0;
 
-   DLT_REGISTER_CONTEXT(gDLTContext,"pers","Context for persistence client library logging");
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInit => Initialize Persistence Client Library!!!!"));
-
-   /// environment variable for on demand loading of custom libraries
-   const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
-
-   /// environment variable for max key value data
-   const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
-
-   if(pDataSize != NULL)
+   if(gPclInitialized == PCLnotInitialized)
    {
-      gMaxKeyValDataSize = atoi(pDataSize);
-   }
+      gPclInitialized++;
 
-   setup_dbus_mainloop();
+      gShutdownMode = shutdownMode;
 
-   // register for lifecycle and persistence admin service dbus messages
-   register_lifecycle(shutdownMode);
-   register_pers_admin_service();
+      DLT_REGISTER_CONTEXT(gDLTContext,"pers","Context for persistence client library logging");
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
+                           DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
 
-   // clear the open file descriptor array
-   memset(gOpenFdArray, 0, MaxPersHandle * sizeof(int));
+      /// environment variable for on demand loading of custom libraries
+      const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
 
-   /// get custom library names to load
-   status = get_custom_libraries();
-   if(status < 0)
-   {     
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
-   }
+      /// environment variable for max key value data
+      const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
 
-   // initialize custom library structure
-   for(i = 0; i<PersCustomLib_LastEntry; i++)
-   {
-      gPersCustomFuncs[i].handle  = NULL;
-      gPersCustomFuncs[i].custom_plugin_init = NULL;
-      gPersCustomFuncs[i].custom_plugin_deinit = NULL;
-      gPersCustomFuncs[i].custom_plugin_handle_open = NULL;
-      gPersCustomFuncs[i].custom_plugin_handle_close = NULL;
-      gPersCustomFuncs[i].custom_plugin_handle_get_data = NULL;
-      gPersCustomFuncs[i].custom_plugin_handle_set_data  = NULL;
-      gPersCustomFuncs[i].custom_plugin_get_data = NULL;
-      gPersCustomFuncs[i].custom_plugin_set_data = NULL;
-      gPersCustomFuncs[i].custom_plugin_delete_data = NULL;
-      gPersCustomFuncs[i].custom_plugin_get_status_notification_clbk = NULL;
-      gPersCustomFuncs[i].custom_plugin_handle_get_size = NULL;
-      gPersCustomFuncs[i].custom_plugin_get_size = NULL;
-      gPersCustomFuncs[i].custom_plugin_create_backup = NULL;
-      gPersCustomFuncs[i].custom_plugin_get_backup = NULL;
-      gPersCustomFuncs[i].custom_plugin_restore_backup = NULL;
-   }
-
-   if(pOnDemandLoad == NULL)  // load all available libraries now
-   {
-      for(i=0; i < get_num_custom_client_libs(); i++ )
+      if(pDataSize != NULL)
       {
-         if(load_custom_library(get_custom_client_position_in_array(i), &gPersCustomFuncs[i] ) == -1)
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInit => E r r o r could not load plugin: "), DLT_STRING(get_custom_client_lib_name(get_custom_client_position_in_array(i))));
-            break;
-         }
-         gPersCustomFuncs[i].custom_plugin_init();
+         gMaxKeyValDataSize = atoi(pDataSize);
       }
+
+      setup_dbus_mainloop();
+
+#if USE_DBUS
+      // register for lifecycle and persistence admin service dbus messages
+      register_lifecycle(shutdownMode);
+      register_pers_admin_service();
+#endif
+
+      // clear the open file descriptor array
+      memset(gOpenFdArray, 0, MaxPersHandle * sizeof(int));
+
+      /// get custom library names to load
+      status = get_custom_libraries();
+      if(status >= 0)
+      {
+         // initialize custom library structure
+         for(i = 0; i < PersCustomLib_LastEntry; i++)
+         {
+            invalidateCustomPlugin(i);
+         }
+
+         if(pOnDemandLoad == NULL)  // load all available libraries now
+         {
+            for(i=0; i < PersCustomLib_LastEntry; i++ )
+            {
+               if(check_valid_idx(i) != -1)
+               {
+                  if(load_custom_library(i, &gPersCustomFuncs[i] ) == 1)
+                  {
+                     if( (gPersCustomFuncs[i].custom_plugin_init) != NULL)
+                     {
+                        DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => Loaded plugin: "),
+                                                           DLT_STRING(get_custom_client_lib_name(i)));
+                        gPersCustomFuncs[i].custom_plugin_init();
+                     }
+                     else
+                     {
+                        DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin functions: "),
+                                                            DLT_STRING(get_custom_client_lib_name(i)));
+                     }
+                  }
+                  else
+                  {
+                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin: "),
+                                          DLT_STRING(get_custom_client_lib_name(i)));
+                  }
+               }
+               else
+               {
+                  continue;
+               }
+            }
+         }
+      }
+      else
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
+      }
+
+
+      // assign application name
+      strncpy(gAppId, appName, MaxAppNameLen);
+      gAppId[MaxAppNameLen-1] = '\0';
+
+      // destory mutex
+      pthread_mutex_destroy(&gDbusInitializedMtx);
+      pthread_cond_destroy(&gDbusInitializedCond);
+
+      rval = 1;
+   }
+   else if(gPclInitialized >= PCLinitialized)
+   {
+      gPclInitialized++; // increment init counter
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
+                           DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitialized) );
    }
 
-   // assign application name
-   strncpy(gAppId, appName, MaxAppNameLen);
-   gAppId[MaxAppNameLen-1] = '\0';
-
-   // destory mutex
-   pthread_mutex_destroy(&gDbusInitializedMtx);
-   pthread_cond_destroy(&gDbusInitializedCond);
+   return rval;
 }
 
 
 
-void pclDeinitLibrary(int shutdownMode)
+int pclDeinitLibrary(void)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinit -> Deinit client library:"), DLT_STRING(gAppId));
+   int i = 0, rval = 1;
 
-   // unregister for lifecycle and persistence admin service dbus messages
-   unregister_lifecycle(shutdownMode);
-   unregister_pers_admin_service();
+   if(gPclInitialized == PCLinitialized)
+   {
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
+                                           DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
-   DLT_UNREGISTER_CONTEXT(gDLTContext);
-   dlt_free();
+      // unregister for lifecycle and persistence admin service dbus messages
+   #if USE_DBUS
+      unregister_lifecycle(gShutdownMode);
+      unregister_pers_admin_service();
+   #endif
+
+      // unload custom client libraries
+      for(i=0; i<PersCustomLib_LastEntry; i++)
+      {
+         if(gPersCustomFuncs[i].custom_plugin_init != NULL)
+         {
+            // deinitialize plugin
+            gPersCustomFuncs[i].custom_plugin_deinit();
+            // close library handle
+            dlclose(gPersCustomFuncs[i].handle);
+
+            invalidateCustomPlugin(i);
+         }
+      }
+
+      gPclInitialized = PCLnotInitialized;
+
+      DLT_UNREGISTER_CONTEXT(gDLTContext);
+   }
+   else if(gPclInitialized > PCLinitialized)
+   {
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
+                                           DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitialized));
+      gPclInitialized--;   // decrement init counter
+   }
+
+   return rval;
+}
+
+
+void invalidateCustomPlugin(int idx)
+{
+   gPersCustomFuncs[idx].handle  = NULL;
+   gPersCustomFuncs[idx].custom_plugin_init = NULL;
+   gPersCustomFuncs[idx].custom_plugin_deinit = NULL;
+   gPersCustomFuncs[idx].custom_plugin_handle_open = NULL;
+   gPersCustomFuncs[idx].custom_plugin_handle_close = NULL;
+   gPersCustomFuncs[idx].custom_plugin_handle_get_data = NULL;
+   gPersCustomFuncs[idx].custom_plugin_handle_set_data  = NULL;
+   gPersCustomFuncs[idx].custom_plugin_get_data = NULL;
+   gPersCustomFuncs[idx].custom_plugin_set_data = NULL;
+   gPersCustomFuncs[idx].custom_plugin_delete_data = NULL;
+   gPersCustomFuncs[idx].custom_plugin_get_status_notification_clbk = NULL;
+   gPersCustomFuncs[idx].custom_plugin_handle_get_size = NULL;
+   gPersCustomFuncs[idx].custom_plugin_get_size = NULL;
+   gPersCustomFuncs[idx].custom_plugin_create_backup = NULL;
+   gPersCustomFuncs[idx].custom_plugin_get_backup = NULL;
+   gPersCustomFuncs[idx].custom_plugin_restore_backup = NULL;
 }
 
 

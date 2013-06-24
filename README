@@ -5,7 +5,7 @@ The Persistence Client Library has been developed using Ubuntu 11.10
 Required packages
 
 - automotive-dlt: available via GENIVI projects
-- Itzam/C: download from here
+- Itzam/C: download from http://www.coyotegulch.com/products/itzam/c/index.html
      In order to work with the PCL package config replace in the Itzam/C configure.ac GENERIC_LIBRARY_NAME=libitzam with GENERIC_LIBRARY_NAME=itzam
      copy itzam package confiuration file libitzam.pc into folder /usr/local/lib/pkgconfig
      There is an error like: "aclocal: couldn't open directory `m4': No such file or directory" just create the 'm4' directory

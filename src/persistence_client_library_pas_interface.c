@@ -237,55 +237,64 @@ int send_pas_register(const char* method, int notificationFlag)
    DBusMessage *replyMsg = NULL;
    DBusConnection* conn = get_dbus_connection();
 
-   const char* objName = "/org/genivi/persistence/adminconsumer";
-   const char* busName = dbus_bus_get_unique_name(conn);
-
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence",       // destination
-                                                      "/org/genivi/persistence",       // path
-                                                       "org.genivi.persistence.admin", // interface
-                                                       method);                        // method
-
-   if(message != NULL)
+   if(conn != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
-                                        DBUS_TYPE_STRING, &objName,
-                                        DBUS_TYPE_INT32,  &notificationFlag,
-                                        DBUS_TYPE_UINT32, &gTimeoutMs,
-                                        DBUS_TYPE_INVALID);
-      if(conn != NULL)
-      {
-         replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
+      const char* objName = "/org/genivi/persistence/adminconsumer";
+      const char* busName = dbus_bus_get_unique_name(conn);
 
-         if(replyMsg != NULL)
+      if(busName != NULL)
+      {
+         DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence",       // destination
+                                                            "/org/genivi/persistence",       // path
+                                                             "org.genivi.persistence.admin", // interface
+                                                             method);                        // method
+
+         if(message != NULL)
          {
-            if(dbus_set_error_from_message(&error, replyMsg))
+            dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
+                                              DBUS_TYPE_STRING, &objName,
+                                              DBUS_TYPE_INT32,  &notificationFlag,
+                                              DBUS_TYPE_UINT32, &gTimeoutMs,
+                                              DBUS_TYPE_INVALID);
+
+            replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
+
+            if(replyMsg != NULL)
             {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => Access denied"), DLT_STRING(error.message) );
+               if(dbus_set_error_from_message(&error, replyMsg))
+               {
+                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => Access denied"), DLT_STRING(error.message) );
+               }
+               else
+               {
+                  dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
+               }
+               dbus_message_unref(replyMsg);
             }
             else
             {
-               dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => reply message is NULL!"), DLT_STRING(error.message) );
             }
-            dbus_message_unref(replyMsg);
+
+            dbus_message_unref(message);
          }
          else
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => reply message is NULL!"), DLT_STRING(error.message) );
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid message") );
+            rval = -1;
          }
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid connection") );
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid busname") );
          rval = -1;
       }
-      dbus_message_unref(message);
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid message") );
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid connection") );
       rval = -1;
    }
-
    return rval;
 }
 

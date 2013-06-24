@@ -29,9 +29,7 @@
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
-#include "../include/persistence_client_library_key.h"
-#include "../include/persistence_client_library_file.h"
-#include "../include/persistence_client_library_error_def.h"
+#include "../include/persistence_client_library.h"
 
 
 // protected header, should be used only be persistence components
@@ -59,22 +57,11 @@ char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 START_TEST (test_GetData)
 {
    int ret = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = (PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL);
 
    unsigned char buffer[READ_SIZE];
 
    pclInitLibrary(gTheAppId, shutdownReg);
-
-   memset(buffer, 0, READ_SIZE);
-
-   /**
-    * Logical DB ID: 0xFF with user 0 and seat 0
-    *       ==> local value accessible by all users (user 0, seat 0)
-    */
-   ret = pclKeyReadData(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle",
-               strlen((char*)buffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
 
    memset(buffer, 0, READ_SIZE);
 
@@ -88,6 +75,18 @@ START_TEST (test_GetData)
    fail_unless(ret = strlen("CACHE_ +48° 10' 38.95\", +8° 44' 39.06\""));
 
    memset(buffer, 0, READ_SIZE);
+
+   /**
+    * Logical DB ID: 0xFF with user 0 and seat 0
+    *       ==> local value accessible by all users (user 0, seat 0)
+    */
+   ret = pclKeyReadData(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data: secure!",
+               strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
+
+   memset(buffer, 0, READ_SIZE);
+
 
    /**
     * Logical DB ID: 0 with user 3 and seat 0
@@ -141,7 +140,7 @@ START_TEST (test_GetData)
    ret = pclKeyReadData(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -155,7 +154,7 @@ END_TEST
 START_TEST (test_GetDataHandle)
 {
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    unsigned char buffer[READ_SIZE];
    struct tm *locTime;
@@ -182,7 +181,7 @@ START_TEST (test_GetDataHandle)
    fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = pclKeyHandleReadData(handle, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyHandleGetSize(handle);
    fail_unless(size = strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
@@ -214,7 +213,7 @@ START_TEST (test_GetDataHandle)
    fail_unless(handle4 >= 0, "Failed to open handle /language/country_code");
 
    ret = pclKeyHandleReadData(handle4, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle", -1) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle: secure!", -1) == 0, "Buffer not correctly read => 2");
 
    size = pclKeyHandleGetSize(handle4);
    fail_unless(size = strlen("Custom plugin -> plugin_get_data_handle"));
@@ -232,7 +231,7 @@ START_TEST (test_GetDataHandle)
    fail_unless(handle3 >= 0, "Failed to open handle /statusHandle/open_document");
 
    ret = pclKeyHandleReadData(handle3, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
+   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read => 3");
 
    size = pclKeyHandleGetSize(handle3);
    fail_unless(size = strlen(sysTimeBuffer));
@@ -244,7 +243,7 @@ START_TEST (test_GetDataHandle)
    ret = pclKeyHandleClose(handle3);
    ret = pclKeyHandleClose(handle4);
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -258,7 +257,7 @@ END_TEST
 START_TEST(test_SetData)
 {
    int ret = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE];
    char write1[READ_SIZE];
    char write2[READ_SIZE];
@@ -315,7 +314,7 @@ START_TEST(test_SetData)
     *
     *       ==> used for shared testing
     */
-   printf("Write data to trigger change notification\n");
+   //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
 
    /**
@@ -324,7 +323,7 @@ START_TEST(test_SetData)
     *
     *       ==> used for shared testing
     */
-   printf("Write data to trigger change notification\n");
+   //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
 
    /**
@@ -333,7 +332,7 @@ START_TEST(test_SetData)
     *
     *       ==> used for shared testing
     */
-   printf("Write data to trigger change notification\n");
+   //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
    /*******************************************************************************************************************************************/
    /*******************************************************************************************************************************************/
@@ -361,7 +360,7 @@ START_TEST(test_SetData)
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write2), "Wrong read size");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -375,7 +374,7 @@ END_TEST
 START_TEST(test_SetDataNoPRCT)
 {
    int ret = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE];
    struct tm *locTime;
 
@@ -396,7 +395,7 @@ START_TEST(test_SetDataNoPRCT)
     */
    ret = pclKeyWriteData(0xFF, "NoPRCT", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
-   printf("Write Buffer : %s\n", sysTimeBuffer);
+   //printf("Write Buffer : %s\n", sysTimeBuffer);
 
    // read data again and and verify datat has been written correctly
    memset(buffer, 0, READ_SIZE);
@@ -404,9 +403,9 @@ START_TEST(test_SetDataNoPRCT)
    ret = pclKeyReadData(0xFF, "NoPRCT", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
-   printf("read buffer  : %s\n", buffer);
+   //printf("read buffer  : %s\n", buffer);
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -420,7 +419,7 @@ START_TEST(test_GetDataSize)
 {
    int size = 0;
 
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
 
@@ -439,7 +438,7 @@ START_TEST(test_GetDataSize)
    size = pclKeyGetSize(0x84, "links/last_link", 2, 1);
    fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -453,7 +452,7 @@ START_TEST(test_DeleteData)
 {
    int rval = 0;
    unsigned char buffer[READ_SIZE];
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
 
@@ -483,7 +482,7 @@ START_TEST(test_DeleteData)
    rval = pclKeyReadData(0xFF, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -502,7 +501,7 @@ START_TEST(test_DataFile)
    int fd = 0, i = 0, idx = 0;
    int size = 0, ret = 0;
    int writeSize = 16*1024;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    unsigned char buffer[READ_SIZE];
    const char* refBuffer = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media";
@@ -544,9 +543,9 @@ START_TEST(test_DataFile)
    fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
    fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
 
+
    ret = pclFileClose(fd);
    fail_unless(ret == 0, "Failed to close file");
-
 
    // open ------------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
@@ -587,9 +586,10 @@ START_TEST(test_DataFile)
 
    free(writeBuffer);
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
+
 
 
 
@@ -599,7 +599,7 @@ START_TEST(test_DataFileRecovery)
    int fd_RW = 0, fd_RO = 0;
    int ret = 0;
    char* wBuffer = "This is a buffer to write";
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
 
@@ -614,7 +614,7 @@ START_TEST(test_DataFileRecovery)
    ret = pclFileClose(fd_RW);
    ret = pclFileClose(fd_RO);
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -625,7 +625,7 @@ START_TEST(test_DataHandle)
 {
    int handle1 = 0, handle2 = 0;
    int ret = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
 
@@ -654,7 +654,7 @@ START_TEST(test_DataHandle)
    ret = pclKeyHandleClose(1024);
    fail_unless(ret == -1, "Could close, but should not!!");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -667,7 +667,7 @@ END_TEST
 START_TEST(test_DataHandleOpen)
 {
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
 
@@ -729,7 +729,7 @@ START_TEST(test_DataHandleOpen)
    ret = pclKeyHandleClose(hd9);
    fail_unless(ret != -1, "Failed to close handle!!");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -746,7 +746,7 @@ START_TEST(test_Cursor)
    char bufferDataSrc[READ_SIZE];
    char bufferKeyDst[READ_SIZE];
    char bufferDataDst[READ_SIZE];
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
 
@@ -758,12 +758,10 @@ START_TEST(test_Cursor)
 
    // create cursor
    handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
-
    fail_unless(handle != -1, "Failed to create cursor!!");
 
    // create cursor
-   handle1 = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/wt.itz");
-
+   handle1 = pers_db_cursor_create("/Data/mnt-wt/lt-persistence_client_library_test/wt.itz");
    fail_unless(handle1 != -1, "Failed to create cursor!!");
 
    do
@@ -804,7 +802,47 @@ START_TEST(test_Cursor)
    rval = pers_db_cursor_destroy(handle1);
    fail_unless(rval != -1, "Failed to destroy cursor!!");
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
+START_TEST(test_Plugin)
+{
+	int ret = 0;
+	char buffer[READ_SIZE];
+
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+	pclInitLibrary(gTheAppId, shutdownReg);
+
+	ret = pclKeyReadData(0xFF, "language/country_code",           0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - secure: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: secure!",
+               strlen((char*)buffer)) == 0, "Buffer SECURE not correctly read");
+
+
+	ret = pclKeyReadData(0xFF, "language/country_code_early",     0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - early: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: early!",
+               strlen((char*)buffer)) == 0, "Buffer EARLY not correctly read");
+
+	ret = pclKeyReadData(0xFF, "language/country_code_emergency", 0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - emergency: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: emergency!",
+               strlen((char*)buffer)) == 0, "Buffer EMERGENCY not correctly read");
+
+	ret = pclKeyReadData(0xFF, "language/info",                   0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - hwinfo: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: hwinfo!",
+               strlen((char*)buffer)) == 0, "Buffer HWINFO not correctly read");
+
+   ret = pclKeyReadData(0xFF, "language/country_code_custom3",   0, 0, buffer, READ_SIZE);
+   //printf("B U F F E R - hwinfo: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: custom3!",
+               strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");
+
+	pclDeinitLibrary();
 }
 END_TEST
 
@@ -847,6 +885,9 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_Cursor = tcase_create("Cursor");
    tcase_add_test(tc_Cursor, test_Cursor);
 
+   TCase * tc_Plugin = tcase_create("Plugin");
+   tcase_add_test(tc_Plugin, test_Plugin);
+
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
@@ -859,10 +900,10 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_persDataFileRecovery);
    suite_add_tcase(s, tc_Cursor);
 
+   suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
+
    return s;
 }
-
-
 
 
 int main(int argc, char *argv[])
@@ -873,20 +914,24 @@ int main(int argc, char *argv[])
    strncpy(gTheAppId, "lt-persistence_client_library_test", MaxAppNameLen);
    gTheAppId[MaxAppNameLen-1] = '\0';
 
-   printf("A p p l i c a t i o n   n a m e => %s \n", gTheAppId /*program_invocation_short_name*/);
-
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("test","tests the persistence client library");
 
+#if 1
    Suite * s = persistencyClientLib_suite();
    SRunner * sr = srunner_create(s);
    srunner_run_all(sr, CK_VERBOSE);
    nr_failed = srunner_ntests_failed(sr);
 
    srunner_free(sr);
+#else
+
+#endif
 
    // unregister debug log and trace
    DLT_UNREGISTER_APP();
+
+   dlt_free();
 
    return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
 

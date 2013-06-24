@@ -43,7 +43,7 @@ int myChangeCallback(pclNotification_s * notifyStruct)
 int main(int argc, char *argv[])
 {
    int ret = 0;
-   int shutdownReg = NSM_SHUTDOWN_TYPE_FAST | NSM_SHUTDOWN_TYPE_NORMAL;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    printf("Dbus interface test application\n");
 
@@ -62,11 +62,13 @@ int main(int argc, char *argv[])
 
    getchar();
 
-   pclDeinitLibrary(shutdownReg);
+   pclDeinitLibrary();
 
 
    // unregister debug log and trace
    DLT_UNREGISTER_APP();
+
+   dlt_free();
 
    printf("By\n");
    return ret;

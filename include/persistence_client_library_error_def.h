@@ -18,6 +18,10 @@
  * @brief          Error definition header
  * @see
  */
+/** \ingroup GEN_PERS */
+/** \defgroup PERS_GEN_ERROR Client Library: Generic errors
+ *  \{
+ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,19 +89,13 @@ extern "C" {
 #define EPERS_DB_VALUE_SIZE      (-29)
 /// resource is not a key
 #define EPERS_RES_NO_KEY         (-30)
-/// chnage notification signal could ne be sent
-#define EPERS_NOTIFY_SIG         (-30)
-
-
-/**
- * @brief Main dispatching loop
- *
- * @return 0
- */
-void* dbus_main_dispatching_loop(void* dataPtr);
+/// change notification signal could ne be sent
+#define EPERS_NOTIFY_SIG         (-31)
+/// client library has not been initialized
+#define EPERS_NOT_INITIALIZED 	(-32)
 
 #ifdef __cplusplus
 }
 #endif
-
+/** \} */ /* End of PERS_GEN_ERROR */
 #endif /* PERSISTENCE_CLIENT_LIBRARY_ERROR_DEF_H */

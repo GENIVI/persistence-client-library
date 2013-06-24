@@ -29,13 +29,17 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 
-// array containing the id of the custom arrays
-static int gCustomLibIdArray[PersCustomLib_LastEntry];
+
+/// type definition of persistence custom library information
+typedef struct sPersCustomLibInfo
+{
+   char libname[CustLibMaxLen];
+   int valid;
+} PersCustomLibInfo;
+
 
 /// array with custom client library names
-static char gCustomLibArray[PersCustomLib_LastEntry][CustLibMaxLen];
-// number of libraries loaded
-static int gNumOfCustomLibraries = 0;
+static PersCustomLibInfo gCustomLibArray[PersCustomLib_LastEntry];
 
 
 PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring)
@@ -109,7 +113,7 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
       }
       else
       {
-         printf("custom_libname_to_id - error - id not found for lib: %s \n", lib_name);
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_libname_to_id - error - id not found for lib:"), DLT_STRING(lib_name));
       }
 
    }
@@ -120,9 +124,7 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
 
 int get_custom_libraries()
 {
-   int rval = 0,
-         fd = 0,
-          i = 0;
+   int rval = 0, fd = 0, j = 0;
 
    struct stat buffer;
    char* delimiters = " \n";   // search for blank and end of line
@@ -132,8 +134,15 @@ int get_custom_libraries()
 
    if(filename == NULL)
    {
-      filename = "customLibConfigFile.cfg";  // use default filename
+      filename = "/etc/pclCustomLibConfigFile.cfg";  // use default filename
    }
+
+   for(j=0; j<PersCustomLib_LastEntry; j++)
+   {
+      // init pos to -1
+      gCustomLibArray[j].valid = -1;
+   }
+
 
    if(stat(filename, &buffer) != -1)
    {
@@ -150,9 +159,10 @@ int get_custom_libraries()
             token = strtok(configFileMap, delimiters);
             libId = custom_client_name_to_id(token, 0);
 
+
             if(libId < PersCustomLib_LastEntry)
             {
-               gCustomLibIdArray[libId] = i;
+               gCustomLibArray[libId].valid = 1;
             }
             else
             {
@@ -163,9 +173,8 @@ int get_custom_libraries()
 
             // get the library name
             token  = strtok (NULL, delimiters);
-            strncpy(gCustomLibArray[i], token, CustLibMaxLen);
-            gCustomLibArray[i][CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
-            i++;
+            strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
+            gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
 
             while( token != NULL )
             {
@@ -176,7 +185,7 @@ int get_custom_libraries()
                   libId = custom_client_name_to_id(token, 0);
                   if(libId < PersCustomLib_LastEntry)
                   {
-                     gCustomLibIdArray[libId] = i;
+                     gCustomLibArray[libId].valid = 1;
                   }
                   else
                   {
@@ -193,26 +202,23 @@ int get_custom_libraries()
                token  = strtok (NULL, delimiters);
                if(token != NULL)
                {
-                  strncpy(gCustomLibArray[i], token, CustLibMaxLen);
-                  gCustomLibArray[i][CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
-                  i++;
+                  strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
+                  gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
                }
                else
                {
                   break;
                }
             }
-            gNumOfCustomLibraries = i;    // remember the number of loaded libraries
 
             munmap(configFileMap, buffer.st_size);
 
-            // debugging only
-/*          printf("get_custom_libraries - found [ %d ] libraries \n", gNumOfCustomLibraries);
-            for(i=0; i< gNumOfCustomLibraries; i++)
-               printf("get_custom_libraries - names: %s\n", gCustomLibArray[i]);
-
-            for(i=0; i<PersCustomLib_LastEntry; i++)
-               printf("get_custom_libraries - id: %d | pos: %d \n", i, gCustomLibIdArray[i]); */
+            #if 0 // debuging
+            for(j=0; j<PersCustomLib_LastEntry; j++)
+            {
+               printf("Custom libraries => Name: %s | valid: %d \n", gCustomLibArray[j].libname, gCustomLibArray[j].valid);
+            }
+            #endif
          }
          else
          {
@@ -239,13 +245,14 @@ int get_custom_libraries()
 
 int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s *customFuncts)
 {
-   int rval = 0;
+   int rval = 1;
    char *error;
 
    if(customLib < PersCustomLib_LastEntry)
    {
-      void* handle = dlopen(gCustomLibArray[customLib], RTLD_LAZY);
+      void* handle = dlopen(gCustomLibArray[customLib].libname, RTLD_LAZY);
       customFuncts->handle = handle;
+
       if(handle != NULL)
       {
          dlerror();    // reset error
@@ -348,6 +355,11 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
          rval = EPERS_DLOPENERROR;
       }
    }
+   else
+   {
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: - customLib out of bounds"));
+      rval = EPERS_DLOPENERROR;
+   }
 
    return rval;
 }
@@ -359,7 +371,7 @@ int load_all_custom_libraries()
    int rval = 0,
           i = 0;
 
-   for(i=0; i<gNumOfCustomLibraries; i++)
+   for(i=0; i<PersCustomLib_LastEntry; i++)
    {
       rval = load_custom_library(i, &gPersCustomFuncs[i]);
       if( rval < 0)
@@ -376,7 +388,7 @@ char* get_custom_client_lib_name(int idx)
 {
    if(idx < PersCustomLib_LastEntry)
    {
-      return gCustomLibArray[idx];
+      return gCustomLibArray[idx].libname;
    }
    else
    {
@@ -384,21 +396,15 @@ char* get_custom_client_lib_name(int idx)
    }
 }
 
-int get_custom_client_position_in_array(PersistenceCustomLibs_e customLibId)
+//int get_custom_client_position_in_array(int customLibId)
+int check_valid_idx(int idx)
 {
-   //printf("get_position_in_array - id: %d | position: %d \n", customLibId, gCustomLibIdArray[(int)customLibId]);
-   if(customLibId < PersCustomLib_LastEntry)
-   {
-      return gCustomLibIdArray[(int)customLibId];
-   }
-   else
-   {
-      return -1;
-   }
-}
+   int rval = -1;
 
+   if(idx < PersCustomLib_LastEntry)
+   {
+      rval = gCustomLibArray[idx].valid;
+   }
 
-int get_num_custom_client_libs()
-{
-   return gNumOfCustomLibraries;
+   return rval;
 }
