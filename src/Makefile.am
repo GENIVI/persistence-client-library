@@ -12,6 +12,7 @@ endif
 
 include_HEADERS = ../include/persistence_client_library_key.h \
                   ../include/persistence_client_library_file.h \
+                  ../include/persistence_client_library.h \
                   ../include/persistence_client_library_error_def.h \
                   ../include/persistence_client_custom.h
                   
