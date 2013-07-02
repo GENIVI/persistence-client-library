@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <dlfcn.h>
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
@@ -170,7 +171,7 @@ int pclDeinitLibrary(void)
       // unload custom client libraries
       for(i=0; i<PersCustomLib_LastEntry; i++)
       {
-         if(gPersCustomFuncs[i].custom_plugin_init != NULL)
+         if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
          {
             // deinitialize plugin
             gPersCustomFuncs[i].custom_plugin_deinit();

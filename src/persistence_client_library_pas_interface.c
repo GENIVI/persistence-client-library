@@ -66,7 +66,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
 
          if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
          {
-            printf("write failed w/ errno %d | %s\n", errno, strerror(errno));
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
             rval = PasErrorStatus_FAIL;
          }
          else

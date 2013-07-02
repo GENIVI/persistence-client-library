@@ -93,7 +93,7 @@ void sigHandler(int signo)
 /* function to unregister ojbect path message handler */
 static void unregisterMessageHandler(DBusConnection *connection, void *user_data)
 {
-   printf("unregisterObjectPath\n");
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPath\n"));
 }
 
 /* catches messages not directed to any registered object path ("garbage collector") */
@@ -230,7 +230,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
 
 static void  unregisterObjectPathFallback(DBusConnection *connection, void *user_data)
 {
-   printf("unregisterObjectPathFallback\n");
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPathFallback\n"));
 }
 
 
@@ -357,14 +357,14 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 
 static void removeWatch(DBusWatch *watch, void *data)
 {
-   printf("removeWatch called @0x%08x\n", (int)watch);
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT( (int)watch) );
 }
 
 
 
 static void watchToggled(DBusWatch *watch, void *data)
 {
-   printf("watchToggled called @0x%08x\n", (int)watch);
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT( (int)watch) );
 }
 
 
@@ -394,20 +394,17 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
             }
             else
             {
-               printf("timerfd_settime() failed %d '%s'\n", errno, strerror(errno));
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => timerfd_settime() failed"), DLT_STRING(strerror(errno)) );
             }
          }
          else
          {
-            printf("timerfd_create() failed %d '%s'\n", errno, strerror(errno));
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => timerfd_create() failed"), DLT_STRING(strerror(errno)) );
          }
       }
    }
    else
    {
-      printf("cannot create another fd to be poll()'ed\n");
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => cannot create another fd to be poll()'ed"));
    }
 
@@ -426,7 +423,6 @@ static void removeTimeout(DBusTimeout *timeout, void *data)
    {
       if (-1==close(gPollInfo.fds[i].fd))
       {
-         printf("removeTimeout => close() timerfd #%d failed %d '%s'\n", gPollInfo.fds[i].fd, errno, strerror(errno));
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("removeTimeout => close() timerfd"), DLT_STRING(strerror(errno)) );
       }
 
@@ -450,14 +446,13 @@ static void timeoutToggled(DBusTimeout *timeout, void *data)
 {
    int i = gPollInfo.nfds;
    while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
-   fprintf(stderr, "timeoutToggled @%x %c %dms @%d [%d]\n", (int)timeout, dbus_timeout_get_enabled(timeout)?'x':'-', dbus_timeout_get_interval(timeout), i, gPollInfo.nfds);
+   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("timeoutToggled") );
    if (0<i)
    {
       const int interval = (TRUE==dbus_timeout_get_enabled(timeout))?dbus_timeout_get_interval(timeout):0;
       const struct itimerspec its = { .it_value= {interval/1000, interval%1000} };
       if (-1!=timerfd_settime(gPollInfo.fds[i].fd, 0, &its, NULL))
       {
-         printf("timeoutToggled => timerfd_settime() %d failed %d '%s'\n", interval, errno, strerror(errno));
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("timeoutToggled => timerfd_settime()"), DLT_STRING(strerror(errno)) );
       }
    }
@@ -481,17 +476,14 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
    if (dbus_error_is_set(&err))
    {
-      printf("mainLoop => Connection Error (%s)\n", err.message);
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => Connection Error:"), DLT_STRING(err.message) );
       dbus_error_free(&err);
    }
    else if (NULL != conn)
    {
       dbus_connection_set_exit_on_disconnect (conn, FALSE);
-      //printf("connected as '%s'\n", dbus_bus_get_unique_name(conn));
       if (-1 == (gEfds = eventfd(0, 0)))
       {
-         printf("mainLoop => eventfd() failed w/ errno %d\n", errno);
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => eventfd() failed w/ errno:"), DLT_INT(errno) );
       }
       else
@@ -514,7 +506,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             if(   (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
                || (TRUE!=dbus_connection_set_timeout_functions(conn, addTimeout, removeTimeout, timeoutToggled, NULL, NULL)) )
             {
-               printf("mainLoop => dbus_connection_set_watch_functions() failed\n");
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => dbus_connection_set_watch_functions() failed"));
             }
             else
@@ -531,7 +522,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
                   if (0>ret)
                   {
-                     printf("mainLoop => poll() failed w/ errno %d\n", errno);
                      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => poll() failed w/ errno "), DLT_INT(errno) );
                   }
                   else if (0==ret)
@@ -547,23 +537,18 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                         /* anything to do */
                         if (0!=gPollInfo.fds[i].revents)
                         {
-                           //fprintf(stderr, "\t[%d] revents 0x%04x\n", i, gPollInfo.fds[i].revents);
-
                            if (OT_TIMEOUT==gPollInfo.objects[i].objtype)
                            {
                               /* time-out occured */
                               unsigned long long nExpCount = 0;
                               if ((ssize_t)sizeof(nExpCount)!=read(gPollInfo.fds[i].fd, &nExpCount, sizeof(nExpCount)))
                               {
-                                 printf("mainLoop => read failed!?\n");
                                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read failed"));
                               }
-                              printf("mainLoop => timeout %x #%d!\n", (int)gPollInfo.objects[i].timeout, (int)nExpCount);
                               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => timeout"));
 
                               if (FALSE==dbus_timeout_handle(gPollInfo.objects[i].timeout))
                               {
-                                 printf("mainLoop => dbus_timeout_handle() failed!?\n");
                                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => dbus_timeout_handle() failed!?"));
                               }
                               bContinue = TRUE;
@@ -578,7 +563,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  while ((-1==(ret=read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR==errno));
                                  if (0>ret)
                                  {
-                                    printf("mainLoop => read() failed w/ errno %d | %s\n", errno, strerror(errno));
                                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
                                  }
                                  else if (ret != -1)
@@ -595,7 +579,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           bContinue = FALSE;
                                           break;
                                        default:
-                                          printf("command %d not handled!\n", buf[0]);
                                           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
                                           break;
                                     }

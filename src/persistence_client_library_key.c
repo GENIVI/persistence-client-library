@@ -83,7 +83,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
                handle = get_persistence_handle_idx();
             }
 
-            if(handle < MaxPersHandle && handle != -1)
+            if((handle < MaxPersHandle) && (0 <= handle))
             {
                // remember data in handle array
                strncpy(gKeyHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
@@ -95,14 +95,12 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
             }
             else
             {
-               printf("pclKeyHandleOpen: error - handleId out of bounds [%d]\n", handle);
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
             }
          }
       }
       else
       {
-         printf("pclKeyHandleOpen: error - no database context or resource is not a key \n");
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - no database context or resource is not a key "));
       }
    }
@@ -146,10 +144,11 @@ int pclKeyHandleClose(int key_handle)
          strncpy(gKeyHandleArray[key_handle].dbPath, "", DbPathMaxLen);
          strncpy(gKeyHandleArray[key_handle].dbKey  ,"", DbKeyMaxLen);
          gKeyHandleArray[key_handle].info.configKey.storage = -1;
+         rval = 1;
       }
       else
       {
-         rval = -1;
+         rval = EPERS_MAXHANDLE;
       }
    }
 
@@ -296,7 +295,6 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          }
          else
          {
-            printf("pclKeyHandleWriteData: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
          }
       }
@@ -457,7 +455,6 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          }
          else
          {
-            printf("pclKeyReadData - error - no database context or resource is not a key\n");
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - error - no database context or resource is not a key"));
          }
       }
@@ -520,14 +517,12 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             }
             else
             {
-               printf("pclKeyWriteData: error - no database context or resource is not a key\n");
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - error - no database context or resource is not a key"));
             }
          }
          else
          {
             data_size = EPERS_BUFLIMIT;
-            printf("pclKeyWriteData: error - buffer_size to big, limit is [%d] bytes\n", gMaxKeyValDataSize);
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
          }
       }
@@ -573,7 +568,6 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
       }
       else
       {
-         printf("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key\n");
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key"));
          rval = EPERS_RES_NO_KEY;
       }

@@ -29,6 +29,8 @@
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
+#include "../include/persistence_client_library_file.h"
+#include "../include/persistence_client_library_key.h"
 #include "../include/persistence_client_library.h"
 
 
@@ -612,7 +614,11 @@ START_TEST(test_DataFileRecovery)
    pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
 
    ret = pclFileClose(fd_RW);
+   if(ret == -1)
+
    ret = pclFileClose(fd_RO);
+   if(ret == -1)
+
 
    pclDeinitLibrary();
 }
@@ -811,33 +817,37 @@ END_TEST
 START_TEST(test_Plugin)
 {
 	int ret = 0;
-	char buffer[READ_SIZE];
+	unsigned char buffer[READ_SIZE];
 
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 	pclInitLibrary(gTheAppId, shutdownReg);
 
 	ret = pclKeyReadData(0xFF, "language/country_code",           0, 0, buffer, READ_SIZE);
-	//printf("B U F F E R - secure: %s\n", buffer);
+	fail_unless(ret != EPERS_NOT_INITIALIZED);
    fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: secure!",
                strlen((char*)buffer)) == 0, "Buffer SECURE not correctly read");
 
 
 	ret = pclKeyReadData(0xFF, "language/country_code_early",     0, 0, buffer, READ_SIZE);
+	fail_unless(ret != EPERS_NOT_INITIALIZED);
 	//printf("B U F F E R - early: %s\n", buffer);
    fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: early!",
                strlen((char*)buffer)) == 0, "Buffer EARLY not correctly read");
 
 	ret = pclKeyReadData(0xFF, "language/country_code_emergency", 0, 0, buffer, READ_SIZE);
+	fail_unless(ret != EPERS_NOT_INITIALIZED);
 	//printf("B U F F E R - emergency: %s\n", buffer);
    fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: emergency!",
                strlen((char*)buffer)) == 0, "Buffer EMERGENCY not correctly read");
 
 	ret = pclKeyReadData(0xFF, "language/info",                   0, 0, buffer, READ_SIZE);
+	fail_unless(ret != EPERS_NOT_INITIALIZED);
 	//printf("B U F F E R - hwinfo: %s\n", buffer);
    fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: hwinfo!",
                strlen((char*)buffer)) == 0, "Buffer HWINFO not correctly read");
 
    ret = pclKeyReadData(0xFF, "language/country_code_custom3",   0, 0, buffer, READ_SIZE);
+   fail_unless(ret != EPERS_NOT_INITIALIZED);
    //printf("B U F F E R - hwinfo: %s\n", buffer);
    fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: custom3!",
                strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");

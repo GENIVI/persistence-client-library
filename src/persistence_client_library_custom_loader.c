@@ -246,7 +246,7 @@ int get_custom_libraries()
 int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s *customFuncts)
 {
    int rval = 1;
-   char *error;
+   char *error = NULL;
 
    if(customLib < PersCustomLib_LastEntry)
    {
@@ -376,7 +376,6 @@ int load_all_custom_libraries()
       rval = load_custom_library(i, &gPersCustomFuncs[i]);
       if( rval < 0)
       {
-         // printf("load_all_custom_libraries - error loading library number [%d] \n", i);
          break;
       }
    }

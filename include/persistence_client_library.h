@@ -38,7 +38,7 @@ extern "C" {
  * \{
  */
 
-#define  PERSIST_API_INTERFACE_VERSION   (0x01000000U)
+#define  PERSIST_API_INTERFACE_VERSION   (0x01010000U)
 
 /** \} */
 
@@ -47,6 +47,11 @@ extern "C" {
  * The following functions have to be called to allow intialisation of the internal interfaces.
  * \{
  */
+
+
+#define PCL_SHUTDOWN_TYPE_FAST   2      /// Client registered for fast lifecycle shutdown
+#define PCL_SHUTDOWN_TYPE_NORMAL 1      /// Client registered for normal lifecycle shutdown
+
 
 /**
  * @brief initalize client library

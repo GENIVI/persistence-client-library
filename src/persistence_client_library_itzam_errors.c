@@ -73,6 +73,7 @@ Small changes to use in persistence
  */
 
 #include "persistence_client_library_itzam_errors.h"
+#include "../include_protected/persistence_client_library_data_organization.h"
 
 
 const char * ERROR_STRINGS [] =
@@ -140,5 +141,5 @@ const char * STATE_MESSAGES [] =
 
 void error_handler(const char * function_name, itzam_error error)
 {
-    fprintf(stderr, "Itzam error in %s: %s\n", function_name, ERROR_STRINGS[error]);
+   DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("Itzam error in: "), DLT_STRING(function_name), DLT_STRING(ERROR_STRINGS[error]));
 }

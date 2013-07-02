@@ -39,7 +39,7 @@ extern "C" {
  * \{
  */
 
-#define  PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x06000000U)
+#define  PERSIST_KEYVALUEAPI_INTERFACE_VERSION   (0x06010000U)
 
 #include "persistence_client_library.h"
 
@@ -75,8 +75,6 @@ typedef struct _pclNotification_s
  * \{
  */
 
-#define PCL_SHUTDOWN_TYPE_FAST   2      /// Client registered for fast lifecycle shutdown
-#define PCL_SHUTDOWN_TYPE_NORMAL 1      /// Client registered for normal lifecycle shutdown
 
 /** \} */
 

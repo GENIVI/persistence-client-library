@@ -96,7 +96,7 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
             snprintf(filename, DbPathMaxLen, gSharedWtPath, gAppId, group, gResTableCfg);
             break;
          default:
-            printf("get_resource_cfg_table - error: no valid PersistenceRCT_e\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - error: no valid PersistenceRCT_e"));
             break;
          }
 
@@ -141,7 +141,6 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       // check if resouce id is in write through table
       if(itzam_true == itzam_btree_find(resource_table, resource_id, &search))
       {
-         //printf("get_db_context ==> data: %s\n", search.data);
          memset(dbContext->configKey.reponsible,  0, MaxConfKeyLengthResp);
          memset(dbContext->configKey.custom_name, 0, MaxConfKeyLengthCusName);
          memset(dbContext->configKey.customID,    0,  MaxRctLengthCustom_ID);

@@ -171,7 +171,6 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       || PersistenceStorage_local == info->configKey.storage)
    {
       itzam_btree* btree = NULL;
-      itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s search;
 
       btree = pers_db_open(info, dbPath);
@@ -337,7 +336,6 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
    {
       int keySize = 0;
       itzam_btree*  btree = NULL;
-      itzam_state  state = ITZAM_FAILED;
       KeyValuePair_s search;
 
       btree = pers_db_open(info, dbPath);
@@ -401,7 +399,6 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
       itzam_btree*  btree = NULL;
       KeyValuePair_s delete;
 
-      //printf("delete_key_from_table_itzam => Path: \"%s\" | key: \"%s\" \n", dbPath, key);
       btree = pers_db_open(info, dbPath);
       if(btree != NULL)
       {
@@ -576,13 +573,11 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
          }
          else
          {
-            printf("pers_send_Notification_Signal ==> E R R O R  C O N E C T I O N  NULL!!\n");
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal ==> E R R O R  C O N E C T I O N  NULL!!"));
          }
       }
       else
       {
-         printf("pers_send_Notification_Signal: ERROR \n");
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal ==> ERROR dbus_message_append_args"));
          rval = EPERS_NOTIFY_SIG;
       }
