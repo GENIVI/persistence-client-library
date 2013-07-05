@@ -12,7 +12,7 @@
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
- * \file           persistence_client_library_key.h
+ * \file           persistence_client_library.h
  * \ingroup        Persistence client library
  * \author         Ingo Huerner (XSe) / Guy Sagnes (Continental)
  * \brief          Header of the persistence client library.
@@ -38,7 +38,7 @@ extern "C" {
  * \{
  */
 
-#define  PERSIST_API_INTERFACE_VERSION   (0x01010000U)
+#define  PERSIST_API_INTERFACE_VERSION   (0x01020000U)
 
 /** \} */
 
@@ -82,5 +82,6 @@ int pclDeinitLibrary(void);
 
 /** \} */ /* End of API */
 /** \} */ /* End of MODULE */
-
+#ifdef __cplusplus
+}
 #endif /* PERSISTENCY_CLIENT_LIBRARY_H */
