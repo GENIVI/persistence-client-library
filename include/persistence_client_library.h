@@ -80,8 +80,12 @@ int pclDeinitLibrary(void);
 
 /** \} */
 
-/** \} */ /* End of API */
-/** \} */ /* End of MODULE */
 #ifdef __cplusplus
 }
+#endif
+
+/** \} */ /* End of API */
+/** \} */ /* End of MODULE */
+
+
 #endif /* PERSISTENCY_CLIENT_LIBRARY_H */
