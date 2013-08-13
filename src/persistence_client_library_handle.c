@@ -29,7 +29,7 @@ static int gHandleIdx = 1;
 static int gInitialized = 0;
 
 /// open file descriptor handle array
-int gOpenFdArray[MaxPersHandle];
+int gOpenFdArray[MaxPersHandle] = {0};
 
 /// persistence key handle array
 PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];

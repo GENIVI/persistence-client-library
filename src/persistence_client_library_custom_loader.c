@@ -351,6 +351,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
       }
       else
       {
+         error = dlerror();
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
          rval = EPERS_DLOPENERROR;
       }

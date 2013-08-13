@@ -143,15 +143,12 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       int shared_DB = 0;
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen];         // database key
-      char dbPath[DbPathMaxLen];       // database location
-      char backupPath[DbKeyMaxLen];    // backup file
-      char csumPath[DbPathMaxLen];     // checksum file
+      char dbKey[DbKeyMaxLen]      = {0};         // database key
+      char dbPath[DbPathMaxLen]    = {0};       // database location
+      char backupPath[DbKeyMaxLen] = {0};    // backup file
+      char csumPath[DbPathMaxLen]  = {0};     // checksum file
 
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
-
-      memset(dbKey, 0, DbKeyMaxLen);
-      memset(dbPath, 0, DbPathMaxLen);
 
       dbContext.context.ldbid   = ldbid;
       dbContext.context.seat_no = seat_no;
@@ -169,9 +166,6 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
             && pclBackupNeeded(dbPath) )
          {
-            memset(backupPath, 0, DbKeyMaxLen);
-            memset(csumPath, 0, DbPathMaxLen);
-
             snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
             snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
@@ -223,9 +217,6 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          {
             if(handle < MaxPersHandle)
             {
-               memset(backupPath, 0, DbKeyMaxLen);
-               memset(csumPath, 0, DbPathMaxLen);
-
                snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
                snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
@@ -276,11 +267,8 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
          int shared_DB = 0;
          PersistenceInfo_s dbContext;
 
-         char dbKey[DbKeyMaxLen];      // database key
-         char dbPath[DbPathMaxLen];    // database location
-
-         memset(dbKey, 0, DbKeyMaxLen);
-         memset(dbPath, 0, DbPathMaxLen);
+         char dbKey[DbKeyMaxLen]   = {0};      // database key
+         char dbPath[DbPathMaxLen] = {0};    // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;
@@ -377,8 +365,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
             if(   gFileHandleArray[fd].permission != PersistencePermission_ReadOnly
                && gFileHandleArray[fd].backupCreated == 0)
             {
-               char csumBuf[ChecksumBufSize];
-               memset(csumBuf, 0, ChecksumBufSize);
+               char csumBuf[ChecksumBufSize] = {0};
 
                // calculate checksum
                pclCalcCrc32Csum(fd, csumBuf);
@@ -412,7 +399,6 @@ int pclCreateFile(const char* path)
    const char* delimiters = "/\n";   // search for blank and end of line
    char* tokenArray[24];
    char* thePath = (char*)path;
-   char createPath[DbPathMaxLen];
    int numTokens = 0, i = 0, validPath = 1;
    int handle = 0;
 
@@ -437,7 +423,7 @@ int pclCreateFile(const char* path)
 
    if(validPath == 1)
    {
-      memset(createPath, 0, DbPathMaxLen);
+      char createPath[DbPathMaxLen] = {0};
       snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
       for(i=1; i<numTokens-1; i++)
       {
@@ -478,13 +464,9 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    int backupAvail = 0, csumAvail = 0;
    int fdCsum = 0, fdBackup = 0;
 
-   char origCsumBuf[ChecksumBufSize];
-   char backCsumBuf[ChecksumBufSize];
-   char csumBuf[ChecksumBufSize];
-
-   memset(origCsumBuf, 0, ChecksumBufSize);
-   memset(backCsumBuf, 0, ChecksumBufSize);
-   memset(csumBuf, 0, ChecksumBufSize);
+   char origCsumBuf[ChecksumBufSize] = {0};
+   char backCsumBuf[ChecksumBufSize] = {0};
+   char csumBuf[ChecksumBufSize]     = {0};
 
    // check if we have a backup and checksum file
    backupAvail = access(backupPath, F_OK);

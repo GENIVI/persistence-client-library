@@ -81,8 +81,7 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
       if(gResourceOpen[arrayIdx] == 0)   // check if database is already open
       {
          itzam_state  state;
-         char filename[DbPathMaxLen];
-         memset(filename, 0, DbPathMaxLen);
+         char filename[DbPathMaxLen] = {0};
 
          switch(rct)    // create db name
          {

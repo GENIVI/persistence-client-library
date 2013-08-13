@@ -48,7 +48,7 @@ void invalidateCustomPlugin(int idx);
 int pclInitLibrary(const char* appName, int shutdownMode)
 {
    int status = 0;
-   int i = 0, rval = 0;
+   int i = 0, rval = 1;
 
    if(gPclInitialized == PCLnotInitialized)
    {
@@ -71,16 +71,26 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          gMaxKeyValDataSize = atoi(pDataSize);
       }
 
-      setup_dbus_mainloop();
+      if( setup_dbus_mainloop() == -1)
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
+         return -1;
+      }
 
 #if USE_DBUS
       // register for lifecycle and persistence admin service dbus messages
-      register_lifecycle(shutdownMode);
-      register_pers_admin_service();
-#endif
+      if(register_lifecycle(shutdownMode) == -1)
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
+         return -1;
+      }
 
-      // clear the open file descriptor array
-      memset(gOpenFdArray, 0, MaxPersHandle * sizeof(int));
+      rval = register_pers_admin_service();
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
+         return -1;
+      }
+#endif
 
       /// get custom library names to load
       status = get_custom_libraries();
@@ -164,8 +174,8 @@ int pclDeinitLibrary(void)
 
       // unregister for lifecycle and persistence admin service dbus messages
    #if USE_DBUS
-      unregister_lifecycle(gShutdownMode);
-      unregister_pers_admin_service();
+      rval = unregister_lifecycle(gShutdownMode);
+      rval = unregister_pers_admin_service();
    #endif
 
       // unload custom client libraries

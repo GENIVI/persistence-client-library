@@ -43,14 +43,10 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
    {
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen];      // database key
-      char dbPath[DbPathMaxLen];    // database location
+      char dbKey[DbKeyMaxLen]   = {0};      // database key
+      char dbPath[DbPathMaxLen] = {0};    // database location
 
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
-
-      memset(dbKey, 0, DbKeyMaxLen);
-      memset(dbPath, 0, DbPathMaxLen);
-
       dbContext.context.ldbid   = ldbid;
       dbContext.context.seat_no = seat_no;
       dbContext.context.user_no = user_no;
@@ -329,11 +325,8 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
       {
          PersistenceInfo_s dbContext;
 
-        char dbKey[DbKeyMaxLen];      // database key
-        char dbPath[DbPathMaxLen];    // database location
-
-        memset(dbKey, 0, DbKeyMaxLen);
-        memset(dbPath, 0, DbPathMaxLen);
+        char dbKey[DbKeyMaxLen]   = {0};      // database key
+        char dbPath[DbPathMaxLen] = {0};    // database location
 
         dbContext.context.ldbid   = ldbid;
         dbContext.context.seat_no = seat_no;
@@ -375,11 +368,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
    {
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen];      // database key
-      char dbPath[DbPathMaxLen];    // database location
-
-      memset(dbKey, 0, DbKeyMaxLen);
-      memset(dbPath, 0, DbPathMaxLen);
+      char dbKey[DbKeyMaxLen]   = {0};      // database key
+      char dbPath[DbPathMaxLen] = {0};    // database location
 
       dbContext.context.ldbid   = ldbid;
       dbContext.context.seat_no = seat_no;
@@ -427,11 +417,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
       {
          PersistenceInfo_s dbContext;
 
-         char dbKey[DbKeyMaxLen];      // database key
-         char dbPath[DbPathMaxLen];    // database location
-
-         memset(dbKey, 0, DbKeyMaxLen);
-         memset(dbPath, 0, DbPathMaxLen);
+         char dbKey[DbKeyMaxLen]   = {0};      // database key
+         char dbPath[DbPathMaxLen] = {0};    // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;
@@ -486,11 +473,8 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
             unsigned int hash_val_data = 0;
 
-            char dbKey[DbKeyMaxLen];      // database key
-            char dbPath[DbPathMaxLen];    // database location
-
-            memset(dbKey, 0, DbKeyMaxLen);
-            memset(dbPath, 0, DbPathMaxLen);
+            char dbKey[DbKeyMaxLen]   = {0};      // database key
+            char dbPath[DbPathMaxLen] = {0};    // database location
 
             dbContext.context.ldbid   = ldbid;
             dbContext.context.seat_no = seat_no;
@@ -545,11 +529,8 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
       PersistenceInfo_s dbContext;
 
       //   unsigned int hash_val_data = 0;
-      char dbKey[DbKeyMaxLen];      // database key
-      char dbPath[DbPathMaxLen];    // database location
-
-      memset(dbKey, 0, DbKeyMaxLen);
-      memset(dbPath, 0, DbPathMaxLen);
+      char dbKey[DbKeyMaxLen]   = {0};      // database key
+      char dbPath[DbPathMaxLen] = {0};    // database location
 
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 

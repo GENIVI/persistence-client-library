@@ -202,7 +202,7 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
       snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
-      if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_get_data != NULL) )
+      if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
@@ -306,7 +306,7 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
+      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_set_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
@@ -370,7 +370,7 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
+      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_size != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
@@ -444,7 +444,7 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
    else   // custom storage implementation via custom library
    {
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
+      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_delete_data != NULL) )
       {
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {

@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+//#define DEBUG_MODE 1
 
 pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
@@ -73,16 +74,20 @@ DBusConnection* get_dbus_connection(void)
    return gDbusConn;
 }
 
+int bContinue = 0;
+
 //------------------------------------------------------------------------
 // debugging only until "correct" exit of main loop is possible!!!!!
 //------------------------------------------------------------------------
+#ifdef DEBUG_MODE
+
 #include "signal.h"
-static int endLoop = 0;
 
 void sigHandler(int signo)
 {
-   endLoop = 1;
+   bContinue = FALSE;
 }
+#endif
 //------------------------------------------------------------------------
 
 
@@ -292,6 +297,7 @@ int setup_dbus_mainloop(void)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open() Error :"), DLT_STRING(err.message) );
          dbus_error_free(&err);
+         return -1;
       }
    }
    else
@@ -306,6 +312,7 @@ int setup_dbus_mainloop(void)
    if(rval)
    {
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
+     return -1;
    }
 
    // wait for condition variable
@@ -467,9 +474,10 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    // lock mutex to make sure dbus main loop is running
    pthread_mutex_lock(&gDbusInitializedMtx);
 
-   signal(SIGTERM, sigHandler);
-   signal(SIGQUIT, sigHandler);
+#if DEBUG_MODE
    signal(SIGINT,  sigHandler);
+#endif
+
 
    DBusConnection* conn = (DBusConnection*)userData;
    dbus_error_init(&err);
@@ -489,7 +497,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
       else
       {
          int ret;
-         int bContinue = 0;
          memset(&gPollInfo, 0 , sizeof(gPollInfo));
 
          gPollInfo.nfds = 1;
@@ -610,8 +617,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                         }
                      }
                   }
-                  if(endLoop == 1)
-                     break;
                }
                while (0!=bContinue);
             }

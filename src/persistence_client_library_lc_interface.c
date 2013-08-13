@@ -189,6 +189,7 @@ int send_lifecycle_register(const char* method, int shutdownMode, int reg)
             if(!dbus_connection_send(conn, message, 0))
             {
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
+               rval = -1;
             }
 
             dbus_connection_flush(conn);
@@ -196,17 +197,20 @@ int send_lifecycle_register(const char* method, int shutdownMode, int reg)
          else
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid connection"));
+            rval = -1;
          }
          dbus_message_unref(message);
       }
       else
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid message"));
+         rval = -1;
       }
    }
    else
    {
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: connection isn NULL"));
+      rval = -1;
    }
 
    return rval;
@@ -240,6 +244,7 @@ int send_lifecycle_request(const char* method, int requestId, int status)
             if(!dbus_connection_send(conn, message, 0))
             {
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
+               rval = -1;
             }
 
             dbus_connection_flush(conn);
@@ -247,17 +252,20 @@ int send_lifecycle_request(const char* method, int requestId, int status)
          else
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid connection"));
+            rval = -1;
          }
          dbus_message_unref(message);
       }
       else
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid message"));
+         rval = -1;
       }
    }
    else
    {
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: connection isn NULL"));
+      rval = -1;
    }
 
    return rval;

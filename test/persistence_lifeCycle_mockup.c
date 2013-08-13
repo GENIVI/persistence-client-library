@@ -191,30 +191,30 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
    //printf("checkPersAdminMsg '%s' -> '%s'\n", dbus_message_get_interface(message), dbus_message_get_member(message));
-   if((0==strcmp("org.genivi.NodeStateManager.Consumer", dbus_message_get_interface(message))))
+   if((0==strcmp("org.genivi.NodeStateManager.LifeCycleConsumer", dbus_message_get_interface(message))))
    {
       if((0==strcmp("RegisterShutdownClient", dbus_message_get_member(message))))
       {
-         printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> RegisterShutdownClient \n");
+         printf(" ==> org.genivi.NodeStateManager.LifeCycleConsumer - received - ==> RegisterShutdownClient \n");
 
          result = checkAdminMsg(connection, message, 1);
       }
       else if((0==strcmp("UnRegisterShutdownClient", dbus_message_get_member(message))))
       {
-         printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> UnRegisterShutdownClient \n");
+         printf(" ==> org.genivi.NodeStateManager.LifeCycleConsumer - received - ==> UnRegisterShutdownClient \n");
 
          result = checkAdminMsg(connection, message, 0);
       }
       else if((0==strcmp("LifecycleRequestComplete", dbus_message_get_member(message))))
       {
-         printf(" ==> org.genivi.NodeStateManager.Consumer - received - ==> LifecycleRequestComplete \n");
+         printf(" ==> org.genivi.NodeStateManager.LifeCycleConsumer - received - ==> LifecycleRequestComplete \n");
 
          result = checkAdminMsg(connection, message, 0);
       }
 
       else
       {
-         printf(" ==> org.genivi.NodeStateManager.Consumer - received U N KN O W N-'%s'\n", dbus_message_get_interface(message));
+         printf(" ==> org.genivi.NodeStateManager.LifeCycleConsumer - received U N KN O W N-'%s'\n", dbus_message_get_interface(message));
       }
    }
    else
@@ -346,7 +346,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
          gPollInfo.fds[0].events = POLLIN;
 
          // register for messages
-         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager", &vtable, userData))
+         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager/LifecycleConsumer", &vtable, userData))
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
             if (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
@@ -395,9 +395,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
                                     switch (buf[0])
                                     {
                                     case CMD_REQUEST_NAME:
-                                       if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER !=dbus_bus_request_name(conn, "org.genivi.NodeStateManager", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
+                                       if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER !=dbus_bus_request_name(conn, "org.genivi.NodeStateManager.LifecycleConsumer", DBUS_NAME_FLAG_DO_NOT_QUEUE, &err))
                                        {
-                                          fprintf(stderr, "Cannot acquire name 'org.genivi.NodeStateManager.Consumer': \n    \"(%s)\". Bailing out!\n", err.message);
+                                          fprintf(stderr, "Cannot acquire name 'org.genivi.NodeStateManager.LifeCycleConsumer': \n    \"(%s)\". Bailing out!\n", err.message);
                                           dbus_error_free(&err);
                                           bContinue = FALSE;
                                        }
@@ -442,7 +442,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
                }
                while (0!=bContinue);
             }
-            dbus_connection_unregister_object_path(conn, "/org/genivi/NodeStateManager/Consumer");
+            dbus_connection_unregister_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
          close(gEfds);
@@ -543,7 +543,7 @@ int main(int argc, char *argv[])
 
    printf("Wait, press enter to exit!!\n");
    getchar();
-   printf("Exiting Persistence Admin mockup!!\n");
+   printf("Exiting Persistence Lifecycle mockup!!\n");
 
    return 0;
 }

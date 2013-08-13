@@ -658,7 +658,7 @@ START_TEST(test_DataHandle)
    fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(1024);
-   fail_unless(ret == -1, "Could close, but should not!!");
+   fail_unless(ret == -4, "Max handle!!");
 
    pclDeinitLibrary();
 }
@@ -898,6 +898,7 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
 
+
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
@@ -911,7 +912,6 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_Cursor);
 
    suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
-
    return s;
 }
 
