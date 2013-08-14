@@ -18,6 +18,7 @@
  */
 
 #include "persistence_client_library_file.h"
+#include "persistence_client_library_backup_filelist.h"
 #include "../include_protected/persistence_client_library_data_organization.h"
 #include "../include_protected/persistence_client_library_db_access.h"
 #include "../include_protected/crc32.h"
@@ -25,6 +26,7 @@
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_prct_access.h"
+
 
 #include <fcntl.h>   // for open flags
 #include <errno.h>
@@ -757,8 +759,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 
 int pclBackupNeeded(const char* path)
 {
-   int needBackup = 1;
-   return needBackup;
+   return need_backup_path(path);
 }
 
 

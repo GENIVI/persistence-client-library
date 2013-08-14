@@ -24,6 +24,7 @@
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library.h"
+#include "persistence_client_library_backup_filelist.h"
 
 #include <string.h>
 #include <errno.h>
@@ -39,6 +40,10 @@
 
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gDLTContext);
+
+// declared in persistence_client_library_dbus_service.c
+// used to end dbus library
+extern int bContinue;
 
 static int gShutdownMode = 0;
 
@@ -66,10 +71,25 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       /// environment variable for max key value data
       const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
 
+      /// blacklist path environment variable
+      const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
+
       if(pDataSize != NULL)
       {
          gMaxKeyValDataSize = atoi(pDataSize);
       }
+
+      if(pBlacklistPath != NULL)
+      {
+         pBlacklistPath = "/etc/pclBackupBlacklist.txt";   // default path
+      }
+
+      rval = readBlacklistConfigFile(pBlacklistPath);
+      if(rval == -1)
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(pBlacklistPath));
+      }
+
 
       if( setup_dbus_mainloop() == -1)
       {
@@ -140,7 +160,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
       }
 
-
       // assign application name
       strncpy(gAppId, appName, MaxAppNameLen);
       gAppId[MaxAppNameLen-1] = '\0';
@@ -148,8 +167,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       // destory mutex
       pthread_mutex_destroy(&gDbusInitializedMtx);
       pthread_cond_destroy(&gDbusInitializedCond);
-
-      rval = 1;
    }
    else if(gPclInitialized >= PCLinitialized)
    {
@@ -203,8 +220,12 @@ int pclDeinitLibrary(void)
       gPclInitialized--;   // decrement init counter
    }
 
+   // end dbus library
+   bContinue = FALSE;
+
    return rval;
 }
+
 
 
 void invalidateCustomPlugin(int idx)

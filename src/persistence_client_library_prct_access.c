@@ -159,18 +159,8 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          }
          else
          {
-            int len = strlen(resource_id);
-
             // if customer storage, we use the custom name as dbPath
             strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
-
-            if(len > DbKeyMaxLen)
-            {
-               len = DbKeyMaxLen;
-            }
-            // and the resource_id as dbKey
-            strncpy(dbKey, resource_id, len);
-
          }
          resourceFound = 1;
       }

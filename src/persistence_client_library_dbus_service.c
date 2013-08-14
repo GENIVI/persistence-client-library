@@ -28,8 +28,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-//#define DEBUG_MODE 1
-
 pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
 
@@ -75,22 +73,6 @@ DBusConnection* get_dbus_connection(void)
 }
 
 int bContinue = 0;
-
-//------------------------------------------------------------------------
-// debugging only until "correct" exit of main loop is possible!!!!!
-//------------------------------------------------------------------------
-#ifdef DEBUG_MODE
-
-#include "signal.h"
-
-void sigHandler(int signo)
-{
-   bContinue = FALSE;
-}
-#endif
-//------------------------------------------------------------------------
-
-
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
@@ -473,10 +455,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    DBusError err;
    // lock mutex to make sure dbus main loop is running
    pthread_mutex_lock(&gDbusInitializedMtx);
-
-#if DEBUG_MODE
-   signal(SIGINT,  sigHandler);
-#endif
 
 
    DBusConnection* conn = (DBusConnection*)userData;

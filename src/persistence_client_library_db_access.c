@@ -204,16 +204,16 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
 
       if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_data != NULL) )
       {
+         char pathKeyString[128] = {0};
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
-            char pathKeyString[128];
-        	   snprintf(pathKeyString, 128, "%s/%s", dbPath, key);
-            read_size = gPersCustomFuncs[idx].custom_plugin_get_data(pathKeyString, (char*)buffer, buffer_size);
+            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
          }
          else
          {
-            read_size = gPersCustomFuncs[idx].custom_plugin_get_data(info->configKey.customID, (char*)buffer, buffer_size);
+            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
          }
+         read_size = gPersCustomFuncs[idx].custom_plugin_get_data(pathKeyString, (char*)buffer, buffer_size);
       }
       else
       {
@@ -308,14 +308,16 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_set_data != NULL) )
       {
+         char pathKeyString[128] = {0};
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
-            char pathKeyString[128];
-            snprintf(pathKeyString, 128, "%s/%s", dbPath, key);
-            write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
+            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
          }
          else
-            write_size = gPersCustomFuncs[idx].custom_plugin_set_data(info->configKey.customID, (char*)buffer, buffer_size);
+         {
+            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+         }
+         write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
       }
       else
       {
@@ -372,14 +374,16 @@ int pers_db_get_key_size(char* dbPath, char* key, PersistenceInfo_s* info)
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_size != NULL) )
       {
+         char pathKeyString[128] = {0};
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
-            char pathKeyString[128];
-            snprintf(pathKeyString, 128, "%s/%s", dbPath, key);
-            read_size = gPersCustomFuncs[idx].custom_plugin_get_size(pathKeyString);
+            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
          }
          else
-            read_size = gPersCustomFuncs[idx].custom_plugin_get_size(info->configKey.customID);
+         {
+            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+         }
+         read_size = gPersCustomFuncs[idx].custom_plugin_get_size(pathKeyString);
       }
       else
       {
@@ -446,14 +450,16 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
       int idx = custom_client_name_to_id(dbPath, 1);
       if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_delete_data != NULL) )
       {
+         char pathKeyString[128] = {0};
          if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
          {
-            char pathKeyString[128];
-            snprintf(pathKeyString, 128, "%s/%s", dbPath, key);
-            ret = gPersCustomFuncs[idx].custom_plugin_delete_data(pathKeyString);
+            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
          }
          else
-            ret = gPersCustomFuncs[idx].custom_plugin_delete_data(info->configKey.customID);
+         {
+            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+         }
+         ret = gPersCustomFuncs[idx].custom_plugin_delete_data(pathKeyString);
       }
       else
       {
@@ -502,9 +508,9 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    DBusMessage* message;
    dbus_bool_t ret;
    int rval = 0;
-   char ldbid_array[DbusSubMatchSize];
-   char user_array[DbusSubMatchSize];
-   char seat_array[DbusSubMatchSize];
+   char ldbid_array[DbusSubMatchSize] = {0};
+   char user_array[DbusSubMatchSize]  = {0};
+   char seat_array[DbusSubMatchSize]  = {0};
    const char* ldbid_ptr = ldbid_array;
    const char* user_ptr = user_array;
    const char* seat_ptr = seat_array;
@@ -515,10 +521,6 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    char* theReason = NULL;
 
    DBusConnection* conn = get_dbus_connection();
-
-   memset(ldbid_array, 0, DbusSubMatchSize);
-   memset(user_array, 0, DbusSubMatchSize);
-   memset(seat_array, 0, DbusSubMatchSize);
 
 
    // dbus_bus_add_match is used for the notification mechanism,
