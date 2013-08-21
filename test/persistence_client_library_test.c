@@ -44,7 +44,7 @@
 #define READ_SIZE    1024
 
 /// application id
-char gTheAppId[MaxAppNameLen];
+char gTheAppId[MaxAppNameLen] = {0};
 
 // definition of weekday
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
@@ -61,11 +61,9 @@ START_TEST (test_GetData)
    int ret = 0;
    unsigned int shutdownReg = (PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL);
 
-   unsigned char buffer[READ_SIZE];
+   unsigned char buffer[READ_SIZE] = {0};
 
    pclInitLibrary(gTheAppId, shutdownReg);
-
-   memset(buffer, 0, READ_SIZE);
 
    /**
     * Logical DB ID: 0xFF with user 0 and seat 0
@@ -158,7 +156,7 @@ START_TEST (test_GetDataHandle)
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   unsigned char buffer[READ_SIZE];
+   unsigned char buffer[READ_SIZE] = {0};
    struct tm *locTime;
 
    char sysTimeBuffer[128];
@@ -166,7 +164,6 @@ START_TEST (test_GetDataHandle)
    pclInitLibrary(gTheAppId, shutdownReg);
 
    time_t t = time(0);
-   memset(buffer, 0, READ_SIZE);
 
    locTime = localtime(&t);
 
@@ -260,9 +257,9 @@ START_TEST(test_SetData)
 {
    int ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   unsigned char buffer[READ_SIZE];
-   char write1[READ_SIZE];
-   char write2[READ_SIZE];
+   unsigned char buffer[READ_SIZE]  = {0};
+   char write1[READ_SIZE] = {0};
+   char write2[READ_SIZE] = {0};
    char sysTimeBuffer[256];
 
    struct tm *locTime;
@@ -272,9 +269,6 @@ START_TEST(test_SetData)
    time_t t = time(0);
 
    locTime = localtime(&t);
-   memset(buffer, 0, READ_SIZE);
-   memset(write1, 0, READ_SIZE);
-   memset(write2, 0, READ_SIZE);
 
    // write data
    snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
@@ -377,14 +371,13 @@ START_TEST(test_SetDataNoPRCT)
 {
    int ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   unsigned char buffer[READ_SIZE];
+   unsigned char buffer[READ_SIZE] = {0};
    struct tm *locTime;
 
    pclInitLibrary(gTheAppId, shutdownReg);
    time_t t = time(0);
 
    char sysTimeBuffer[128];
-   memset(buffer, 0, READ_SIZE);
 
    locTime = localtime(&t);
 
@@ -505,7 +498,7 @@ START_TEST(test_DataFile)
    int writeSize = 16*1024;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   unsigned char buffer[READ_SIZE];
+   unsigned char buffer[READ_SIZE] = {0};
    const char* refBuffer = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media";
    char* writeBuffer;
    char* fileMap = NULL;
@@ -527,8 +520,6 @@ START_TEST(test_DataFile)
       writeBuffer[idx++] = 'F';
       writeBuffer[idx++] = ' ';
    }
-   memset(buffer, 0, READ_SIZE);
-
    // create file
    fd = open("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db",
              O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
@@ -748,19 +739,13 @@ END_TEST
 START_TEST(test_Cursor)
 {
    int handle = -1, rval = 0, size = 0, handle1 = 0;
-   char bufferKeySrc[READ_SIZE];
-   char bufferDataSrc[READ_SIZE];
-   char bufferKeyDst[READ_SIZE];
-   char bufferDataDst[READ_SIZE];
+   char bufferKeySrc[READ_SIZE]  = {0};
+   char bufferDataSrc[READ_SIZE] = {0};
+   char bufferKeyDst[READ_SIZE]  = {0};
+   char bufferDataDst[READ_SIZE] = {0};
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    pclInitLibrary(gTheAppId, shutdownReg);
-
-   memset(bufferKeySrc, 0, READ_SIZE);
-   memset(bufferDataSrc, 0, READ_SIZE);
-
-   memset(bufferKeyDst, 0, READ_SIZE);
-   memset(bufferDataDst, 0, READ_SIZE);
 
    // create cursor
    handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
@@ -817,7 +802,7 @@ END_TEST
 START_TEST(test_Plugin)
 {
 	int ret = 0;
-	unsigned char buffer[READ_SIZE];
+	unsigned char buffer[READ_SIZE]  = {0};
 
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 	pclInitLibrary(gTheAppId, shutdownReg);
@@ -853,6 +838,54 @@ START_TEST(test_Plugin)
                strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");
 
 	pclDeinitLibrary();
+}
+END_TEST
+
+
+
+
+
+START_TEST(test_ReadDefault)
+{
+   int ret = 0;
+   unsigned char buffer[READ_SIZE]  = {0};
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   pclInitLibrary(gTheAppId, shutdownReg);
+
+   ret = pclKeyReadData(0xFF, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
+   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   printf("B U F F E R: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   ret = pclKeyReadData(0xFF, "statusHandle/default02", 3, 2, buffer, READ_SIZE);
+   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   printf("B U F F E R: %s\n", buffer);
+   fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
+START_TEST(test_ReadConfDefault)
+{
+   int ret = 0;
+   unsigned char buffer[READ_SIZE]  = {0};
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   pclInitLibrary(gTheAppId, shutdownReg);
+
+   ret = pclKeyReadData(0xFF, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
+   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   ret = pclKeyReadData(0xFF, "statusHandle/confdefault02",     3, 2, buffer, READ_SIZE);
+   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -898,6 +931,11 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
 
+   TCase * tc_ReadDefault = tcase_create("ReadDefault");
+   tcase_add_test(tc_ReadDefault, test_ReadDefault);
+
+   TCase * tc_ReadConfDefault = tcase_create("ReadConfDefault");
+   tcase_add_test(tc_ReadConfDefault, test_ReadConfDefault);
 
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetData);
@@ -910,6 +948,8 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_persDataFile);
    suite_add_tcase(s, tc_persDataFileRecovery);
    suite_add_tcase(s, tc_Cursor);
+   suite_add_tcase(s, tc_ReadDefault);
+   suite_add_tcase(s, tc_ReadConfDefault);
 
    suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
    return s;

@@ -86,13 +86,13 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
          switch(rct)    // create db name
          {
          case PersistenceRCT_local:
-            snprintf(filename, DbPathMaxLen, gLocalWtPath, gAppId, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gLocalWtPathKey, gAppId, gResTableCfg);
             break;
          case PersistenceRCT_shared_public:
-            snprintf(filename, DbPathMaxLen, gSharedPublicWtPath, gAppId, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, gResTableCfg);
             break;
          case PersistenceRCT_shared_group:
-            snprintf(filename, DbPathMaxLen, gSharedWtPath, gAppId, group, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gSharedWtPathKey, gAppId, group, gResTableCfg);
             break;
          default:
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - error: no valid PersistenceRCT_e"));
@@ -283,16 +283,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, gSharedCached);
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePathKey, gAppId, dbContext->context.ldbid, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid, gSharedWt);
+               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedWtPathKey, gAppId, dbContext->context.ldbid, dbKey);
          }
       }
       else
@@ -304,16 +304,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, gSharedCached);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePathKey, gAppId, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, gSharedWt);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, dbKey);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, dbKey);
          }
       }
 
@@ -326,23 +326,23 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       if(PersistencePolicy_wc == dbContext->configKey.policy)
       {
          if(dbContext->configKey.type == PersistenceResourceType_key)
-            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, gLocalCached);
+            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId);
          else
-            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, dbKey);
+            snprintf(dbPath, DbPathMaxLen, gLocalCachePathKey, gAppId, dbKey);
       }
       else if(PersistencePolicy_wt == dbContext->configKey.policy)
       {
          if(dbContext->configKey.type == PersistenceResourceType_key)
-            snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId, gLocalWt);
+            snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId);
          else
-            snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId, dbKey);
+            snprintf(dbPath, DbPathMaxLen, gLocalWtPathKey, gAppId, dbKey);
       }
 
       storePolicy = PersistenceStorage_local;   // we have a local database
    }
 
    //printf("get_db_path_and_key - dbKey  : [key ]: %s \n",  dbKey);
-   //printf("get_db_path_and_key - dbPath : [path]: %s\n\n", dbPath);
+   //printf("get_db_path_and_key - dbPath : [path]: %s\n", dbPath);
    return storePolicy;
 }
 

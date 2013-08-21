@@ -66,7 +66,7 @@ const char gCharLookup[] =
 
 
 char* gpConfigFileMap = 0;
-char* gpTokenArray[TOKENARRAYSIZE];
+char* gpTokenArray[TOKENARRAYSIZE] = {0};
 int gTokenCounter = 0;
 unsigned int gConfigFileSize = 0;
 

@@ -40,7 +40,7 @@ PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
 
 
 /// free handle array
-int gFreeHandleArray[MaxPersHandle];
+int gFreeHandleArray[MaxPersHandle] = {0};
 
 int gFreeHandleIdxHead = 0;
 

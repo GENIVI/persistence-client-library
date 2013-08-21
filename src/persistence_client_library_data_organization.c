@@ -22,28 +22,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// rrsource configuration database name
 const char* gResTableCfg = "/resource-table-cfg.itz";
 
+/// configurable default database name
+const char* gConfigDefault = "/configurable-default-data.itz";
 
-/// shared cached default database
-const char* gSharedCachedDefault = "/cached-default.itz";
-/// shared cached database
-const char* gSharedCached        = "/cached.itz";
-/// shared write through default database
-const char* gSharedWtDefault     = "/wt-default.itz";
-/// shared write through database
-const char* gSharedWt            = "/wt.itz";
+/// default database name
+const char* gDefault = "/default-data.itz";
 
-
-/// local cached default database
-const char* gLocalCachedDefault  = "cached-default.itz";
-/// local cached default database
-const char* gLocalCached         = "/cached.itz";
-/// local write through default database
-const char* gLocalWtDefault      = "wt-default.itz";
-/// local write through default database
-const char* gLocalWt             = "/wt.itz";
-
+/// write through database name
+const char* gWt             = "/wt.itz";
+/// cached database name
+const char* gCached        = "/cached.itz";
 
 
 /// directory structure node name defintion
@@ -54,21 +45,31 @@ const char* gUser = "/user/";
 const char* gSeat = "/seat/";
 
 
-/// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
-const char* gLocalCachePath        = "/Data/mnt-c/%s%s";
+/// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+const char* gLocalCachePath        = "/Data/mnt-c/%s";
 /// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
-const char* gLocalWtPath           = "/Data/mnt-wt/%s%s";
+const char* gLocalWtPath           = "/Data/mnt-wt/%s";
 /// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-const char* gSharedCachePath       = "/Data/mnt-c/%s/Shared_Group_%x%s";
+const char* gSharedCachePath       = "/Data/mnt-c/%s/Shared_Group_%x";
 /// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-const char* gSharedWtPath          = "/Data/mnt-wt/%s/Shared_Group_%x%s";
-
+const char* gSharedWtPath          = "/Data/mnt-wt/%s/Shared_Group_%x";
 /// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-const char* gSharedPublicCachePath = "/Data/mnt-c/%s/Shared_Public%s";
-
+const char* gSharedPublicCachePath = "/Data/mnt-c/%s/Shared_Public";
 /// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-const char* gSharedPublicWtPath    = "/Data/mnt-wt/%s/Shared_Public%s";
+const char* gSharedPublicWtPath    = "/Data/mnt-wt/%s/Shared_Public";
 
+/// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+const char* gLocalCachePathKey        = "/Data/mnt-c/%s%s";
+/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+const char* gLocalWtPathKey           = "/Data/mnt-wt/%s%s";
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+const char* gSharedCachePathKey       = "/Data/mnt-c/%s/Shared_Group_%x%s";
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+const char* gSharedWtPathKey          = "/Data/mnt-wt/%s/Shared_Group_%x%s";
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+const char* gSharedPublicCachePathKey = "/Data/mnt-c/%s/Shared_Public%s";
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+const char* gSharedPublicWtPathKey    = "/Data/mnt-wt/%s/Shared_Public%s";
 
 /// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
 const char* gLocalCacheFilePath        = "/Data/mnt-c/%s/user/%d/seat/%d/%s";

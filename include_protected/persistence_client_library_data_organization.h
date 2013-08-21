@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x01040000U)
+#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x02000000U)
 
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
@@ -95,23 +95,18 @@ enum _PersistenceConstantDef
 /// resource configuration table name
 extern const char* gResTableCfg;
 
-/// shared cached default database
-extern const char* gSharedCachedDefault;
-/// shared cached database
-extern const char* gSharedCached;
-/// shared write through default database
-extern const char* gSharedWtDefault;
-/// shared write through database
-extern const char* gSharedWt;
+/// configurable default database name
+extern const char* gConfigDefault;
 
-/// local cached default database
-extern const char* gLocalCachedDefault;
-/// local cached default database
-extern const char* gLocalCached;
-/// local write through default database
-extern const char* gLocalWtDefault;
-/// local write through default database
-extern const char* gLocalWt;
+/// default database name
+extern const char* gDefault;
+
+
+/// shared cached database
+extern const char* gCached;
+
+/// write through database name
+extern const char* gWt;
 
 
 /// directory structure node name defintion
@@ -134,6 +129,19 @@ extern const char* gSharedWtPath;
 extern const char* gSharedPublicCachePath;
 /// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
 extern const char* gSharedPublicWtPath;
+
+/// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
+extern const char* gLocalCachePathKey;
+/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+extern const char* gLocalWtPathKey;
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+extern const char* gSharedCachePathKey;
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+extern const char* gSharedWtPathKey;
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+extern const char* gSharedPublicCachePathKey;
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+extern const char* gSharedPublicWtPathKey;
 
 /// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/>userno>/<seat>/>seatno>/<resource>
 extern const char* gLocalCacheFilePath;
