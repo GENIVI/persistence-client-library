@@ -302,8 +302,6 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
             read_size = EPERS_NOPRCTABLE;
          }
       }
-
-
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {

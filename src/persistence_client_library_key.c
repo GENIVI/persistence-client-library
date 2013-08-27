@@ -26,7 +26,7 @@
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_prct_access.h"
-#include "persistence_client_library_custom_loader.h"
+
 
 
 // ----------------------------------------------------------------------------
@@ -56,43 +56,21 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
       if(   (handle >= 0)
          && (dbContext.configKey.type == PersistenceResourceType_key) )          // check if type matches
       {
-         if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
+         handle = get_persistence_handle_idx(dbPath, dbKey, &dbContext);
+
+         if((handle < MaxPersHandle) && (0 <= handle))
          {
-            if(PersistenceStorage_custom ==  dbContext.configKey.storage)
-            {
-               int idx =  custom_client_name_to_id(dbPath, 1);
-               char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
-               snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
-
-               if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
-               {
-                  int flag = 0, mode = 0;
-                  handle = gPersCustomFuncs[idx].custom_plugin_handle_open(workaroundPath, flag, mode);
-               }
-               else
-               {
-                  handle = EPERS_NOPLUGINFUNCT;
-               }
-            }
-            else
-            {
-               handle = get_persistence_handle_idx();
-            }
-
-            if((handle < MaxPersHandle) && (0 <= handle))
-            {
-               // remember data in handle array
-               strncpy(gKeyHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
-               strncpy(gKeyHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
-               strncpy(gKeyHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
-               gKeyHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-               gKeyHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-               gKeyHandleArray[handle].info = dbContext;
-            }
-            else
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
-            }
+            // remember data in handle array
+            strncpy(gKeyHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
+            strncpy(gKeyHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
+            strncpy(gKeyHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
+            gKeyHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+            gKeyHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+            gKeyHandleArray[handle].info = dbContext;
+         }
+         else
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
          }
       }
       else
@@ -118,23 +96,9 @@ int pclKeyHandleClose(int key_handle)
    {
       if(key_handle < MaxPersHandle)
       {
-         if(PersistenceStorage_custom == gKeyHandleArray[key_handle].info.configKey.storage )
-         {
-            int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
-
-            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_close != NULL) )
-            {
-               rval = gPersCustomFuncs[idx].custom_plugin_handle_close(key_handle);
-            }
-            else
-            {
-               rval = EPERS_NOPLUGINFUNCT;
-            }
-         }
-         else
-         {
-            set_persistence_handle_close_idx(key_handle);
-         }
+         rval= set_persistence_handle_close_idx(key_handle, gKeyHandleArray[key_handle].dbPath,
+                                                            gKeyHandleArray[key_handle].dbKey,
+                                                            &gKeyHandleArray[key_handle].info);
 
          // invalidate entries
          memset(gKeyHandleArray[key_handle].dbPath, 0, DbPathMaxLen);
@@ -167,24 +131,12 @@ int pclKeyHandleGetSize(int key_handle)
    {
       if(key_handle < MaxPersHandle)
       {
-         if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
-         {
-            int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
-
-            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_size != NULL) )
-            {
-               size = gPersCustomFuncs[idx].custom_plugin_get_size(gKeyHandleArray[key_handle].dbPath);
-            }
-            else
-            {
-               size = EPERS_NOPLUGINFUNCT;
-            }
-         }
-         else
-         {
-            size = pers_db_get_key_size(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
-                                             &gKeyHandleArray[key_handle].info);
-         }
+         size = pers_db_get_key_size(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                      &gKeyHandleArray[key_handle].info);
+      }
+      else
+      {
+         size = EPERS_MAXHANDLE;
       }
    }
 
@@ -197,35 +149,23 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleReadData: "),
-   //             DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleReadData: "),
+      //             DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
 
-   if(gPclInitialized >= PCLinitialized)
-   {
-      if(key_handle < MaxPersHandle)
+      if(gPclInitialized >= PCLinitialized)
       {
-         if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
+         if(key_handle < MaxPersHandle)
          {
-            int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
-
-            if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_get_data != NULL) )
-            {
-               size = gPersCustomFuncs[idx].custom_plugin_handle_get_data(key_handle, (char*)buffer, buffer_size-1);
-            }
-            else
-            {
-               size = EPERS_NOPLUGINFUNCT;
-            }
+            size = pers_db_read_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                    &gKeyHandleArray[key_handle].info, buffer, buffer_size);
          }
          else
          {
-            size = pers_db_read_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
-                                        &gKeyHandleArray[key_handle].info, buffer, buffer_size);
+            size = EPERS_MAXHANDLE;
          }
       }
-   }
 
-   return size;
+      return size;
 }
 
 
@@ -245,6 +185,10 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
                                       gKeyHandleArray[key_handle].resourceID,
                                       gKeyHandleArray[key_handle].info.context.user_no,
                                       gKeyHandleArray[key_handle].info.context.seat_no, callback);
+      }
+      else
+      {
+         rval = EPERS_MAXHANDLE;
       }
    }
 
@@ -268,24 +212,9 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          {
             if(key_handle < MaxPersHandle)
             {
-               if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
-               {
-                  int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
 
-                  if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
-                  {
-                     size = gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
-                  }
-                  else
-                  {
-                     size = EPERS_NOPLUGINFUNCT;
-                  }
-               }
-               else
-               {
-                  size = pers_db_write_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
-                                           &gKeyHandleArray[key_handle].info, buffer, buffer_size);
-               }
+               size = pers_db_write_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                        &gKeyHandleArray[key_handle].info, buffer, buffer_size);
             }
             else
             {
@@ -294,6 +223,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          }
          else
          {
+            size = EPERS_MAX_BUFF_SIZE;
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
          }
       }

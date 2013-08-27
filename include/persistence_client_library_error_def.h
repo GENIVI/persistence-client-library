@@ -93,6 +93,8 @@ extern "C" {
 #define EPERS_NOTIFY_SIG         (-31)
 /// client library has not been initialized
 #define EPERS_NOT_INITIALIZED 	(-32)
+// max buffer size
+#define EPERS_MAX_BUFF_SIZE      (-33)
 
 #ifdef __cplusplus
 }

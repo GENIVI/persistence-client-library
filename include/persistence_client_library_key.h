@@ -198,7 +198,7 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
  *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
  * @return positive value: the bytes written; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS
+ * ::EPERS_LOCKFS ::EPERS_MAX_BUFF_SIZE
  */
 int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size);
 
