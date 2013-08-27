@@ -109,7 +109,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 
 int pclKeyHandleClose(int key_handle)
 {
-   int rval = EPERS_NOT_INITIALIZED;
+   int rval = 1;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleClose: "),
    //                DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
@@ -137,15 +137,18 @@ int pclKeyHandleClose(int key_handle)
          }
 
          // invalidate entries
-         strncpy(gKeyHandleArray[key_handle].dbPath, "", DbPathMaxLen);
-         strncpy(gKeyHandleArray[key_handle].dbKey  ,"", DbKeyMaxLen);
+         memset(gKeyHandleArray[key_handle].dbPath, 0, DbPathMaxLen);
+         memset(gKeyHandleArray[key_handle].dbKey  ,0, DbKeyMaxLen);
          gKeyHandleArray[key_handle].info.configKey.storage = -1;
-         rval = 1;
       }
       else
       {
          rval = EPERS_MAXHANDLE;
       }
+   }
+   else
+   {
+      rval = EPERS_NOT_INITIALIZED;
    }
 
    return rval;
