@@ -36,8 +36,6 @@
 
 #include <dbus/dbus.h>
 
-#define USE_DBUS 1
-
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gDLTContext);
 
@@ -79,7 +77,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          gMaxKeyValDataSize = atoi(pDataSize);
       }
 
-      if(pBlacklistPath != NULL)
+      if(pBlacklistPath == NULL)
       {
          pBlacklistPath = "/etc/pclBackupBlacklist.txt";   // default path
       }
@@ -94,23 +92,20 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       if( setup_dbus_mainloop() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
-         return -1;
+         return EPERS_DBUS_MAINLOOP;
       }
 
-#if USE_DBUS
       // register for lifecycle and persistence admin service dbus messages
       if(register_lifecycle(shutdownMode) == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
-         return -1;
+         return EPERS_REGISTER_LIFECYCLE;
       }
-
-      rval = register_pers_admin_service();
+      if(register_pers_admin_service() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
-         return -1;
+         return EPERS_REGISTER_ADMIN;
       }
-#endif
 
       /// get custom library names to load
       status = get_custom_libraries();
@@ -190,10 +185,8 @@ int pclDeinitLibrary(void)
                                            DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle and persistence admin service dbus messages
-   #if USE_DBUS
       rval = unregister_lifecycle(gShutdownMode);
-      rval = unregister_pers_admin_service();
-   #endif
+      //rval = unregister_pers_admin_service();
 
       // unload custom client libraries
       for(i=0; i<PersCustomLib_LastEntry; i++)

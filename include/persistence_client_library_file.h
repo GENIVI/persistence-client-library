@@ -45,7 +45,7 @@ extern "C" {
  * @param fd the file descriptor to close
  *
  * @return zero on success. On error a negative value will be returned with th follwoing error codes:
- *                          EPERS_LOCKFS
+ *                          ::EPERS_LOCKFS, ::EPERS_MAXHANDLE
  */
 int pclFileClose(int fd);
 

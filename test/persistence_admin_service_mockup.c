@@ -411,6 +411,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
          }
          close(gEfds);
       }
+      //dbus_connection_close(conn);
       dbus_connection_unref(conn);
       dbus_shutdown();
    }
@@ -455,7 +456,7 @@ int setup_dbus_mainloop(void)
    if(pAddress != NULL)
    {
       printf("Use specific dbus address: %s\n !", pAddress);
-      gDbusConn = dbus_connection_open(pAddress, &err);
+      gDbusConn = dbus_connection_open_private(pAddress, &err);
 
       if(gDbusConn != NULL)
       {

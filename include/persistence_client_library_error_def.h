@@ -95,6 +95,13 @@ extern "C" {
 #define EPERS_NOT_INITIALIZED 	(-32)
 // max buffer size
 #define EPERS_MAX_BUFF_SIZE      (-33)
+// failed to setup dbus mainloop
+#define EPERS_DBUS_MAINLOOP     (-34)
+// failed register lifecycle dbus
+#define EPERS_REGISTER_LIFECYCLE (-35)
+// failed register admin service dbus
+#define EPERS_REGISTER_ADMIN     (-36)
+
 
 #ifdef __cplusplus
 }

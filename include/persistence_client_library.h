@@ -63,7 +63,7 @@ extern "C" {
  *
  * @return positive value: success;
  *   On error a negative value will be returned with th follwoing error codes:
- *   ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED
+ *   ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED, ::EPERS_INIT_DBUS_MAINLOOP,
  */
 int pclInitLibrary(const char* appname, int shutdownMode);
 

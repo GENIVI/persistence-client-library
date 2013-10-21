@@ -49,9 +49,10 @@ int main(int argc, char *argv[])
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("noty","tests the persistence client library");
-   pclInitLibrary("lt-persistence_client_library_dbus_test", shutdownReg);
+   ret = pclInitLibrary("lt-persistence_client_library_dbus_test", shutdownReg);
+   printf("pclInitLibrary: %d\n", ret);
 
-
+#if 0
    printf("Press a key to end application\n");
    ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
 
@@ -61,7 +62,8 @@ int main(int argc, char *argv[])
    ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
    getchar();
-
+#endif
+   sleep(2);
    pclDeinitLibrary();
 
 

@@ -77,7 +77,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
 
 
 
-int pers_db_open_default(itzam_btree* btree, PersistenceInfo_s* info, const char* dbPath, int configDefault)
+int pers_db_open_default(itzam_btree* btree, const char* dbPath, int configDefault)
 {
    itzam_state  state = ITZAM_FAILED;
    char path[DbPathMaxLen] = {0};
@@ -243,7 +243,7 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       // --------------------------------
       if(keyFound == 0)
       {
-         if(pers_db_open_default(&btreeConfDefault, info, dbPath, 1) != -1)
+         if(pers_db_open_default(&btreeConfDefault, dbPath, 1) != -1)
          {
             if(itzam_true == itzam_btree_find(&btreeConfDefault, key, &search)) // read db
             {
@@ -273,7 +273,7 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       // --------------------------------
       if(keyFound == 0)
       {
-         if(pers_db_open_default(&btreeDefault, info, dbPath, 0) != -1)
+         if(pers_db_open_default(&btreeDefault, dbPath, 0) != -1)
          {
             if(itzam_true == itzam_btree_find(&btreeDefault, key, &search)) // read db
             {
@@ -302,6 +302,8 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
             read_size = EPERS_NOPRCTABLE;
          }
       }
+
+
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
@@ -389,7 +391,7 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
                if(PersistenceStorage_shared == info->configKey.storage)
                {
-                  pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
+                  pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
                }
             }
             else
@@ -537,7 +539,7 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
 
             if(PersistenceStorage_shared == info->configKey.storage)
             {
-               pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+               pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
             }
          }
          else

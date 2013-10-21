@@ -80,7 +80,7 @@ int pclFileClose(int fd)
       }
       else
       {
-    	  rval = -1;
+    	  rval = EPERS_MAXHANDLE;
       }
    }
 
@@ -313,7 +313,7 @@ int pclFileSeek(int fd, long int offset, int whence)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(AccessNoLock == isAccessLocked() ) // check if access to persistent data is locked
+      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
          rval = lseek(fd, offset, whence);
       }

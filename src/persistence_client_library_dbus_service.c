@@ -264,7 +264,7 @@ int setup_dbus_mainloop(void)
    {
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("setup_dbus_mainloop -> Use specific dbus address:"), DLT_STRING(pAddress) );
 
-      gDbusConn = dbus_connection_open(pAddress, &err);
+      gDbusConn = dbus_connection_open_private(pAddress, &err);
 
       if(gDbusConn != NULL)
       {
@@ -604,6 +604,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          }
          close(gEfds);
       }
+      //dbus_connection_close(conn);
       dbus_connection_unref(conn);
       dbus_shutdown();
    }

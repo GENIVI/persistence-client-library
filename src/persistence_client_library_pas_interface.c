@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 
-static int gTimeoutMs = 5000; // 5 seconds
+static int gTimeoutMs = 50000;
 
 /// flag if access is locked
 static int gLockAccess = 0;
@@ -34,7 +34,8 @@ static int gLockAccess = 0;
 
 int pers_data_sync(void)
 {
-   return 1;   // TODO  implement sync data back
+   sync();
+   return 1;
 }
 
 void pers_lock_access(void)

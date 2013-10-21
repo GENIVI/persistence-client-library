@@ -63,17 +63,15 @@ extern int gOpenFdArray[MaxPersHandle];
  *
  * @return a new handle or 0 if an error occured
  */
-int get_persistence_handle_idx(char* dbPath, char* key, PersistenceInfo_s* info);
+int get_persistence_handle_idx();
 
 
 /**
  * @brief close persistence handle
  *
  * @param the handle to close
- *
- * @return error code
  */
-int set_persistence_handle_close_idx(int handle, char* dbPath, char* key, PersistenceInfo_s* info);
+void set_persistence_handle_close_idx(int handle);
 
 
 

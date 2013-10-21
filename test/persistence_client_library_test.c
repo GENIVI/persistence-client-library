@@ -63,7 +63,8 @@ START_TEST (test_GetData)
 
    unsigned char buffer[READ_SIZE] = {0};
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    /**
     * Logical DB ID: 0xFF with user 0 and seat 0
@@ -161,7 +162,8 @@ START_TEST (test_GetDataHandle)
 
    char sysTimeBuffer[128];
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    time_t t = time(0);
 
@@ -264,7 +266,8 @@ START_TEST(test_SetData)
 
    struct tm *locTime;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    time_t t = time(0);
 
@@ -374,7 +377,9 @@ START_TEST(test_SetDataNoPRCT)
    unsigned char buffer[READ_SIZE] = {0};
    struct tm *locTime;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
+
    time_t t = time(0);
 
    char sysTimeBuffer[128];
@@ -412,11 +417,12 @@ END_TEST
  */
 START_TEST(test_GetDataSize)
 {
-   int size = 0;
+   int size = 0, ret = 0;
 
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    /**
     * Logical DB ID: 0xFF with user 3 and seat 2
@@ -449,7 +455,8 @@ START_TEST(test_DeleteData)
    unsigned char buffer[READ_SIZE];
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   rval = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(rval < 0, "Failed to init PCL");
 
    // read data from key
    rval = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
@@ -503,7 +510,8 @@ START_TEST(test_DataFile)
    char* writeBuffer;
    char* fileMap = NULL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    writeBuffer = malloc(writeSize);
 
@@ -594,7 +602,8 @@ START_TEST(test_DataFileRecovery)
    char* wBuffer = "This is a buffer to write";
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
@@ -624,7 +633,8 @@ START_TEST(test_DataHandle)
    int ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    // test file handles
    handle1 = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
@@ -634,7 +644,8 @@ START_TEST(test_DataHandle)
    fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
 
    ret = pclFileClose(1024);
-   fail_unless(ret == -1, "Could close file, but should not!!");
+   fail_unless(ret == EPERS_MAXHANDLE, "Could close file, but should not!!");
+
 
    ret = pclFileClose(17);
    fail_unless(ret == -1, "Could close file, but should not!!");
@@ -649,7 +660,7 @@ START_TEST(test_DataHandle)
    fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(1024);
-   fail_unless(ret == -4, "Max handle!!");
+   fail_unless(ret == EPERS_MAXHANDLE, "Max handle!!");
 
    pclDeinitLibrary();
 }
@@ -666,7 +677,8 @@ START_TEST(test_DataHandleOpen)
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    // open handles ----------------------------------------------------
    hd1 = pclKeyHandleOpen(0xFF, "posHandle/last_position1", 0, 0);
@@ -745,7 +757,8 @@ START_TEST(test_Cursor)
    char bufferDataDst[READ_SIZE] = {0};
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   pclInitLibrary(gTheAppId, shutdownReg);
+   rval = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(rval < 0, "Failed to init PCL");
 
    // create cursor
    handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
@@ -805,7 +818,9 @@ START_TEST(test_Plugin)
 	unsigned char buffer[READ_SIZE]  = {0};
 
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-	pclInitLibrary(gTheAppId, shutdownReg);
+
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
 	ret = pclKeyReadData(0xFF, "language/country_code",           0, 0, buffer, READ_SIZE);
 	fail_unless(ret != EPERS_NOT_INITIALIZED);
@@ -851,16 +866,18 @@ START_TEST(test_ReadDefault)
    unsigned char buffer[READ_SIZE]  = {0};
 
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   pclInitLibrary(gTheAppId, shutdownReg);
+
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    ret = pclKeyReadData(0xFF, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
    fail_unless(ret != EPERS_NOT_INITIALIZED);
-   printf("B U F F E R: %s\n", buffer);
+   //printf("B U F F E R: %s\n", buffer);
    fail_unless(strncmp((char*)buffer,"DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    ret = pclKeyReadData(0xFF, "statusHandle/default02", 3, 2, buffer, READ_SIZE);
    fail_unless(ret != EPERS_NOT_INITIALIZED);
-   printf("B U F F E R: %s\n", buffer);
+   //printf("B U F F E R: %s\n", buffer);
    fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    pclDeinitLibrary();
@@ -875,7 +892,9 @@ START_TEST(test_ReadConfDefault)
    unsigned char buffer[READ_SIZE]  = {0};
 
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   pclInitLibrary(gTheAppId, shutdownReg);
+
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret < 0, "Failed to init PCL");
 
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
    fail_unless(ret != EPERS_NOT_INITIALIZED);
@@ -951,7 +970,7 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_ReadDefault);
    suite_add_tcase(s, tc_ReadConfDefault);
 
-   suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
+   //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
    return s;
 }
 

@@ -166,14 +166,14 @@ int readBlacklistConfigFile(const char* filename)
    fd = open(filename, O_RDONLY);
    if (fd == -1)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+      DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
       return -1;
    }
 
    // check for empty file
    if(gConfigFileSize == 0)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
+      DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
       close(fd);
       return -1;
    }
