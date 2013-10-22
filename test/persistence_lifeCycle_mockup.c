@@ -297,14 +297,25 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 
 static void removeWatch(DBusWatch *watch, void *data)
 {
-   printf("removeWatch called @0x%08x\n", (int)watch);
-}
+   void* w_data = dbus_watch_get_data(watch);
 
+   printf("removeWatch called @0x%08x\n", (int)watch);
+
+   if(w_data)
+      free(w_data);
+
+   dbus_watch_set_data(watch, NULL, NULL);
+}
 
 
 static void watchToggled(DBusWatch *watch, void *data)
 {
    printf("watchToggled called @0x%08x\n", (int)watch);
+
+   if(dbus_watch_get_enabled(watch))
+      addWatch(watch, data);
+   else
+      removeWatch(watch, data);
 }
 
 

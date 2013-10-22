@@ -346,7 +346,14 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 
 static void removeWatch(DBusWatch *watch, void *data)
 {
+   void* w_data = dbus_watch_get_data(watch);
+
    DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT( (int)watch) );
+
+   if(w_data)
+      free(w_data);
+
+   dbus_watch_set_data(watch, NULL, NULL);
 }
 
 
@@ -354,6 +361,11 @@ static void removeWatch(DBusWatch *watch, void *data)
 static void watchToggled(DBusWatch *watch, void *data)
 {
    DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT( (int)watch) );
+
+   if(dbus_watch_get_enabled(watch))
+      addWatch(watch, data);
+   else
+      removeWatch(watch, data);
 }
 
 
