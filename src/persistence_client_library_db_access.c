@@ -580,14 +580,13 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
 
 
 int persistence_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
-                                 pclChangeNotifyCallback_t callback, PersistenceNotifyRegPolicy_e regPolicy)
+                                 pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy)
 {
    int rval = 0;
-   DBusError error;
-   dbus_error_init (&error);
    char ruleChanged[DbusMatchRuleSize];
    char ruleDeleted[DbusMatchRuleSize];
    char ruleCreated[DbusMatchRuleSize];
+   DBusConnection* conn = get_dbus_connection();
 
    // add match for  c h a n g e
    snprintf(ruleChanged, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
@@ -604,19 +603,21 @@ int persistence_notify_on_change(char* dbPath, char* key, unsigned int ldbid, un
       // assign callback
       gChangeNotifyCallback = callback;
 
-      dbus_bus_add_match(get_dbus_connection(), ruleChanged, &error);
-      dbus_bus_add_match(get_dbus_connection(), ruleDeleted, &error);
-      dbus_bus_add_match(get_dbus_connection(), ruleCreated, &error);
+      dbus_bus_add_match(conn, ruleChanged, NULL);
+      dbus_bus_add_match(conn, ruleDeleted, NULL);
+      dbus_bus_add_match(conn, ruleCreated, NULL);
    }
    else if(regPolicy == Notify_unregister)
    {
       // remove callback
       gChangeNotifyCallback = NULL;
 
-      dbus_bus_remove_match(get_dbus_connection(), ruleChanged, &error);
-      dbus_bus_remove_match(get_dbus_connection(), ruleDeleted, &error);
-      dbus_bus_remove_match(get_dbus_connection(), ruleCreated, &error);
+      dbus_bus_remove_match(conn, ruleChanged, NULL);
+      dbus_bus_remove_match(conn, ruleDeleted, NULL);
+      dbus_bus_remove_match(conn, ruleCreated, NULL);
    }
+
+   dbus_connection_flush(conn);  // flush the connection to add the match
 
    return rval;
 }

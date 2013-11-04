@@ -33,11 +33,11 @@ extern "C" {
 
 
 /// enumerator used to identify the policy to manage the data
-typedef enum _PersistenceNotifyRegPolicy_e
+typedef enum _PersNotifyRegPolicy_e
 {
    Notify_register   = 0,  /**< register to change notifications*/
    Notify_unregister = 1,  /**< unregister for change notifications */
-}PersistenceNotifyRegPolicy_e;
+} PersNotifyRegPolicy_e;
 
 
 /**
@@ -130,7 +130,7 @@ void pers_db_close_all();
  * @return 0 of registration was successfull; -1 if registration failes
  */
 int persistence_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
-                                     pclChangeNotifyCallback_t callback, PersistenceNotifyRegPolicy_e regPolicy);
+                                     pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
 
 

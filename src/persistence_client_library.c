@@ -86,7 +86,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       }
 
 
-      if( setup_dbus_mainloop() == -1)
+      if(setup_dbus_mainloop() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
          return EPERS_DBUS_MAINLOOP;
