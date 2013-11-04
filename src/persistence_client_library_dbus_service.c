@@ -277,7 +277,7 @@ int setup_dbus_mainloop(void)
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open() Error :"), DLT_STRING(err.message) );
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open_private() Error :"), DLT_STRING(err.message) );
          dbus_error_free(&err);
          return -1;
       }

@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
    ret = pclInitLibrary("lt-persistence_client_library_dbus_test", shutdownReg);
    printf("pclInitLibrary: %d\n", ret);
 
-#if 0
    printf("Press a key to end application\n");
    ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
 
@@ -61,8 +60,23 @@ int main(int argc, char *argv[])
    ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
+   printf("Press enter to unregister to notifications\n");
    getchar();
-#endif
+
+   ret = pclKeyUnRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyUnRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyUnRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+
+   printf("Press enter to register to notifications\n");
+   getchar();
+
+   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+
+   printf("Press enter to end\n");
+   getchar();
+
    sleep(2);
    pclDeinitLibrary();
 

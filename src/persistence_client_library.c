@@ -55,8 +55,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
    if(gPclInitialized == PCLnotInitialized)
    {
-      gPclInitialized++;
-
       gShutdownMode = shutdownMode;
 
       DLT_REGISTER_CONTEXT(gDLTContext,"pers","Context for persistence client library logging");
@@ -82,8 +80,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          pBlacklistPath = "/etc/pclBackupBlacklist.txt";   // default path
       }
 
-      rval = readBlacklistConfigFile(pBlacklistPath);
-      if(rval == -1)
+      if(readBlacklistConfigFile(pBlacklistPath) == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(pBlacklistPath));
       }
@@ -162,6 +159,8 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       // destory mutex
       pthread_mutex_destroy(&gDbusInitializedMtx);
       pthread_cond_destroy(&gDbusInitializedCond);
+
+      gPclInitialized++;
    }
    else if(gPclInitialized >= PCLinitialized)
    {
@@ -186,7 +185,7 @@ int pclDeinitLibrary(void)
 
       // unregister for lifecycle and persistence admin service dbus messages
       rval = unregister_lifecycle(gShutdownMode);
-      //rval = unregister_pers_admin_service();
+      rval = unregister_pers_admin_service();
 
       // unload custom client libraries
       for(i=0; i<PersCustomLib_LastEntry; i++)

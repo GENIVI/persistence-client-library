@@ -249,20 +249,46 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
    {
       if(key_handle < MaxPersHandle)
       {
-         rval = pclKeyRegisterNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
-                                      gKeyHandleArray[key_handle].resourceID,
-                                      gKeyHandleArray[key_handle].info.context.user_no,
-                                      gKeyHandleArray[key_handle].info.context.seat_no, callback);
+         rval = regNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
+                                  gKeyHandleArray[key_handle].resourceID,
+                                  gKeyHandleArray[key_handle].info.context.user_no,
+                                  gKeyHandleArray[key_handle].info.context.seat_no,
+                                  callback,
+                                  Notify_register);
       }
       else
       {
          rval = EPERS_MAXHANDLE;
       }
    }
-
    return rval;
 }
 
+int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
+{
+   int rval = EPERS_NOT_INITIALIZED;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
+   //             DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+
+   if(gPclInitialized >= PCLinitialized)
+   {
+      if(key_handle < MaxPersHandle)
+      {
+         rval = regNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
+                                  gKeyHandleArray[key_handle].resourceID,
+                                  gKeyHandleArray[key_handle].info.context.user_no,
+                                  gKeyHandleArray[key_handle].info.context.seat_no,
+                                  callback,
+                                  Notify_unregister);
+      }
+      else
+      {
+         rval = EPERS_MAXHANDLE;
+      }
+   }
+   return rval;
+}
 
 
 int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size)
@@ -536,7 +562,23 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 }
 
 
+
+int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_id, unsigned int  user_no, unsigned int  seat_no, pclChangeNotifyCallback_t  callback)
+{
+   return regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_unregister);
+}
+
+
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
+{
+
+   return regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_register);
+}
+
+
+
+
+int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback, PersistenceNotifyRegPolicy_e regPolicy)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
@@ -559,9 +601,9 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
 
       // registration is only on shared key possible
       if(   (dbContext.configKey.storage == PersistenceStorage_shared)
-         && (dbContext.configKey.type    == PersistenceResourceType_key) )
+        && (dbContext.configKey.type    == PersistenceResourceType_key) )
       {
-         rval = persistence_reg_notify_on_change(dbPath, dbKey, ldbid, user_no, seat_no, callback);
+         rval = persistence_notify_on_change(dbPath, dbKey, ldbid, user_no, seat_no, callback, regPolicy);
       }
       else
       {
@@ -572,7 +614,6 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
 
    return rval;
 }
-
 
 
 

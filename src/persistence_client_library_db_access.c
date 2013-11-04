@@ -579,34 +579,44 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
 }
 
 
-int persistence_reg_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
-                                     pclChangeNotifyCallback_t callback)
+int persistence_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+                                 pclChangeNotifyCallback_t callback, PersistenceNotifyRegPolicy_e regPolicy)
 {
    int rval = 0;
    DBusError error;
    dbus_error_init (&error);
    char ruleChanged[DbusMatchRuleSize];
    char ruleDeleted[DbusMatchRuleSize];
-
-   // assign callback
-   gChangeNotifyCallback = callback;
+   char ruleCreated[DbusMatchRuleSize];
 
    // add match for  c h a n g e
    snprintf(ruleChanged, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
             key, ldbid, user_no, seat_no);
-   dbus_bus_add_match(get_dbus_connection(), ruleChanged, &error);
-
-
    // add match for  d e l e t e
    snprintf(ruleDeleted, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResDelete',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
             key, ldbid, user_no, seat_no);
-   dbus_bus_add_match(get_dbus_connection(), ruleDeleted, &error);
-
-
    // add match for  c r e a t e
-   snprintf(ruleDeleted, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResCreate',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
+   snprintf(ruleCreated, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResCreate',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
             key, ldbid, user_no, seat_no);
-   dbus_bus_add_match(get_dbus_connection(), ruleDeleted, &error);
+
+   if(regPolicy == Notify_register)
+   {
+      // assign callback
+      gChangeNotifyCallback = callback;
+
+      dbus_bus_add_match(get_dbus_connection(), ruleChanged, &error);
+      dbus_bus_add_match(get_dbus_connection(), ruleDeleted, &error);
+      dbus_bus_add_match(get_dbus_connection(), ruleCreated, &error);
+   }
+   else if(regPolicy == Notify_unregister)
+   {
+      // remove callback
+      gChangeNotifyCallback = NULL;
+
+      dbus_bus_remove_match(get_dbus_connection(), ruleChanged, &error);
+      dbus_bus_remove_match(get_dbus_connection(), ruleDeleted, &error);
+      dbus_bus_remove_match(get_dbus_connection(), ruleCreated, &error);
+   }
 
    return rval;
 }

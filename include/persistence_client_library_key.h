@@ -187,7 +187,16 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
  */
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback);
 
-
+/**
+ * @brief unregister a change notification for persistent data
+ *
+ * @param key_handle key value handle return by key_handle_open()
+ * @param callback notification callback
+ *
+ * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS
+ */
+int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback);
 
 /**
  * @brief writes persistent data identified by key handle
@@ -236,6 +245,20 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback);
 
 
+
+/**
+ * @brief unregister a change notification for persistent data
+ *
+ * @param ldbid logical database ID of the resource to monitor
+ * @param resource_id the resource ID
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param seat_no  the seat number
+ * @param callback notification callback
+ *
+ * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
+ *                         ::EPERS_RES_NO_KEY ::EPERS_NOKEYDATA  ::EPERS_NOPRCTABLE
+ */
+int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_id, unsigned int  user_no, unsigned int  seat_no, pclChangeNotifyCallback_t  callback);
 
 /**
  * @brief writes persistent data identified by ldbid and resource_id
