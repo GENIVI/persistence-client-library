@@ -20,6 +20,7 @@
  * \par change history
  * Date     Author          Version
  * 25/06/13 Ingo Hürner     1.0.0 - Rework of Init functions
+ * 04/11/13 Ingo Hürner     2.0.0 - Added define for shutdown type none
  *
  */
 /** \ingroup GEN_PERS */
@@ -38,7 +39,7 @@ extern "C" {
  * \{
  */
 
-#define  PERSIST_API_INTERFACE_VERSION   (0x01020000U)
+#define  PERSIST_API_INTERFACE_VERSION   (0x01030000U)
 
 /** \} */
 
@@ -51,10 +52,12 @@ extern "C" {
 
 #define PCL_SHUTDOWN_TYPE_FAST   2      /// Client registered for fast lifecycle shutdown
 #define PCL_SHUTDOWN_TYPE_NORMAL 1      /// Client registered for normal lifecycle shutdown
+#define PCL_SHUTDOWN_TYPE_NONE   0      /// Client does not register to lifecycle shutdown
 
 
 /**
- * @brief initalize client library
+ * @brief initalize client library.
+ *        This function will be called by the process using the PCL during startup phase.
  *
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  *
@@ -70,6 +73,7 @@ int pclInitLibrary(const char* appname, int shutdownMode);
 
 /**
  * @brief deinitialize client library
+ *        This function will be called during the shutdown phase of the process which uses the PCL.
  *
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  *

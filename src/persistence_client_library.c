@@ -92,11 +92,14 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          return EPERS_DBUS_MAINLOOP;
       }
 
-      // register for lifecycle and persistence admin service dbus messages
-      if(register_lifecycle(shutdownMode) == -1)
+      if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
-         return EPERS_REGISTER_LIFECYCLE;
+         // register for lifecycle and persistence admin service dbus messages
+         if(register_lifecycle(shutdownMode) == -1)
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
+            return EPERS_REGISTER_LIFECYCLE;
+         }
       }
       if(register_pers_admin_service() == -1)
       {
