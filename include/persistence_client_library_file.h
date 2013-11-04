@@ -172,6 +172,37 @@ int pclFileUnmapData(void* address, long size);
  */
 int pclFileWriteData(int fd, const void * buffer, int buffer_size);
 
+
+
+/**
+ * @brief create a path to a file
+ *
+ * @param ldbid logical database ID
+ * @param resource_id the resource ID
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param seat_no  the seat number
+ * @param path the path to the file
+ * @param size the size of the path
+ *
+ * @return positive value on success, which must be used when pclFileReleasePath will be called
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
+ */
+int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, char** path, unsigned int* size);
+
+
+/**
+ * @brief release a file path
+ *
+ * @param pathHandle the path to the file
+ * @param path the path
+ *
+ * @return positive value: success;
+ * On error a negative value will be returned with th follwoing error codes:
+ * EPERS_LOCKFS or EPERS_COMMON
+ */
+int pclFileReleasePath(int pathPandle, char* path);
+
 /** \} */ 
 
 #ifdef __cplusplus

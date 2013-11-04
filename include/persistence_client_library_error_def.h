@@ -101,6 +101,8 @@ extern "C" {
 #define EPERS_REGISTER_LIFECYCLE (-35)
 // failed register admin service dbus
 #define EPERS_REGISTER_ADMIN     (-36)
+// registration on this key is not allowed
+#define EPERS_NOTIFY_NOT_ALLOWED (-37)
 
 
 #ifdef __cplusplus

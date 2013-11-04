@@ -53,10 +53,15 @@ extern PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
 /// persistence file handle array
 extern PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
 
+/// persistence handle array for OSS and third party handles
+extern PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
+
 
 /// open file descriptor handle array
 extern int gOpenFdArray[MaxPersHandle];
 
+/// handle array
+extern int gOpenHandleArray[MaxPersHandle];
 
 /**
  * @brief get persistence handle

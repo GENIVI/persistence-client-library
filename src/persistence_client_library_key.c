@@ -240,16 +240,16 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
-               DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
+   //            DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
 
    return handleRegNotifyOnChange(key_handle, callback, Notify_register);
 }
 
 int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleUnRegisterNotifyOnChange: "),
-            DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleUnRegisterNotifyOnChange: "),
+   //         DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
 
    return handleRegNotifyOnChange(key_handle, callback, Notify_unregister);
 }
@@ -303,6 +303,12 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
                   if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
                   {
                      size = gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
+
+                     if(size >= 0) // success ==> send change notification
+                     {
+                        size = pers_send_Notification_Signal(gKeyHandleArray[key_handle].dbKey,
+                                                             &(gKeyHandleArray[key_handle].info.context), pclNotifyStatus_changed);
+                     }
                   }
                   else
                   {
@@ -555,8 +561,8 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
 int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_id, unsigned int  user_no, unsigned int  seat_no, pclChangeNotifyCallback_t  callback)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyUnRegisterNotifyOnChange: "),
-               DLT_INT(ldbid), DLT_STRING(resource_id) );
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyUnRegisterNotifyOnChange: "),
+   //            DLT_INT(ldbid), DLT_STRING(resource_id) );
 
    return regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_unregister);
 }
@@ -564,8 +570,9 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
 
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange: "),
-               DLT_INT(ldbid), DLT_STRING(resource_id) );
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange: "),
+   //            DLT_INT(ldbid), DLT_STRING(resource_id) );
+
    return regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_register);
 }
 
@@ -593,8 +600,8 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
       // get database context: database path and database key
       rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
 
-      // registration is only on shared key possible
-      if(   (dbContext.configKey.storage == PersistenceStorage_shared)
+      // registration is only on shared and custom keys possible
+      if(   (dbContext.configKey.storage != PersistenceStorage_local)
         && (dbContext.configKey.type    == PersistenceResourceType_key) )
       {
          rval = persistence_notify_on_change(dbPath, dbKey, ldbid, user_no, seat_no, callback, regPolicy);
@@ -602,7 +609,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
       else
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key"));
-         rval = EPERS_RES_NO_KEY;
+         rval = EPERS_NOTIFY_NOT_ALLOWED;
       }
    }
 

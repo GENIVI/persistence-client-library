@@ -31,20 +31,24 @@ static int gInitialized = 0;
 /// open file descriptor handle array
 int gOpenFdArray[MaxPersHandle] = {0};
 
+/// handle array
+int gOpenHandleArray[MaxPersHandle] = {0};
+
 /// persistence key handle array
 PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
 
-
-/// persistence key handle array
+/// persistence file handle array
 PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
+
+/// persistence handle array for OSS and third party handles
+PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
 
 
 /// free handle array
 int gFreeHandleArray[MaxPersHandle] = {0};
-
 int gFreeHandleIdxHead = 0;
-
 pthread_mutex_t gMtx;
+
 
 
 /// get persistence handle

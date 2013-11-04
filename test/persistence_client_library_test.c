@@ -913,6 +913,31 @@ END_TEST
 
 
 
+START_TEST(test_GetPath)
+{
+   int ret = 0;
+   char* path = NULL;
+   const char* thePath = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB.db";
+   unsigned int pathSize = 0;
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   ret = pclInitLibrary(gTheAppId, shutdownReg);
+   fail_unless(ret <= 1, "Failed to init PCL");
+
+   ret = pclFileCreatePath(0xFF, "media/mediaDB.db", 1, 1, &path, &pathSize);
+   printf("PATH: %s \n", path);
+   fail_unless(strncmp((char*)path, thePath, strlen((char*)path)) == 0, "Path not correct");
+   fail_unless(pathSize == strlen((char*)path), "Path size not correct");
+
+   free(path);
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
 static Suite * persistencyClientLib_suite()
 {
    Suite * s  = suite_create("Persistency client library");
@@ -959,6 +984,9 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_ReadConfDefault = tcase_create("ReadConfDefault");
    tcase_add_test(tc_ReadConfDefault, test_ReadConfDefault);
 
+   TCase * tc_GetPath = tcase_create("GetPath");
+   tcase_add_test(tc_GetPath, test_GetPath);
+
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
@@ -972,6 +1000,7 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_Cursor);
    suite_add_tcase(s, tc_ReadDefault);
    suite_add_tcase(s, tc_ReadConfDefault);
+   suite_add_tcase(s, tc_GetPath);
 
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
    return s;

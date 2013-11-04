@@ -29,11 +29,13 @@
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
+
    printf("Notification received ==> lbid: %d | resource_id: %s | seat: %d | user: %d | status: %d \n", notifyStruct->ldbid,
          notifyStruct->resource_id,
          notifyStruct->seat_no,
          notifyStruct->user_no,
          notifyStruct->pclKeyNotify_Status );
+
    printf(" <== * - * myChangeCallback * - *\n");
 
    return 1;

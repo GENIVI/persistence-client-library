@@ -111,7 +111,7 @@ itzam_btree* pers_db_open(PersistenceInfo_s* info, const char* dbPath)
    itzam_btree* btree = NULL;
 
    // create array index: index is a combination of resource config table type and group
-   arrayIdx = info->configKey.storage + info->context.ldbid ;
+   arrayIdx = info->configKey.storage + info->context.ldbid;
 
    //if(arrayIdx <= DbTableSize)
    if(arrayIdx < DbTableSize)
@@ -384,14 +384,13 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
                   write_size = EPERS_DB_ERROR_INTERNAL;
                }
 
-
                itzam_btree_transaction_commit(btree);
                // transaction end
                // -----------------------------------------------------------------------------
 
                if(PersistenceStorage_shared == info->configKey.storage)
                {
-                  pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+                  write_size = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
                }
             }
             else
@@ -427,6 +426,11 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
             snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
          }
          write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
+
+         if(write_size >= 0)  // success ==> send deleted notification
+         {
+            write_size = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+         }
       }
       else
       {
@@ -539,7 +543,7 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
 
             if(PersistenceStorage_shared == info->configKey.storage)
             {
-               pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
+               ret = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
             }
          }
          else
@@ -569,6 +573,10 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
             snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
          }
          ret = gPersCustomFuncs[idx].custom_plugin_delete_data(pathKeyString);
+         if(ret >= 0)   // success ==> send deleted notification
+         {
+            ret = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
+         }
       }
       else
       {

@@ -50,7 +50,6 @@ int pclCalcCrc32Csum(int fd, char crc32sum[]);
 int pclVerifyConsistency(const char* origPath, const char* backupPath, const char* csumPath, int openFlags);
 
 int pclBackupNeeded(const char* path);
-
 //-------------------------------------------------------------
 
 
@@ -171,17 +170,15 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
             snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
-            if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+            if(pclVerifyConsistency(dbPath, backupPath, csumPath, flags) == -1)
             {
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
                return -1;
             }
          }
 
-         if(handle <= 0)   // check if open is needed or already done in verifyConsistency
-         {
-            handle = open(dbPath, flags);
-         }
+         // open file
+         handle = open(dbPath, flags);
 
          if(handle != -1)
          {
@@ -389,6 +386,148 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 
    return size;
 }
+
+
+int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, char** path, unsigned int* size)
+{
+   int handle = EPERS_NOT_INITIALIZED;
+
+   if(gPclInitialized >= PCLinitialized)
+   {
+      int shared_DB = 0;
+      PersistenceInfo_s dbContext;
+
+      char dbKey[DbKeyMaxLen]      = {0};    // database key
+      char dbPath[DbPathMaxLen]    = {0};    // database location
+      char backupPath[DbKeyMaxLen] = {0};    // backup file
+      char csumPath[DbPathMaxLen]  = {0};    // checksum file
+
+      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
+      dbContext.context.ldbid   = ldbid;
+      dbContext.context.seat_no = seat_no;
+      dbContext.context.user_no = user_no;
+
+      // get database context: database path and database key
+      shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
+
+      if(   (shared_DB >= 0)                                               // check valid database context
+         && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
+      {
+         int flags = dbContext.configKey.permission;
+
+         // file will be opened writable, so check about data consistency
+         if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
+            && pclBackupNeeded(dbPath) )
+         {
+            snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+            snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+            if((pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+            {
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
+               return -1;
+            }
+         }
+
+         handle = get_persistence_handle_idx();
+
+         if(handle != -1)
+         {
+            if(handle < MaxPersHandle)
+            {
+               __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
+
+               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+               {
+                  strcpy(gOssHandleArray[handle].backupPath, backupPath);
+                  strcpy(gOssHandleArray[handle].csumPath,   csumPath);
+
+                  gOssHandleArray[handle].backupCreated = 0;
+                  gOssHandleArray[handle].permission = dbContext.configKey.permission;
+               }
+
+               *size = strlen(dbPath);
+               *path = malloc(*size);
+               memcpy(*path, dbPath, *size);
+            }
+            else
+            {
+               set_persistence_handle_close_idx(handle);
+               handle = EPERS_MAXHANDLE;
+            }
+         }
+      }
+      else
+      {
+         // assemble file string for local cached location
+         snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+
+         handle = get_persistence_handle_idx();
+
+         if(handle != -1)
+         {
+            if(handle < MaxPersHandle)
+            {
+               snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+               snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+               __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
+               strcpy(gOssHandleArray[handle].backupPath, backupPath);
+               strcpy(gOssHandleArray[handle].csumPath,   csumPath);
+               gOssHandleArray[handle].backupCreated = 0;
+               gOssHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+            }
+            else
+            {
+               set_persistence_handle_close_idx(handle);
+               handle = EPERS_MAXHANDLE;
+            }
+         }
+      }
+   }
+
+   return handle;
+}
+
+
+
+int pclFileReleasePath(int pathPandle, char* path)
+{
+   int rval = EPERS_NOT_INITIALIZED;
+
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
+
+   if(gPclInitialized >= PCLinitialized)
+   {
+      if(pathPandle < MaxPersHandle)
+      {
+         // check if a backup and checksum file needs to bel deleted
+         if( gFileHandleArray[pathPandle].permission != PersistencePermission_ReadOnly)
+         {
+            // remove backup file
+            remove(gOssHandleArray[pathPandle].backupPath);  // we don't care about return value
+
+            // remove checksum file
+            remove(gOssHandleArray[pathPandle].csumPath);    // we don't care about return value
+
+         }
+         __sync_fetch_and_sub(&gOpenHandleArray[pathPandle], FileClosed);   // set closed flag
+         set_persistence_handle_close_idx(pathPandle);
+         free(path);
+         path = NULL;
+         rval = 1;
+      }
+      else
+      {
+        rval = EPERS_MAXHANDLE;
+      }
+   }
+
+   return rval;
+}
+
+
 
 
 
@@ -624,6 +763,10 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
       remove(origPath);
       remove(backupPath);
       remove(csumPath);
+   }
+   else
+   {
+      close(handle);
    }
 
    return handle;
