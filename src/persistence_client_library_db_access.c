@@ -71,8 +71,7 @@ static int gBtreeCreated[DbTableSize][PersistencePolicy_LastEntry] = { {0} };
 
 // function prototype
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, unsigned int reason);
-
-
+int pers_get_default_data(char* dbPath, char* key, char* buffer, unsigned int buffer_size);
 
 
 
@@ -217,15 +216,14 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
       || PersistenceStorage_local == info->configKey.storage)
    {
       itzam_btree* btree = NULL;
-      itzam_btree btreeDefault;
-      itzam_btree btreeConfDefault;
-      KeyValuePair_s search;
       int keyFound = 0;
       itzam_state  state = ITZAM_FAILED;
 
       btree = pers_db_open(info, dbPath);
       if(btree != NULL)
       {
+         KeyValuePair_s search;
+
          if(itzam_true == itzam_btree_find(btree, key, &search))
          {
             read_size = search.m_data_size;
@@ -237,73 +235,10 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
             keyFound = 1;
          }
       }
-
-
-      // 1. check if _configurable_ default data is available
-      // --------------------------------
-      if(keyFound == 0)
+      if(keyFound == 0) // check for default values.
       {
-         if(pers_db_open_default(&btreeConfDefault, dbPath, 1) != -1)
-         {
-            if(itzam_true == itzam_btree_find(&btreeConfDefault, key, &search)) // read db
-            {
-               read_size = search.m_data_size;
-               if(read_size > buffer_size)
-               {
-                  read_size = buffer_size;   // truncate data size to buffer size
-               }
-               memcpy(buffer, search.m_data, read_size);
-
-               keyFound = 1;
-            }
-            else
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> 2. resource not found in default config => search in default db"), DLT_STRING(key));
-            }
-
-            state = itzam_btree_close(&btreeConfDefault);
-            if (state != ITZAM_OKAY)
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> default: itzam_btree_close => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
-            }
-         }
+         read_size = pers_get_default_data(dbPath, key, buffer, buffer_size);
       }
-
-      // 2. check if default data is available
-      // --------------------------------
-      if(keyFound == 0)
-      {
-         if(pers_db_open_default(&btreeDefault, dbPath, 0) != -1)
-         {
-            if(itzam_true == itzam_btree_find(&btreeDefault, key, &search)) // read db
-            {
-               read_size = search.m_data_size;
-               if(read_size > buffer_size)
-               {
-                  read_size = buffer_size;   // truncate data size to buffer size
-               }
-               memcpy(buffer, search.m_data, read_size);
-            }
-            else
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> 3. reasoure not found in both default db's"), DLT_STRING(key) );
-               read_size = EPERS_NOKEY;   // the key is not available neither in regular db nor in the default db's
-            }
-
-            state = itzam_btree_close(&btreeDefault);
-            if (state != ITZAM_OKAY)
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> default: itzam_btree_close => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
-            }
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==>no resource config table"), DLT_STRING(dbPath), DLT_STRING(key) );
-            read_size = EPERS_NOPRCTABLE;
-         }
-      }
-
-
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
@@ -323,10 +258,90 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
             snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
          }
          read_size = gPersCustomFuncs[idx].custom_plugin_get_data(pathKeyString, (char*)buffer, buffer_size);
+
+         if(read_size < 0) // check if for custom storage default values are available
+         {
+            read_size = pers_get_default_data(dbPath, key, buffer, buffer_size);
+         }
       }
       else
       {
          read_size = EPERS_NOPLUGINFUNCT;
+      }
+   }
+   return read_size;
+}
+
+
+
+int pers_get_default_data(char* dbPath, char* key, char* buffer, unsigned int buffer_size)
+{
+   int keyFound = 0;
+   int read_size = 0;
+   KeyValuePair_s search;
+
+   itzam_state  state = ITZAM_FAILED;
+   itzam_btree btreeConfDefault;
+   itzam_btree btreeDefault;
+
+   // 1. check if _configurable_ default data is available
+   // --------------------------------
+   if(pers_db_open_default(&btreeConfDefault, dbPath, 1) != -1)
+   {
+      if(itzam_true == itzam_btree_find(&btreeConfDefault, key, &search)) // read db
+      {
+         read_size = search.m_data_size;
+         if(read_size > buffer_size)
+         {
+            read_size = buffer_size;   // truncate data size to buffer size
+         }
+         memcpy(buffer, search.m_data, read_size);
+
+         keyFound = 1;
+      }
+      else
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> 2. resource not found in default config => search in default db"), DLT_STRING(key));
+      }
+
+      state = itzam_btree_close(&btreeConfDefault);
+      if (state != ITZAM_OKAY)
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> default: itzam_btree_close => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
+      }
+   }
+
+   // 2. check if default data is available
+   // --------------------------------
+   if(keyFound == 0)
+   {
+      if(pers_db_open_default(&btreeDefault, dbPath, 0) != -1)
+      {
+         if(itzam_true == itzam_btree_find(&btreeDefault, key, &search)) // read db
+         {
+            read_size = search.m_data_size;
+            if(read_size > buffer_size)
+            {
+               read_size = buffer_size;   // truncate data size to buffer size
+            }
+            memcpy(buffer, search.m_data, read_size);
+         }
+         else
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> 3. reasoure not found in both default db's"), DLT_STRING(key) );
+            read_size = EPERS_NOKEY;   // the key is not available neither in regular db nor in the default db's
+         }
+
+         state = itzam_btree_close(&btreeDefault);
+         if (state != ITZAM_OKAY)
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==> default: itzam_btree_close => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
+         }
+      }
+      else
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_read_key ==>no resource config table"), DLT_STRING(dbPath), DLT_STRING(key) );
+         read_size = EPERS_NOPRCTABLE;
       }
    }
    return read_size;
