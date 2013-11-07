@@ -173,14 +173,14 @@ int send_lifecycle_register(const char* method, int shutdownMode, int reg)
          {
             dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
                                               DBUS_TYPE_STRING, &objName,
-                                              DBUS_TYPE_INT32, &shutdownMode,
+                                              DBUS_TYPE_UINT32, &shutdownMode,
                                               DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
          }
          else           // unregister
          {
             dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
                                               DBUS_TYPE_STRING, &objName,
-                                              DBUS_TYPE_INT32, &shutdownMode, DBUS_TYPE_INVALID);
+                                              DBUS_TYPE_UINT32, &shutdownMode, DBUS_TYPE_INVALID);
 
          }
 

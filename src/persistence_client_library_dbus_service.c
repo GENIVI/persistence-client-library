@@ -286,7 +286,7 @@ int setup_dbus_mainloop(void)
    {
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("Use default dbus bus (DBUS_BUS_SYSTEM)"));
 
-      gDbusConn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
+      gDbusConn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
 
    // create here the dbus connection and pass to main loop
@@ -616,7 +616,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          }
          close(gEfds);
       }
-      //dbus_connection_close(conn);
+      dbus_connection_close(conn);
       dbus_connection_unref(conn);
       dbus_shutdown();
    }

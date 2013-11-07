@@ -252,7 +252,6 @@ START_TEST (test_GetDataHandle)
 END_TEST
 
 
-
 /*
  * Write data to a key using the key interface.
  * First write data to different keys and after
@@ -285,9 +284,10 @@ START_TEST(test_SetData)
     *       ==> local USER value (user 1, seat 2)
     * Resource ID: 69
     */
+
    ret = pclKeyWriteData(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
    fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
-
+#if 1
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
    /**
     * Logical DB ID: 0xFF with user 1 and seat 2
@@ -361,7 +361,7 @@ START_TEST(test_SetData)
    ret = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
    fail_unless(ret == strlen(write2), "Wrong read size");
-
+#endif
    pclDeinitLibrary();
 }
 END_TEST

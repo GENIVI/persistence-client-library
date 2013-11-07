@@ -106,7 +106,7 @@ int checkAdminMsg(DBusConnection *connection, DBusMessage *message, int reg)
    {
       if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &busName,  // bus name
                                                    DBUS_TYPE_STRING, &objName,
-                                                   DBUS_TYPE_INT32,  &notificationFlag,
+                                                   DBUS_TYPE_UINT32,  &notificationFlag,
                                                    DBUS_TYPE_UINT32, &gTimeoutMs,
                                                    DBUS_TYPE_INVALID))
       {
@@ -133,7 +133,7 @@ int checkAdminMsg(DBusConnection *connection, DBusMessage *message, int reg)
    {
       if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &busName,  // bus name
                                                    DBUS_TYPE_STRING, &objName,
-                                                   DBUS_TYPE_INT32,  &notificationFlag,
+                                                   DBUS_TYPE_UINT32,  &notificationFlag,
                                                    DBUS_TYPE_INVALID))
       {
          reply = dbus_message_new_error(message, error.name, error.message);
@@ -458,7 +458,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
          }
          close(gEfds);
       }
-      //dbus_connection_close(conn);
+      dbus_connection_close(conn);
       dbus_connection_unref(conn);
       dbus_shutdown();
    }
@@ -527,7 +527,7 @@ int setup_dbus_mainloop(void)
    else
    {
       printf("Use default dbus bus!!!!!!\n");
-      gDbusConn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
+      gDbusConn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
 
    // wain until dbus main loop has been setup and running

@@ -421,7 +421,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
          }
          close(gEfds);
       }
-      //dbus_connection_close(conn);
+      dbus_connection_close(conn);
       dbus_connection_unref(conn);
       dbus_shutdown();
    }
@@ -490,7 +490,7 @@ int setup_dbus_mainloop(void)
    else
    {
       printf("Use default dbus bus!!!!!!\n");
-      gDbusConn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
+      gDbusConn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
 
    // wain until dbus main loop has been setup and running
