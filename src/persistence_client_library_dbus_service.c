@@ -161,8 +161,14 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
                notifyStruct.seat_no     = atoi(seat_no);
 
                // call the registered callback function
-               gChangeNotifyCallback(&notifyStruct);
-
+               if(gChangeNotifyCallback != NULL )
+               {
+                  gChangeNotifyCallback(&notifyStruct);
+               }
+               else
+               {
+                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => gChangeNotifyCallback is not set (possibly NULL)") );
+               }
                result = DBUS_HANDLER_RESULT_HANDLED;
             }
             dbus_connection_flush(connection);
@@ -205,7 +211,6 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> not a signal:"), DLT_STRING(dbus_message_get_member(message)) );
       }
    }
-
    return result;
 }
 

@@ -184,7 +184,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size);
  * @param path the path to the file
  * @param size the size of the path
  *
- * @note the allocated memory for the path string will be freed in tpclFileReleasePath
+ * @note the allocated memory for the path string will be freed in pclFileReleasePath
  *
  * @return positive value on success, which must be used when pclFileReleasePath will be called
  * On error a negative value will be returned with th follwoing error codes:

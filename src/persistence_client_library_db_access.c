@@ -616,7 +616,7 @@ int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int use
       gRegNotifySeatNo = seat_no;
       gRegNotifyPolicy = regPolicy;
 
-      if(regPolicy == Notify_lastEntry)
+      if(regPolicy == Notify_register)
       {
          // assign callback
          gChangeNotifyCallback = callback;
