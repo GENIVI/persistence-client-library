@@ -54,13 +54,5 @@ int register_lifecycle(int shutdownMode);
 int unregister_lifecycle(int shutdownMode);
 
 
-/**
- * @brief process a shutdown message (close all open files, open databases, ...
- *
- * @param requestId the requestID
- */
-void process_prepare_shutdown(unsigned char requestId, unsigned int status);
-
-
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_LC_INTERFACE_H */

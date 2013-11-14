@@ -59,9 +59,6 @@ void pers_unlock_access(void);
 int isAccessLocked(void);
 
 
-/// block persistence access and write data back to device
-void process_block_and_write_data_back(unsigned int requestID, unsigned int status);
-
 
 /**
  * @brief send registration message 'RegisterPersAdminNotification' to org.genivi.persistence.admin

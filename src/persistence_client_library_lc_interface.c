@@ -35,7 +35,6 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-static int gTimeoutMs = 50000;
 
 int check_lc_request(int request, int requestID)
 {
@@ -150,203 +149,62 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
 
 
-int send_lifecycle_register(const char* method, int shutdownMode, int reg)
-{
-   int rval = 0;
-
-   DBusError error;
-   dbus_error_init (&error);
-   DBusConnection* conn = get_dbus_connection();
-
-   if(conn != NULL)
-   {
-      const char* objName = "/org/genivi/NodeStateManager/LifeCycleConsumer";
-      const char* busName = dbus_bus_get_unique_name(conn);
-
-      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
-                                                          "/org/genivi/NodeStateManager/Consumer", // path
-                                                          "org.genivi.NodeStateManager.Consumer",  // interface
-                                                          method);                                 // method
-      if(message != NULL)
-      {
-         if(reg == 1)   // register
-         {
-            dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                              DBUS_TYPE_STRING, &objName,
-                                              DBUS_TYPE_UINT32, &shutdownMode,
-                                              DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
-         }
-         else           // unregister
-         {
-            dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                              DBUS_TYPE_STRING, &objName,
-                                              DBUS_TYPE_UINT32, &shutdownMode, DBUS_TYPE_INVALID);
-
-         }
-
-         if(conn != NULL)
-         {
-            if(!dbus_connection_send(conn, message, 0))
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
-               rval = -1;
-            }
-
-            dbus_connection_flush(conn);
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid connection"));
-            rval = -1;
-         }
-         dbus_message_unref(message);
-      }
-      else
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid message"));
-         rval = -1;
-      }
-   }
-   else
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: connection isn NULL"));
-      rval = -1;
-   }
-
-   return rval;
-}
-
-
-
-int send_lifecycle_request(const char* method, int requestId, int status)
-{
-   int rval = 0;
-
-   DBusError error;
-   dbus_error_init (&error);
-
-   DBusConnection* conn = get_dbus_connection();
-
-   if(conn != NULL)
-   {
-      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
-                                                         "/org/genivi/NodeStateManager/Consumer",  // path
-                                                          "org.genivi.NodeStateManager.Consumer",  // interface
-                                                          method);                  // method
-      if(message != NULL)
-      {
-         dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
-                                           DBUS_TYPE_INT32, &status,
-                                           DBUS_TYPE_INVALID);
-
-         if(conn != NULL)
-         {
-            if(!dbus_connection_send(conn, message, 0))
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
-               rval = -1;
-            }
-
-            dbus_connection_flush(conn);
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid connection"));
-            rval = -1;
-         }
-         dbus_message_unref(message);
-      }
-      else
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid message"));
-         rval = -1;
-      }
-   }
-   else
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: connection isn NULL"));
-      rval = -1;
-   }
-
-   return rval;
-}
-
-
-
 int register_lifecycle(int shutdownMode)
 {
-   return send_lifecycle_register("RegisterShutdownClient", shutdownMode, 1);
+   int rval =  0;
+   uint64_t cmd;
+   uint16_t* cmd_chk;
+
+   cmd = ( ((uint64_t)shutdownMode << 32) | ((uint64_t)1 << 16) | CMD_SEND_LC_REGISTER);
+   cmd_chk = &cmd;
+   printf("register_lifecycle => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
+
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   {
+     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("register_lifecycle => failed to write to pipe"), DLT_INT(errno));
+     rval = -1;
+   }
+   printf("register_lifecycle <= \n\n");
+   return rval;
 }
 
 
 
 int unregister_lifecycle(int shutdownMode)
 {
-   return send_lifecycle_register("UnRegisterShutdownClient", shutdownMode, 0);
+   int rval =  0;
+   uint64_t cmd;
+   uint16_t* cmd_chk;
+
+   cmd = ( ((uint64_t)shutdownMode << 32) | ((uint64_t)0 << 16) | CMD_SEND_LC_REGISTER);
+   cmd_chk = &cmd;
+   printf("unregister_lifecycle => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   {
+     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_lifecycle => failed to write to pipe"), DLT_INT(errno));
+     rval = -1;
+   }
+   printf("unregister_lifecycle <= \n\n");
+   return rval;
 }
+
 
 
 int send_prepare_shutdown_complete(int requestId, int status)
 {
-   return send_lifecycle_request("LifecycleRequestComplete", requestId, status);
-}
+   int rval =  0;
+   uint64_t cmd;
+   uint16_t* cmd_chk;
 
-
-
-
-void process_prepare_shutdown(unsigned char requestId, unsigned int status)
-{
-   int i = 0;
-   //GvdbTable* resourceTable = NULL;
-   itzam_btree* resourceTable = NULL;
-   itzam_state  state = ITZAM_FAILED;
-
-   // block write
-   pers_lock_access();
-
-   // flush open files to disk
-   for(i=0; i<MaxPersHandle; i++)
+   cmd = ( ((uint64_t)requestId << 32) | ((uint64_t)status << 16) | CMD_SEND_LC_REQUEST);
+   cmd_chk = &cmd;
+   //printf("cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
    {
-      int tmp = i;
-      if(gOpenFdArray[tmp] == FileOpen)
-      {
-         fsync(tmp);
-         close(tmp);
-      }
+     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_prepare_shutdown_complete => failed to write to pipe"), DLT_INT(errno));
+     rval = -1;
    }
 
-   // close open gvdb persistence resource configuration table
-   for(i=0; i< PrctDbTableSize; i++)
-   {
-     resourceTable = get_resource_cfg_table_by_idx(i);
-     // dereference opend database
-     if(resourceTable != NULL)
-     {
-        state = itzam_btree_close(resourceTable);
-        if (state != ITZAM_OKAY)
-        {
-           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => itzam_btree_close: Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
-        }
-     }
-   }
-
-   //close opend database
-   pers_db_close_all();
-
-
-   // unload custom client libraries
-   for(i=0; i<PersCustomLib_LastEntry; i++)
-   {
-      if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
-      {
-         // deinitialize plugin
-         gPersCustomFuncs[i].custom_plugin_deinit();
-         // close library handle
-         dlclose(gPersCustomFuncs[i].handle);
-      }
-   }
-
-   // notify lifecycle shutdown OK
-   send_prepare_shutdown_complete((int)requestId, (int)status);
+   return rval;
 }
 

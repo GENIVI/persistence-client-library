@@ -450,6 +450,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                *size = strlen(dbPath);
                *path = malloc(*size);
                memcpy(*path, dbPath, *size);
+               gOssHandleArray[handle].filePath = *path;
             }
             else
             {
@@ -492,7 +493,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
 
 
-int pclFileReleasePath(int pathPandle, char* path)
+int pclFileReleasePath(int pathPandle)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
@@ -512,10 +513,10 @@ int pclFileReleasePath(int pathPandle, char* path)
             remove(gOssHandleArray[pathPandle].csumPath);    // we don't care about return value
 
          }
+         free(gOssHandleArray[pathPandle].filePath);
          __sync_fetch_and_sub(&gOpenHandleArray[pathPandle], FileClosed);   // set closed flag
          set_persistence_handle_close_idx(pathPandle);
-         free(path);
-         path = NULL;
+         gOssHandleArray[pathPandle].filePath = NULL;
          rval = 1;
       }
       else

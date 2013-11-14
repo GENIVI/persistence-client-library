@@ -48,6 +48,7 @@ static int gShutdownMode = 0;
 /// loical function declaration
 void invalidateCustomPlugin(int idx);
 
+
 int pclInitLibrary(const char* appName, int shutdownMode)
 {
    int status = 0;
@@ -63,12 +64,14 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       /// environment variable for on demand loading of custom libraries
       const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
-
       /// environment variable for max key value data
       const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
-
       /// blacklist path environment variable
       const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
+
+      printf("\nInitial => Mutex Lock\n");
+      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+      printf("Initial <= Mutex Lock\n");
 
       if(pDataSize != NULL)
       {
@@ -85,13 +88,21 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(pBlacklistPath));
       }
 
-
       if(setup_dbus_mainloop() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
          return EPERS_DBUS_MAINLOOP;
       }
 
+#if 1
+      if(register_pers_admin_service() == -1)
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
+         return EPERS_REGISTER_ADMIN;
+      }
+#endif
+
+#if 1
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
       {
          // register for lifecycle and persistence admin service dbus messages
@@ -101,11 +112,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
             return EPERS_REGISTER_LIFECYCLE;
          }
       }
-      if(register_pers_admin_service() == -1)
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
-         return EPERS_REGISTER_ADMIN;
-      }
+#endif
 
       /// get custom library names to load
       status = get_custom_libraries();
@@ -184,11 +191,11 @@ int pclDeinitLibrary(void)
    if(gPclInitialized == PCLinitialized)
    {
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
-                                           DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
+                                         DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle and persistence admin service dbus messages
-      rval = unregister_lifecycle(gShutdownMode);
       rval = unregister_pers_admin_service();
+      rval = unregister_lifecycle(gShutdownMode);
 
       // unload custom client libraries
       for(i=0; i<PersCustomLib_LastEntry; i++)
@@ -218,6 +225,7 @@ int pclDeinitLibrary(void)
    // end dbus library
    bContinue = FALSE;
 
+   pthread_mutex_destroy(&gDbusPendingRegMtx);
    return rval;
 }
 

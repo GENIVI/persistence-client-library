@@ -41,6 +41,7 @@ libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library_prct_access.c \
                                      persistence_client_library_itzam_errors.c \
                                      persistence_client_library_backup_filelist.c \
+                                     persistence_client_library_dbus_cmd.c \
                                      crc32.c \
                                      rbtree.c
 

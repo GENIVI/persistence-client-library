@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 /// definition of a key-value pair stored in the database
@@ -602,128 +603,74 @@ int pers_db_delete_key(char* dbPath, char* key, PersistenceInfo_s* info)
 }
 
 
-int persistence_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                  pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy)
 {
    int rval = 0;
-   char ruleChanged[DbusMatchRuleSize];
-   char ruleDeleted[DbusMatchRuleSize];
-   char ruleCreated[DbusMatchRuleSize];
-   DBusConnection* conn = get_dbus_connection();
+   uint64_t cmd;
 
-   // add match for  c h a n g e
-   snprintf(ruleChanged, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            key, ldbid, user_no, seat_no);
-   // add match for  d e l e t e
-   snprintf(ruleDeleted, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResDelete',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            key, ldbid, user_no, seat_no);
-   // add match for  c r e a t e
-   snprintf(ruleCreated, DbusMatchRuleSize, "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResCreate',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            key, ldbid, user_no, seat_no);
-
-   if(regPolicy == Notify_register)
+   if(regPolicy < Notify_lastEntry)
    {
-      // assign callback
-      gChangeNotifyCallback = callback;
+      snprintf(gRegNotifykey, DbKeyMaxLen, "%s", key);
+      gRegNotifyLdbid  = ldbid;     // to do: pass correct ==> JUST TESTING!!!!
+      gRegNotifyUserNo = user_no;
+      gRegNotifySeatNo = seat_no;
+      gRegNotifyPolicy = regPolicy;
 
-      dbus_bus_add_match(conn, ruleChanged, NULL);
-      dbus_bus_add_match(conn, ruleDeleted, NULL);
-      dbus_bus_add_match(conn, ruleCreated, NULL);
+      if(regPolicy == Notify_lastEntry)
+      {
+         // assign callback
+         gChangeNotifyCallback = callback;
+      }
+      else if(regPolicy == Notify_unregister)
+      {
+         // remove callback
+         gChangeNotifyCallback = NULL;
+      }
+
+      // add command and data to queue
+      cmd = (uint64_t)CMD_REG_NOTIFY_SIGNAL;
+
+      if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_notify_on_change => failed to write to pipe"), DLT_INT(errno));
+         rval = -1;
+      }
    }
-   else if(regPolicy == Notify_unregister)
+   else
    {
-      // remove callback
-      gChangeNotifyCallback = NULL;
-
-      dbus_bus_remove_match(conn, ruleChanged, NULL);
-      dbus_bus_remove_match(conn, ruleDeleted, NULL);
-      dbus_bus_remove_match(conn, ruleCreated, NULL);
+      rval = -1;
    }
-
-   dbus_connection_flush(conn);  // flush the connection to add the match
 
    return rval;
 }
 
 
+
+
+
+
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, pclNotifyStatus_e reason)
 {
-   DBusMessage* message;
-   dbus_bool_t ret;
-   int rval = 0;
-   char ldbid_array[DbusSubMatchSize] = {0};
-   char user_array[DbusSubMatchSize]  = {0};
-   char seat_array[DbusSubMatchSize]  = {0};
-   const char* ldbid_ptr = ldbid_array;
-   const char* user_ptr = user_array;
-   const char* seat_ptr = seat_array;
-
-   char* changeSignal = "PersistenceResChange";
-   char* deleteSignal = "PersistenceResDelete";
-   char* createSignal = "PersistenceResCreate";
-   char* theReason = NULL;
-
-   DBusConnection* conn = get_dbus_connection();
-
-
-   // dbus_bus_add_match is used for the notification mechanism,
-   // and this works only for type DBUS_TYPE_STRING as message arguments
-   // this is the reason to use string instead of integer types directly
-   snprintf(ldbid_array, DbusSubMatchSize, "%d", context->ldbid);
-   snprintf(user_array,  DbusSubMatchSize, "%d", context->user_no);
-   snprintf(seat_array,  DbusSubMatchSize, "%d", context->seat_no);
-
-   switch(reason)
+   int rval = 1;
+   if(reason < pclNotifyStatus_lastEntry)
    {
-      case pclNotifyStatus_deleted:
-         theReason = deleteSignal;
-         break;
-      case  pclNotifyStatus_created:
-         theReason = createSignal;
-         break;
-      case pclNotifyStatus_changed:
-         theReason = changeSignal;
-         break;
-      default:
-         theReason = changeSignal;
-         break;
-   }
+      snprintf(gSendNotifykey,  DbKeyMaxLen,       "%s", key);
 
-   if(theReason != NULL)
-   {
-      message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",    // const char *path,
-                                        "org.genivi.persistence.adminconsumer",     // const char *interface,
-                                        theReason);                                 // const char *name
+      gSendNotifyLdbid  = context->ldbid;     // to do: pass correct ==> JUST TESTING!!!!
+      gSendNotifyUserNo = context->user_no;
+      gSendNotifySeatNo = context->seat_no;
+      gSendNotifyReason = reason;
 
-      ret = dbus_message_append_args(message,
-                               DBUS_TYPE_STRING, &key,
-                               DBUS_TYPE_STRING, &ldbid_ptr,
-                               DBUS_TYPE_STRING, &user_ptr,
-                               DBUS_TYPE_STRING, &seat_ptr,
-                               DBUS_TYPE_INVALID);
-      if(ret == TRUE)
+      //printf("pers_send_Notification_Signal => key: %s | lbid: %d | gUserNo: %d | gSeatNo: %d | gReason: %d \n", key, gLdbid, gUserNo, gSeatNo, gReason);
+
+      uint64_t cmd;
+      // add command and data to queue
+      cmd = (uint64_t)CMD_SEND_NOTIFY_SIGNAL;
+
+      if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
       {
-         // Send the signal
-         if(conn != NULL)
-         {
-            if(dbus_connection_send(conn, message, 0) == TRUE)
-            {
-               // Free the signal now we have finished with it
-               dbus_message_unref(message);
-            }
-            else
-            {
-               rval = EPERS_NOTIFY_SIG;
-            }
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal ==> E R R O R  C O N E C T I O N  NULL!!"));
-         }
-      }
-      else
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal ==> ERROR dbus_message_append_args"));
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal => failed to write to pipe"), DLT_INT(errno));
          rval = EPERS_NOTIFY_SIG;
       }
    }

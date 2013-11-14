@@ -32,14 +32,6 @@ extern "C" {
 #include "../include/persistence_client_library_key.h"
 
 
-/// enumerator used to identify the policy to manage the data
-typedef enum _PersNotifyRegPolicy_e
-{
-   Notify_register   = 0,  /**< register to change notifications*/
-   Notify_unregister = 1,  /**< unregister for change notifications */
-} PersNotifyRegPolicy_e;
-
-
 /**
  * @brief write data to a key
  *
@@ -119,7 +111,6 @@ void pers_db_close_all();
 /**
  * @brief register or unregister for change notifications of a key
  *
- * @param dbPath the path to the database where the key is in
  * @param key the database key to register on
  * @param ldbid logical database ID of the resource to monitor
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
@@ -129,7 +120,7 @@ void pers_db_close_all();
  *
  * @return 0 of registration was successfull; -1 if registration failes
  */
-int persistence_notify_on_change(char* dbPath, char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                      pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
 

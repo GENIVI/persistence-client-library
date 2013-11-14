@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 
-#define  PERSIST_FILEAPI_INTERFACE_VERSION   (0x03000000U)
+#define  PERSIST_FILEAPI_INTERFACE_VERSION   (0x03010000U)
 
 #include "persistence_client_library.h"
 
@@ -184,6 +184,8 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size);
  * @param path the path to the file
  * @param size the size of the path
  *
+ * @note the allocated memory for the path string will be freed in tpclFileReleasePath
+ *
  * @return positive value on success, which must be used when pclFileReleasePath will be called
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
@@ -195,13 +197,14 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
  * @brief release a file path
  *
  * @param pathHandle the path to the file
- * @param path the path
+ *
+ * @note the allocated memory in pclFileCreatePath for the path will freed in the function
  *
  * @return positive value: success;
  * On error a negative value will be returned with th follwoing error codes:
  * EPERS_LOCKFS or EPERS_COMMON
  */
-int pclFileReleasePath(int pathPandle, char* path);
+int pclFileReleasePath(int pathPandle);
 
 /** \} */ 
 

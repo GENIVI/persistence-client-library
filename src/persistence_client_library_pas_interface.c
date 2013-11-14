@@ -25,9 +25,6 @@
 #include <errno.h>
 #include <unistd.h>
 
-
-static int gTimeoutMs = 50000;
-
 /// flag if access is locked
 static int gLockAccess = 0;
 
@@ -229,170 +226,86 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
 
 
-int send_pas_register(const char* method, int notificationFlag)
-{
-   int rval = 0;
-
-   DBusError error;
-   dbus_error_init (&error);
-   DBusMessage *replyMsg = NULL;
-   DBusConnection* conn = get_dbus_connection();
-
-   if(conn != NULL)
-   {
-      const char* objName = "/org/genivi/persistence/adminconsumer";
-      const char* busName = dbus_bus_get_unique_name(conn);
-
-      if(busName != NULL)
-      {
-         DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",    // destination
-                                                            "/org/genivi/persistence/admin",    // path
-                                                             "org.genivi.persistence.admin",    // interface
-                                                             method);                           // method
-
-         if(message != NULL)
-         {
-            dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
-                                              DBUS_TYPE_STRING, &objName,
-                                              DBUS_TYPE_INT32,  &notificationFlag,
-                                              DBUS_TYPE_UINT32, &gTimeoutMs,
-                                              DBUS_TYPE_INVALID);
-
-            replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
-
-            if(replyMsg != NULL)
-            {
-               if(dbus_set_error_from_message(&error, replyMsg))
-               {
-                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => Access denied"), DLT_STRING(error.message) );
-               }
-               else
-               {
-                  dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
-               }
-               dbus_message_unref(replyMsg);
-            }
-            else
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register => reply message is NULL!"), DLT_STRING(error.message) );
-            }
-
-            dbus_message_unref(message);
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid message") );
-            rval = -1;
-         }
-      }
-      else
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid busname") );
-         rval = -1;
-      }
-   }
-   else
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register =>  ERROR: Invalid connection") );
-      rval = -1;
-   }
-   return rval;
-}
-
-
-
-int send_pas_request(const char* method, unsigned int requestID, int status)
-{
-   int rval = 0;
-
-   DBusError error;
-   dbus_error_init (&error);
-   DBusMessage *replyMsg = NULL;
-   DBusConnection* conn = get_dbus_connection();
-
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",    // destination
-                                                      "/org/genivi/persistence/admin",    // path
-                                                       "org.genivi.persistence.admin",    // interface
-                                                       method);                  // method
-   if(message != NULL)
-   {
-      dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
-                                        DBUS_TYPE_INT32,  &status,
-                                        DBUS_TYPE_INVALID);
-
-      if(conn != NULL)
-      {
-         replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
-         if(replyMsg != NULL)
-         {
-            if(dbus_set_error_from_message(&error, replyMsg))
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => Access denied"), DLT_STRING(error.message) );
-            }
-            else
-            {
-               dbus_message_get_args(replyMsg, &error, DBUS_TYPE_INT32, &rval, DBUS_TYPE_INVALID);
-            }
-            dbus_message_unref(replyMsg );
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => reply messgae is NULL"), DLT_STRING(error.message) );
-         }
-      }
-      else
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid connection") );
-         rval = -1;
-      }
-      dbus_message_unref(message);
-   }
-   else
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid message") );
-      rval = -1;
-   }
-
-   return rval;
-}
-
-
 
 int register_pers_admin_service(void)
 {
+   int rval =  0;
+   uint64_t cmd;
+   uint16_t* cmd_chk;
+
+
    // register for everything
    int notificationFlag = PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock;
 
-   return send_pas_register("RegisterPersAdminNotification", notificationFlag);
+   cmd = ( ((uint64_t)notificationFlag << 32) | ((uint64_t)1 << 16) | CMD_SEND_PAS_REGISTER);
+   cmd_chk = &cmd;
+   printf("register_pers_admin_service => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   {
+    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("register_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
+    rval = -1;
+   }
+   else
+   {
+      printf(" register_pers_admin_service => Mutex Lock\n");
+      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+      printf(" register_pers_admin_service <= Mutex Lock\n");
+      rval = gDbusPendingRvalue;
+   }
+   printf("register_pers_admin_service <= \n\n");
+   return rval;
 }
 
 
 
 int unregister_pers_admin_service(void)
 {
+   int rval =  0;
+   uint64_t cmd;
+   uint16_t* cmd_chk;
    // register for everything
    int notificationFlag = PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock;
 
-   return send_pas_register("UnRegisterPersAdminNotification", notificationFlag);
+
+   cmd = ( ((uint64_t)notificationFlag << 32) | ((uint64_t)0 << 16) | CMD_SEND_PAS_REGISTER);
+   cmd_chk = &cmd;
+   printf("unregister_pers_admin_service => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
+
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   {
+     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
+     rval = -1;
+   }
+   else
+   {
+      printf(" UnRegister admin => Mutex Lock\n");
+      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+      printf(" UnRegister admin<= Mutex Lock\n");
+      rval = gDbusPendingRvalue;
+   }
+   printf("unregister_pers_admin_service <=\n\n");
+   return rval;
 }
 
 
 
 int pers_admin_service_data_sync_complete(unsigned int requestID, unsigned int status)
 {
-   return send_pas_request("PersistenceAdminRequestCompleted", requestID, status);
+   int rval =  0;
+   uint64_t cmd;
+   // add command and data to queue
+   cmd = ( ((uint64_t)requestID << 32) | ((uint64_t)status << 16) | CMD_SEND_PAS_REQUEST);
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   {
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_admin_service_data_sync_complete => failed to write to pipe"), DLT_INT(errno));
+      printf("pers_admin_service_data_sync_complete => f a i l e  d  to write to pipe\n");
+      rval = -1;
+   }
+   else
+   {
+      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+      rval = gDbusPendingRvalue;
+   }
+   return rval;
 }
-
-
-
-void process_block_and_write_data_back(unsigned int requestID, unsigned int status)
-{
-   // lock persistence data access
-   pers_lock_access();
-   // sync data back to memory device
-   pers_data_sync();
-   // send complete notification
-   pers_admin_service_data_sync_complete(requestID, status);
-}
-
 

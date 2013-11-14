@@ -28,8 +28,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
+int gEfds = 0;
 
 typedef enum EDBusObjectType
 {
@@ -62,15 +64,6 @@ typedef struct SPollInfo
 
 /// polling information
 static tPollInfo gPollInfo;
-
-/// dbus connection
-DBusConnection* gDbusConn = NULL;
-
-
-DBusConnection* get_dbus_connection(void)
-{
-   return gDbusConn;
-}
 
 int bContinue = 0;
 
@@ -137,7 +130,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
             char* user_no;
             char* seat_no;
 
-            if (!dbus_message_get_args (message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,
+            if (!dbus_message_get_args(message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,
                                                          DBUS_TYPE_STRING, &ldbid,
                                                          DBUS_TYPE_STRING, &user_no,
                                                          DBUS_TYPE_STRING, &seat_no,
@@ -249,6 +242,8 @@ int setup_dbus_mainloop(void)
    int rval = 0;
    pthread_t thread;
    DBusError err;
+   DBusConnection* conn = NULL;
+
    const char *pAddress = getenv("PERS_CLIENT_DBUS_ADDRESS");
 
    // enable locking of data structures in the D-Bus library for multi threading.
@@ -264,11 +259,11 @@ int setup_dbus_mainloop(void)
    {
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("setup_dbus_mainloop -> Use specific dbus address:"), DLT_STRING(pAddress) );
 
-      gDbusConn = dbus_connection_open_private(pAddress, &err);
+      conn = dbus_connection_open_private(pAddress, &err);
 
-      if(gDbusConn != NULL)
+      if(conn != NULL)
       {
-         if(!dbus_bus_register(gDbusConn, &err))
+         if(!dbus_bus_register(conn, &err))
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_bus_register() Error :"), DLT_STRING(err.message) );
             dbus_error_free (&err);
@@ -286,11 +281,11 @@ int setup_dbus_mainloop(void)
    {
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("Use default dbus bus (DBUS_BUS_SYSTEM)"));
 
-      gDbusConn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
+      conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
 
    // create here the dbus connection and pass to main loop
-   rval = pthread_create(&thread, NULL, run_mainloop, gDbusConn);
+   rval = pthread_create(&thread, NULL, run_mainloop, conn);
    if(rval)
    {
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
@@ -468,7 +463,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    // lock mutex to make sure dbus main loop is running
    pthread_mutex_lock(&gDbusInitializedMtx);
 
-
    DBusConnection* conn = (DBusConnection*)userData;
    dbus_error_init(&err);
 
@@ -479,8 +473,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    }
    else if (NULL != conn)
    {
-      dbus_connection_set_exit_on_disconnect (conn, FALSE);
-      if (-1 == (gEfds = eventfd(0, 0)))
+      dbus_connection_set_exit_on_disconnect(conn, FALSE);
+      if (-1 == (gEfds = eventfd(0, EFD_NONBLOCK)))
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => eventfd() failed w/ errno:"), DLT_INT(errno) );
       }
@@ -550,27 +544,54 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               }
                               bContinue = TRUE;
                            }
-                           else if (gPollInfo.fds[i].fd==gEfds)
+                           else if (gPollInfo.fds[i].fd == gEfds)
                            {
                               /* internal command */
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
                                  uint16_t buf[64];
                                  bContinue = TRUE;
-                                 while ((-1==(ret=read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR==errno));
+                                 while ((-1==(ret = read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR == errno));
                                  if (0>ret)
                                  {
                                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
+                                    printf(" * mainloop: read F A I L E D\n");
                                  }
                                  else if (ret != -1)
                                  {
+                                    printf(" * mainloop: dispatch command => [0]: %d | [1]: %d | [2]: %d\n", buf[0], buf[1], buf[2]);
                                     switch (buf[0])
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
                                           process_block_and_write_data_back((buf[2]), buf[1]);
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
+                                          printf(" CMD => Prepare shutdown\n");
                                           process_prepare_shutdown((buf[2]), buf[1]);
+                                          break;
+                                       case CMD_SEND_NOTIFY_SIGNAL:
+                                          printf(" CMD => Send notification signal\n");
+                                          process_send_notification_signal(conn);
+                                          break;
+                                       case CMD_REG_NOTIFY_SIGNAL:
+                                          printf(" CMD => Register notification signal\n");
+                                          process_reg_notification_signal(conn);
+                                          break;
+                                       case CMD_SEND_PAS_REQUEST:
+                                          printf(" CMD => Admin request => request: %d | status: %d\n", (buf[2]), buf[1]);
+                                          process_send_pas_request(conn, (buf[2]), buf[1]);
+                                          break;
+                                       case CMD_SEND_PAS_REGISTER:
+                                          printf(" CMD => Admin register => mode: %d | type: %d\n", (buf[2]), buf[1]);
+                                          process_send_pas_register(conn, (buf[1]), buf[2]);
+                                          break;
+                                       case CMD_SEND_LC_REQUEST:
+                                          printf(" CMD => Lifecycle request => request: %d | status\n", (buf[2]), buf[1]);
+                                          process_send_lifecycle_request(conn, (buf[2]), buf[1]);
+                                          break;
+                                       case CMD_SEND_LC_REGISTER:
+                                          printf(" CMD => Lifecycle register => mode: %d | type: %d\n", (buf[2]), buf[1]);
+                                          process_send_lifecycle_register(conn, (buf[1]), buf[2]);
                                           break;
                                        case CMD_QUIT:
                                           bContinue = FALSE;

@@ -604,7 +604,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
       if(   (dbContext.configKey.storage != PersistenceStorage_local)
         && (dbContext.configKey.type    == PersistenceResourceType_key) )
       {
-         rval = persistence_notify_on_change(dbPath, dbKey, ldbid, user_no, seat_no, callback, regPolicy);
+         rval = persistence_notify_on_change(dbKey, ldbid, user_no, seat_no, callback, regPolicy);
       }
       else
       {

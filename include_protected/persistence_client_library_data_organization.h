@@ -36,6 +36,15 @@ extern "C" {
 #include <stdio.h>
 
 
+/// enumerator used to identify the policy to manage the data
+typedef enum _PersNotifyRegPolicy_e
+{
+   Notify_register   = 0,  /**< register to change notifications*/
+   Notify_unregister = 1,  /**< unregister for change notifications */
+   Notify_lastEntry,       /**<last entry */
+} PersNotifyRegPolicy_e;
+
+
 /// constant definitions
 enum _PersistenceConstantDef
 {
@@ -157,6 +166,33 @@ extern DltContext gDLTContext;
 
 /// flag to indicate if client library has been initialized
 extern unsigned int gPclInitialized;
+
+
+/// change signal string
+extern const char* gChangeSignal;
+/// delete signal string
+extern const char* gDeleteSignal;
+/// create signal string
+extern const char* gCreateSignal;
+
+/// notification key
+extern char gSendNotifykey[DbKeyMaxLen];
+extern unsigned int gSendNotifyLdbid;
+extern unsigned int gSendNotifyUserNo;
+extern unsigned int gSendNotifySeatNo;
+extern pclNotifyStatus_e gSendNotifyReason;
+
+extern char gRegNotifykey[DbKeyMaxLen];
+extern unsigned int gRegNotifyLdbid;
+extern unsigned int gRegNotifyUserNo;
+extern unsigned int gRegNotifySeatNo;
+extern PersNotifyRegPolicy_e gRegNotifyPolicy;
+
+// dbus timeout
+extern int gTimeoutMs;
+
+// dbus pending return value
+extern int gDbusPendingRvalue;
 
 
 /**

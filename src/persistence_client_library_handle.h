@@ -42,6 +42,7 @@ typedef struct _PersistenceFileHandle_s
    int backupCreated;                     /// flag to indicate if a backup has already been created
    char backupPath[DbPathMaxLen];         /// path to the backup file
    char csumPath[DbPathMaxLen];           /// path to the checksum file
+   char* filePath;                        /// the path
 }
 PersistenceFileHandle_s;
 

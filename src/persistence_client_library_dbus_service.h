@@ -28,7 +28,7 @@
 /// mutex to make sure main loop is running
 extern pthread_mutex_t gDbusInitializedMtx;
 extern pthread_cond_t  gDbusInitializedCond;
-
+extern pthread_mutex_t gDbusPendingRegMtx;
 
 /// command definitions for main loop
 typedef enum ECmd
@@ -36,17 +36,18 @@ typedef enum ECmd
    CMD_NONE = 0,                    /// command none
    CMD_PAS_BLOCK_AND_WRITE_BACK,    /// command block access and write data back
    CMD_LC_PREPARE_SHUTDOWN,         /// command to prepare shutdown
+   CMD_SEND_NOTIFY_SIGNAL,          /// command send changed notification signal
+   CMD_REG_NOTIFY_SIGNAL,           /// command send register/unregister command
+   CMD_SEND_PAS_REQUEST,            /// command send admin request
+   CMD_SEND_PAS_REGISTER,           /// command send admin register/unregister
+   CMD_SEND_LC_REQUEST,             /// command send lifecycle request
+   CMD_SEND_LC_REGISTER,            /// command send lifecycle register/unregister
    CMD_QUIT                         /// quit command
 } tCmd;
 
 
 /// pipe file descriptors
-int gEfds;
-
-
-/// returns the dbus connection
-DBusConnection* get_dbus_connection(void);
-
+extern int gEfds;
 
 
 /**
