@@ -31,7 +31,10 @@
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
-int gEfds = 0;
+pthread_mutex_t gMainLoopMtx         = PTHREAD_MUTEX_INITIALIZER;
+
+int gEfds;
+
 
 typedef enum EDBusObjectType
 {
@@ -248,7 +251,6 @@ int setup_dbus_mainloop(void)
 
    // enable locking of data structures in the D-Bus library for multi threading.
    dbus_threads_init_default();
-
    dbus_error_init(&err);
 
    // wain until dbus main loop has been setup and running
@@ -474,7 +476,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    else if (NULL != conn)
    {
       dbus_connection_set_exit_on_disconnect(conn, FALSE);
-      if (-1 == (gEfds = eventfd(0, EFD_NONBLOCK)))
+      if (-1 == (gEfds = eventfd(0, 0)))
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => eventfd() failed w/ errno:"), DLT_INT(errno) );
       }
@@ -555,42 +557,33 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  if (0>ret)
                                  {
                                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
-                                    printf(" * mainloop: read F A I L E D\n");
                                  }
                                  else if (ret != -1)
                                  {
-                                    printf(" * mainloop: dispatch command => [0]: %d | [1]: %d | [2]: %d\n", buf[0], buf[1], buf[2]);
                                     switch (buf[0])
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
                                           process_block_and_write_data_back((buf[2]), buf[1]);
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
-                                          printf(" CMD => Prepare shutdown\n");
                                           process_prepare_shutdown((buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_NOTIFY_SIGNAL:
-                                          printf(" CMD => Send notification signal\n");
                                           process_send_notification_signal(conn);
                                           break;
                                        case CMD_REG_NOTIFY_SIGNAL:
-                                          printf(" CMD => Register notification signal\n");
                                           process_reg_notification_signal(conn);
                                           break;
                                        case CMD_SEND_PAS_REQUEST:
-                                          printf(" CMD => Admin request => request: %d | status: %d\n", (buf[2]), buf[1]);
                                           process_send_pas_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_PAS_REGISTER:
-                                          printf(" CMD => Admin register => mode: %d | type: %d\n", (buf[2]), buf[1]);
                                           process_send_pas_register(conn, (buf[1]), buf[2]);
                                           break;
                                        case CMD_SEND_LC_REQUEST:
-                                          printf(" CMD => Lifecycle request => request: %d | status\n", (buf[2]), buf[1]);
                                           process_send_lifecycle_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_LC_REGISTER:
-                                          printf(" CMD => Lifecycle register => mode: %d | type: %d\n", (buf[2]), buf[1]);
                                           process_send_lifecycle_register(conn, (buf[1]), buf[2]);
                                           break;
                                        case CMD_QUIT:
@@ -600,6 +593,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
                                           break;
                                     }
+                                    pthread_mutex_unlock(&gMainLoopMtx);
                                  }
                               }
                            }
@@ -645,5 +639,26 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    pthread_cond_signal(&gDbusInitializedCond);
    pthread_mutex_unlock(&gDbusInitializedMtx);
    return 0;
+}
+
+
+
+int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2)
+{
+   int rval = 0;
+   uint64_t cmd;
+   uint16_t* cmd_chk;
+
+   pthread_mutex_lock(&gMainLoopMtx);
+
+   cmd = ( ((uint64_t)param2 << 32) | ((uint64_t)param1 << 16) | mainloopCmd);
+
+   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   {
+     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
+     rval = -1;
+   }
+
+   return rval;
 }
 

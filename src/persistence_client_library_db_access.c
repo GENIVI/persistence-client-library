@@ -607,7 +607,6 @@ int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int use
                                  pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy)
 {
    int rval = 0;
-   uint64_t cmd;
 
    if(regPolicy < Notify_lastEntry)
    {
@@ -628,10 +627,7 @@ int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int use
          gChangeNotifyCallback = NULL;
       }
 
-      // add command and data to queue
-      cmd = (uint64_t)CMD_REG_NOTIFY_SIGNAL;
-
-      if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+      if(-1 == deliverToMainloop(CMD_REG_NOTIFY_SIGNAL, 0, 0))
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_notify_on_change => failed to write to pipe"), DLT_INT(errno));
          rval = -1;
@@ -662,13 +658,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
       gSendNotifySeatNo = context->seat_no;
       gSendNotifyReason = reason;
 
-      //printf("pers_send_Notification_Signal => key: %s | lbid: %d | gUserNo: %d | gSeatNo: %d | gReason: %d \n", key, gLdbid, gUserNo, gSeatNo, gReason);
-
-      uint64_t cmd;
-      // add command and data to queue
-      cmd = (uint64_t)CMD_SEND_NOTIFY_SIGNAL;
-
-      if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+      if(-1 == deliverToMainloop(CMD_SEND_NOTIFY_SIGNAL, 0,0) )
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal => failed to write to pipe"), DLT_INT(errno));
          rval = EPERS_NOTIFY_SIG;

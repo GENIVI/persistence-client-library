@@ -69,9 +69,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       /// blacklist path environment variable
       const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
 
-      printf("\nInitial => Mutex Lock\n");
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
-      printf("Initial <= Mutex Lock\n");
 
       if(pDataSize != NULL)
       {
@@ -94,15 +92,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          return EPERS_DBUS_MAINLOOP;
       }
 
-#if 1
-      if(register_pers_admin_service() == -1)
-      {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
-         return EPERS_REGISTER_ADMIN;
-      }
-#endif
-
-#if 1
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
       {
          // register for lifecycle and persistence admin service dbus messages
@@ -112,7 +101,12 @@ int pclInitLibrary(const char* appName, int shutdownMode)
             return EPERS_REGISTER_LIFECYCLE;
          }
       }
-#endif
+
+      if(register_pers_admin_service() == -1)
+      {
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
+         return EPERS_REGISTER_ADMIN;
+      }
 
       /// get custom library names to load
       status = get_custom_libraries();
@@ -194,8 +188,8 @@ int pclDeinitLibrary(void)
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle and persistence admin service dbus messages
-      rval = unregister_pers_admin_service();
       rval = unregister_lifecycle(gShutdownMode);
+      rval = unregister_pers_admin_service();
 
       // unload custom client libraries
       for(i=0; i<PersCustomLib_LastEntry; i++)

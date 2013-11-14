@@ -58,11 +58,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
-         uint64_t cmd;
-         // add command and data to queue
-         cmd = ( ((uint64_t)requestID << 32) | ((uint64_t)request << 16) | CMD_PAS_BLOCK_AND_WRITE_BACK);
-
-         if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+         if(-1 == deliverToMainloop(CMD_PAS_BLOCK_AND_WRITE_BACK, request, requestID))
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
             rval = PasErrorStatus_FAIL;
@@ -230,29 +226,17 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 int register_pers_admin_service(void)
 {
    int rval =  0;
-   uint64_t cmd;
-   uint16_t* cmd_chk;
 
-
-   // register for everything
-   int notificationFlag = PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock;
-
-   cmd = ( ((uint64_t)notificationFlag << 32) | ((uint64_t)1 << 16) | CMD_SEND_PAS_REGISTER);
-   cmd_chk = &cmd;
-   printf("register_pers_admin_service => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   if(-1 == deliverToMainloop(CMD_SEND_PAS_REGISTER, 1,  (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock)))
    {
     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("register_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
     rval = -1;
    }
    else
    {
-      printf(" register_pers_admin_service => Mutex Lock\n");
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
-      printf(" register_pers_admin_service <= Mutex Lock\n");
       rval = gDbusPendingRvalue;
    }
-   printf("register_pers_admin_service <= \n\n");
    return rval;
 }
 
@@ -261,29 +245,17 @@ int register_pers_admin_service(void)
 int unregister_pers_admin_service(void)
 {
    int rval =  0;
-   uint64_t cmd;
-   uint16_t* cmd_chk;
-   // register for everything
-   int notificationFlag = PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock;
 
-
-   cmd = ( ((uint64_t)notificationFlag << 32) | ((uint64_t)0 << 16) | CMD_SEND_PAS_REGISTER);
-   cmd_chk = &cmd;
-   printf("unregister_pers_admin_service => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
-
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   if(-1 == deliverToMainloop(CMD_SEND_PAS_REGISTER, 0,  (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock)))
    {
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
      rval = -1;
    }
    else
    {
-      printf(" UnRegister admin => Mutex Lock\n");
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
-      printf(" UnRegister admin<= Mutex Lock\n");
       rval = gDbusPendingRvalue;
    }
-   printf("unregister_pers_admin_service <=\n\n");
    return rval;
 }
 
@@ -292,13 +264,10 @@ int unregister_pers_admin_service(void)
 int pers_admin_service_data_sync_complete(unsigned int requestID, unsigned int status)
 {
    int rval =  0;
-   uint64_t cmd;
-   // add command and data to queue
-   cmd = ( ((uint64_t)requestID << 32) | ((uint64_t)status << 16) | CMD_SEND_PAS_REQUEST);
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+
+   if(-1 == deliverToMainloop(CMD_SEND_PAS_REQUEST, status, requestID))
    {
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_admin_service_data_sync_complete => failed to write to pipe"), DLT_INT(errno));
-      printf("pers_admin_service_data_sync_complete => f a i l e  d  to write to pipe\n");
       rval = -1;
    }
    else

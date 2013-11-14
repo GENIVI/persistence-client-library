@@ -44,11 +44,7 @@ int check_lc_request(int request, int requestID)
    {
       case NsmShutdownNormal:
       {
-         uint64_t cmd;
-         // add command and data to queue
-         cmd = ( ((uint64_t)requestID << 32) | ((uint64_t)request << 16) | CMD_LC_PREPARE_SHUTDOWN);
-
-         if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+         if(-1 == deliverToMainloop(CMD_LC_PREPARE_SHUTDOWN, request, requestID) )
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
             rval = NsmErrorStatus_Fail;
@@ -151,60 +147,20 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
 int register_lifecycle(int shutdownMode)
 {
-   int rval =  0;
-   uint64_t cmd;
-   uint16_t* cmd_chk;
-
-   cmd = ( ((uint64_t)shutdownMode << 32) | ((uint64_t)1 << 16) | CMD_SEND_LC_REGISTER);
-   cmd_chk = &cmd;
-   printf("register_lifecycle => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
-
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
-   {
-     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("register_lifecycle => failed to write to pipe"), DLT_INT(errno));
-     rval = -1;
-   }
-   printf("register_lifecycle <= \n\n");
-   return rval;
+   return deliverToMainloop(CMD_SEND_LC_REGISTER, 1, shutdownMode);
 }
 
 
 
 int unregister_lifecycle(int shutdownMode)
 {
-   int rval =  0;
-   uint64_t cmd;
-   uint16_t* cmd_chk;
-
-   cmd = ( ((uint64_t)shutdownMode << 32) | ((uint64_t)0 << 16) | CMD_SEND_LC_REGISTER);
-   cmd_chk = &cmd;
-   printf("unregister_lifecycle => cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
-   {
-     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_lifecycle => failed to write to pipe"), DLT_INT(errno));
-     rval = -1;
-   }
-   printf("unregister_lifecycle <= \n\n");
-   return rval;
+   return deliverToMainloop(CMD_SEND_LC_REGISTER, 0, shutdownMode);
 }
 
 
 
 int send_prepare_shutdown_complete(int requestId, int status)
 {
-   int rval =  0;
-   uint64_t cmd;
-   uint16_t* cmd_chk;
-
-   cmd = ( ((uint64_t)requestId << 32) | ((uint64_t)status << 16) | CMD_SEND_LC_REQUEST);
-   cmd_chk = &cmd;
-   //printf("cmd_chk: [0]: %d | [1]: %d  | [2]: %d \n", cmd_chk[0],cmd_chk[1],cmd_chk[2]);
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
-   {
-     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_prepare_shutdown_complete => failed to write to pipe"), DLT_INT(errno));
-     rval = -1;
-   }
-
-   return rval;
+   return deliverToMainloop(CMD_SEND_LC_REQUEST, status, requestId);
 }
 

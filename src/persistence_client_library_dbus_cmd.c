@@ -254,7 +254,7 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
 
          if(!dbus_pending_call_set_notify(pending, msg_pending_func, "PersistenceAdminRequestCompleted", NULL))
          {
-            printf("process_send_pas_request => dbus_pending_call_set_notify: FAILED\n");
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_pas_request => dbus_pending_call_set_notify: FAILED\n"));
          }
          dbus_pending_call_unref(pending);
       }
@@ -278,7 +278,6 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
    DBusPendingCall* pending = NULL;
 
    char* method = NULL;
-   printf("    process_send_pas_register => regType: %d | notificaiton flag: %d\n", regType, notificationFlag);
 
    if(regType == 0)
       method = "UnRegisterPersAdminNotification";
@@ -344,7 +343,6 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
    dbus_error_init (&error);
 
    char* method = NULL;
-   printf("    process_send_lifecycle_register => reg: %d | shutdownMode flag: %d\n", regType, shutdownMode);
 
    if(regType == 1)
       method = "RegisterShutdownClient";
@@ -411,8 +409,6 @@ void process_send_lifecycle_request(DBusConnection* conn, int requestId, int sta
    DBusError error;
    dbus_error_init (&error);
 
-   printf("    process_send_lifecycle_request => requestID: %d | status: %d\n", requestId, status);
-
    if(conn != NULL)
    {
       DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
@@ -471,7 +467,7 @@ void msg_pending_func(DBusPendingCall *call, void *data)
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("msg_pending_func ==> UNlock mutex") );
+      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("msg_pending_func ==> UNlock mutex") );
       dbus_message_get_args(message, &err, DBUS_TYPE_INT32, &replyArg, DBUS_TYPE_INVALID);
    }
 
@@ -479,9 +475,7 @@ void msg_pending_func(DBusPendingCall *call, void *data)
    dbus_message_unref(message);
 
    // unlock the mutex because we have received the reply to the dbus message
-   printf("msg_pending_func => mutex unlock: %s \n",(char*)(data));
    pthread_mutex_unlock(&gDbusPendingRegMtx);
-   printf("msg_pending_func <= mutex unlock\n");
 }
 
 

@@ -66,7 +66,7 @@ START_TEST (test_GetData)
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
 
-#if 0
+#if 1
    /**
     * Logical DB ID: 0xFF with user 0 and seat 0
     *       ==> local value accessible by all users (user 0, seat 0)
@@ -165,7 +165,7 @@ START_TEST (test_GetDataHandle)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    time_t t = time(0);
 
    locTime = localtime(&t);
@@ -271,7 +271,7 @@ START_TEST(test_SetData)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    time_t t = time(0);
 
    locTime = localtime(&t);
@@ -384,7 +384,7 @@ START_TEST(test_SetDataNoPRCT)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    time_t t = time(0);
 
    char sysTimeBuffer[128];
@@ -428,7 +428,7 @@ START_TEST(test_GetDataSize)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    /**
     * Logical DB ID: 0xFF with user 3 and seat 2
     *       ==> local USER value (user 3, seat 2)
@@ -462,7 +462,7 @@ START_TEST(test_DeleteData)
 
    rval = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(rval <= 1, "Failed to init PCL");
-#if 0
+#if 1
    // read data from key
    rval = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(rval != EPERS_NOKEY, "Read form key key_70 fails");
@@ -517,7 +517,7 @@ START_TEST(test_DataFile)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    writeBuffer = malloc(writeSize);
 
 
@@ -609,7 +609,7 @@ START_TEST(test_DataFileRecovery)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
    fail_unless(fd_RO != -1, "Could not open file ==> /media/mediaDB_ReadOnly.db");
@@ -640,7 +640,7 @@ START_TEST(test_DataHandle)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    // test file handles
    handle1 = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
    fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
@@ -684,7 +684,7 @@ START_TEST(test_DataHandleOpen)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    // open handles ----------------------------------------------------
    hd1 = pclKeyHandleOpen(0xFF, "posHandle/last_position1", 0, 0);
    fail_unless(hd1 == 1, "Failed to open handle ==> /posHandle/last_position1");
@@ -764,7 +764,7 @@ START_TEST(test_Cursor)
 
    rval = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(rval <= 1, "Failed to init PCL");
-#if 0
+#if 1
    // create cursor
    handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
    fail_unless(handle != -1, "Failed to create cursor!!");
@@ -826,7 +826,7 @@ START_TEST(test_Plugin)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
 	ret = pclKeyReadData(0xFF, "language/country_code",           0, 0, buffer, READ_SIZE);
 	fail_unless(ret != EPERS_NOT_INITIALIZED);
    fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: secure!",
@@ -874,7 +874,7 @@ START_TEST(test_ReadDefault)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    ret = pclKeyReadData(0xFF, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
    fail_unless(ret != EPERS_NOT_INITIALIZED);
    //printf("B U F F E R: %s\n", buffer);
@@ -900,7 +900,7 @@ START_TEST(test_ReadConfDefault)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
    fail_unless(ret != EPERS_NOT_INITIALIZED);
    fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
@@ -926,7 +926,7 @@ START_TEST(test_GetPath)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
-#if 0
+#if 1
    ret = pclFileCreatePath(0xFF, "media/mediaDB.db", 1, 1, &path, &pathSize);
    //printf("PATH: %s \n", path);
    fail_unless(strncmp((char*)path, thePath, strlen((char*)path)) == 0, "Path not correct");
