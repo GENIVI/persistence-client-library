@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x02000000U)
+#define  PERSIST_CLIENT_LIBRARY_DATA_ORGANIZATION_INTERFACE_VERSION   (0x03000000U)
 
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
@@ -52,15 +52,15 @@ enum _PersistenceConstantDef
    ResIsFile            = 1,        /// flag to identify that resource a file
    AccessNoLock         = 1,        /// flag to indicate that access is not locked
 
-   PCLnotInitialized    = 0,        /// 
-   PCLinitialized       = 1,        ///
+   PCLnotInitialized    = 0,        /// indication if PCL is not initialized
+   PCLinitialized       = 1,        /// indication if PCL is initialized
 
-   FileClosed           = 0,
-   FileOpen             = 1,
+   FileClosed           = 0,        /// flag to identify if file will be closed
+   FileOpen             = 1,        /// flag to identify if file has been opend
 
-   NsmShutdownNormal       = 1,        /// lifecycle shutdown normal
-   NsmErrorStatus_OK       = 1,
-   NsmErrorStatus_Fail     = -1,
+   NsmShutdownNormal       = 1,     /// lifecycle shutdown normal
+   NsmErrorStatus_OK       = 1,     /// lifecycle return OK idicator
+   NsmErrorStatus_Fail     = -1,    /// lifecycle return failed indicator
 
    ChecksumBufSize         = 64,       /// max checksum size
 
@@ -98,7 +98,6 @@ enum _PersistenceConstantDef
 
    defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
 };
-
 
 
 /// resource configuration table name
@@ -175,20 +174,26 @@ extern const char* gDeleteSignal;
 /// create signal string
 extern const char* gCreateSignal;
 
-/// notification key
-extern char gSendNotifykey[DbKeyMaxLen];
-extern unsigned int gSendNotifyLdbid;
-extern unsigned int gSendNotifyUserNo;
-extern unsigned int gSendNotifySeatNo;
-extern pclNotifyStatus_e gSendNotifyReason;
 
-extern char gRegNotifykey[DbKeyMaxLen];
-extern unsigned int gRegNotifyLdbid;
-extern unsigned int gRegNotifyUserNo;
-extern unsigned int gRegNotifySeatNo;
-extern PersNotifyRegPolicy_e gRegNotifyPolicy;
+/**
+ * Global notification variables, will be used to pass
+ * the notification information into the mainloop.
+ */
+/// notification key string
+extern char gNotifykey[DbKeyMaxLen];
+/// notification lbid
+extern unsigned int gNotifyLdbid;
+/// notification user number
+extern unsigned int gNotifyUserNo;
+/// notification seat number
+extern unsigned int gNotifySeatNo;
+/// notification reason (created, changed, deleted)
+extern pclNotifyStatus_e      gNotifyReason;
+/// notification policy (register or unregister)
+extern PersNotifyRegPolicy_e  gNotifyPolicy;
 
-// dbus timeout
+
+// dbus timeout (5 seconds)
 extern int gTimeoutMs;
 
 // dbus pending return value

@@ -74,31 +74,32 @@ const char* gSharedPublicWtPathKey    = "/Data/mnt-wt/%s/Shared_Public%s";
 /// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
 const char* gLocalCacheFilePath        = "/Data/mnt-c/%s/user/%d/seat/%d/%s";
 
+
 const char* gChangeSignal = "PersistenceResChange";
 const char* gDeleteSignal = "PersistenceResDelete";
 const char* gCreateSignal = "PersistenceResCreate";
 
-char gSendNotifykey[DbKeyMaxLen] = {0};
-unsigned int gSendNotifyLdbid  = 0;
-unsigned int gSendNotifyUserNo = 0;
-unsigned int gSendNotifySeatNo = 0;
-pclNotifyStatus_e gSendNotifyReason  = 0;
 
-char gRegNotifykey[DbKeyMaxLen] = {0};
-unsigned int gRegNotifyLdbid  = 0;
-unsigned int gRegNotifyUserNo = 0;
-unsigned int gRegNotifySeatNo = 0;
-PersNotifyRegPolicy_e gRegNotifyPolicy;
+char gNotifykey[DbKeyMaxLen] = {0};
+unsigned int gNotifyLdbid  = 0;
+unsigned int gNotifyUserNo = 0;
+unsigned int gNotifySeatNo = 0;
+pclNotifyStatus_e       gNotifyReason = 0;
+PersNotifyRegPolicy_e   gNotifyPolicy = 0;
 
-int gTimeoutMs = 50000;
+
+int gTimeoutMs = 5000;
 
 int gDbusPendingRvalue = 0;
+
 
 /// application id
 char gAppId[MaxAppNameLen] = {0};
 
+
 /// max key value data size [default 16kB]
 int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
+
 
 unsigned int gPclInitialized = PCLnotInitialized;
 

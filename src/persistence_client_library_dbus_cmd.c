@@ -43,25 +43,25 @@ void process_reg_notification_signal(DBusConnection* conn)
    // add match for  c h a n g e
    snprintf(ruleChanged, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            gRegNotifykey, gRegNotifyLdbid, gRegNotifyUserNo, gRegNotifySeatNo);
+            gNotifykey, gNotifyLdbid, gNotifyUserNo, gNotifySeatNo);
 
    // add match for  d e l e t e
    snprintf(ruleDeleted, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResDelete',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            gRegNotifykey, gRegNotifyLdbid, gRegNotifyUserNo, gRegNotifySeatNo);
+            gNotifykey, gNotifyLdbid, gNotifyUserNo, gNotifySeatNo);
 
    // add match for  c r e a t e
    snprintf(ruleCreated, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResCreate',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            gRegNotifykey, gRegNotifyLdbid, gRegNotifyUserNo, gRegNotifySeatNo);
+            gNotifykey, gNotifyLdbid, gNotifyUserNo, gNotifySeatNo);
 
-   if(gRegNotifyPolicy == Notify_register)
+   if(gNotifyPolicy == Notify_register)
    {
       dbus_bus_add_match(conn, ruleChanged, NULL);
       dbus_bus_add_match(conn, ruleDeleted, NULL);
       dbus_bus_add_match(conn, ruleCreated, NULL);
    }
-   else if(gRegNotifyPolicy == Notify_unregister)
+   else if(gNotifyPolicy == Notify_unregister)
    {
       dbus_bus_remove_match(conn, ruleChanged, NULL);
       dbus_bus_remove_match(conn, ruleDeleted, NULL);
@@ -85,9 +85,9 @@ void process_send_notification_signal(DBusConnection* conn)
    char* pldbidArra = ldbidArray;
    char* puserArray = userArray;
    char* pseatArray = seatArray;
-   char* pnotifyKey = gSendNotifykey;
+   char* pnotifyKey = gNotifykey;
 
-   switch(gSendNotifyReason)
+   switch(gNotifyReason)
    {
       case pclNotifyStatus_deleted:
          notifyReason = gDeleteSignal;
@@ -108,9 +108,9 @@ void process_send_notification_signal(DBusConnection* conn)
       // dbus_bus_add_match is used for the notification mechanism,
       // and this works only for type DBUS_TYPE_STRING as message arguments
       // this is the reason to use string instead of integer types directly
-      snprintf(ldbidArray, DbusSubMatchSize, "%d", gSendNotifyLdbid);
-      snprintf(userArray,  DbusSubMatchSize, "%d", gSendNotifyUserNo);
-      snprintf(seatArray,  DbusSubMatchSize, "%d", gSendNotifySeatNo);
+      snprintf(ldbidArray, DbusSubMatchSize, "%u", gNotifyLdbid);
+      snprintf(userArray,  DbusSubMatchSize, "%u", gNotifyUserNo);
+      snprintf(seatArray,  DbusSubMatchSize, "%u", gNotifySeatNo);
 
       //printf("process_send_Notification_Signal => key: %s | lbid: %d | gUserNo: %d | gSeatNo: %d | gReason: %d \n", gNotifykey, gLdbid, gUserNo, gSeatNo, gReason);
       message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",    // const char *path,
@@ -374,20 +374,12 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
                                               DBUS_TYPE_UINT32, &shutdownMode, DBUS_TYPE_INVALID);
          }
 
-         if(conn != NULL)
-         {
-            if(!dbus_connection_send(conn, message, 0))
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
-               rval = -1;
-            }
-            dbus_connection_flush(conn);
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => ERROR: Invalid connection"));
-            rval = -1;
-         }
+		 if(!dbus_connection_send(conn, message, 0))
+		 {
+		    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
+		    rval = -1;
+		 }
+		 dbus_connection_flush(conn);
          dbus_message_unref(message);
       }
       else
@@ -421,21 +413,14 @@ void process_send_lifecycle_request(DBusConnection* conn, int requestId, int sta
                                            DBUS_TYPE_INT32, &status,
                                            DBUS_TYPE_INVALID);
 
-         if(conn != NULL)
-         {
-            if(!dbus_connection_send(conn, message, 0))
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
-               rval = -1;
-            }
 
-            dbus_connection_flush(conn);
-         }
-         else
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid connection"));
-            rval = -1;
-         }
+		 if(!dbus_connection_send(conn, message, 0))
+		 {
+		    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
+		    rval = -1;
+		 }
+
+		 dbus_connection_flush(conn);
          dbus_message_unref(message);
       }
       else

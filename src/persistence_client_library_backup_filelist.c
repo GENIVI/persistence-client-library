@@ -85,22 +85,25 @@ void fillCharTokenArray()
 
    while(i < gConfigFileSize)
    {
-      if(1 != gCharLookup[(int)*tmpPointer])
-      {
-         *tmpPointer = 0;
+      if(   ((unsigned int)*tmpPointer < 127)
+         && ((unsigned int)*tmpPointer >= 0))
+	   {
+		   if(1 != gCharLookup[(unsigned int)*tmpPointer])
+		   {
+			   *tmpPointer = 0;
 
-         // check if we are at the end of the token array
-         if(blankCount >= TOKENARRAYSIZE)
-         {
-            break;
-         }
-         gpTokenArray[blankCount] = tmpPointer+1;
-         blankCount++;
-         gTokenCounter++;
-
-      }
+			   // check if we are at the end of the token array
+			   if(blankCount >= TOKENARRAYSIZE)
+			   {
+				   break;
+			   }
+			   gpTokenArray[blankCount] = tmpPointer+1;
+			   blankCount++;
+			   gTokenCounter++;
+		   }
+	   }
       tmpPointer++;
-      i++;
+	   i++;
    }
 }
 
@@ -153,55 +156,66 @@ void createAndStoreFileNames()
 int readBlacklistConfigFile(const char* filename)
 {
    int fd = 0,
-       status = 0;
+       status = 0,
+       rval = 0;
+
    struct stat buffer;
 
-   memset(&buffer, 0, sizeof(buffer));
-   status = stat(filename, &buffer);
-   if(status != -1)
+   if(filename != NULL)
    {
-      gConfigFileSize = buffer.st_size;
+
+	   memset(&buffer, 0, sizeof(buffer));
+	   status = stat(filename, &buffer);
+	   if(status != -1)
+	   {
+		  gConfigFileSize = buffer.st_size;
+	   }
+
+	   fd = open(filename, O_RDONLY);
+	   if (fd == -1)
+	   {
+		  DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+		  return -1;
+	   }
+
+	   // check for empty file
+	   if(gConfigFileSize == 0)
+	   {
+		  DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
+		  close(fd);
+		  return -1;
+	   }
+
+	   // map the config file into memory
+	   gpConfigFileMap = (char*)mmap(0, gConfigFileSize, PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+	   if (gpConfigFileMap == MAP_FAILED)
+	   {
+		  gpConfigFileMap = 0;
+		  close(fd);
+		  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+
+		  return -1;
+	   }
+
+	   // reset the token counter
+	   gTokenCounter = 0;
+
+	   fillCharTokenArray();
+
+	   // create filenames and store them in the tree
+	   createAndStoreFileNames();
+
+	   munmap(gpConfigFileMap, gConfigFileSize);
+
+	   close(fd);
+   }
+   else
+   {
+	   rval = -1;
    }
 
-   fd = open(filename, O_RDONLY);
-   if (fd == -1)
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
-      return -1;
-   }
-
-   // check for empty file
-   if(gConfigFileSize == 0)
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
-      close(fd);
-      return -1;
-   }
-
-   // map the config file into memory
-   gpConfigFileMap = (char*)mmap(0, gConfigFileSize, PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-   if (gpConfigFileMap == MAP_FAILED)
-   {
-      gpConfigFileMap = 0;
-      close(fd);
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
-
-      return -1;
-   }
-
-   // reset the token counter
-   gTokenCounter = 0;
-
-   fillCharTokenArray();
-
-   // create filernames and store them in the tree
-   createAndStoreFileNames();
-
-   munmap(gpConfigFileMap, gConfigFileSize);
-
-   close(fd);
-   return 0;
+   return rval;
 }
 
 

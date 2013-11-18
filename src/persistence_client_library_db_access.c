@@ -610,11 +610,11 @@ int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int use
 
    if(regPolicy < Notify_lastEntry)
    {
-      snprintf(gRegNotifykey, DbKeyMaxLen, "%s", key);
-      gRegNotifyLdbid  = ldbid;     // to do: pass correct ==> JUST TESTING!!!!
-      gRegNotifyUserNo = user_no;
-      gRegNotifySeatNo = seat_no;
-      gRegNotifyPolicy = regPolicy;
+      snprintf(gNotifykey, DbKeyMaxLen, "%s", key);
+      gNotifyLdbid  = ldbid;     // to do: pass correct ==> JUST TESTING!!!!
+      gNotifyUserNo = user_no;
+      gNotifySeatNo = seat_no;
+      gNotifyReason = regPolicy;
 
       if(regPolicy == Notify_register)
       {
@@ -651,12 +651,12 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    int rval = 1;
    if(reason < pclNotifyStatus_lastEntry)
    {
-      snprintf(gSendNotifykey,  DbKeyMaxLen,       "%s", key);
+      snprintf(gNotifykey,  DbKeyMaxLen,       "%s", key);
 
-      gSendNotifyLdbid  = context->ldbid;     // to do: pass correct ==> JUST TESTING!!!!
-      gSendNotifyUserNo = context->user_no;
-      gSendNotifySeatNo = context->seat_no;
-      gSendNotifyReason = reason;
+      gNotifyLdbid  = context->ldbid;     // to do: pass correct ==> JUST TESTING!!!!
+      gNotifyUserNo = context->user_no;
+      gNotifySeatNo = context->seat_no;
+      gNotifyReason = reason;
 
       if(-1 == deliverToMainloop(CMD_SEND_NOTIFY_SIGNAL, 0,0) )
       {

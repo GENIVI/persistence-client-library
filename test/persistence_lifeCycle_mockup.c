@@ -157,7 +157,7 @@ int checkAdminMsg(DBusConnection *connection, DBusMessage *message, int reg)
    }
 
 
-   printf("   checkAdminMsg ==> busName: %s | objName: %s | notificationFlag: %u | gTimeoutMs: %d\n\n", busName, objName, notificationFlag, gTimeoutMs);
+   printf("   checkAdminMsg ==> busName: %s | objName: %s | notificationFlag: %d | gTimeoutMs: %u\n\n", busName, objName, notificationFlag, gTimeoutMs);
    reply = dbus_message_new_method_return(message);
 
    if (reply == 0)

@@ -30,8 +30,11 @@
 
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_mutex_t gMainLoopMtx         = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  gMainLoopCond = PTHREAD_COND_INITIALIZER;
 
 int gEfds;
 
@@ -274,6 +277,7 @@ int setup_dbus_mainloop(void)
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_bus_register() Error :"), DLT_STRING(err.message) );
             dbus_error_free (&err);
+            pthread_mutex_unlock(&gDbusInitializedMtx);
             return -1;
          }
       }
@@ -281,6 +285,7 @@ int setup_dbus_mainloop(void)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open_private() Error :"), DLT_STRING(err.message) );
          dbus_error_free(&err);
+         pthread_mutex_unlock(&gDbusInitializedMtx);
          return -1;
       }
    }
@@ -296,6 +301,7 @@ int setup_dbus_mainloop(void)
    if(rval)
    {
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
+     pthread_mutex_unlock(&gDbusInitializedMtx);
      return -1;
    }
 
@@ -559,12 +565,13 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  uint16_t buf[64];
                                  bContinue = TRUE;
                                  while ((-1==(ret = read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR == errno));
-                                 if (0>ret)
+                                 if(ret < 0)
                                  {
                                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
                                  }
-                                 else if (ret != -1)
+                                 else
                                  {
+                                    pthread_mutex_lock(&gMainLoopMtx);
                                     switch (buf[0])
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
@@ -598,6 +605,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
                                           break;
                                     }
+                                    pthread_cond_signal(&gMainLoopCond);
                                     pthread_mutex_unlock(&gMainLoopMtx);
                                  }
                               }
@@ -663,6 +671,10 @@ int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
      rval = -1;
    }
+
+   // wait for condition variable
+   pthread_cond_wait(&gMainLoopCond, &gMainLoopMtx);
+   pthread_mutex_unlock(&gMainLoopMtx);
 
    return rval;
 }
