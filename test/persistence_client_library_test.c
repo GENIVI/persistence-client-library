@@ -634,8 +634,10 @@ END_TEST
  */
 START_TEST(test_DataHandle)
 {
-   int handle1 = 0, handle2 = 0;
+   int handle1 = 0, handle2 = 0, size = 0;
+   int handleArray[4] = {0};
    int ret = 0;
+   unsigned char buffer[READ_SIZE] = {0};
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
@@ -651,11 +653,53 @@ START_TEST(test_DataHandle)
    ret = pclFileClose(1024);
    fail_unless(ret == EPERS_MAXHANDLE, "Could close file, but should not!!");
 
-
    ret = pclFileClose(17);
    fail_unless(ret == -1, "Could close file, but should not!!");
 
+   // test multiple handles
+   handleArray[0] = pclFileOpen(0xFF, "media/mediaDB_write_01.db", 1, 1);
+   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
 
+   handleArray[1] = pclFileOpen(0xFF, "media/mediaDB_write_02.db", 1, 1);
+   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_02.db");
+
+   handleArray[2] = pclFileOpen(0xFF, "media/mediaDB_write_03.db", 1, 1);
+   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_03.db");
+
+   handleArray[3] = pclFileOpen(0xFF, "media/mediaDB_write_04.db", 1, 1);
+   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_04.db");
+
+   size = pclFileReadData(handleArray[0], buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_01.db",
+         strlen("/user/1/seat/1/media/mediaDB_write_01.db"))
+         == 0, "Buffer not correctly read => mediaDB_write_01.db");
+
+   size = pclFileReadData(handleArray[1], buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_02.db",
+         strlen("/user/1/seat/1/media/mediaDB_write_02.db"))
+         == 0, "Buffer not correctly read => mediaDB_write_02.db");
+
+   size = pclFileReadData(handleArray[2], buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_03.db",
+         strlen("/user/1/seat/1/media/mediaDB_write_03.db"))
+         == 0, "Buffer not correctly read => mediaDB_write_03.db");
+
+   size = pclFileReadData(handleArray[3], buffer, READ_SIZE);
+   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_04.db",
+         strlen("/user/1/seat/1/media/mediaDB_write_04.db"))
+         == 0, "Buffer not correctly read => mediaDB_write_04.db");
+
+   ret = pclKeyHandleClose(handleArray[0]);
+   fail_unless(ret != -1, "Failed to close handle idx \"0\"!!");
+
+   ret = pclKeyHandleClose(handleArray[1]);
+   fail_unless(ret != -1, "Failed to close handle idx \"1\"!!");
+
+   ret = pclKeyHandleClose(handleArray[2]);
+   fail_unless(ret != -1, "Failed to close handle idx \"2\"!!");
+
+   ret = pclKeyHandleClose(handleArray[3]);
+   fail_unless(ret != -1, "Failed to close handle idx \"3\"!!");
 
    // test key handles
    handle2 = pclKeyHandleOpen(0xFF, "statusHandle/open_document", 3, 2);

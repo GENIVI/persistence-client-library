@@ -170,7 +170,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
             snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
-            if(pclVerifyConsistency(dbPath, backupPath, csumPath, flags) == -1)
+            if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
             {
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
                return -1;
@@ -178,7 +178,11 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          }
 
          // open file
-         handle = open(dbPath, flags);
+         if(handle <= 0)   // check if open is needed or already done in verifyConsistency
+         {
+            handle = open(dbPath, flags);
+         }
+
 
          if(handle != -1)
          {
@@ -423,11 +427,14 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
             snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
-            if((pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+            if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
             {
                DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
                return -1;
             }
+            // we don't need the file handle here
+            // the application calling this function must use the POSIX open() function to get an file descriptor
+            close(handle);
          }
 
          handle = get_persistence_handle_idx();
@@ -765,13 +772,10 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
       remove(backupPath);
       remove(csumPath);
    }
-   else
-   {
-      close(handle);
-   }
 
    return handle;
 }
+
 
 
 int pclRecoverFromBackup(int backupFd, const char* original)
@@ -797,6 +801,8 @@ int pclRecoverFromBackup(int backupFd, const char* original)
 
    return handle;
 }
+
+
 
 int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const char* csumBuf)
 {
@@ -903,7 +909,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 
 int pclBackupNeeded(const char* path)
 {
-   return need_backup_path(path);
+   return need_backup_key(crc32(0, (const unsigned char*)path, strlen(path)));
 }
 
 

@@ -33,6 +33,4 @@ int readBlacklistConfigFile(const char* filename);
 int need_backup_key(unsigned int key);
 
 
-int need_backup_path(const char* path);
-
 #endif /* PERS_BACKUP_BLACKLIST_H */

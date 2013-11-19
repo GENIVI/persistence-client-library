@@ -220,13 +220,6 @@ int readBlacklistConfigFile(const char* filename)
 
 
 
-int need_backup_path(const char* path)
-{
-   return need_backup_key(crc32(0, (const unsigned char*)path, strlen(path)));
-}
-
-
-
 int need_backup_key(unsigned int key)
 {
    int rval = 1;
