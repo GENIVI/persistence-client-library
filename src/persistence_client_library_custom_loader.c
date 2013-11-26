@@ -146,91 +146,98 @@ int get_custom_libraries()
 
    if(stat(filename, &buffer) != -1)
    {
-      fd = open(filename, O_RDONLY);
-      if (fd != -1)
+      if(buffer.st_size > 20)  // file needs to be at least bigger then 20 bytes
       {
-         configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-         if(configFileMap != MAP_FAILED)
+         fd = open(filename, O_RDONLY);
+         if (fd != -1)
          {
-            int libId = 0;
+            configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-            // get the library identifier (early, secure, emergency, ...)
-            token = strtok(configFileMap, delimiters);
-            libId = custom_client_name_to_id(token, 0);
-
-
-            if(libId < PersCustomLib_LastEntry)
+            if(configFileMap != MAP_FAILED)
             {
-               gCustomLibArray[libId].valid = 1;
-            }
-            else
-            {
-            	munmap(configFileMap, buffer.st_size); // @CB: Add
-            	close(fd); // @CB: Add // close file descriptor before return
-                return EPERS_OUTOFBOUNDS; // out of array bounds
-            }
+               int libId = 0;
 
-            // get the library name
-            token  = strtok (NULL, delimiters);
-            strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
-            gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
-
-            while( token != NULL )
-            {
                // get the library identifier (early, secure, emergency, ...)
-               token = strtok(NULL, delimiters);
-               if(token != NULL)
+               token = strtok(configFileMap, delimiters);
+               libId = custom_client_name_to_id(token, 0);
+
+
+               if(libId < PersCustomLib_LastEntry)
                {
-                  libId = custom_client_name_to_id(token, 0);
-                  if(libId < PersCustomLib_LastEntry)
-                  {
-                     gCustomLibArray[libId].valid = 1;
-                  }
-                  else
-                  {
-                     rval = EPERS_OUTOFBOUNDS;
-                     break;
-                  }
+                  gCustomLibArray[libId].valid = 1;
                }
                else
                {
-                  break;
+                  munmap(configFileMap, buffer.st_size); // @CB: Add
+                  close(fd); // @CB: Add // close file descriptor before return
+                   return EPERS_OUTOFBOUNDS; // out of array bounds
                }
 
                // get the library name
                token  = strtok (NULL, delimiters);
-               if(token != NULL)
+               strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
+               gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+
+               while( token != NULL )
                {
-                  strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
-                  gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+                  // get the library identifier (early, secure, emergency, ...)
+                  token = strtok(NULL, delimiters);
+                  if(token != NULL)
+                  {
+                     libId = custom_client_name_to_id(token, 0);
+                     if(libId < PersCustomLib_LastEntry)
+                     {
+                        gCustomLibArray[libId].valid = 1;
+                     }
+                     else
+                     {
+                        rval = EPERS_OUTOFBOUNDS;
+                        break;
+                     }
+                  }
+                  else
+                  {
+                     break;
+                  }
+
+                  // get the library name
+                  token  = strtok (NULL, delimiters);
+                  if(token != NULL)
+                  {
+                     strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
+                     gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+                  }
+                  else
+                  {
+                     break;
+                  }
                }
-               else
+
+               munmap(configFileMap, buffer.st_size);
+
+               #if 0 // debuging
+               for(j=0; j<PersCustomLib_LastEntry; j++)
                {
-                  break;
+                  printf("Custom libraries => Name: %s | valid: %d \n", gCustomLibArray[j].libname, gCustomLibArray[j].valid);
                }
+               #endif
             }
-
-            munmap(configFileMap, buffer.st_size);
-
-            #if 0 // debuging
-            for(j=0; j<PersCustomLib_LastEntry; j++)
+            else
             {
-               printf("Custom libraries => Name: %s | valid: %d \n", gCustomLibArray[j].libname, gCustomLibArray[j].valid);
+               rval = EPERS_CONFIGMAPFAILED;
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - mapping of file failed"));
             }
-            #endif
+            close(fd);
          }
          else
          {
-            rval = EPERS_CONFIGMAPFAILED;
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - mapping of file failed"));
+            rval = EPERS_CONFIGNOTAVAILABLE;
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - no file with plugins available:"), DLT_STRING(filename), DLT_STRING(strerror(errno)));
          }
-         close(fd);
       }
       else
       {
-         rval = EPERS_CONFIGNOTAVAILABLE;
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - no file with plugins available:"), DLT_STRING(filename), DLT_STRING(strerror(errno)));
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - invalid file size"), DLT_STRING(filename), DLT_STRING(strerror(errno)));
       }
    }
    else
