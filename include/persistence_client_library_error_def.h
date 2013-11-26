@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-// common error, for this error errno will be set
+/// common error, for this error errno will be set
 #define EPERS_COMMON             (-1)
 /// file system is locked
 #define EPERS_LOCKFS             (-2)
@@ -103,7 +103,8 @@ extern "C" {
 #define EPERS_REGISTER_ADMIN     (-36)
 // registration on this key is not allowed
 #define EPERS_NOTIFY_NOT_ALLOWED (-37)
-
+// the requested resource is not a file
+#define EPERS_RESOURCE_NO_FILE   (-38)
 
 #ifdef __cplusplus
 }

@@ -144,10 +144,10 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       int shared_DB = 0;
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen]      = {0};         // database key
-      char dbPath[DbPathMaxLen]    = {0};       // database location
+      char dbKey[DbKeyMaxLen]      = {0};    // database key
+      char dbPath[DbPathMaxLen]    = {0};    // database location
       char backupPath[DbKeyMaxLen] = {0};    // backup file
-      char csumPath[DbPathMaxLen]  = {0};     // checksum file
+      char csumPath[DbPathMaxLen]  = {0};    // checksum file
 
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
@@ -158,83 +158,88 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       // get database context: database path and database key
       shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
-      if(   (shared_DB >= 0)                                               // check valid database context
-         && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
+      if(dbContext.configKey.type == PersistenceResourceType_file)   // check if the resource is really a file
       {
-         int flags = dbContext.configKey.permission;
-
-         // file will be opened writable, so check about data consistency
-         if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
-            && pclBackupNeeded(dbPath) )
+         if(shared_DB >= 0)                                          // check valid database context
          {
-            snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-            snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+            int flags = dbContext.configKey.permission;
 
-            if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
-            {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
-               return -1;
-            }
-         }
-
-         // open file
-         if(handle <= 0)   // check if open is needed or already done in verifyConsistency
-         {
-            handle = open(dbPath, flags);
-         }
-
-
-         if(handle != -1)
-         {
-            if(handle < MaxPersHandle)
-            {
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-
-               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
-               {
-                  strcpy(gFileHandleArray[handle].backupPath, backupPath);
-                  strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-
-                  gFileHandleArray[handle].backupCreated = 0;
-                  gFileHandleArray[handle].permission = dbContext.configKey.permission;
-               }
-            }
-            else
-            {
-               close(handle);
-               handle = EPERS_MAXHANDLE;
-            }
-         }
-         else  // file does not exist, create file and folder
-         {
-            handle = pclCreateFile(dbPath);
-         }
-      }
-      else
-      {
-         // assemble file string for local cached location
-         snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
-         handle = pclCreateFile(dbPath);
-
-         if(handle != -1)
-         {
-            if(handle < MaxPersHandle)
+            // file will be opened writable, so check about data consistency
+            if( (dbContext.configKey.permission != PersistencePermission_ReadOnly)
+               && pclBackupNeeded(dbPath) )
             {
                snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
                snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-               strcpy(gFileHandleArray[handle].backupPath, backupPath);
-               strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-               gFileHandleArray[handle].backupCreated = 0;
-               gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+               if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+               {
+                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
+                  return -1;
+               }
             }
-            else
+
+            // open file
+            if(handle <= 0)   // check if open is needed or already done in verifyConsistency
             {
-               close(handle);
-               handle = EPERS_MAXHANDLE;
+               handle = open(dbPath, flags);
+            }
+
+            if(handle != -1)
+            {
+               if(handle < MaxPersHandle)
+               {
+                  __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+
+                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+                  {
+                     strcpy(gFileHandleArray[handle].backupPath, backupPath);
+                     strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+
+                     gFileHandleArray[handle].backupCreated = 0;
+                     gFileHandleArray[handle].permission = dbContext.configKey.permission;
+                  }
+               }
+               else
+               {
+                  close(handle);
+                  handle = EPERS_MAXHANDLE;
+               }
+            }
+            else  // file does not exist, create file and folder
+            {
+               handle = pclCreateFile(dbPath);
             }
          }
+         else  // requested resource is not in the RCT, so create resource as local/cached.
+         {
+            // assemble file string for local cached location
+            snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+            handle = pclCreateFile(dbPath);
+
+            if(handle != -1)
+            {
+               if(handle < MaxPersHandle)
+               {
+                  snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+                  snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+                  __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+                  strcpy(gFileHandleArray[handle].backupPath, backupPath);
+                  strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+                  gFileHandleArray[handle].backupCreated = 0;
+                  gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+               }
+               else
+               {
+                  close(handle);
+                  handle = EPERS_MAXHANDLE;
+               }
+            }
+         }
+      }
+      else
+      {
+         handle = EPERS_RESOURCE_NO_FILE;
       }
    }
 
@@ -415,83 +420,88 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
       // get database context: database path and database key
       shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
-      if(   (shared_DB >= 0)                                               // check valid database context
-         && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
+      if( dbContext.configKey.type == PersistenceResourceType_file)     // check if type matches
       {
-         int flags = dbContext.configKey.permission;
-
-         // file will be opened writable, so check about data consistency
-         if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
-            && pclBackupNeeded(dbPath) )
+         if(shared_DB >= 0)                                             // check valid database context
          {
-            snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-            snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+            int flags = dbContext.configKey.permission;
 
-            if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+            // file will be opened writable, so check about data consistency
+            if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
+               && pclBackupNeeded(dbPath) )
             {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
-               return -1;
-            }
-            // we don't need the file handle here
-            // the application calling this function must use the POSIX open() function to get an file descriptor
-            close(handle);
-         }
+               snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+               snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
-         handle = get_persistence_handle_idx();
-
-         if(handle != -1)
-         {
-            if(handle < MaxPersHandle)
-            {
-               __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
-
-               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+               if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
+                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
+                  return -1;
+               }
+               // we don't need the file handle here
+               // the application calling this function must use the POSIX open() function to get an file descriptor
+               close(handle);
+            }
+
+            handle = get_persistence_handle_idx();
+
+            if(handle != -1)
+            {
+               if(handle < MaxPersHandle)
+               {
+                  __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
+
+                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+                  {
+                     strcpy(gOssHandleArray[handle].backupPath, backupPath);
+                     strcpy(gOssHandleArray[handle].csumPath,   csumPath);
+
+                     gOssHandleArray[handle].backupCreated = 0;
+                     gOssHandleArray[handle].permission = dbContext.configKey.permission;
+                  }
+
+                  *size = strlen(dbPath);
+                  *path = malloc(*size);
+                  memcpy(*path, dbPath, *size);
+                  gOssHandleArray[handle].filePath = *path;
+               }
+               else
+               {
+                  set_persistence_handle_close_idx(handle);
+                  handle = EPERS_MAXHANDLE;
+               }
+            }
+         }
+         else  // requested resource is not in the RCT, so create resource as local/cached.
+         {
+            // assemble file string for local cached location
+            snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+            handle = get_persistence_handle_idx();
+
+            if(handle != -1)
+            {
+               if(handle < MaxPersHandle)
+               {
+                  snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
+                  snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+
+                  __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
                   strcpy(gOssHandleArray[handle].backupPath, backupPath);
                   strcpy(gOssHandleArray[handle].csumPath,   csumPath);
-
                   gOssHandleArray[handle].backupCreated = 0;
-                  gOssHandleArray[handle].permission = dbContext.configKey.permission;
+                  gOssHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
                }
-
-               *size = strlen(dbPath);
-               *path = malloc(*size);
-               memcpy(*path, dbPath, *size);
-               gOssHandleArray[handle].filePath = *path;
-            }
-            else
-            {
-               set_persistence_handle_close_idx(handle);
-               handle = EPERS_MAXHANDLE;
+               else
+               {
+                  set_persistence_handle_close_idx(handle);
+                  handle = EPERS_MAXHANDLE;
+               }
             }
          }
       }
       else
       {
-         // assemble file string for local cached location
-         snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
-
-         handle = get_persistence_handle_idx();
-
-         if(handle != -1)
-         {
-            if(handle < MaxPersHandle)
-            {
-               snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-               snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
-
-               __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
-               strcpy(gOssHandleArray[handle].backupPath, backupPath);
-               strcpy(gOssHandleArray[handle].csumPath,   csumPath);
-               gOssHandleArray[handle].backupCreated = 0;
-               gOssHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
-            }
-            else
-            {
-               set_persistence_handle_close_idx(handle);
-               handle = EPERS_MAXHANDLE;
-            }
-         }
+         handle = EPERS_RESOURCE_NO_FILE;
       }
    }
 
@@ -500,7 +510,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
 
 
-int pclFileReleasePath(int pathPandle)
+int pclFileReleasePath(int pathHandle)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
@@ -508,22 +518,22 @@ int pclFileReleasePath(int pathPandle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(pathPandle < MaxPersHandle)
+      if(pathHandle < MaxPersHandle)
       {
          // check if a backup and checksum file needs to bel deleted
-         if( gFileHandleArray[pathPandle].permission != PersistencePermission_ReadOnly)
+         if( gFileHandleArray[pathHandle].permission != PersistencePermission_ReadOnly)
          {
             // remove backup file
-            remove(gOssHandleArray[pathPandle].backupPath);  // we don't care about return value
+            remove(gOssHandleArray[pathHandle].backupPath);  // we don't care about return value
 
             // remove checksum file
-            remove(gOssHandleArray[pathPandle].csumPath);    // we don't care about return value
+            remove(gOssHandleArray[pathHandle].csumPath);    // we don't care about return value
 
          }
-         free(gOssHandleArray[pathPandle].filePath);
-         __sync_fetch_and_sub(&gOpenHandleArray[pathPandle], FileClosed);   // set closed flag
-         set_persistence_handle_close_idx(pathPandle);
-         gOssHandleArray[pathPandle].filePath = NULL;
+         free(gOssHandleArray[pathHandle].filePath);
+         __sync_fetch_and_sub(&gOpenHandleArray[pathHandle], FileClosed);   // set closed flag
+         set_persistence_handle_close_idx(pathHandle);
+         gOssHandleArray[pathHandle].filePath = NULL;
          rval = 1;
       }
       else
@@ -892,7 +902,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
          while((rval = read(fd, buf, statBuf.st_size)) > 0)
          {
             unsigned int crc = 0;
-            crc = crc32(crc, (unsigned char*)buf, statBuf.st_size);
+            crc = pclCrc32(crc, (unsigned char*)buf, statBuf.st_size);
             snprintf(crc32sum, ChecksumBufSize-1, "%x", crc);
          }
 
@@ -909,7 +919,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 
 int pclBackupNeeded(const char* path)
 {
-   return need_backup_key(crc32(0, (const unsigned char*)path, strlen(path)));
+   return need_backup_key(pclCrc32(0, (const unsigned char*)path, strlen(path)));
 }
 
 

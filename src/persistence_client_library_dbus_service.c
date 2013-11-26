@@ -257,8 +257,6 @@ int setup_dbus_mainloop(void)
 
    const char *pAddress = getenv("PERS_CLIENT_DBUS_ADDRESS");
 
-   // enable locking of data structures in the D-Bus library for multi threading.
-   dbus_threads_init_default();
    dbus_error_init(&err);
 
    // wain until dbus main loop has been setup and running

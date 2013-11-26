@@ -65,8 +65,9 @@ extern "C" {
  * @param shutdownMode shutdown mode ::PCL_SHUTDOWN_TYPE_FAST or ::PCL_SHUTDOWN_TYPE_NORMAL
  *
  * @return positive value: success;
- *   On error a negative value will be returned with th follwoing error codes:
- *   ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED, ::EPERS_INIT_DBUS_MAINLOOP,
+ *   On error a negative value will be returned with th following error codes:
+ *   ::EPERS_NOT_INITIALIZED, ::EPERS_INIT_DBUS_MAINLOOP,
+ *   ::EPERS_REGISTER_LIFECYCLE, ::EPERS_REGISTER_ADMIN
  */
 int pclInitLibrary(const char* appname, int shutdownMode);
 
@@ -78,7 +79,7 @@ int pclInitLibrary(const char* appname, int shutdownMode);
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  *
  * @return positive value: success;
- *   On error a negative value will be returned with th follwoing error codes: ::EPERS_LOCKFS
+ *   On error a negative value will be returned.
  */
 int pclDeinitLibrary(void);
 

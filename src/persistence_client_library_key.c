@@ -109,7 +109,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 
 int pclKeyHandleClose(int key_handle)
 {
-   int rval = 1;
+   int rval = EPERS_NOT_INITIALIZED;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleClose: "),
    //                DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
@@ -145,10 +145,6 @@ int pclKeyHandleClose(int key_handle)
       {
          rval = EPERS_MAXHANDLE;
       }
-   }
-   else
-   {
-      rval = EPERS_NOT_INITIALIZED;
    }
 
    return rval;
@@ -306,8 +302,14 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
                      if(size >= 0) // success ==> send change notification
                      {
-                        size = pers_send_Notification_Signal(gKeyHandleArray[key_handle].dbKey,
-                                                             &(gKeyHandleArray[key_handle].info.context), pclNotifyStatus_changed);
+                        int rval = pers_send_Notification_Signal(gKeyHandleArray[key_handle].dbKey,
+                                                               &(gKeyHandleArray[key_handle].info.context), pclNotifyStatus_changed);
+
+                        if(rval <= 0)
+                        {
+                           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - failed to send notification"));
+                           size = rval;
+                        }
                      }
                   }
                   else
@@ -524,7 +526,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                && (dbContext.configKey.type == PersistenceResourceType_key))
             {
                // get hash value of data to verify storing
-               hash_val_data = crc32(hash_val_data, buffer, buffer_size);
+               hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);
 
                // store data
                if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry

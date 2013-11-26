@@ -30,7 +30,7 @@ extern "C" {
 
 #include <string.h>
 
-const unsigned int crc32(unsigned int crc, const unsigned char *buf, size_t theSize);
+const unsigned int pclCrc32(unsigned int crc, const unsigned char *buf, size_t theSize);
 
 
 #ifdef __cplusplus

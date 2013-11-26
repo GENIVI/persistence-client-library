@@ -61,7 +61,6 @@ const char gCharLookup[] =
    0,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  // from 020 (space) to 0x2F (?)
    1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  // from 040 (@)     to 0x5F (_)
    1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1     // from 060 (')     to 0x7E (~)
-
 };
 
 
@@ -69,6 +68,7 @@ char* gpConfigFileMap = 0;
 char* gpTokenArray[TOKENARRAYSIZE] = {0};
 int gTokenCounter = 0;
 unsigned int gConfigFileSize = 0;
+
 
 /// the rb tree
 static jsw_rbtree_t *gRb_tree_bl = NULL;
@@ -136,7 +136,7 @@ void createAndStoreFileNames()
          item = malloc(sizeof(key_value_s));
          if(item != NULL)
          {
-            item->key = crc32(0, (unsigned char*)path, strlen(path));
+            item->key = pclCrc32(0, (unsigned char*)path, strlen(path));
             // we don't need the path name here, we just need to know that this key is available in the tree
             item->value = "";
             jsw_rbinsert(gRb_tree_bl, item);

@@ -1,21 +1,23 @@
 #ifndef PERSISTENCE_CLIENT_LIBRARY_CUSTOM_H
 #define PERSISTENCE_CLIENT_LIBRARY_CUSTOM_H
 
-/****************************************************
- *  persistence_custom.h                                         
- *  Created on: 09-Jul-2012 11:38:03                      
- *  Implementation of the Interface PersCustom       
- *  Original author: ihuerner, G.Sagnes
- *
- *  \file   persistence_client_custom.h
- *  \brief  Implementation of the Interface PersCustom
- *
- *  \par Responsibility
- *   - SW-Subsystem:         EG-SI
- *   - SW-Domain:            Persistence
- *   - Interface Visibility: Protected
- *  \par change history
- *  \verbatim
+/******************************************************************************
+ * Project         Persistency
+ * (c) copyright   2012
+ * Company         XS Embedded GmbH
+ *****************************************************************************/
+/******************************************************************************
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+******************************************************************************/
+ /**
+ * @file           persistence_client_custom.h
+ * @ingroup        Persistence client library
+ * @author         Ingo Huerner (XSe) / Guy Sagnes (Continental)
+ * @brief          Header of the persistence client library custom plugin.
+ *                 Library provides an plugin API to extend persistence client library
+ * @par change history
  *  Date       Author    Version  Description 
  *  2013.06.26 ihuerner  1.5.0.0  added description of parameters
  *  2013.01.06 ihuerner  1.4.0.0  plugin_handle_open and plugin_set_data changed from char* to const char*
@@ -23,9 +25,8 @@
  *  2012.10.16 gsagnes   1.2.0.0  add get_size, create_backup, restore_backup
  *  2012.10.04 gsagnes   1.1.0.0  add deinitialisation functionality (call during shutdown)
  *  2012.07.14 ihuerner  1.0.0.0  Initial version of the interface
- *  \endverbatim
- *
- ****************************************************/
+ */
+
  
 /** \ingroup GEN_PERS_CLIENTLIB_INTERFACE API document
  *  \{
@@ -51,14 +52,14 @@ The lower significant byte is equal 0 for released version only
  *
  * @param backup_id Name of the backup / identifier
  *
- * @return positive value: backup success (size of backup, bytes); negative value: error
+ * @return positive value (0 or greater): backup success (size of backup, bytes); negative value: error
  */
 int plugin_create_backup(const char* backup_id);
 
  /**
  * @brief deinitialize plugin (during shutdown)
  *
- * @return positive value: init success; negative value: error
+ * @return positive value (0 or greater): init success; negative value: error
  */
 int plugin_deinit();
 
@@ -67,7 +68,7 @@ int plugin_deinit();
  *
  * @param path the path to the data to delete
  *
- * @return positive value: delete success; negative value: error
+ * @return positive value (0 or greater): delete success; negative value: error
  */
 int plugin_delete_data(const char* path);
 
@@ -77,7 +78,7 @@ int plugin_delete_data(const char* path);
  * @param backup_id Name of the backup / identifier
  * @param size size of the buffer to return the identifier
  *
- * @return positive value: success, length of identifier; negative value: error
+ * @return positive value (0 or greater): success, length of identifier; negative value: error
  */
 int plugin_get_backup(char* backup_id, int size);
 
@@ -86,7 +87,7 @@ int plugin_get_backup(char* backup_id, int size);
  *
  * @param path the path to the data
  *
- * @return positive value: the size; negative value: error code
+ * @return positive value (0 or greater): the size; negative value: error code
  */
 int plugin_get_size(const char* path);
 
@@ -97,7 +98,7 @@ int plugin_get_size(const char* path);
  * @param buffer the buffer to store data
  * @param size the number of bytes to get data
  *
- * @return positive value: size data read in bytes; negative value: error
+ * @return positive value (0 or greater): size data read in bytes; negative value: error
  */
 int plugin_get_data(const char* path, char* buffer, int size);
  
@@ -106,7 +107,7 @@ int plugin_get_data(const char* path, char* buffer, int size);
  *
  * @param handle the handle to close
  *
- * @return positive value: successfully closed; negative value: error
+ * @return positive value (0 or greater): successfully closed; negative value: error
  */
 int plugin_handle_close(int handle);
 
@@ -117,7 +118,7 @@ int plugin_handle_close(int handle);
  * @param buffer the buffer to store data
  * @param size the number of bytes to get data
  *
- * @return positive value: size data read in bytes; negative value: error
+ * @return positive value (0 or greater): size data read in bytes; negative value: error
  */
 int plugin_handle_get_data(int handle, char* buffer, int size);
 
@@ -128,7 +129,7 @@ int plugin_handle_get_data(int handle, char* buffer, int size);
  * @param flag open flags
  * @param mode the open mode
  *
- * @return positive value: handle; negative value: error
+ * @return positive value (0 or greater): handle; negative value: error
  */
 int plugin_handle_open(const char* path, int flag, int mode);
 
@@ -155,7 +156,7 @@ int plugin_init();
  *
  * @param backup_id Name of the backup / identifier
  *
- * @return positive value: backup success (size of backup, bytes); negative value: error
+ * @return positive value (0 or greater): backup success (size of backup, bytes); negative value: error
  */
 int plugin_restore_backup(const char* backup_id);
 

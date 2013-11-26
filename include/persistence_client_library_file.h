@@ -44,8 +44,10 @@ extern "C" {
  *
  * @param fd the file descriptor to close
  *
- * @return zero on success. On error a negative value will be returned with th follwoing error codes:
- *                          ::EPERS_LOCKFS, ::EPERS_MAXHANDLE
+ * @return zero on success.
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_MAXHANDLE ::EPERS_COMMON
+ * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileClose(int fd);
 
@@ -56,7 +58,8 @@ int pclFileClose(int fd);
  *
  * @param fd the POSIX file descriptor
  *
- * @return positive value. On error the negative value -1 will be returned
+ * @return positive value (0 or greater). On error ::EPERS_NOT_INITIALIZED, ::EPERS_COMMON
+ * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileGetSize(int fd);
 
@@ -85,9 +88,11 @@ void* pclFileMapData(void* addr, long size, long offset, int fd);
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: the POSIX file descriptor;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS, EPERS_MAXHANDLE, EPERS_NOKEY, EPERS_NOKEYDATA, EPERS_NOPRCTABLE or EPERS_COMMON,
+ * @return positive value (0 or greater): the POSIX file descriptor;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS, ::EPERS_MAXHANDLE, ::EPERS_NOKEY, ::EPERS_NOKEYDATA,
+ * ::EPERS_NOPRCTABLE, ::EPERS_NOT_INITIALIZED, ::EPERS_COMMON
+ * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -100,9 +105,10 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
  * @param buffer buffer to read the data
  * @param buffer_size the size buffer for reading
  *
- * @return positive value: the size read;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * @return positive value (0 or greater): the size read;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_NOT_INITIALIZED, ::EPERS_LOCKFS, ::EPERS_COMMON.
+ * If ::EPERS_COMMON will be returned errno will be set
  */
 int pclFileReadData(int fd, void * buffer, int buffer_size);
 
@@ -116,9 +122,10 @@ int pclFileReadData(int fd, void * buffer, int buffer_size);
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: success;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * @return positive value (0 or greater): success;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_NOT_INITIALIZED, ::EPERS_LOCKFS, ::EPERS_COMMON.
+ * If ::EPERS_COMMON will be returned errno will be set
  */
 int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -137,9 +144,10 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
                  SEEK_END
                       The offset is set to the size of the file plus offset bytes.
  *
- * @return positive value: resulting offset location;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * @return positive value (0 or greater): resulting offset location;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED, ::EPERS_COMMON.
+ * If ::EPERS_COMMON will be returned errno will be set
  */
 int pclFileSeek(int fd, long int offset, int whence);
 
@@ -152,8 +160,9 @@ int pclFileSeek(int fd, long int offset, int whence);
  * @param size the size in bytes to unmap
  *
  * @return on success 0;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS, EPERS_NOT_INITIALIZED, ::EPERS_COMMON.
+ * If ::EPERS_COMMON will be returned errno will be set
  */
 int pclFileUnmapData(void* address, long size);
 
@@ -166,9 +175,10 @@ int pclFileUnmapData(void* address, long size);
  * @param buffer the buffer to write
  * @param buffer_size the size of the buffer to write in bytes
  *
- * @return positive value: bytes written;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * @return positive value (0 or greater): bytes written;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED or ::EPERS_COMMON
+ * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileWriteData(int fd, const void * buffer, int buffer_size);
 
@@ -186,9 +196,10 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size);
  *
  * @note the allocated memory for the path string will be freed in pclFileReleasePath
  *
- * @return positive value on success, which must be used when pclFileReleasePath will be called
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * @return positive value (0 or greater) on success, which must be used when pclFileReleasePath will be called
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS or ::EPERS_COMMON
+ * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, char** path, unsigned int* size);
 
@@ -200,9 +211,10 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
  *
  * @note the allocated memory in pclFileCreatePath for the path will freed in the function
  *
- * @return positive value: success;
- * On error a negative value will be returned with th follwoing error codes:
- * EPERS_LOCKFS or EPERS_COMMON
+ * @return positive value (0 or greater): success;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS or ::EPERS_COMMON
+ * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileReleasePath(int pathPandle);
 

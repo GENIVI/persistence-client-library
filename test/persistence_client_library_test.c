@@ -186,7 +186,7 @@ START_TEST (test_GetDataHandle)
    fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyHandleGetSize(handle);
-   fail_unless(size = strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   fail_unless(size == strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
    // ---------------------------------------------------------------------------------------------
 
 
@@ -199,7 +199,7 @@ START_TEST (test_GetDataHandle)
    fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    size = pclKeyHandleWriteData(handle2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(size = strlen(sysTimeBuffer));
+   fail_unless(size == strlen(sysTimeBuffer));
    // close
    ret = pclKeyHandleClose(handle2);
    // ---------------------------------------------------------------------------------------------
@@ -319,6 +319,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
 
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
@@ -328,6 +329,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
 
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
@@ -337,6 +339,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
    /*******************************************************************************************************************************************/
    /*******************************************************************************************************************************************/
 
@@ -981,7 +984,6 @@ START_TEST(test_GetPath)
    pclDeinitLibrary();
 }
 END_TEST
-
 
 
 static Suite * persistencyClientLib_suite()

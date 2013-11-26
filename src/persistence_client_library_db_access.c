@@ -406,7 +406,12 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
                if(PersistenceStorage_shared == info->configKey.storage)
                {
-                  write_size = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+                  int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+                  if(rval <= 0)
+                  {
+                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_write_key ==> failed to send notification signal"));
+                     write_size = rval;
+                  }
                }
             }
             else
@@ -445,7 +450,12 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
          if(write_size >= 0)  // success ==> send deleted notification
          {
-            write_size = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+            int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+            if(rval <= 0)
+            {
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_write_key ==> failed to send notification signal"));
+               write_size = rval;
+            }
          }
       }
       else

@@ -85,8 +85,8 @@ typedef struct _pclNotification_s
  *
  * @param notifyStruct structure for notifcation
  *
- * @return positive value: success;
- *   On error a negative value will be returned with the following error codes: ::EPERS_LOCKFS
+ * @return positive value (0 or greater): success;
+ * On error a negative value will be returned with the following error codes: ::EPERS_LOCKFS
 */
 typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
 
@@ -103,8 +103,9 @@ typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: success; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS ::EPERS_NOTIFY_SIG
+ * @return positive value (0 or greater) : success;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS, ::EPERS_NOTIFY_SIG, ::EPERS_NOT_INITIALIZED, ::EPERS_BADPOL
  */
 int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -118,8 +119,10 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: the size; On error a negative value will be returned with the following error codes:
+ * @return positive value (0 or greater): the size;
+ * On error a negative value will be returned with the following error codes:
  * ::EPERS_LOCKFS, ::EPERS_BADPOL, ::EPERS_NOKEY, ::EPERS_NOKEYDATA or ::EPERS_NOPRCTABLE
+ * ::EPERS_NOT_INITIALIZED
  */
 int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -128,8 +131,9 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
  *
  * @param key_handle key value handle return by key_handle_open()
  *
- * @return positive value: success; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS
+ * @return positive value (0 or greater): success;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS ::EPERS_MAXHANDLE ::EPERS_NOPLUGINFUNCT ::EPERS_NOT_INITIALIZED
  */
 int pclKeyHandleClose(int key_handle);
 
@@ -140,8 +144,10 @@ int pclKeyHandleClose(int key_handle);
  *
  * @param key_handle key value handle return by key_handle_open()
  *
- * @return positive value: the size; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS
+ * @return positive value (0 or greater): the size;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_NOT_INITIALIZED ::EPERS_LOCKFS ::EPERS_NOPLUGINFUNCT ::EPERS_MAXHANDLE
+ * ::EPERS_NOKEY ::EPERS_DB_KEY_SIZE ::EPERS_NOPRCTABLE
  */
 int pclKeyHandleGetSize(int key_handle);
 
@@ -155,9 +161,9 @@ int pclKeyHandleGetSize(int key_handle);
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
- * @return positive value: the key handle to access the value;
+ * @return positive value (0 or greater): the key handle to access the value;
  * On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS
+ * ::EPERS_NOT_INITIALIZED ::EPERS_NOPLUGINFUNCT ::
  */
 int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no);
 
@@ -170,8 +176,9 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
  * @param buffer the buffer for persistent data
  * @param buffer_size size of buffer for reading
  *
- * @return positive value: the bytes read; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS
+ * @return positive value (0 or greater): the bytes read;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_NOT_INITIALIZED ::EPERS_NOPLUGINFUNCT ::EPERS_MAXHANDLE
  */
 int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size);
 
@@ -183,10 +190,13 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
  * @param key_handle key value handle return by key_handle_open()
  * @param callback notification callback
  *
- * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS ::EPERS_MAXHANDLE ::EPERS_NOTIFY_NOT_ALLOWED
+ * @return positive value (0 or greater): registration OK;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_NOT_INITIALIZED ::EPERS_MAXHANDLE ::EPERS_NOTIFY_NOT_ALLOWED
  */
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback);
+
+
 
 /**
  * @brief unregister a change notification for persistent data
@@ -194,10 +204,13 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
  * @param key_handle key value handle return by key_handle_open()
  * @param callback notification callback
  *
- * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS ::EPERS_MAXHANDLE ::EPERS_NOTIFY_NOT_ALLOWED
+ * @return positive value (0 or greater): registration OK;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_NOT_INITIALIZED ::EPERS_LOCKFS ::EPERS_MAXHANDLE ::EPERS_NOTIFY_NOT_ALLOWED
  */
 int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback);
+
+
 
 /**
  * @brief writes persistent data identified by key handle
@@ -207,8 +220,10 @@ int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback
  * @param buffer_size the number of bytes to write (default max size is set to 16kB)
  *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
- * @return positive value: the bytes written; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS ::EPERS_MAX_BUFF_SIZE ::EPERS_NOTIFY_SIG
+ * @return positive value (0 or greater): the bytes written;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS ::EPERS_MAX_BUFF_SIZE ::EPERS_NOTIFY_SIG ::EPERS_DB_VALUE_SIZE ::EPERS_DB_KEY_SIZE
+ * ::EPERS_NOPRCTABLE ::EPERS_DB_VALUE_SIZE
  */
 int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size);
 
@@ -224,8 +239,9 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
  * @param buffer the buffer to read the persistent data
  * @param buffer_size size of buffer for reading
  *
- * @return positive value: the bytes read; On error a negative value will be returned with th follwoing error codes:
- * ::EPERS_LOCKFS
+ * @return positive value (0 or greater): the bytes read;
+ * On error a negative value will be returned with th following error codes:
+ * ::EPERS_LOCKFS ::EPERS_NOT_INITIALIZED ::EPERS_BADPOL ::EPERS_NOPLUGINFUNCT
  */
 int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
 
@@ -240,8 +256,9 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  * @param seat_no  the seat number
  * @param callback notification callback
  *
- * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
- *                         ::EPERS_RES_NO_KEY ::EPERS_NOKEYDATA  ::EPERS_NOPRCTABLE ::EPERS_NOTIFY_NOT_ALLOWED
+ * @return positive value (0 or greater): registration OK;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_RES_NO_KEY ::EPERS_NOKEYDATA  ::EPERS_NOPRCTABLE ::EPERS_NOTIFY_NOT_ALLOWED
  */
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback);
 
@@ -256,10 +273,13 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
  * @param seat_no  the seat number
  * @param callback notification callback
  *
- * @return positive value: registration OK; On error a negative value will be returned with the following error codes:
- *                         ::EPERS_RES_NO_KEY ::EPERS_NOKEYDATA  ::EPERS_NOPRCTABLE ::EPERS_NOTIFY_NOT_ALLOWED
+ * @return positive value (0 or greater): registration OK;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_RES_NO_KEY ::EPERS_NOKEYDATA  ::EPERS_NOPRCTABLE ::EPERS_NOTIFY_NOT_ALLOWED
  */
 int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_id, unsigned int  user_no, unsigned int  seat_no, pclChangeNotifyCallback_t  callback);
+
+
 
 /**
  * @brief writes persistent data identified by ldbid and resource_id
@@ -272,10 +292,12 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
  * @param buffer_size the number of bytes to write (default max size is set to 16kB)
  *                    use environment variable PERS_MAX_KEY_VAL_DATA_SIZE to modify default size in bytes
  *
- * @return positive value: the bytes written; On error a negative value will be returned with the following error codes:
- * ::EPERS_LOCKFS ::EPERS_NOTIFY_NOT_ALLOWED
+ * @return positive value (0 or greater): the bytes written;
+ * On error a negative value will be returned with the following error codes:
+ * ::EPERS_LOCKFS ::EPERS_BADPOL ::EPERS_BUFLIMIT ::EPERS_DB_VALUE_SIZE ::EPERS_DB_KEY_SIZE ::EPERS_NOTIFY_SIG
  */
 int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
+
 
 /** \} */
 

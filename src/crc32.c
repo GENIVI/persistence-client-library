@@ -107,7 +107,7 @@ static unsigned int crc32_tab[] =
    0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-const unsigned int crc32(unsigned int crc, const unsigned char *buf, size_t theSize)
+const unsigned int pclCrc32(unsigned int crc, const unsigned char *buf, size_t theSize)
 {
    const unsigned char *p = 0;
    unsigned int rval = 0;

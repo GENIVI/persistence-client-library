@@ -89,6 +89,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       if(setup_dbus_mainloop() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
+         pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_DBUS_MAINLOOP;
       }
 
@@ -98,6 +99,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          if(register_lifecycle(shutdownMode) == -1)
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
+            pthread_mutex_unlock(&gDbusPendingRegMtx);
             return EPERS_REGISTER_LIFECYCLE;
          }
       }
@@ -105,6 +107,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       if(register_pers_admin_service() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
+         pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_REGISTER_ADMIN;
       }
 
@@ -188,7 +191,9 @@ int pclDeinitLibrary(void)
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle and persistence admin service dbus messages
-      rval = unregister_lifecycle(gShutdownMode);
+      if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
+         rval = unregister_lifecycle(gShutdownMode);
+
       rval = unregister_pers_admin_service();
 
       // unload custom client libraries
