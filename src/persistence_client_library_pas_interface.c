@@ -58,7 +58,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
-         if(-1 == deliverToMainloop(CMD_PAS_BLOCK_AND_WRITE_BACK, request, requestID))
+         if(-1 == deliverToMainloop_NM(CMD_PAS_BLOCK_AND_WRITE_BACK, request, requestID))
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
             rval = PasErrorStatus_FAIL;

@@ -170,7 +170,6 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
 void process_prepare_shutdown(unsigned char requestId, unsigned int status)
 {
    int i = 0;
-   //GvdbTable* resourceTable = NULL;
    itzam_btree* resourceTable = NULL;
    itzam_state  state = ITZAM_FAILED;
 
@@ -193,9 +192,10 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
    {
      resourceTable = get_resource_cfg_table_by_idx(i);
      // dereference opend database
-     if(resourceTable != NULL)
+     if(resourceTable != NULL &&  get_resource_cfg_table_status(i) == 1)
      {
         state = itzam_btree_close(resourceTable);
+        invalidate_resource_cfg_table(i);
         if (state != ITZAM_OKAY)
         {
            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => itzam_btree_close: Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
@@ -216,6 +216,8 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
          gPersCustomFuncs[i].custom_plugin_deinit();
          // close library handle
          dlclose(gPersCustomFuncs[i].handle);
+
+         gPersCustomFuncs[i].custom_plugin_deinit = NULL;
       }
    }
 

@@ -26,7 +26,7 @@
 
 
 /// pointer to resource table database
-itzam_btree gResource_table[PrctDbTableSize];
+itzam_btree gResource_table[PrctDbTableSize] = {0};
 /// array to hold the information of database is already open
 int gResourceOpen[PrctDbTableSize] = {0};
 
@@ -66,6 +66,15 @@ itzam_btree* get_resource_cfg_table_by_idx(int i)
    return &gResource_table[i];
 }
 
+int get_resource_cfg_table_status(int i)
+{
+   return gResourceOpen[i];
+}
+
+void invalidate_resource_cfg_table(int i)
+{
+   gResourceOpen[i] = 0;
+}
 
 // status: OK
 itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)

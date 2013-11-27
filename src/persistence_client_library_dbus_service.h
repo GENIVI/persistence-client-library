@@ -75,4 +75,6 @@ int setup_dbus_mainloop(void);
 
 int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2);
 
+
+int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int param2);
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_SERVICE_H_ */

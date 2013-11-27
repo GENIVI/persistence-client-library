@@ -578,6 +578,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                        case CMD_LC_PREPARE_SHUTDOWN:
                                           process_prepare_shutdown((buf[2]), buf[1]);
                                           break;
+                                       case CMD_SEND_LC_REQUEST:
+                                          process_send_lifecycle_request(conn, (buf[2]), buf[1]);
+                                          break;
                                        case CMD_SEND_NOTIFY_SIGNAL:
                                           process_send_notification_signal(conn);
                                           break;
@@ -589,9 +592,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           break;
                                        case CMD_SEND_PAS_REGISTER:
                                           process_send_pas_register(conn, (buf[1]), buf[2]);
-                                          break;
-                                       case CMD_SEND_LC_REQUEST:
-                                          process_send_lifecycle_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_LC_REGISTER:
                                           process_send_lifecycle_register(conn, (buf[1]), buf[2]);
@@ -657,10 +657,22 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2)
 {
    int rval = 0;
-   uint64_t cmd;
-   uint16_t* cmd_chk;
 
    pthread_mutex_lock(&gMainLoopMtx);
+
+   deliverToMainloop_NM(mainloopCmd, param1, param2);
+
+   // wait for condition variable
+   pthread_cond_wait(&gMainLoopCond, &gMainLoopMtx);
+   pthread_mutex_unlock(&gMainLoopMtx);
+
+   return rval;
+}
+
+int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int param2)
+{
+   int rval = 0;
+   uint64_t cmd;
 
    cmd = ( ((uint64_t)param2 << 32) | ((uint64_t)param1 << 16) | mainloopCmd);
 
@@ -669,10 +681,6 @@ int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
      rval = -1;
    }
-
-   // wait for condition variable
-   pthread_cond_wait(&gMainLoopCond, &gMainLoopMtx);
-   pthread_mutex_unlock(&gMainLoopMtx);
 
    return rval;
 }

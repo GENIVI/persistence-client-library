@@ -62,11 +62,33 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
 
 /**
- * @brief get the resource configuration table gvbd database by id
+ * @brief get the resource configuration table database by id
  *
- * @return pointer to the gvdb database table or NULL if no valid database has been found
+ * @param i the index
+ *
+ * @return pointer to the database table or NULL if no valid database has been found
  */
 itzam_btree* get_resource_cfg_table_by_idx(int i);
+
+
+
+/**
+ * @brief get the resource configuration table status
+ *
+ * @param i the index
+ *
+ * @return status of database, 1 is db is opened and 0 is closed
+ */
+int get_resource_cfg_table_status(int i);
+
+
+
+/**
+ * @brief mark the resource configuration table as closed
+ *
+ * @param i the index
+ */
+void invalidate_resource_cfg_table(int i);
 
 
 

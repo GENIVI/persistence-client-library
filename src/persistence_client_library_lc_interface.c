@@ -44,7 +44,7 @@ int check_lc_request(int request, int requestID)
    {
       case NsmShutdownNormal:
       {
-         if(-1 == deliverToMainloop(CMD_LC_PREPARE_SHUTDOWN, request, requestID) )
+         if(-1 == deliverToMainloop_NM(CMD_LC_PREPARE_SHUTDOWN, request, requestID) )
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
             rval = NsmErrorStatus_Fail;
@@ -124,14 +124,13 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
 
 
-
 DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-   if((0==strncmp("org.genivi.NodeStateManager.LifeCycleConsumer", dbus_message_get_interface(message), 20)))
+   if((0==strncmp("org.genivi.NodeStateManager.LifeCycleConsumer", dbus_message_get_interface(message), 46)))
    {
-      if((0==strncmp("LifecycleRequest", dbus_message_get_member(message), 18)))
+      if((0==strncmp("LifecycleRequest", dbus_message_get_member(message), 16)))
       {
          result = msg_lifecycleRequest(connection, message);
       }
@@ -161,6 +160,6 @@ int unregister_lifecycle(int shutdownMode)
 
 int send_prepare_shutdown_complete(int requestId, int status)
 {
-   return deliverToMainloop(CMD_SEND_LC_REQUEST, status, requestId);
+   return deliverToMainloop_NM(CMD_SEND_LC_REQUEST, status, requestId);
 }
 
