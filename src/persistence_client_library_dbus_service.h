@@ -38,9 +38,9 @@ typedef enum ECmd
    CMD_LC_PREPARE_SHUTDOWN,         /// command to prepare shutdown
    CMD_SEND_NOTIFY_SIGNAL,          /// command send changed notification signal
    CMD_REG_NOTIFY_SIGNAL,           /// command send register/unregister command
-   CMD_SEND_PAS_REQUEST,            /// command send admin request
+   //CMD_SEND_PAS_REQUEST,            /// command send admin request
    CMD_SEND_PAS_REGISTER,           /// command send admin register/unregister
-   CMD_SEND_LC_REQUEST,             /// command send lifecycle request
+   //CMD_SEND_LC_REQUEST,             /// command send lifecycle request
    CMD_SEND_LC_REGISTER,            /// command send lifecycle register/unregister
    CMD_QUIT                         /// quit command
 } tCmd;
@@ -77,4 +77,5 @@ int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2
 
 
 int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int param2);
+
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_SERVICE_H_ */

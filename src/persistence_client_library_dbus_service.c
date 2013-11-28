@@ -36,7 +36,7 @@ pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gMainLoopMtx         = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gMainLoopCond = PTHREAD_COND_INITIALIZER;
 
-int gEfds;
+int gEfds;  // communication channel int dbus mainloop
 
 
 typedef enum EDBusObjectType
@@ -574,11 +574,11 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
                                           process_block_and_write_data_back((buf[2]), buf[1]);
+                                          process_send_pas_request(conn, (buf[2]), buf[1]);
+                                          pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
                                           process_prepare_shutdown((buf[2]), buf[1]);
-                                          break;
-                                       case CMD_SEND_LC_REQUEST:
                                           process_send_lifecycle_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_NOTIFY_SIGNAL:
@@ -586,9 +586,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           break;
                                        case CMD_REG_NOTIFY_SIGNAL:
                                           process_reg_notification_signal(conn);
-                                          break;
-                                       case CMD_SEND_PAS_REQUEST:
-                                          process_send_pas_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_PAS_REGISTER:
                                           process_send_pas_register(conn, (buf[1]), buf[2]);
@@ -599,6 +596,17 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                        case CMD_QUIT:
                                           bContinue = FALSE;
                                           break;
+
+                                       // ******************************************************
+                                       /*
+                                       case CMD_SEND_LC_REQUEST:  // remove
+                                         process_send_lifecycle_request(conn, (buf[2]), buf[1]);
+                                         break;
+                                      case CMD_SEND_PAS_REQUEST: /// remove
+                                         process_send_pas_request(conn, (buf[2]), buf[1]);
+                                         break;
+                                       */
+                                       // ******************************************************
                                        default:
                                           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
                                           break;

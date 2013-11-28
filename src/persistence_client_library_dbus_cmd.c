@@ -162,7 +162,7 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
    // sync data back to memory device
    pers_data_sync();
    // send complete notification
-   pers_admin_service_data_sync_complete(requestID, status);
+   //pers_admin_service_data_sync_complete(requestID, status);
 }
 
 
@@ -217,12 +217,12 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
          // close library handle
          dlclose(gPersCustomFuncs[i].handle);
 
-         gPersCustomFuncs[i].custom_plugin_deinit = NULL;
+         invalidate_custom_plugin(i);
       }
    }
 
    // notify lifecycle shutdown OK
-   send_prepare_shutdown_complete((int)requestId, (int)status);
+   //send_prepare_shutdown_complete((int)requestId, (int)status);
 }
 
 

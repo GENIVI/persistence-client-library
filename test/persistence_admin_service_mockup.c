@@ -30,6 +30,35 @@
 #include <pthread.h>
 #include <sys/eventfd.h>
 
+/*
+ * N O T E
+ *
+ * To test the PAS notifications the "./persistence_client_library_dbus_test" can be used.
+ * Use the dbus-send command to send shutdown notification to registered client if the lifecycle mockup will be used.
+ * To get the correct destionation (example is :1.11) see console when this application has been started.
+ * You sould find something like:
+ *   " checkAdminMsg ==> busName: :1.79 | objName: /org/genivi/persistence/adminconsumer | notificationFlag: 19 | gTimeoutMs: 5000"
+ * when a client registeres itself to the lifecycle mockup.
+ * Now use the the destination ":1.79" to communicate with the client library for dest in dbus-send command.
+ *
+
+  dbus-send --system --dest=:1.11 --type=method_call --print-reply /org/genivi/persistence/adminconsumer org.genivi.persistence.adminconsumer.PersistenceAdminRequest int32:17 int32:22
+
+  parameter 1:
+  int32:17 => PAS message block and write back
+  int32:2 => PAS message unblock
+
+  dbus-send return message value 32768 ==> invalid message:
+   method return sender=:1.72 -> dest=:1.74 reply_serial=2
+   int32 32768
+
+  dbus-send return message value 1 ==> OK:
+   method return sender=:1.72 -> dest=:1.76 reply_serial=2
+   int32 1
+
+*/
+
+
 
 /// command definitions for main loop
 typedef enum ECmd
@@ -175,6 +204,10 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
          printf(" ==> org.genivi.persistence.admin - received - ==> UnRegisterPersAdminNotification \n");
 
          result = checkAdminMsg(connection, message);
+      }
+      else if((0==strcmp("PersistenceAdminRequestCompleted", dbus_message_get_member(message))))
+      {
+         printf(" ==> org.genivi.persistence.admin - received - ==> PersistenceAdminRequestCompleted \n");
       }
       else
       {

@@ -169,7 +169,7 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
       }
 
-      dbus_message_unref (reply);
+      dbus_message_unref(reply);
 
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
@@ -260,7 +260,7 @@ int unregister_pers_admin_service(void)
 }
 
 
-
+/*
 int pers_admin_service_data_sync_complete(unsigned int requestID, unsigned int status)
 {
    int rval =  0;
@@ -277,4 +277,4 @@ int pers_admin_service_data_sync_complete(unsigned int requestID, unsigned int s
    }
    return rval;
 }
-
+*/

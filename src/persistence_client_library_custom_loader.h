@@ -170,4 +170,10 @@ int check_valid_idx(int idx);
 char* get_custom_client_lib_name(int idx);
 
 
+/**
+ * @brief invalidate customer plugin function
+ */
+void invalidate_custom_plugin(int idx);
+
+
 #endif /* PERSISTENCE_CLIENT_LIBRARY_CUSTOM_LOADER_H */

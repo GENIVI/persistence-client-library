@@ -156,10 +156,9 @@ int unregister_lifecycle(int shutdownMode)
    return deliverToMainloop(CMD_SEND_LC_REGISTER, 0, shutdownMode);
 }
 
-
-
+/*
 int send_prepare_shutdown_complete(int requestId, int status)
 {
    return deliverToMainloop_NM(CMD_SEND_LC_REQUEST, status, requestId);
 }
-
+*/

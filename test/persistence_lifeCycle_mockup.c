@@ -16,6 +16,23 @@
  * @see            
  */
 
+
+/*
+ * N O T E
+ *
+ * To test the shutdown sequence the "./persistence_client_library_dbus_test" can be used.
+ * Use the dbus-send command to send shutdown notification to registered client if the lifecycle mockup will be used.
+ * To get the correct destionation (example is :1.11) see console when this application has been started.
+ * You sould find something like:
+ *   "handleObjectPathMessageFallback Object: ':1.69' -> Interface: 'org.genivi.NodeStateManager.Consumer' -> Message: 'RegisterShutdownClient'"
+ * when a client registeres itself to the lifecycle mockup.
+ * Now use the the destination ":1.69" to communicate with the client library for dest in dbus-send command.
+ *
+
+  dbus-send --system --dest=:1.11 --type=method_call --print-reply /org/genivi/NodeStateManager/LifeCycleConsumer org.genivi.NodeStateManager.LifeCycleConsumer.LifecycleRequest uint32:1 uint32:22
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

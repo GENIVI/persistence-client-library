@@ -45,9 +45,6 @@ extern int bContinue;
 
 static int gShutdownMode = 0;
 
-/// loical function declaration
-void invalidateCustomPlugin(int idx);
-
 
 int pclInitLibrary(const char* appName, int shutdownMode)
 {
@@ -118,7 +115,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          // initialize custom library structure
          for(i = 0; i < PersCustomLib_LastEntry; i++)
          {
-            invalidateCustomPlugin(i);
+            invalidate_custom_plugin(i);
          }
 
          if(pOnDemandLoad == NULL)  // load all available libraries now
@@ -206,7 +203,7 @@ int pclDeinitLibrary(void)
             // close library handle
             dlclose(gPersCustomFuncs[i].handle);
 
-            invalidateCustomPlugin(i);
+            invalidate_custom_plugin(i);
          }
       }
 
@@ -228,27 +225,6 @@ int pclDeinitLibrary(void)
    return rval;
 }
 
-
-
-void invalidateCustomPlugin(int idx)
-{
-   gPersCustomFuncs[idx].handle  = NULL;
-   gPersCustomFuncs[idx].custom_plugin_init = NULL;
-   gPersCustomFuncs[idx].custom_plugin_deinit = NULL;
-   gPersCustomFuncs[idx].custom_plugin_handle_open = NULL;
-   gPersCustomFuncs[idx].custom_plugin_handle_close = NULL;
-   gPersCustomFuncs[idx].custom_plugin_handle_get_data = NULL;
-   gPersCustomFuncs[idx].custom_plugin_handle_set_data  = NULL;
-   gPersCustomFuncs[idx].custom_plugin_get_data = NULL;
-   gPersCustomFuncs[idx].custom_plugin_set_data = NULL;
-   gPersCustomFuncs[idx].custom_plugin_delete_data = NULL;
-   gPersCustomFuncs[idx].custom_plugin_get_status_notification_clbk = NULL;
-   gPersCustomFuncs[idx].custom_plugin_handle_get_size = NULL;
-   gPersCustomFuncs[idx].custom_plugin_get_size = NULL;
-   gPersCustomFuncs[idx].custom_plugin_create_backup = NULL;
-   gPersCustomFuncs[idx].custom_plugin_get_backup = NULL;
-   gPersCustomFuncs[idx].custom_plugin_restore_backup = NULL;
-}
 
 
 
