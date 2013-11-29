@@ -375,7 +375,7 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
             {
                // -----------------------------------------------------------------------------
                // transaction start
-               itzam_btree_transaction_start(btree);
+               // itzam_btree_transaction_start(btree);
 
                // key
                memset(insert.m_key, 0, DbKeySize);
@@ -400,7 +400,7 @@ int pers_db_write_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
                   write_size = EPERS_DB_ERROR_INTERNAL;
                }
 
-               itzam_btree_transaction_commit(btree);
+               // itzam_btree_transaction_commit(btree);
                // transaction end
                // -----------------------------------------------------------------------------
 

@@ -259,22 +259,3 @@ int unregister_pers_admin_service(void)
    return rval;
 }
 
-
-/*
-int pers_admin_service_data_sync_complete(unsigned int requestID, unsigned int status)
-{
-   int rval =  0;
-
-   if(-1 == deliverToMainloop(CMD_SEND_PAS_REQUEST, status, requestID))
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_admin_service_data_sync_complete => failed to write to pipe"), DLT_INT(errno));
-      rval = -1;
-   }
-   else
-   {
-      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
-      rval = gDbusPendingRvalue;
-   }
-   return rval;
-}
-*/

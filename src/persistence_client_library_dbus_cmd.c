@@ -220,9 +220,6 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
          invalidate_custom_plugin(i);
       }
    }
-
-   // notify lifecycle shutdown OK
-   //send_prepare_shutdown_complete((int)requestId, (int)status);
 }
 
 
@@ -230,7 +227,6 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
 void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int status)
 {
    DBusError error;
-   DBusPendingCall* pending = NULL;
    dbus_error_init (&error);
    int rval = 0;
 
@@ -238,37 +234,31 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
                                                       "/org/genivi/persistence/admin",       // path
                                                        "org.genivi.persistence.admin",       // interface
                                                        "PersistenceAdminRequestCompleted");  // method
-   if(message != NULL)
+   if(conn != NULL)
    {
-      dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
-                                        DBUS_TYPE_INT32,  &status,
-                                        DBUS_TYPE_INVALID);
-
-      if(conn != NULL)
+      if(message != NULL)
       {
-         //replyMsg = dbus_connection_send_with_reply_and_block(conn, message, gTimeoutMs, &error);
-         dbus_connection_send_with_reply(conn,        //    the connection
-                                         message,       // the message to write
-                                         &pending,      // pending
-                                         gTimeoutMs);   // timeout in milliseconds or -1 for default
+         dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
+                                           DBUS_TYPE_INT32,  &status,
+                                           DBUS_TYPE_INVALID);
+
+         if(!dbus_connection_send(conn, message, 0))
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
+            rval = -1;
+         }
 
          dbus_connection_flush(conn);
-
-         if(!dbus_pending_call_set_notify(pending, msg_pending_func, "PersistenceAdminRequestCompleted", NULL))
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_pas_request => dbus_pending_call_set_notify: FAILED\n"));
-         }
-         dbus_pending_call_unref(pending);
+         dbus_message_unref(message);
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid connection") );
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid message") );
       }
-      dbus_message_unref(message);
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid message") );
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request => ERROR: Invalid connection") );
    }
 }
 
@@ -376,12 +366,12 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
                                               DBUS_TYPE_UINT32, &shutdownMode, DBUS_TYPE_INVALID);
          }
 
-		 if(!dbus_connection_send(conn, message, 0))
-		 {
-		    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
-		    rval = -1;
-		 }
-		 dbus_connection_flush(conn);
+		   if(!dbus_connection_send(conn, message, 0))
+		   {
+		      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
+		      rval = -1;
+		   }
+		   dbus_connection_flush(conn);
          dbus_message_unref(message);
       }
       else
@@ -416,14 +406,14 @@ void process_send_lifecycle_request(DBusConnection* conn, int requestId, int sta
                                            DBUS_TYPE_INVALID);
 
 
-		 if(!dbus_connection_send(conn, message, 0))
-		 {
-		    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
-		    rval = -1;
-		 }
+         if(!dbus_connection_send(conn, message, 0))
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
+            rval = -1;
+          }
 
-		 dbus_connection_flush(conn);
-         dbus_message_unref(message);
+          dbus_connection_flush(conn);
+          dbus_message_unref(message);
       }
       else
       {

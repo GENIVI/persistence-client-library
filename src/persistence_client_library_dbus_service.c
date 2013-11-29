@@ -575,7 +575,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
                                           process_block_and_write_data_back((buf[2]), buf[1]);
                                           process_send_pas_request(conn, (buf[2]), buf[1]);
-                                          pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
                                           process_prepare_shutdown((buf[2]), buf[1]);
