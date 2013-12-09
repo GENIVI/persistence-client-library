@@ -369,22 +369,28 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
       {
          if(fd < MaxPersHandle)
          {
-            // check if a backup file has to be created
-            if(   gFileHandleArray[fd].permission != PersistencePermission_ReadOnly
-               && gFileHandleArray[fd].backupCreated == 0)
+            if(gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
             {
-               char csumBuf[ChecksumBufSize] = {0};
+               // check if a backup file has to be created
+               if(gFileHandleArray[fd].backupCreated == 0)
+               {
+                  char csumBuf[ChecksumBufSize] = {0};
 
-               // calculate checksum
-               pclCalcCrc32Csum(fd, csumBuf);
+                  // calculate checksum
+                  pclCalcCrc32Csum(fd, csumBuf);
 
-               // create checksum and backup file
-               pclCreateBackup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
+                  // create checksum and backup file
+                  pclCreateBackup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
 
-               gFileHandleArray[fd].backupCreated = 1;
+                  gFileHandleArray[fd].backupCreated = 1;
+               }
+
+               size = write(fd, buffer, buffer_size);
             }
-
-            size = write(fd, buffer, buffer_size);
+            else
+            {
+               size = EPERS_RESOURCE_READ_ONLY;
+            }
          }
       }
       else
@@ -463,7 +469,14 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   *size = strlen(dbPath);
                   *path = malloc(*size);
                   memcpy(*path, dbPath, *size);
+                  *path[*size] = '\0';
                   gOssHandleArray[handle].filePath = *path;
+
+                  if(access(*path, F_OK) == -1)
+                  {
+                     // file does not exist, create it.
+                     pclCreateFileAndPath(*path);
+                  }
                }
                else
                {
@@ -923,5 +936,57 @@ int pclBackupNeeded(const char* path)
 }
 
 
+
+int pclCreateFileAndPath(const char* path)
+{
+   const char* delimiters = "/\n";   // search for blank and end of line
+   char* tokenArray[24];
+   char* thePath = (char*)path;
+   char createPath[DbPathMaxLen] = {0};
+   int numTokens = 0, i = 0, validPath = 1;
+   int rval = -1;
+
+   tokenArray[numTokens++] = strtok(thePath, delimiters);
+   while(tokenArray[numTokens-1] != NULL )
+   {
+     tokenArray[numTokens] = strtok(NULL, delimiters);
+     if(tokenArray[numTokens] != NULL)
+     {
+        numTokens++;
+        if(numTokens >= 24)
+        {
+           validPath = 0;
+           break;
+        }
+     }
+     else
+     {
+        break;
+     }
+   }
+
+   if(validPath == 1)
+   {
+      snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
+      for(i=1; i<numTokens-1; i++)
+      {
+         // create folders
+         strncat(createPath, "/", DbPathMaxLen-1);
+         strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+         mkdir(createPath, 0744);
+      }
+      // finally create the file
+      strncat(createPath, "/", DbPathMaxLen-1);
+      strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+      rval = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      close(rval);
+   }
+   else
+   {
+      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateFileAndPath ==> no valid path to create:"), DLT_STRING(path));
+   }
+
+   return rval;
+}
 
 

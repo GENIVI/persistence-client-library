@@ -177,7 +177,7 @@ int pclFileUnmapData(void* address, long size);
  *
  * @return positive value (0 or greater): bytes written;
  * On error a negative value will be returned with th following error codes:
- * ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED or ::EPERS_COMMON
+ * ::EPERS_LOCKFS, ::EPERS_NOT_INITIALIZED or ::EPERS_COMMON ::EPERS_RESOURCE_READ_ONLY
  * If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileWriteData(int fd, const void * buffer, int buffer_size);

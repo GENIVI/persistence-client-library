@@ -105,6 +105,8 @@ extern "C" {
 #define EPERS_NOTIFY_NOT_ALLOWED (-37)
 // the requested resource is not a file
 #define EPERS_RESOURCE_NO_FILE   (-38)
+// write to requested resource failed, read onyl resource
+#define EPERS_RESOURCE_READ_ONLY (-39)
 
 #ifdef __cplusplus
 }

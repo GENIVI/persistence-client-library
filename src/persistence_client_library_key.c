@@ -292,36 +292,44 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          {
             if(key_handle < MaxPersHandle)
             {
-               if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
+               if(gKeyHandleArray[key_handle].info.configKey.permission != O_RDONLY)  // don't write to a read only resource
                {
-                  int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
-
-                  if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
+                  if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
                   {
-                     size = gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
+                     int idx =  custom_client_name_to_id(gKeyHandleArray[key_handle].dbPath, 1);
 
-                     if(size >= 0) // success ==> send change notification
+                     if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_set_data != NULL) )
                      {
-                        int rval = pers_send_Notification_Signal(gKeyHandleArray[key_handle].dbKey,
-                                                               &(gKeyHandleArray[key_handle].info.context), pclNotifyStatus_changed);
+                        size = gPersCustomFuncs[idx].custom_plugin_handle_set_data(key_handle, (char*)buffer, buffer_size-1);
 
-                        if(rval <= 0)
+                        if(size >= 0) // success ==> send change notification
                         {
-                           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - failed to send notification"));
-                           size = rval;
+                           int rval = pers_send_Notification_Signal(gKeyHandleArray[key_handle].dbKey,
+                                                                  &(gKeyHandleArray[key_handle].info.context), pclNotifyStatus_changed);
+
+                           if(rval <= 0)
+                           {
+                              DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - failed to send notification"));
+                              size = rval;
+                           }
                         }
+                     }
+                     else
+                     {
+                        size = EPERS_NOPLUGINFUNCT;
                      }
                   }
                   else
                   {
-                     size = EPERS_NOPLUGINFUNCT;
+                     size = pers_db_write_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                                              &gKeyHandleArray[key_handle].info, buffer, buffer_size);
                   }
                }
                else
                {
-                  size = pers_db_write_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
-                                           &gKeyHandleArray[key_handle].info, buffer, buffer_size);
+                  size = EPERS_RESOURCE_READ_ONLY;
                }
+
             }
             else
             {
@@ -525,18 +533,25 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             if(   (data_size >= 0)
                && (dbContext.configKey.type == PersistenceResourceType_key))
             {
-               // get hash value of data to verify storing
-               hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);
-
-               // store data
-               if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry
-                  && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
+               if(dbContext.configKey.permission != O_RDONLY)  // don't write to a read only resource
                {
-                  data_size = pers_db_write_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
+                  // get hash value of data to verify storing
+                  hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);
+
+                  // store data
+                  if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry
+                     && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
+                  {
+                     data_size = pers_db_write_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
+                  }
+                  else
+                  {
+                     data_size = EPERS_BADPOL;
+                  }
                }
                else
                {
-                  data_size = EPERS_BADPOL;
+                  data_size = EPERS_RESOURCE_READ_ONLY;
                }
             }
             else

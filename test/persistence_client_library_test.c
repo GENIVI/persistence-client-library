@@ -966,7 +966,7 @@ START_TEST(test_GetPath)
 {
    int ret = 0;
    char* path = NULL;
-   const char* thePath = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB.db";
+   const char* thePath = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_create.db";
    unsigned int pathSize = 0;
 
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
@@ -974,8 +974,7 @@ START_TEST(test_GetPath)
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
-   ret = pclFileCreatePath(0xFF, "media/mediaDB.db", 1, 1, &path, &pathSize);
-   //printf("PATH: %s \n", path);
+   ret = pclFileCreatePath(0xFF, "media/mediaDB_create.db", 1, 1, &path, &pathSize);
    fail_unless(strncmp((char*)path, thePath, strlen((char*)path)) == 0, "Path not correct");
    fail_unless(pathSize == strlen((char*)path), "Path size not correct");
 
@@ -1075,8 +1074,6 @@ int main(int argc, char *argv[])
    nr_failed = srunner_ntests_failed(sr);
 
    srunner_free(sr);
-#else
-
 #endif
 
    // unregister debug log and trace
