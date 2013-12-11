@@ -15,6 +15,10 @@ Required packages
 - libtool: install via Synaptic Package Manger or use apt-get
 - GNU c compiler: install via Synaptic Package Manger or use apt-get
 
+----------------------------
+Documentation
+----------------------------
+http://projects.genivi.org/persistence-client-library/documentation
 
 ----------------------------
 How to compile
