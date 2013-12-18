@@ -292,7 +292,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          {
             if(key_handle < MaxPersHandle)
             {
-               if(gKeyHandleArray[key_handle].info.configKey.permission != O_RDONLY)  // don't write to a read only resource
+               if(gKeyHandleArray[key_handle].info.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
                {
                   if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
                   {
@@ -533,7 +533,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             if(   (data_size >= 0)
                && (dbContext.configKey.type == PersistenceResourceType_key))
             {
-               if(dbContext.configKey.permission != O_RDONLY)  // don't write to a read only resource
+               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
                {
                   // get hash value of data to verify storing
                   hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);

@@ -81,9 +81,9 @@ typedef struct _PersistenceDbContext_s
 
 typedef enum PersistencePermission_e_
 {
-    PersistencePermission_ReadWrite = O_RDWR,
-    PersistencePermission_ReadOnly  = O_RDONLY,
-    PersistencePermission_WriteOnly = O_WRONLY,
+    PersistencePermission_ReadWrite = 0,
+    PersistencePermission_ReadOnly  = 1,
+    PersistencePermission_WriteOnly = 2,
 
    /** insert new entries here ... */
     PersistencePermission_LastEntry            /**< last entry */

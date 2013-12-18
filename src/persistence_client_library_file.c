@@ -162,7 +162,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       {
          if(shared_DB >= 0)                                          // check valid database context
          {
-            int flags = dbContext.configKey.permission;
+            int flags = pclGetPosixPermission(dbContext.configKey.permission);
 
             // file will be opened writable, so check about data consistency
             if( (dbContext.configKey.permission != PersistencePermission_ReadOnly)
@@ -430,7 +430,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
       {
          if(shared_DB >= 0)                                             // check valid database context
          {
-            int flags = dbContext.configKey.permission;
+            int flags = pclGetPosixPermission(dbContext.configKey.permission);
 
             // file will be opened writable, so check about data consistency
             if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
@@ -989,4 +989,28 @@ int pclCreateFileAndPath(const char* path)
    return rval;
 }
 
+
+
+int pclGetPosixPermission(PersistencePermission_e permission)
+{
+   int posixPerm = 0;
+
+   switch(permission)
+   {
+   case PersistencePermission_ReadWrite:
+      posixPerm = O_RDWR;
+      break;
+   case PersistencePermission_ReadOnly:
+      posixPerm = O_RDONLY;
+      break;
+   case PersistencePermission_WriteOnly:
+      posixPerm = O_WRONLY;
+      break;
+   default:
+      posixPerm = O_RDONLY;
+      break;
+   }
+
+   return posixPerm;
+}
 

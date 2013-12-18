@@ -1058,7 +1058,12 @@ static Suite * persistencyClientLib_suite()
 
 int main(int argc, char *argv[])
 {
-   int nr_failed = 0;
+   int nr_failed = 0,
+          nr_run = 0,
+            fail = 0,
+               i = 0;
+
+   TestResult** tResult;
 
    // assign application name
    strncpy(gTheAppId, "lt-persistence_client_library_test", MaxAppNameLen);
@@ -1070,8 +1075,19 @@ int main(int argc, char *argv[])
 #if 1
    Suite * s = persistencyClientLib_suite();
    SRunner * sr = srunner_create(s);
-   srunner_run_all(sr, CK_VERBOSE);
+   srunner_set_xml(sr, "/tmp/persistenceClientLibraryTest.xml");
+   srunner_set_log(sr, "/tmp/persistenceClientLibraryTest.log");
+   srunner_run_all(sr, /*CK_NORMAL*/ CK_VERBOSE);
+
    nr_failed = srunner_ntests_failed(sr);
+   nr_run = srunner_ntests_run(sr);
+
+   tResult = srunner_results(sr);
+   for(i = 0; i< nr_run; i++)
+   {
+      fail = tr_rtype(tResult[i]);  // get status of each test
+      //printf("[%d] Fail: %d \n", i, fail);
+   }
 
    srunner_free(sr);
 #endif
