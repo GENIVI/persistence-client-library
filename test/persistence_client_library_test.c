@@ -21,13 +21,15 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>     /* exit */
-#include <check.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
+
+#include "persCheck_0.9.9.h"
+
 
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_key.h"
@@ -58,6 +60,12 @@ char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
  */
 START_TEST (test_GetData)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of get data");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0;
    unsigned int shutdownReg = (PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL);
 
@@ -155,6 +163,12 @@ END_TEST
  */
 START_TEST (test_GetDataHandle)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of get data handle");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
@@ -260,6 +274,12 @@ END_TEST
  */
 START_TEST(test_SetData)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of set data");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE]  = {0};
@@ -380,6 +400,12 @@ END_TEST
  */
 START_TEST(test_SetDataNoPRCT)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of set data no PRCT");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE] = {0};
@@ -425,6 +451,12 @@ END_TEST
  */
 START_TEST(test_GetDataSize)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of get data size");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int size = 0, ret = 0;
 
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
@@ -459,6 +491,12 @@ END_TEST
  */
 START_TEST(test_DeleteData)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of delete data");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int rval = 0;
    unsigned char buffer[READ_SIZE];
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
@@ -508,6 +546,12 @@ END_TEST
  */
 START_TEST(test_DataFile)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of data file");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int fd = 0, i = 0, idx = 0;
    int size = 0, ret = 0;
    int writeSize = 16*1024;
@@ -605,6 +649,12 @@ END_TEST
 
 START_TEST(test_DataFileRecovery)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of data file recovery");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int fd_RW = 0, fd_RO = 0;
    int ret = 0;
    char* wBuffer = "This is a buffer to write";
@@ -637,6 +687,12 @@ END_TEST
  */
 START_TEST(test_DataHandle)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of data handle");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int handle1 = 0, handle2 = 0, size = 0;
    int handleArray[4] = {0};
    int ret = 0;
@@ -726,6 +782,12 @@ END_TEST
  */
 START_TEST(test_DataHandleOpen)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of data handle open");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
@@ -802,6 +864,12 @@ END_TEST
  */
 START_TEST(test_Cursor)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of cursor");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int handle = -1, rval = 0, size = 0, handle1 = 0;
    char bufferKeySrc[READ_SIZE]  = {0};
    char bufferDataSrc[READ_SIZE] = {0};
@@ -866,6 +934,12 @@ END_TEST
 
 START_TEST(test_Plugin)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of plugins");
+   X_TEST_REPORT_TYPE(GOOD);
+
 	int ret = 0;
 	unsigned char buffer[READ_SIZE]  = {0};
 
@@ -914,6 +988,12 @@ END_TEST
 
 START_TEST(test_ReadDefault)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of read default");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
 
@@ -940,6 +1020,12 @@ END_TEST
 
 START_TEST(test_ReadConfDefault)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of configurable default data");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
 
@@ -964,6 +1050,12 @@ END_TEST
 
 START_TEST(test_GetPath)
 {
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+   X_TEST_REPORT_REFERENCE("NONE");
+   X_TEST_REPORT_DESCRIPTION("Test of get path");
+   X_TEST_REPORT_TYPE(GOOD);
+
    int ret = 0;
    char* path = NULL;
    const char* thePath = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_create.db";
