@@ -158,7 +158,7 @@ int load_all_custom_libraries();
  *
  * @return the array position or -1 if the position can't be found
  */
-int check_valid_idx(int idx);
+inline int check_valid_idx(int idx);
 
 
 
@@ -167,7 +167,7 @@ int check_valid_idx(int idx);
  *
  * @return the name of the custom library ot NULL if invalid
  */
-char* get_custom_client_lib_name(int idx);
+inline char* get_custom_client_lib_name(int idx);
 
 
 /**

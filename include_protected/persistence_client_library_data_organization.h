@@ -124,6 +124,10 @@ extern const char* gUser;
 /// directory structure seat name defintion
 extern const char* gSeat;
 
+extern const char* gBackupPrefix;
+
+extern const int gCPathPrefixSize;
+extern const int gWTPathPrefixSize;
 
 /// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
 extern const char* gLocalCachePath;

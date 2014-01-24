@@ -107,6 +107,11 @@ void pers_db_close(PersistenceInfo_s* info);
 void pers_db_close_all();
 
 
+/**
+ * @brief close all rct's
+ */
+void pers_rct_close_all();
+
 
 /**
  * @brief register or unregister for change notifications of a key

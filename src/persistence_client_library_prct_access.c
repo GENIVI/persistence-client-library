@@ -192,7 +192,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       //
       dbContext->configKey.policy      = PersistencePolicy_wc;
       dbContext->configKey.storage     = PersistenceStorage_local;
-      dbContext->configKey.permission  = O_RDWR;
+      dbContext->configKey.permission  = PersistencePermission_ReadWrite;
       dbContext->configKey.max_size    = defaultMaxKeyValDataSize;
       if(isFile == PersistenceResourceType_file)
       {

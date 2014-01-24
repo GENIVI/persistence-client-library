@@ -663,6 +663,7 @@ START_TEST(test_DataFileRecovery)
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
+
    // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
    fail_unless(fd_RO != -1, "Could not open file ==> /media/mediaDB_ReadOnly.db");
@@ -896,10 +897,11 @@ START_TEST(test_Cursor)
       memset(bufferDataDst, 0, READ_SIZE);
 
       // get key
-      rval = pers_db_cursor_get_key(handle, bufferKeySrc, 128);
+      rval = pers_db_cursor_get_key(handle, bufferKeySrc, 256);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = pers_db_cursor_get_data(handle, bufferDataSrc, 128);
+      rval = pers_db_cursor_get_data(handle, bufferDataSrc, 256);
+
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = pers_db_cursor_get_data_size(handle);
@@ -907,10 +909,10 @@ START_TEST(test_Cursor)
       //printf("1. Key: %s | Data: %s » Size: %d \n", bufferKeySrc, bufferDataSrc, size);
 
       // get key
-      rval = pers_db_cursor_get_key(handle1, bufferKeyDst, 128);
+      rval = pers_db_cursor_get_key(handle1, bufferKeyDst, 256);
       fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
-      rval = pers_db_cursor_get_data(handle1, bufferDataDst, 128);
+      rval = pers_db_cursor_get_data(handle1, bufferDataDst, 256);
       fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = pers_db_cursor_get_data_size(handle1);
@@ -1127,8 +1129,6 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_GetPath, test_GetPath);
 
    suite_add_tcase(s, tc_persSetData);
-
-#if 1
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
    suite_add_tcase(s, tc_persGetDataSize);
@@ -1142,7 +1142,6 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_ReadDefault);
    suite_add_tcase(s, tc_ReadConfDefault);
    suite_add_tcase(s, tc_GetPath);
-#endif
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
    return s;
 }

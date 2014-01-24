@@ -97,10 +97,39 @@ static int endLoop = 0;
 
 void sigHandler(int signo)
 {
-   endLoop = 1;
+   switch(signo)
+   {
+      case SIGHUP:
+         // nothing to do
+         printf("* * * * S I G H U P * * * *\n");
+         break;
+      default:
+         endLoop = 1;
+         break;
+   }
 }
 //------------------------------------------------------------------------
 
+
+static int setupSignalHandler(const int nSignal, void (*pHandler)(int))
+{
+   struct sigaction sa_old;
+   int ret = sigaction(nSignal, NULL, &sa_old);
+   if (0==ret)
+   {
+      if (pHandler!=sa_old.sa_handler)
+      {
+         /* setup own signal handler */
+         struct sigaction sa_new;
+         memset(&sa_new, 0, sizeof(sa_new));
+         sa_new.sa_handler = pHandler;
+         sa_new.sa_flags = 0;
+         ret = sigaction(nSignal, &sa_new, 0);
+      }
+   }
+
+   return ret;
+}
 
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -343,9 +372,10 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtableFallback, v
    // lock mutex to make sure dbus main loop is running
    pthread_mutex_lock(&gDbusInitializedMtx);
 
-   signal(SIGTERM, sigHandler);
-   signal(SIGQUIT, sigHandler);
-   signal(SIGINT,  sigHandler);
+   setupSignalHandler(SIGTERM, sigHandler);
+   setupSignalHandler(SIGQUIT, sigHandler);
+   setupSignalHandler(SIGINT,  sigHandler);
+   setupSignalHandler(SIGHUP,  sigHandler);
 
    DBusConnection* conn = (DBusConnection*)userData;
    dbus_error_init(&err);

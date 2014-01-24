@@ -79,7 +79,7 @@ itzam_btree* get_resource_cfg_table_by_idx(int i);
  *
  * @return status of database, 1 is db is opened and 0 is closed
  */
-int get_resource_cfg_table_status(int i);
+inline int get_resource_cfg_table_status(int i);
 
 
 
@@ -88,7 +88,7 @@ int get_resource_cfg_table_status(int i);
  *
  * @param i the index
  */
-void invalidate_resource_cfg_table(int i);
+inline void invalidate_resource_cfg_table(int i);
 
 
 

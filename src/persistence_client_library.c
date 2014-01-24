@@ -66,6 +66,15 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       /// blacklist path environment variable
       const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
 
+#if USE_PASINTERFACE == 1
+      //printf("* ADMIN INTERFACE is  - e n a b l e d - \n");
+      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
+#else
+      //printf("* ADMIN INTERFACE is  - d i s a b l e d - enable with \"./configure --enable-pasinterface\"\n");
+      DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
+#endif
+
+
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
 
       if(pDataSize != NULL)
@@ -90,6 +99,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          return EPERS_DBUS_MAINLOOP;
       }
 
+
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
       {
          // register for lifecycle and persistence admin service dbus messages
@@ -100,13 +110,14 @@ int pclInitLibrary(const char* appName, int shutdownMode)
             return EPERS_REGISTER_LIFECYCLE;
          }
       }
-
+#if USE_PASINTERFACE == 1
       if(register_pers_admin_service() == -1)
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_REGISTER_ADMIN;
       }
+#endif
 
       /// get custom library names to load
       status = get_custom_libraries();
@@ -186,12 +197,13 @@ int pclDeinitLibrary(void)
    {
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
-
       // unregister for lifecycle and persistence admin service dbus messages
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
          rval = unregister_lifecycle(gShutdownMode);
 
+#if USE_PASINTERFACE == 1
       rval = unregister_pers_admin_service();
+#endif
 
       // unload custom client libraries
       for(i=0; i<PersCustomLib_LastEntry; i++)
@@ -206,6 +218,12 @@ int pclDeinitLibrary(void)
             invalidate_custom_plugin(i);
          }
       }
+
+      // close all apend rct
+      pers_rct_close_all();
+
+      // close opend database
+      pers_db_close_all();
 
       gPclInitialized = PCLnotInitialized;
 

@@ -209,6 +209,29 @@ void pers_db_close_all()
 }
 
 
+void pers_rct_close_all()
+{
+   int i = 0;
+   itzam_btree* resourceTable = NULL;
+   itzam_state  state = ITZAM_FAILED;
+
+   // close open persistence resource configuration table
+   for(i=0; i< PrctDbTableSize; i++)
+   {
+      resourceTable = (itzam_btree*)get_resource_cfg_table_by_idx(i);
+      // dereference opend database
+      if(resourceTable != NULL &&  get_resource_cfg_table_status(i) == 1)
+      {
+         state = itzam_btree_close(resourceTable);
+         invalidate_resource_cfg_table(i);
+         if (state != ITZAM_OKAY)
+         {
+            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => itzam_btree_close: Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
+         }
+      }
+   }
+}
+
 int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
 {
    int read_size = -1;
@@ -766,7 +789,8 @@ int pers_db_cursor_create(char* dbPath)
 
 int pers_db_cursor_next(unsigned int handlerDB)
 {
-   int rval = -1;
+   int rval = -99;
+
    //if(handlerDB < MaxPersHandle && handlerDB >= 0)
    if(handlerDB < MaxPersHandle )
    {
@@ -786,11 +810,13 @@ int pers_db_cursor_next(unsigned int handlerDB)
       }
       else
       {
+         printf("Invalid handle\n");
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_next ==> invalid handle: "), DLT_INT(handlerDB));
       }
    }
    else
    {
+      printf("Handle bigger than max\n");
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_cursor_next ==> handle bigger than max:"), DLT_INT(MaxPersHandle));
    }
    return rval;

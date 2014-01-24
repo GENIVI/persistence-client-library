@@ -243,6 +243,8 @@ void* run_mainloop(void* dataPtr)
    // setup the dbus
    mainLoop(vtablePersAdmin, vtableLifecycle, vtableFallback, dataPtr);
 
+   printf("<== run_mainloop\n");
+
    return NULL;
 }
 
@@ -501,8 +503,10 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          dbus_bus_add_match(conn, "type='signal',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
 
          // register for messages
-         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/adminconsumer", &vtable, userData))
-             && (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer", &vtable2, userData))
+         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer", &vtable2, userData))
+#if USE_PASINTERFACE == 1
+             && (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/adminconsumer", &vtable, userData))
+#endif
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
             if(   (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
@@ -593,7 +597,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           process_send_lifecycle_register(conn, (buf[1]), buf[2]);
                                           break;
                                        case CMD_QUIT:
-                                          bContinue = FALSE;
+                                          bContinue = 0;
                                           break;
 
                                        // ******************************************************
@@ -643,7 +647,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                }
                while (0!=bContinue);
             }
+#if USE_PASINTERFACE == 1
             dbus_connection_unregister_object_path(conn, "/org/genivi/persistence/adminconsumer");
+#endif
             dbus_connection_unregister_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
@@ -656,6 +662,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
    pthread_cond_signal(&gDbusInitializedCond);
    pthread_mutex_unlock(&gDbusInitializedMtx);
+   printf("End Mainloop\n");
    return 0;
 }
 

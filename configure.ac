@@ -96,6 +96,26 @@ AC_MSG_NOTICE([Tests enabled: $enable_tests])
 AC_MSG_NOTICE([Local check enabled: $localcheck])
 
 
+# enable persistence administration service dbus interface ###########
+AC_ARG_ENABLE([pasinterface],
+            [AS_HELP_STRING([--enable-pasinterface],[Enable pas interface])],
+            [use_pasinterface=$enableval],
+            [use_pasinterface="no"])
+
+AM_CONDITIONAL([USE_PASINTERFACE], [test x"$use_pasinterface" = "no"])
+
+if test "$use_pasinterface" != "yes" -a "$use_pasinterface" != "no"; then
+   AC_MSG_ERROR([Invalid pas interface check mode specified: $use_pasinterface. Only "yes" or "no" is valid])
+else   
+   AC_MSG_NOTICE([Use pas interface check is: $use_pasinterface])
+
+   if test "$use_pasinterface" = "yes"; then
+      AC_DEFINE_UNQUOTED([USE_PASINTERFACE], [1], [pasinterface enabled])   
+   fi
+fi
+######################################################################
+
+
 AC_ARG_ENABLE(debug,
 AS_HELP_STRING([--enable-debug],
                [enable debugging, default: no]),

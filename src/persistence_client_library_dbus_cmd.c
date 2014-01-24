@@ -170,8 +170,6 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
 void process_prepare_shutdown(unsigned char requestId, unsigned int status)
 {
    int i = 0;
-   itzam_btree* resourceTable = NULL;
-   itzam_state  state = ITZAM_FAILED;
 
    // block write
    pers_lock_access();
@@ -187,23 +185,10 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
       }
    }
 
-   // close open gvdb persistence resource configuration table
-   for(i=0; i< PrctDbTableSize; i++)
-   {
-     resourceTable = get_resource_cfg_table_by_idx(i);
-     // dereference opend database
-     if(resourceTable != NULL &&  get_resource_cfg_table_status(i) == 1)
-     {
-        state = itzam_btree_close(resourceTable);
-        invalidate_resource_cfg_table(i);
-        if (state != ITZAM_OKAY)
-        {
-           DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => itzam_btree_close: Itzam problem"), DLT_STRING(STATE_MESSAGES[state]));
-        }
-     }
-   }
+   // close all opend rct
+   pers_rct_close_all();
 
-   //close opend database
+   // close opend database
    pers_db_close_all();
 
 
@@ -305,7 +290,7 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
             if(!dbus_pending_call_set_notify(pending, msg_pending_func, method, NULL))
             {
-               printf("process_send_pas_register => dbus_pending_call_set_notify: FAILED\n");
+               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_pas_register => dbus_pending_call_set_notify: FAILED\n") );
             }
             dbus_pending_call_unref(pending);
          }

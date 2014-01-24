@@ -45,34 +45,47 @@ const char* gUser = "/user/";
 const char* gSeat = "/seat/";
 
 
-/// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
-const char* gLocalCachePath        = "/Data/mnt-c/%s";
-/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
-const char* gLocalWtPath           = "/Data/mnt-wt/%s";
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-const char* gSharedCachePath       = "/Data/mnt-c/%s/Shared_Group_%x";
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-const char* gSharedWtPath          = "/Data/mnt-wt/%s/Shared_Group_%x";
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-const char* gSharedPublicCachePath = "/Data/mnt-c/%s/Shared_Public";
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-const char* gSharedPublicWtPath    = "/Data/mnt-wt/%s/Shared_Public";
+/// cached path location
+#define CACHEPREFIX         "/Data/mnt-c/"
+/// write through path location
+#define WTPREFIX            "/Data/mnt-wt/"
+
+/// size of cached path string
+const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
+/// size of write through string
+const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
+
+/// path for the backup location
+const char* gBackupPrefix = "/Data/mnt-backup/";
 
 /// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
-const char* gLocalCachePathKey        = "/Data/mnt-c/%s%s";
+const char* gLocalCachePath        = CACHEPREFIX "%s";
 /// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
-const char* gLocalWtPathKey           = "/Data/mnt-wt/%s%s";
+const char* gLocalWtPath           = WTPREFIX "%s";
 /// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-const char* gSharedCachePathKey       = "/Data/mnt-c/%s/Shared_Group_%x%s";
+const char* gSharedCachePath       = CACHEPREFIX "%s/Shared_Group_%x";
 /// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-const char* gSharedWtPathKey          = "/Data/mnt-wt/%s/Shared_Group_%x%s";
+const char* gSharedWtPath          = WTPREFIX "%s/Shared_Group_%x";
 /// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-const char* gSharedPublicCachePathKey = "/Data/mnt-c/%s/Shared_Public%s";
+const char* gSharedPublicCachePath = CACHEPREFIX "%s/Shared_Public";
 /// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-const char* gSharedPublicWtPathKey    = "/Data/mnt-wt/%s/Shared_Public%s";
+const char* gSharedPublicWtPath    = WTPREFIX "%s/Shared_Public";
+
+/// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+const char* gLocalCachePathKey        = CACHEPREFIX "%s%s";
+/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+const char* gLocalWtPathKey           = WTPREFIX "%s%s";
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+const char* gSharedCachePathKey       = CACHEPREFIX "%s/Shared_Group_%x%s";
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+const char* gSharedWtPathKey          = WTPREFIX "%s/Shared_Group_%x%s";
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+const char* gSharedPublicCachePathKey = CACHEPREFIX "%s/Shared_Public%s";
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+const char* gSharedPublicWtPathKey    = WTPREFIX "%s/Shared_Public%s";
 
 /// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
-const char* gLocalCacheFilePath        = "/Data/mnt-c/%s/user/%d/seat/%d/%s";
+const char* gLocalCacheFilePath        = CACHEPREFIX "%s/user/%d/seat/%d/%s";
 
 
 const char* gChangeSignal = "PersistenceResChange";

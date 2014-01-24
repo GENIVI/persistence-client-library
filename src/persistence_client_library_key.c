@@ -134,6 +134,7 @@ int pclKeyHandleClose(int key_handle)
          else
          {
             set_persistence_handle_close_idx(key_handle);
+            rval = 1;
          }
 
          // invalidate entries
