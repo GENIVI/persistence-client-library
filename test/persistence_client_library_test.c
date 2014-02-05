@@ -28,7 +28,8 @@
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
-#include "persCheck_0.9.9.h"
+
+#include "persCheck.h"
 
 
 #include "../include/persistence_client_library_file.h"
@@ -72,7 +73,7 @@ START_TEST (test_GetData)
    unsigned char buffer[READ_SIZE] = {0};
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 
 #if 1
    /**
@@ -80,9 +81,9 @@ START_TEST (test_GetData)
     *       ==> local value accessible by all users (user 0, seat 0)
     */
    ret = pclKeyReadData(0xFF, "pos/last_position",         0, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "CACHE_ +48° 10' 38.95\", +8° 44' 39.06\"",
+   x_fail_unless(strncmp((char*)buffer, "CACHE_ +48° 10' 38.95\", +8° 44' 39.06\"",
                strlen((char*)buffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret = strlen("CACHE_ +48° 10' 38.95\", +8° 44' 39.06\""));
+   x_fail_unless(ret = strlen("CACHE_ +48° 10' 38.95\", +8° 44' 39.06\""));
 
    memset(buffer, 0, READ_SIZE);
 
@@ -91,9 +92,9 @@ START_TEST (test_GetData)
     *       ==> local value accessible by all users (user 0, seat 0)
     */
    ret = pclKeyReadData(0xFF, "language/country_code",         0, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data: secure!",
+   x_fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data: secure!",
                strlen((char*)buffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
+   x_fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
 
    memset(buffer, 0, READ_SIZE);
 
@@ -103,7 +104,7 @@ START_TEST (test_GetData)
     *       ==> public shared user value (user 3, seat 0)
     */
    ret = pclKeyReadData(0,    "language/current_language", 3, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
 
@@ -112,7 +113,7 @@ START_TEST (test_GetData)
     *       ==> local USER value (user 3, seat 2)
     */
    ret = pclKeyReadData(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
 
@@ -121,7 +122,7 @@ START_TEST (test_GetData)
     *       ==> shared user value accessible by a group (user 4 and seat 0)
     */
    ret = pclKeyReadData(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
 
@@ -130,7 +131,7 @@ START_TEST (test_GetData)
     *       ==> local value accessible by ALL USERS (user 0, seat 0)
     */
    ret = pclKeyReadData(0xFF, "pos/last_satellites",       0, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
 
@@ -139,7 +140,7 @@ START_TEST (test_GetData)
     *       ==> shared user value accessible by A GROUP (user 4 and seat 0)
     */
    ret = pclKeyReadData(0x84, "links/last_link",           2, 0, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
 
@@ -148,7 +149,7 @@ START_TEST (test_GetData)
     *       ==> local merge value
     */
    ret = pclKeyReadData(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 #endif
    pclDeinitLibrary();
 }
@@ -178,7 +179,7 @@ START_TEST (test_GetDataHandle)
    char sysTimeBuffer[128];
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    time_t t = time(0);
 
@@ -194,13 +195,13 @@ START_TEST (test_GetDataHandle)
     *       ==> local value accessible by ALL USERS (user 0, seat 0)
     */
    handle = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
-   fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
+   x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = pclKeyHandleReadData(handle, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
+   x_fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyHandleGetSize(handle);
-   fail_unless(size == strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   x_fail_unless(size == strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
    // ---------------------------------------------------------------------------------------------
 
 
@@ -210,10 +211,10 @@ START_TEST (test_GetDataHandle)
     *       ==> local USER value (user 3, seat 2)
     */
    handle2 = pclKeyHandleOpen(0xFF, "statusHandle/open_document", 3, 2);
-   fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
+   x_fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    size = pclKeyHandleWriteData(handle2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(size == strlen(sysTimeBuffer));
+   x_fail_unless(size == strlen(sysTimeBuffer));
    // close
    ret = pclKeyHandleClose(handle2);
    // ---------------------------------------------------------------------------------------------
@@ -228,13 +229,13 @@ START_TEST (test_GetDataHandle)
    memset(buffer, 0, READ_SIZE);
    handle4 = pclKeyHandleOpen(0xFF, "language/country_code", 0, 0);
    printf("H A N D L E: %d\n", handle4);
-   fail_unless(handle4 >= 0, "Failed to open handle /language/country_code");
+   x_fail_unless(handle4 >= 0, "Failed to open handle /language/country_code");
 
    ret = pclKeyHandleReadData(handle4, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle: secure!", -1) == 0, "Buffer not correctly read => 2");
+   x_fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data_handle: secure!", -1) == 0, "Buffer not correctly read => 2");
 
    size = pclKeyHandleGetSize(handle4);
-   fail_unless(size = strlen("Custom plugin -> plugin_get_data_handle"));
+   x_fail_unless(size = strlen("Custom plugin -> plugin_get_data_handle"));
 
    ret = pclKeyHandleWriteData(handle4, (unsigned char*)"Only dummy implementation behind custom library", READ_SIZE);
 #endif
@@ -247,13 +248,13 @@ START_TEST (test_GetDataHandle)
     *       ==> local USER value (user 3, seat 2)
     */
    handle3 = pclKeyHandleOpen(0xFF, "statusHandle/open_document", 3, 2);
-   fail_unless(handle3 >= 0, "Failed to open handle /statusHandle/open_document");
+   x_fail_unless(handle3 >= 0, "Failed to open handle /statusHandle/open_document");
 
    ret = pclKeyHandleReadData(handle3, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read => 3");
+   x_fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read => 3");
 
    size = pclKeyHandleGetSize(handle3);
-   fail_unless(size = strlen(sysTimeBuffer));
+   x_fail_unless(size = strlen(sysTimeBuffer));
    // ---------------------------------------------------------------------------------------------
 
 
@@ -290,7 +291,7 @@ START_TEST(test_SetData)
    struct tm *locTime;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    time_t t = time(0);
 
@@ -307,7 +308,7 @@ START_TEST(test_SetData)
     */
 
    ret = pclKeyWriteData(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
+   x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
 #if 1
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
    /**
@@ -316,7 +317,7 @@ START_TEST(test_SetData)
     * Resource ID: 70
     */
    ret = pclKeyWriteData(0xFF, "70", 1, 2, (unsigned char*)write1, strlen(write1));
-   fail_unless(ret == strlen(write1), "Wrong write size");
+   x_fail_unless(ret == strlen(write1), "Wrong write size");
 
    snprintf(write2, 128, "%s %s", "/key_70",  sysTimeBuffer);
    /**
@@ -325,7 +326,7 @@ START_TEST(test_SetData)
     * Resource ID: key_70
     */
    ret = pclKeyWriteData(0xFF, "key_70", 1, 2, (unsigned char*)write2, strlen(write2));
-   fail_unless(ret == strlen(write2), "Wrong write size");
+   x_fail_unless(ret == strlen(write2), "Wrong write size");
 
 
    /*******************************************************************************************************************************************/
@@ -339,7 +340,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
-   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
+   x_fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
 
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
@@ -349,7 +350,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
-   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
+   x_fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
 
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
@@ -359,7 +360,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x84, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
-   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
+   x_fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
    /*******************************************************************************************************************************************/
    /*******************************************************************************************************************************************/
 
@@ -371,20 +372,20 @@ START_TEST(test_SetData)
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(0xFF, "69", 1, 2, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
+   x_fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(0xFF, "70", 1, 2, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, write1, strlen(write1)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(write1), "Wrong read size");
+   x_fail_unless(strncmp((char*)buffer, write1, strlen(write1)) == 0, "Buffer not correctly read");
+   x_fail_unless(ret == strlen(write1), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(write2), "Wrong read size");
+   x_fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
+   x_fail_unless(ret == strlen(write2), "Wrong read size");
 #endif
 #endif
    pclDeinitLibrary();
@@ -412,7 +413,7 @@ START_TEST(test_SetDataNoPRCT)
    struct tm *locTime;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    time_t t = time(0);
 
@@ -428,15 +429,15 @@ START_TEST(test_SetDataNoPRCT)
     *       ==> local USER value (user 1, seat 2)
     */
    ret = pclKeyWriteData(0xFF, "NoPRCT", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
+   x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
    //printf("Write Buffer : %s\n", sysTimeBuffer);
 
    // read data again and and verify datat has been written correctly
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(0xFF, "NoPRCT", 1, 2, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
+   x_fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
    //printf("read buffer  : %s\n", buffer);
 #endif
    pclDeinitLibrary();
@@ -462,14 +463,14 @@ START_TEST(test_GetDataSize)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    /**
     * Logical DB ID: 0xFF with user 3 and seat 2
     *       ==> local USER value (user 3, seat 2)
     */
    size = pclKeyGetSize(0xFF, "status/open_document", 3, 2);
-   fail_unless(size == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Invalid size");
+   x_fail_unless(size == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Invalid size");
 
 
    /**
@@ -477,7 +478,7 @@ START_TEST(test_GetDataSize)
     *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
     */
    size = pclKeyGetSize(0x84, "links/last_link", 2, 1);
-   fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
+   x_fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 #endif
    pclDeinitLibrary();
 }
@@ -502,33 +503,33 @@ START_TEST(test_DeleteData)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    rval = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(rval <= 1, "Failed to init PCL");
+   x_fail_unless(rval <= 1, "Failed to init PCL");
 #if 1
    // read data from key
    rval = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
-   fail_unless(rval != EPERS_NOKEY, "Read form key key_70 fails");
+   x_fail_unless(rval != EPERS_NOKEY, "Read form key key_70 fails");
 
    // delete key
    rval = pclKeyDelete(0xFF, "key_70", 1, 2);
-   fail_unless(rval == 0, "Failed to delete key");
+   x_fail_unless(rval == 0, "Failed to delete key");
 
    // after deleting the key, reading from key must fail now!
    rval = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
-   fail_unless(rval == EPERS_NOKEY, "Read form key key_70 works, but should fail");
+   x_fail_unless(rval == EPERS_NOKEY, "Read form key key_70 works, but should fail");
 
 
 
    // read data from key
    rval = pclKeyReadData(0xFF, "70", 1, 2, buffer, READ_SIZE);
-   fail_unless(rval != EPERS_NOKEY, "Read form key 70 fails");
+   x_fail_unless(rval != EPERS_NOKEY, "Read form key 70 fails");
 
    // delete key
    rval = pclKeyDelete(0xFF, "70", 1, 2);
-   fail_unless(rval == 0, "Failed to delete key");
+   x_fail_unless(rval == 0, "Failed to delete key");
 
    // after deleting the key, reading from key must fail now!
    rval = pclKeyReadData(0xFF, "70", 1, 2, buffer, READ_SIZE);
-   fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
+   x_fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
 #endif
    pclDeinitLibrary();
 }
@@ -563,7 +564,7 @@ START_TEST(test_DataFile)
    char* fileMap = NULL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    writeBuffer = malloc(writeSize);
 
@@ -587,36 +588,36 @@ START_TEST(test_DataFile)
 
    // open ------------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
-   fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
+   x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
 
    size = pclFileGetSize(fd);
-   fail_unless(size == 68, "Wrong file size");
+   x_fail_unless(size == 68, "Wrong file size");
 
    size = pclFileReadData(fd, buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
-   fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
+   x_fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
+   x_fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
 
 
    ret = pclFileClose(fd);
-   fail_unless(ret == 0, "Failed to close file");
+   x_fail_unless(ret == 0, "Failed to close file");
 
    // open ------------------------------------------------------------
    fd = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
-   fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
+   x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
 
    size = pclFileWriteData(fd, writeBuffer, strlen(writeBuffer));
-   fail_unless(size == strlen(writeBuffer), "Failed to write data");
+   x_fail_unless(size == strlen(writeBuffer), "Failed to write data");
 
    ret = pclFileClose(fd);
-   fail_unless(ret == 0, "Failed to close file");
+   x_fail_unless(ret == 0, "Failed to close file");
 
 
    // remove ----------------------------------------------------------
    ret = pclFileRemove(0xFF, "media/mediaDBWrite.db", 1, 1);
-   fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
+   x_fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
 
    fd = open("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db",O_RDWR);
-   fail_unless(fd == -1, "Failed to remove file, file still exists");
+   x_fail_unless(fd == -1, "Failed to remove file, file still exists");
    close(fd);
 
 
@@ -625,17 +626,17 @@ START_TEST(test_DataFile)
 
    size = pclFileGetSize(fd);
    pclFileMapData(fileMap, size, 0, fd);
-   fail_unless(fileMap != MAP_FAILED, "Failed to map file");
+   x_fail_unless(fileMap != MAP_FAILED, "Failed to map file");
 
    ret = pclFileUnmapData(fileMap, size);
-   fail_unless(ret != -1, "Failed to unmap file");
+   x_fail_unless(ret != -1, "Failed to unmap file");
 
    // negative test
    size = pclFileGetSize(1024);
-   fail_unless(ret == 0, "Got size, but should not");
+   x_fail_unless(ret == 0, "Got size, but should not");
 
    ret = pclFileClose(fd);
-   fail_unless(ret == 0, "Failed to close file");
+   x_fail_unless(ret == 0, "Failed to close file");
 
    free(writeBuffer);
 #endif
@@ -661,15 +662,15 @@ START_TEST(test_DataFileRecovery)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
 
    // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
-   fail_unless(fd_RO != -1, "Could not open file ==> /media/mediaDB_ReadOnly.db");
+   x_fail_unless(fd_RO != -1, "Could not open file ==> /media/mediaDB_ReadOnly.db");
 
    fd_RW = pclFileOpen(0xFF, "media/mediaDB_ReadWrite.db", 1, 1);
-   fail_unless(fd_RW != -1, "Could not open file ==> /media/mediaDB_ReadWrite.db");
+   x_fail_unless(fd_RW != -1, "Could not open file ==> /media/mediaDB_ReadWrite.db");
    pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
 
    ret = pclFileClose(fd_RW);
@@ -701,75 +702,75 @@ START_TEST(test_DataHandle)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    // test file handles
    handle1 = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
+   x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
 
    ret = pclFileClose(handle1);
-   fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
+   x_fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
 
    ret = pclFileClose(1024);
-   fail_unless(ret == EPERS_MAXHANDLE, "Could close file, but should not!!");
+   x_fail_unless(ret == EPERS_MAXHANDLE, "Could close file, but should not!!");
 
    ret = pclFileClose(17);
-   fail_unless(ret == -1, "Could close file, but should not!!");
+   x_fail_unless(ret == -1, "Could close file, but should not!!");
 
    // test multiple handles
    handleArray[0] = pclFileOpen(0xFF, "media/mediaDB_write_01.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
+   x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
 
    handleArray[1] = pclFileOpen(0xFF, "media/mediaDB_write_02.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_02.db");
+   x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_02.db");
 
    handleArray[2] = pclFileOpen(0xFF, "media/mediaDB_write_03.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_03.db");
+   x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_03.db");
 
    handleArray[3] = pclFileOpen(0xFF, "media/mediaDB_write_04.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_04.db");
+   x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_04.db");
 
    size = pclFileReadData(handleArray[0], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_01.db",
+   x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_01.db",
          strlen("/user/1/seat/1/media/mediaDB_write_01.db"))
          == 0, "Buffer not correctly read => mediaDB_write_01.db");
 
    size = pclFileReadData(handleArray[1], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_02.db",
+   x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_02.db",
          strlen("/user/1/seat/1/media/mediaDB_write_02.db"))
          == 0, "Buffer not correctly read => mediaDB_write_02.db");
 
    size = pclFileReadData(handleArray[2], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_03.db",
+   x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_03.db",
          strlen("/user/1/seat/1/media/mediaDB_write_03.db"))
          == 0, "Buffer not correctly read => mediaDB_write_03.db");
 
    size = pclFileReadData(handleArray[3], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_04.db",
+   x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_04.db",
          strlen("/user/1/seat/1/media/mediaDB_write_04.db"))
          == 0, "Buffer not correctly read => mediaDB_write_04.db");
 
    ret = pclKeyHandleClose(handleArray[0]);
-   fail_unless(ret != -1, "Failed to close handle idx \"0\"!!");
+   x_fail_unless(ret != -1, "Failed to close handle idx \"0\"!!");
 
    ret = pclKeyHandleClose(handleArray[1]);
-   fail_unless(ret != -1, "Failed to close handle idx \"1\"!!");
+   x_fail_unless(ret != -1, "Failed to close handle idx \"1\"!!");
 
    ret = pclKeyHandleClose(handleArray[2]);
-   fail_unless(ret != -1, "Failed to close handle idx \"2\"!!");
+   x_fail_unless(ret != -1, "Failed to close handle idx \"2\"!!");
 
    ret = pclKeyHandleClose(handleArray[3]);
-   fail_unless(ret != -1, "Failed to close handle idx \"3\"!!");
+   x_fail_unless(ret != -1, "Failed to close handle idx \"3\"!!");
 
    // test key handles
    handle2 = pclKeyHandleOpen(0xFF, "statusHandle/open_document", 3, 2);
-   fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
+   x_fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    ret = pclKeyHandleClose(handle2);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(1024);
-   fail_unless(ret == EPERS_MAXHANDLE, "Max handle!!");
+   x_fail_unless(ret == EPERS_MAXHANDLE, "Max handle!!");
 #endif
    pclDeinitLibrary();
 }
@@ -793,65 +794,65 @@ START_TEST(test_DataHandleOpen)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    // open handles ----------------------------------------------------
    hd1 = pclKeyHandleOpen(0xFF, "posHandle/last_position1", 0, 0);
-   fail_unless(hd1 == 1, "Failed to open handle ==> /posHandle/last_position1");
+   x_fail_unless(hd1 == 1, "Failed to open handle ==> /posHandle/last_position1");
 
    hd2 = pclKeyHandleOpen(0xFF, "posHandle/last_position2", 0, 0);
-   fail_unless(hd2 == 2, "Failed to open handle ==> /posHandle/last_position2");
+   x_fail_unless(hd2 == 2, "Failed to open handle ==> /posHandle/last_position2");
 
    hd3 = pclKeyHandleOpen(0xFF, "posHandle/last_position3", 0, 0);
-   fail_unless(hd3 == 3, "Failed to open handle ==> /posHandle/last_position3");
+   x_fail_unless(hd3 == 3, "Failed to open handle ==> /posHandle/last_position3");
 
    // close handles ---------------------------------------------------
    ret = pclKeyHandleClose(hd1);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd2);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd3);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    // open handles ----------------------------------------------------
    hd4 = pclKeyHandleOpen(0xFF, "posHandle/last_position4", 0, 0);
-   fail_unless(hd4 == 3, "Failed to open handle ==> /posHandle/last_position4");
+   x_fail_unless(hd4 == 3, "Failed to open handle ==> /posHandle/last_position4");
 
    hd5 = pclKeyHandleOpen(0xFF, "posHandle/last_position5", 0, 0);
-   fail_unless(hd5 == 2, "Failed to open handle ==> /posHandle/last_position5");
+   x_fail_unless(hd5 == 2, "Failed to open handle ==> /posHandle/last_position5");
 
    hd6 = pclKeyHandleOpen(0xFF, "posHandle/last_position6", 0, 0);
-   fail_unless(hd6 == 1, "Failed to open handle ==> /posHandle/last_position6");
+   x_fail_unless(hd6 == 1, "Failed to open handle ==> /posHandle/last_position6");
 
    hd7 = pclKeyHandleOpen(0xFF, "posHandle/last_position7", 0, 0);
-   fail_unless(hd7 == 4, "Failed to open handle ==> /posHandle/last_position7");
+   x_fail_unless(hd7 == 4, "Failed to open handle ==> /posHandle/last_position7");
 
    hd8 = pclKeyHandleOpen(0xFF, "posHandle/last_position8", 0, 0);
-   fail_unless(hd8 == 5, "Failed to open handle ==> /posHandle/last_position8");
+   x_fail_unless(hd8 == 5, "Failed to open handle ==> /posHandle/last_position8");
 
    hd9 = pclKeyHandleOpen(0xFF, "posHandle/last_position9", 0, 0);
-   fail_unless(hd9 == 6, "Failed to open handle ==> /posHandle/last_position9");
+   x_fail_unless(hd9 == 6, "Failed to open handle ==> /posHandle/last_position9");
 
    // close handles ---------------------------------------------------
    ret = pclKeyHandleClose(hd4);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd5);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd6);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd7);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd8);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 
    ret = pclKeyHandleClose(hd9);
-   fail_unless(ret != -1, "Failed to close handle!!");
+   x_fail_unless(ret != -1, "Failed to close handle!!");
 #endif
    pclDeinitLibrary();
 }
@@ -879,15 +880,15 @@ START_TEST(test_Cursor)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    rval = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(rval <= 1, "Failed to init PCL");
+   x_fail_unless(rval <= 1, "Failed to init PCL");
 #if 1
    // create cursor
    handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
-   fail_unless(handle != -1, "Failed to create cursor!!");
+   x_fail_unless(handle != -1, "Failed to create cursor!!");
 
    // create cursor
    handle1 = pers_db_cursor_create("/Data/mnt-wt/lt-persistence_client_library_test/wt.itz");
-   fail_unless(handle1 != -1, "Failed to create cursor!!");
+   x_fail_unless(handle1 != -1, "Failed to create cursor!!");
 
    do
    {
@@ -898,35 +899,35 @@ START_TEST(test_Cursor)
 
       // get key
       rval = pers_db_cursor_get_key(handle, bufferKeySrc, 256);
-      fail_unless(rval != -1, "Cursor failed to get key!!");
+      x_fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
       rval = pers_db_cursor_get_data(handle, bufferDataSrc, 256);
 
-      fail_unless(rval != -1, "Cursor failed to get data!!");
+      x_fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = pers_db_cursor_get_data_size(handle);
-      fail_unless(size != -1, "Cursor failed to get size!!");
+      x_fail_unless(size != -1, "Cursor failed to get size!!");
       //printf("1. Key: %s | Data: %s » Size: %d \n", bufferKeySrc, bufferDataSrc, size);
 
       // get key
       rval = pers_db_cursor_get_key(handle1, bufferKeyDst, 256);
-      fail_unless(rval != -1, "Cursor failed to get key!!");
+      x_fail_unless(rval != -1, "Cursor failed to get key!!");
       // get data
       rval = pers_db_cursor_get_data(handle1, bufferDataDst, 256);
-      fail_unless(rval != -1, "Cursor failed to get data!!");
+      x_fail_unless(rval != -1, "Cursor failed to get data!!");
       // get size
       size = pers_db_cursor_get_data_size(handle1);
-      fail_unless(size != -1, "Cursor failed to get size!!");
+      x_fail_unless(size != -1, "Cursor failed to get size!!");
       //printf("  2. Key: %s | Data: %s » Size: %d \n", bufferKeyDst, bufferDataDst, size);
    }
    while( (pers_db_cursor_next(handle) == 0) && (pers_db_cursor_next(handle1) == 0) ); // next cursor
 
    // destory cursor
    rval = pers_db_cursor_destroy(handle);
-   fail_unless(rval != -1, "Failed to destroy cursor!!");
+   x_fail_unless(rval != -1, "Failed to destroy cursor!!");
 
    rval = pers_db_cursor_destroy(handle1);
-   fail_unless(rval != -1, "Failed to destroy cursor!!");
+   x_fail_unless(rval != -1, "Failed to destroy cursor!!");
 #endif
    pclDeinitLibrary();
 }
@@ -948,36 +949,36 @@ START_TEST(test_Plugin)
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
 	ret = pclKeyReadData(0xFF, "language/country_code",           0, 0, buffer, READ_SIZE);
-	fail_unless(ret != EPERS_NOT_INITIALIZED);
-   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: secure!",
+	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
+   x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: secure!",
                strlen((char*)buffer)) == 0, "Buffer SECURE not correctly read");
 
 
 	ret = pclKeyReadData(0xFF, "language/country_code_early",     0, 0, buffer, READ_SIZE);
-	fail_unless(ret != EPERS_NOT_INITIALIZED);
+	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
 	//printf("B U F F E R - early: %s\n", buffer);
-   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: early!",
+   x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: early!",
                strlen((char*)buffer)) == 0, "Buffer EARLY not correctly read");
 
 	ret = pclKeyReadData(0xFF, "language/country_code_emergency", 0, 0, buffer, READ_SIZE);
-	fail_unless(ret != EPERS_NOT_INITIALIZED);
+	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
 	//printf("B U F F E R - emergency: %s\n", buffer);
-   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: emergency!",
+   x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: emergency!",
                strlen((char*)buffer)) == 0, "Buffer EMERGENCY not correctly read");
 
 	ret = pclKeyReadData(0xFF, "language/info",                   0, 0, buffer, READ_SIZE);
-	fail_unless(ret != EPERS_NOT_INITIALIZED);
+	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
 	//printf("B U F F E R - hwinfo: %s\n", buffer);
-   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: hwinfo!",
+   x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: hwinfo!",
                strlen((char*)buffer)) == 0, "Buffer HWINFO not correctly read");
 
    ret = pclKeyReadData(0xFF, "language/country_code_custom3",   0, 0, buffer, READ_SIZE);
-   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
    //printf("B U F F E R - hwinfo: %s\n", buffer);
-   fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: custom3!",
+   x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: custom3!",
                strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");
 #endif
 	pclDeinitLibrary();
@@ -1002,17 +1003,17 @@ START_TEST(test_ReadDefault)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclKeyReadData(0xFF, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
-   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
    //printf("B U F F E R: %s\n", buffer);
-   fail_unless(strncmp((char*)buffer,"DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer,"DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    ret = pclKeyReadData(0xFF, "statusHandle/default02", 3, 2, buffer, READ_SIZE);
-   fail_unless(ret != EPERS_NOT_INITIALIZED);
+   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
    //printf("B U F F E R: %s\n", buffer);
-   fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 #endif
    pclDeinitLibrary();
 }
@@ -1034,15 +1035,15 @@ START_TEST(test_ReadConfDefault)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
-   fail_unless(ret != EPERS_NOT_INITIALIZED);
-   fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
+   x_fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault02",     3, 2, buffer, READ_SIZE);
-   fail_unless(ret != EPERS_NOT_INITIALIZED);
-   fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
+   x_fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 #endif
    pclDeinitLibrary();
 }
@@ -1066,11 +1067,11 @@ START_TEST(test_GetPath)
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
-   fail_unless(ret <= 1, "Failed to init PCL");
+   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclFileCreatePath(0xFF, "media/mediaDB_create.db", 1, 1, &path, &pathSize);
-   fail_unless(strncmp((char*)path, thePath, strlen((char*)path)) == 0, "Path not correct");
-   fail_unless(pathSize == strlen((char*)path), "Path size not correct");
+   x_fail_unless(strncmp((char*)path, thePath, strlen((char*)path)) == 0, "Path not correct");
+   x_fail_unless(pathSize == strlen((char*)path), "Path size not correct");
 
    pclFileReleasePath(ret);
 #endif

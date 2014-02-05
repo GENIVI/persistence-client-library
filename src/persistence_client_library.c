@@ -235,6 +235,10 @@ int pclDeinitLibrary(void)
                                            DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitialized));
       gPclInitialized--;   // decrement init counter
    }
+   else
+   {
+      rval = PCLnotInitialized;
+   }
 
    // end dbus library
    bContinue = FALSE;

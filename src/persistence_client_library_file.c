@@ -454,8 +454,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
                   if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
                   {
-                     strcpy(gOssHandleArray[handle].backupPath, backupPath);
-                     strcpy(gOssHandleArray[handle].csumPath,   csumPath);
+                     strncpy(gOssHandleArray[handle].backupPath, backupPath, DbPathMaxLen);
+                     strncpy(gOssHandleArray[handle].csumPath,   csumPath, DbPathMaxLen);
 
                      gOssHandleArray[handle].backupCreated = 0;
                      gOssHandleArray[handle].permission = dbContext.configKey.permission;
@@ -464,7 +464,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   *size = strlen(dbPath);
                   *path = malloc(*size);
                   memcpy(*path, dbPath, *size);
-                  *path[*size] = '\0';
+                  (*path)[*size] = '\0';
                   gOssHandleArray[handle].filePath = *path;
 
                   if(access(*path, F_OK) == -1)
@@ -494,8 +494,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
 
                   __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
-                  strcpy(gOssHandleArray[handle].backupPath, backupPath);
-                  strcpy(gOssHandleArray[handle].csumPath,   csumPath);
+                  strncpy(gOssHandleArray[handle].backupPath, backupPath, DbPathMaxLen);
+                  strncpy(gOssHandleArray[handle].csumPath,   csumPath, DbPathMaxLen);
                   gOssHandleArray[handle].backupCreated = 0;
                   gOssHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
                }
