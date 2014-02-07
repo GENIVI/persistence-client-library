@@ -28,7 +28,6 @@
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
-
 #include "persCheck.h"
 
 
@@ -59,7 +58,7 @@ char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
  * Each resource below has an entry in the resource configuration table where the
  * storage location (cached or write through) and type (e.g. custom) has been configured.
  */
-START_TEST (test_GetData)
+START_TEST(test_GetData)
 {
    X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
    X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
@@ -1080,6 +1079,33 @@ START_TEST(test_GetPath)
 END_TEST
 
 
+
+START_TEST(test_InitDeinit)
+{
+   int ret = 0, i = 0;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   for(i=0; i< 3; i++)
+   {
+      // initialize and deinitialize 1. time
+      ret = pclInitLibrary(gTheAppId, shutdownReg);
+      pclDeinitLibrary();
+
+
+      // initialize and deinitialize 2. time
+      ret = pclInitLibrary(gTheAppId, shutdownReg);
+      pclDeinitLibrary();
+
+
+      // initialize and deinitialize 3. time
+      ret = pclInitLibrary(gTheAppId, shutdownReg);
+      pclDeinitLibrary();
+   }
+}
+END_TEST
+
+
+
 static Suite * persistencyClientLib_suite()
 {
    Suite * s  = suite_create("Persistency client library");
@@ -1129,6 +1155,9 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_GetPath = tcase_create("GetPath");
    tcase_add_test(tc_GetPath, test_GetPath);
 
+   TCase * tc_InitDeinit = tcase_create("InitDeinit");
+   tcase_add_test(tc_InitDeinit, test_InitDeinit);
+
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
@@ -1143,6 +1172,7 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_ReadDefault);
    suite_add_tcase(s, tc_ReadConfDefault);
    suite_add_tcase(s, tc_GetPath);
+   suite_add_tcase(s, tc_InitDeinit);
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
    return s;
 }

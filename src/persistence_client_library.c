@@ -39,10 +39,6 @@
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gDLTContext);
 
-// declared in persistence_client_library_dbus_service.c
-// used to end dbus library
-extern int bContinue;
-
 static int gShutdownMode = 0;
 
 
@@ -171,10 +167,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       strncpy(gAppId, appName, MaxAppNameLen);
       gAppId[MaxAppNameLen-1] = '\0';
 
-      // destory mutex
-      pthread_mutex_destroy(&gDbusInitializedMtx);
-      pthread_cond_destroy(&gDbusInitializedCond);
-
       gPclInitialized++;
    }
    else if(gPclInitialized >= PCLinitialized)
@@ -183,7 +175,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitialized) );
    }
-
    return rval;
 }
 
@@ -195,8 +186,10 @@ int pclDeinitLibrary(void)
 
    if(gPclInitialized == PCLinitialized)
    {
+      int* retval;
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
+
       // unregister for lifecycle and persistence admin service dbus messages
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
          rval = unregister_lifecycle(gShutdownMode);
@@ -224,6 +217,17 @@ int pclDeinitLibrary(void)
 
       // close opend database
       pers_db_close_all();
+      // end dbus library
+      bContinue = 0;
+
+      // send quit command to dbus mainloop
+      deliverToMainloop_NM(CMD_QUIT, 0, 0);
+
+      // wait until the dbus mainloop has ended
+      pthread_join(gMainLoopThread, (void**)&retval);
+
+      pthread_mutex_unlock(&gDbusPendingRegMtx);
+      pthread_mutex_unlock(&gDbusInitializedMtx);
 
       gPclInitialized = PCLnotInitialized;
 
@@ -239,11 +243,6 @@ int pclDeinitLibrary(void)
    {
       rval = PCLnotInitialized;
    }
-
-   // end dbus library
-   bContinue = FALSE;
-
-   pthread_mutex_destroy(&gDbusPendingRegMtx);
    return rval;
 }
 

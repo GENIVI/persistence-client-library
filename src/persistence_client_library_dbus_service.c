@@ -34,7 +34,10 @@ pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t gMainLoopMtx         = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  gMainLoopCond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;
+
+pthread_t gMainLoopThread;
+
 
 int gEfds;  // communication channel int dbus mainloop
 
@@ -243,8 +246,6 @@ void* run_mainloop(void* dataPtr)
    // setup the dbus
    mainLoop(vtablePersAdmin, vtableLifecycle, vtableFallback, dataPtr);
 
-   printf("<== run_mainloop\n");
-
    return NULL;
 }
 
@@ -253,7 +254,6 @@ void* run_mainloop(void* dataPtr)
 int setup_dbus_mainloop(void)
 {
    int rval = 0;
-   pthread_t thread;
    DBusError err;
    DBusConnection* conn = NULL;
 
@@ -261,7 +261,7 @@ int setup_dbus_mainloop(void)
 
    dbus_error_init(&err);
 
-   // wain until dbus main loop has been setup and running
+   // wait until dbus main loop has been setup and running
    pthread_mutex_lock(&gDbusInitializedMtx);
 
    // Connect to the bus and check for errors
@@ -297,7 +297,7 @@ int setup_dbus_mainloop(void)
    }
 
    // create here the dbus connection and pass to main loop
-   rval = pthread_create(&thread, NULL, run_mainloop, conn);
+   rval = pthread_create(&gMainLoopThread, NULL, run_mainloop, conn);
    if(rval)
    {
      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
@@ -662,7 +662,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
    pthread_cond_signal(&gDbusInitializedCond);
    pthread_mutex_unlock(&gDbusInitializedMtx);
-   printf("End Mainloop\n");
    return 0;
 }
 

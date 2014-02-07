@@ -30,6 +30,15 @@ extern pthread_mutex_t gDbusInitializedMtx;
 extern pthread_cond_t  gDbusInitializedCond;
 extern pthread_mutex_t gDbusPendingRegMtx;
 
+extern pthread_mutex_t gMainLoopMtx;
+
+// declared in persistence_client_library_dbus_service.c
+// used to end dbus library
+extern int bContinue;
+
+extern pthread_t gMainLoopThread;
+
+
 /// command definitions for main loop
 typedef enum ECmd
 {
@@ -77,5 +86,6 @@ int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2
 
 
 int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int param2);
+
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_SERVICE_H_ */
