@@ -25,6 +25,7 @@
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library.h"
 #include "persistence_client_library_backup_filelist.h"
+#include "../include_protected/persistence_client_library_db_access.h"
 
 #include <string.h>
 #include <errno.h>

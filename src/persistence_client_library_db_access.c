@@ -21,6 +21,7 @@
 #include "../include_protected/persistence_client_library_rc_table.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_itzam_errors.h"
+#include "persistence_client_library_prct_access.h"
 
 #include "persistence_client_library_dbus_service.h"
 
@@ -72,7 +73,7 @@ static int gBtreeCreated[DbTableSize][PersistencePolicy_LastEntry] = { {0} };
 
 // function prototype
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, unsigned int reason);
-int pers_get_default_data(char* dbPath, char* key, char* buffer, unsigned int buffer_size);
+int pers_get_default_data(char* dbPath, char* key, unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -241,7 +242,6 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
    {
       itzam_btree* btree = NULL;
       int keyFound = 0;
-      itzam_state  state = ITZAM_FAILED;
 
       btree = pers_db_open(info, dbPath);
       if(btree != NULL)
@@ -298,7 +298,7 @@ int pers_db_read_key(char* dbPath, char* key, PersistenceInfo_s* info, unsigned 
 
 
 
-int pers_get_default_data(char* dbPath, char* key, char* buffer, unsigned int buffer_size)
+int pers_get_default_data(char* dbPath, char* key, unsigned char* buffer, unsigned int buffer_size)
 {
    int keyFound = 0;
    int read_size = 0;

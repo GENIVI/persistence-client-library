@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/sendfile.h>
 
 
 /// structure definition for a key value item
@@ -566,8 +567,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
 int pclRecoverFromBackup(int backupFd, const char* original)
 {
    int handle = 0;
-   int readSize = 0;
-   char buffer[RDRWBufferSize];
 
    handle = open(original, O_TRUNC | O_RDWR);
    if(handle != -1)
@@ -588,7 +587,6 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
 {
    int dstFd = 0, csfd = 0;
    int readSize = -1;
-   char buffer[RDRWBufferSize];
 
    if(access(dstPath, F_OK) != 0)
    {

@@ -26,7 +26,7 @@
 
 
 /// pointer to resource table database
-itzam_btree gResource_table[PrctDbTableSize] = {0};
+itzam_btree gResource_table[PrctDbTableSize] = {{0}};
 /// array to hold the information of database is already open
 int gResourceOpen[PrctDbTableSize] = {0};
 

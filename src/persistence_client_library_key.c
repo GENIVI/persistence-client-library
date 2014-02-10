@@ -29,6 +29,11 @@
 #include "persistence_client_library_custom_loader.h"
 
 
+// function declaration
+int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
+int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
+                      pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
+
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // function with handle

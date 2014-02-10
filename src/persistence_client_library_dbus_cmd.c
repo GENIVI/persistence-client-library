@@ -22,11 +22,13 @@
 #include "persistence_client_library_itzam_errors.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_prct_access.h"
+#include "persistence_client_library_pas_interface.h"
 
 #include "../include_protected/persistence_client_library_data_organization.h"
 #include "../include_protected/persistence_client_library_db_access.h"
 
 #include <itzam.h>
+#include <dlfcn.h>
 
 
 // function prototype
@@ -213,7 +215,6 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
 {
    DBusError error;
    dbus_error_init (&error);
-   int rval = 0;
 
    DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",       // destination
                                                       "/org/genivi/persistence/admin",       // path
@@ -230,7 +231,6 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
          if(!dbus_connection_send(conn, message, 0))
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
-            rval = -1;
          }
 
          dbus_connection_flush(conn);
@@ -314,8 +314,6 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
 void process_send_lifecycle_register(DBusConnection* conn, int regType, int shutdownMode)
 {
-   int rval = 0;
-
    DBusError error;
    dbus_error_init (&error);
 
@@ -354,7 +352,6 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 		   if(!dbus_connection_send(conn, message, 0))
 		   {
 		      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register => Access denied"), DLT_STRING(error.message) );
-		      rval = -1;
 		   }
 		   dbus_connection_flush(conn);
          dbus_message_unref(message);
@@ -374,7 +371,6 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 
 void process_send_lifecycle_request(DBusConnection* conn, int requestId, int status)
 {
-   int rval = 0;
    DBusError error;
    dbus_error_init (&error);
 
@@ -394,7 +390,6 @@ void process_send_lifecycle_request(DBusConnection* conn, int requestId, int sta
          if(!dbus_connection_send(conn, message, 0))
          {
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => Access denied"), DLT_STRING(error.message) );
-            rval = -1;
           }
 
           dbus_connection_flush(conn);
@@ -403,13 +398,11 @@ void process_send_lifecycle_request(DBusConnection* conn, int requestId, int sta
       else
       {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: Invalid message"));
-         rval = -1;
       }
    }
    else
    {
       DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request => ERROR: connection isn NULL"));
-      rval = -1;
    }
 }
 

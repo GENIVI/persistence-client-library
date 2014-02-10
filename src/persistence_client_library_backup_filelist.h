@@ -20,6 +20,8 @@
  */
 
 
+#include "../include_protected/persistence_client_library_rc_table.h"
+
 /**
  * @brief Read the blacklist configuration file
  *
@@ -98,6 +100,27 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
  * @return
  */
 inline int pclBackupNeeded(const char* path);
+
+
+/**
+ * @brief translate persistence permission into POSIX file open permissions
+ *
+ * @param
+ *
+ * @return
+ */
+int pclGetPosixPermission(PersistencePermission_e permission);
+
+
+
+/**
+ * @brief create the file and the given path
+ *
+ * @param
+ *
+ * @return
+ */
+int pclCreateFileAndPath(const char* path);
 
 
 
