@@ -318,6 +318,16 @@ void  key_val_rel(void *p )
 }
 
 
+int pclBackupDoFileCopy(int srcFd, int dstFd)
+{
+   struct stat buf;
+   memset(&buf, 0, sizeof(buf));
+
+   fstat(srcFd, &buf);
+   return sendfile(dstFd, srcFd, 0, buf.st_size);
+}
+
+
 int pclCreateFile(const char* path)
 {
    const char* delimiters = "/\n";   // search for blank and end of line
@@ -563,15 +573,10 @@ int pclRecoverFromBackup(int backupFd, const char* original)
    if(handle != -1)
    {
       // copy data from one file to another
-      while((readSize = read(backupFd, buffer, RDRWBufferSize)) > 0)
+      if((handle = pclBackupDoFileCopy(backupFd, handle)) == -1)
       {
-         if(write(handle, buffer, readSize) != readSize)
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclRecoverFromBackup => couldn't write whole buffer"));
-            break;
-         }
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclRecoverFromBackup => couldn't write whole buffer"));
       }
-
    }
 
    return handle;
@@ -617,20 +622,15 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       curPos = lseek(srcfd, 0, SEEK_CUR);
 
       // copy data from one file to another
-      while((readSize = read(srcfd, buffer, RDRWBufferSize)) > 0)
+      if((readSize = pclBackupDoFileCopy(srcfd, dstFd)) == -1)
       {
-         if(write(dstFd, buffer, readSize) != readSize)
-         {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => couldn't write whole buffer"));
-            break;
-         }
+         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error copying file"));
       }
 
-      if(readSize == -1)
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error copying file"));
-
-      if((readSize = close(dstFd)) == -1)
+      if(close(dstFd) == -1)
+      {
          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error closing fd"));
+      }
 
       // set back to the position
       lseek(srcfd, curPos, SEEK_SET);
