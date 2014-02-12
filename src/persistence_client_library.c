@@ -218,6 +218,10 @@ int pclDeinitLibrary(void)
 
       // close opend database
       pers_db_close_all();
+
+      // close persistence handles
+      close_all_persistence_handle();
+
       // end dbus library
       bContinue = 0;
 
@@ -242,7 +246,7 @@ int pclDeinitLibrary(void)
    }
    else
    {
-      rval = PCLnotInitialized;
+      rval = EPERS_NOT_INITIALIZED;
    }
    return rval;
 }

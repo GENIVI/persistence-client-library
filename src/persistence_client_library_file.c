@@ -183,29 +183,30 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                handle = open(dbPath, flags);
             }
 
-            if(handle != -1)
+            if(handle == -1)
             {
-               if(handle < MaxPersHandle)
+               if( (handle = pclCreateFile(dbPath)) == -1)
                {
-                  __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-
-                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
-                  {
-                     strcpy(gFileHandleArray[handle].backupPath, backupPath);
-                     strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-                     gFileHandleArray[handle].backupCreated = 0;
-                     gFileHandleArray[handle].permission = dbContext.configKey.permission;
-                  }
-               }
-               else
-               {
-                  close(handle);
-                  handle = EPERS_MAXHANDLE;
+                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => failed to create file: "), DLT_STRING(dbPath));
                }
             }
-            else  // file does not exist, create file and folder
+
+            if(handle < MaxPersHandle)
             {
-               handle = pclCreateFile(dbPath);
+               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+
+               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+               {
+                  strcpy(gFileHandleArray[handle].backupPath, backupPath);
+                  strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+                  gFileHandleArray[handle].backupCreated = 0;
+                  gFileHandleArray[handle].permission = dbContext.configKey.permission;
+               }
+            }
+            else
+            {
+               close(handle);
+               handle = EPERS_MAXHANDLE;
             }
          }
          else  // requested resource is not in the RCT, so create resource as local/cached.
@@ -238,7 +239,6 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          handle = EPERS_RESOURCE_NO_FILE;
       }
    }
-
    return handle;
 }
 
@@ -462,15 +462,16 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   }
 
                   *size = strlen(dbPath);
-                  *path = malloc(*size);
-                  memcpy(*path, dbPath, *size);
-                  (*path)[*size] = '\0';
+                  *path = malloc((*size)+1);    // allocate 1 byte for the string termination
+                  memcpy(*path, dbPath, (*size)+1);
+                  (*path)[(*size)+1] = '\0';   // terminate string
                   gOssHandleArray[handle].filePath = *path;
 
                   if(access(*path, F_OK) == -1)
                   {
                      // file does not exist, create it.
-                     pclCreateFileAndPath(*path);
+                     int handle = pclCreateFile(*path);
+                     close(handle);    // don't need the open file
                   }
                }
                else

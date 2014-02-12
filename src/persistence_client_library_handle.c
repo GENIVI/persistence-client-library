@@ -26,8 +26,6 @@
 /// handle index
 static int gHandleIdx = 1;
 
-static int gInitialized = 0;
-
 /// open file descriptor handle array
 int gOpenFdArray[MaxPersHandle] = {0};
 
@@ -47,7 +45,7 @@ PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
 /// free handle array
 int gFreeHandleArray[MaxPersHandle] = {0};
 int gFreeHandleIdxHead = 0;
-pthread_mutex_t gMtx;
+pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
 
 
 
@@ -55,12 +53,6 @@ pthread_mutex_t gMtx;
 int get_persistence_handle_idx()
 {
    int handle = 0;
-
-   if(gInitialized == 0)
-   {
-      gInitialized = 1;
-      pthread_mutex_init(&gMtx, 0);
-   }
 
    if(pthread_mutex_lock(&gMtx) == 0)
    {
@@ -100,3 +92,21 @@ void set_persistence_handle_close_idx(int handle)
    }
 }
 
+
+
+void close_all_persistence_handle()
+{
+   if(pthread_mutex_lock(&gMtx) == 0)
+   {
+      // "free" all handles
+      memset(gFreeHandleArray, 0, MaxPersHandle);
+      memset(gOpenFdArray, 0, MaxPersHandle);
+      memset(gOpenFdArray, 0, MaxPersHandle);
+
+      // reset variables
+      gHandleIdx = 1;
+      gFreeHandleIdxHead = 0;
+
+      pthread_mutex_unlock(&gMtx);
+   }
+}

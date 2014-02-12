@@ -63,7 +63,7 @@ int gFreeCursorHandleArray[MaxPersHandle];
 int gFreeCursorHandleIdxHead = 0;
 
 // mutex to controll access to the cursor array
-pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gCursorMtx = PTHREAD_MUTEX_INITIALIZER;
 
 
 /// btree array
@@ -714,7 +714,7 @@ int get_cursor_handle()
 {
    int handle = 0;
 
-   if(pthread_mutex_lock(&gMtx) == 0)
+   if(pthread_mutex_lock(&gCursorMtx) == 0)
    {
       if(gFreeCursorHandleIdxHead > 0)   // check if we have a free spot in the array before the current max
       {
@@ -732,7 +732,7 @@ int get_cursor_handle()
             handle = -1;
          }
       }
-      pthread_mutex_unlock(&gMtx);
+      pthread_mutex_unlock(&gCursorMtx);
    }
    return handle;
 }
@@ -740,13 +740,13 @@ int get_cursor_handle()
 
 void close_cursor_handle(int handlerDB)
 {
-   if(pthread_mutex_lock(&gMtx) == 0)
+   if(pthread_mutex_lock(&gCursorMtx) == 0)
    {
       if(gFreeCursorHandleIdxHead < MaxPersHandle)
       {
          gFreeCursorHandleArray[gFreeCursorHandleIdxHead++] = handlerDB;
       }
-      pthread_mutex_unlock(&gMtx);
+      pthread_mutex_unlock(&gCursorMtx);
    }
 }
 

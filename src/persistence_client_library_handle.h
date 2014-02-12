@@ -81,6 +81,12 @@ void set_persistence_handle_close_idx(int handle);
 
 
 
+/**
+ * @brief close open file handles
+ *
+ */
+void close_all_persistence_handle();
+
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */
 

@@ -333,9 +333,11 @@ int pclCreateFile(const char* path)
 {
    const char* delimiters = "/\n";   // search for blank and end of line
    char* tokenArray[24];
-   char* thePath = (char*)path;
+   char thePath[DbPathMaxLen] = {0};
    int numTokens = 0, i = 0, validPath = 1;
-   int handle = 0;
+   int handle = -1;
+
+   strncpy(thePath, path, DbPathMaxLen);
 
    tokenArray[numTokens++] = strtok(thePath, delimiters);
    while(tokenArray[numTokens-1] != NULL )
@@ -371,18 +373,6 @@ int pclCreateFile(const char* path)
       strncat(createPath, "/", DbPathMaxLen-1);
       strncat(createPath, tokenArray[i], DbPathMaxLen-1);
       handle = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-      if(handle != -1)
-      {
-         if(handle < MaxPersHandle)
-         {
-            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-         }
-         else
-         {
-            close(handle);
-            handle = EPERS_MAXHANDLE;
-         }
-      }
    }
    else
    {
@@ -590,9 +580,12 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
 
    if(access(dstPath, F_OK) != 0)
    {
+      int handle = -1;
       char pathToCreate[DbPathMaxLen] = {0};
       strncpy(pathToCreate, dstPath, DbPathMaxLen);
-      pclCreateFileAndPath(pathToCreate);
+
+      handle = pclCreateFile(pathToCreate);
+      close(handle); // don't need the open file
    }
 
    // create checksum file and and write checksum
@@ -689,60 +682,6 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 int pclBackupNeeded(const char* path)
 {
    return need_backup_key(pclCrc32(0, (const unsigned char*)path, strlen(path)));
-}
-
-
-
-int pclCreateFileAndPath(const char* path)
-{
-   const char* delimiters = "/\n";   // search for blank and end of line
-   char* tokenArray[24];
-   char* thePath = (char*)path;
-   char createPath[DbPathMaxLen] = {0};
-   int numTokens = 0, i = 0, validPath = 1;
-   int rval = -1;
-
-   tokenArray[numTokens++] = strtok(thePath, delimiters);
-   while(tokenArray[numTokens-1] != NULL )
-   {
-     tokenArray[numTokens] = strtok(NULL, delimiters);
-     if(tokenArray[numTokens] != NULL)
-     {
-        numTokens++;
-        if(numTokens >= 24)
-        {
-           validPath = 0;
-           break;
-        }
-     }
-     else
-     {
-        break;
-     }
-   }
-
-   if(validPath == 1)
-   {
-      snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
-      for(i=1; i<numTokens-1; i++)
-      {
-         // create folders
-         strncat(createPath, "/", DbPathMaxLen-1);
-         strncat(createPath, tokenArray[i], DbPathMaxLen-1);
-         mkdir(createPath, 0744);
-      }
-      // finally create the file
-      strncat(createPath, "/", DbPathMaxLen-1);
-      strncat(createPath, tokenArray[i], DbPathMaxLen-1);
-      rval = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-      close(rval);
-   }
-   else
-   {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateFileAndPath ==> no valid path to create:"), DLT_STRING(path));
-   }
-
-   return rval;
 }
 
 

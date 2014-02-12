@@ -121,7 +121,7 @@ int pclKeyHandleClose(int key_handle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(key_handle < MaxPersHandle)
+      if(key_handle < MaxPersHandle && key_handle > 0)
       {
          if(PersistenceStorage_custom == gKeyHandleArray[key_handle].info.configKey.storage )
          {
@@ -167,7 +167,7 @@ int pclKeyHandleGetSize(int key_handle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(key_handle < MaxPersHandle)
+      if(key_handle < MaxPersHandle && key_handle > 0)
       {
          if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
          {
@@ -208,7 +208,7 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(key_handle < MaxPersHandle)
+      if(key_handle < MaxPersHandle && key_handle > 0)
       {
          if(PersistenceStorage_custom ==  gKeyHandleArray[key_handle].info.configKey.storage)
          {
@@ -264,7 +264,7 @@ int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, 
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(key_handle < MaxPersHandle)
+      if(key_handle < MaxPersHandle && key_handle > 0)
       {
          rval = regNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
                                   gKeyHandleArray[key_handle].resourceID,
@@ -296,7 +296,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
       {
          if(buffer_size <= gMaxKeyValDataSize)  // check data size
          {
-            if(key_handle < MaxPersHandle)
+            if(key_handle < MaxPersHandle && key_handle > 0)
             {
                if(gKeyHandleArray[key_handle].info.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
                {

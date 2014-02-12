@@ -52,7 +52,12 @@ char gTheAppId[MaxAppNameLen] = {0};
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 
+int myChangeCallback(pclNotification_s * notifyStruct)
+{
+   printf(" ==> * - * myChangeCallback * - *\n");
 
+   return 1;
+}
 /**
  * Test the key value interface using different logicalDB id's, users and seats.
  * Each resource below has an entry in the resource configuration table where the
@@ -1069,6 +1074,7 @@ START_TEST(test_GetPath)
    x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclFileCreatePath(0xFF, "media/mediaDB_create.db", 1, 1, &path, &pathSize);
+
    x_fail_unless(strncmp((char*)path, thePath, strlen((char*)path)) == 0, "Path not correct");
    x_fail_unless(pathSize == strlen((char*)path), "Path size not correct");
 
@@ -1101,6 +1107,91 @@ START_TEST(test_InitDeinit)
       (void)pclInitLibrary(gTheAppId, shutdownReg);
       pclDeinitLibrary();
    }
+}
+END_TEST
+
+
+
+START_TEST(test_NegHandle)
+{
+   int handle = -1, ret = 0;;
+   int negativeHandle = -17;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   unsigned char buffer[128] = {0};
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+   handle = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
+   x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
+
+
+
+   ret = pclKeyHandleReadData(negativeHandle, buffer, READ_SIZE);
+   x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleReadData => negative handle not detected");
+
+   ret = pclKeyHandleClose(negativeHandle);
+   x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleClose => negative handle not detected");
+
+   ret = pclKeyHandleGetSize(negativeHandle);
+   x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleGetSize => negative handle not detected");
+
+   ret = pclKeyHandleReadData(negativeHandle, buffer, 128);
+   x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleReadData => negative handle not detected");
+
+   ret = pclKeyHandleRegisterNotifyOnChange(negativeHandle, &myChangeCallback);
+   x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleRegisterNotifyOnChange => negative handle not detected");
+
+   ret = pclKeyHandleWriteData(negativeHandle, (unsigned char*)"Whatever", strlen("Whatever"));
+   x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleWriteData => negative handle not detected");
+
+
+   // close handle
+   ret = pclKeyHandleClose(handle);
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
+
+
+START_TEST(test_FileOpenCreate)
+{
+   int handle = -1, ret = 0;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   char buffer[128] = {0};
+   char* writeBuffer = "test_FileOpenCreate: write some data to the file!";
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+   // remove file
+   remove("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db");
+
+   handle = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
+   x_fail_unless(handle != -1, "Could not open file ==> /media/mediaDBWrite.db");
+
+
+   ret = pclFileWriteData(handle, writeBuffer, strlen(writeBuffer));
+   x_fail_unless(ret == strlen(writeBuffer), "pclKeyHandleWriteData => error writing data");
+
+
+   ret = pclFileSeek(handle, 0, SEEK_SET);
+   x_fail_unless(ret <= 0, "pclFileSeek => failed to position fd");
+
+
+   ret = pclFileReadData(handle, buffer, 128);
+   x_fail_unless(ret == strlen(writeBuffer), "pclKeyHandleReadData => error read data");
+   x_fail_unless(strncmp(buffer, writeBuffer, strlen(writeBuffer)) == 0, "pclKeyHandleReadData => Buffer not correctly read");
+
+   ret = pclFileClose(handle);
+   x_fail_unless(ret <= 0, "pclKeyHandleClose => failed to close");
+
+   // remove file
+   remove("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db");
+
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1158,6 +1249,12 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_InitDeinit = tcase_create("InitDeinit");
    tcase_add_test(tc_InitDeinit, test_InitDeinit);
 
+   TCase * tc_NegHandle = tcase_create("NegHandle");
+   tcase_add_test(tc_NegHandle, test_NegHandle);
+
+   TCase * tc_FileOpenCreate = tcase_create("FileOpenCreate");
+   tcase_add_test(tc_FileOpenCreate, test_FileOpenCreate);
+
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
@@ -1173,6 +1270,9 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_ReadConfDefault);
    suite_add_tcase(s, tc_GetPath);
    suite_add_tcase(s, tc_InitDeinit);
+   suite_add_tcase(s, tc_NegHandle);
+   suite_add_tcase(s, tc_FileOpenCreate);
+
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
    return s;
 }

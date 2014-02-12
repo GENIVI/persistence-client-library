@@ -47,7 +47,7 @@ int need_backup_key(unsigned int key);
  *
  * @param
  *
- * @return
+ * @return the handle to his file
  */
 int pclCreateFile(const char* path);
 
@@ -110,18 +110,6 @@ inline int pclBackupNeeded(const char* path);
  * @return
  */
 int pclGetPosixPermission(PersistencePermission_e permission);
-
-
-
-/**
- * @brief create the file and the given path
- *
- * @param
- *
- * @return
- */
-int pclCreateFileAndPath(const char* path);
-
 
 
 #endif /* PERS_BACKUP_BLACKLIST_H */
