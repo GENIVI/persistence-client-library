@@ -183,7 +183,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                handle = open(dbPath, flags);
             }
 
-            if(handle == -1)
+            if(handle == -1 && errno == ENOENT) // file does not exist, create file and folder
             {
                if( (handle = pclCreateFile(dbPath)) == -1)
                {
@@ -191,7 +191,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                }
             }
 
-            if(handle < MaxPersHandle)
+            if(handle < MaxPersHandle && handle > 0 )
             {
                __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
 
@@ -215,22 +215,19 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
             handle = pclCreateFile(dbPath);
 
-            if(handle != -1)
+            if(handle < MaxPersHandle && handle > 0)
             {
-               if(handle < MaxPersHandle)
-               {
-                  __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
 
-                  strcpy(gFileHandleArray[handle].backupPath, backupPath);
-                  strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-                  gFileHandleArray[handle].backupCreated = 0;
-                  gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
-               }
-               else
-               {
-                  close(handle);
-                  handle = EPERS_MAXHANDLE;
-               }
+               strcpy(gFileHandleArray[handle].backupPath, backupPath);
+               strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+               gFileHandleArray[handle].backupCreated = 0;
+               gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+            }
+            else
+            {
+               close(handle);
+               handle = EPERS_MAXHANDLE;
             }
          }
       }

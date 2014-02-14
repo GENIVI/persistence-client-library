@@ -19,6 +19,8 @@
  * @see
  */
 
+#include "../include/persistence_client_custom.h"
+
 
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersistenceCustomLibs_e
@@ -45,9 +47,6 @@ enum _PersCustomLibDefines_e
 
 } PersCustomLibDefines_e;
 
-
-/// callback definition for custom_plugin_get_status_notification_clbk function
-typedef int (*plugin_callback_t) (int status, void* dataPtr);
 
 
 /// structure definition for custom library functions
@@ -100,6 +99,16 @@ typedef struct _Pers_custom_functs_s
 
    // get the size
    int (*custom_plugin_handle_get_size)(int handle);
+
+   /// initialize plugin (non blocking)
+   int (*custom_plugin_init_async)(plugin_callback_async_t pfInitCompletedCB);
+
+   /// clear all data
+   int (*custom_plugin_clear_all_data)(void);
+
+   /// sync all data
+   int (*custom_plugin_sync)(void);
+
 
 }Pers_custom_functs_s;
 

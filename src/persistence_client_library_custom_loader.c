@@ -355,6 +355,27 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
          {
               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
           }
+
+         // initialize plugin (non blocking)
+         *(void **) (&customFuncts->custom_plugin_init_async) = dlsym(handle, "plugin_init_async");
+         if ((error = dlerror()) != NULL)
+         {
+              DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+         }
+
+         // clear all data
+         *(void **) (&customFuncts->custom_plugin_clear_all_data) = dlsym(handle, "plugin_clear_all_data");
+         if ((error = dlerror()) != NULL)
+         {
+              DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+         }
+
+         // sync data
+         *(void **) (&customFuncts->custom_plugin_sync) = dlsym(handle, "plugin_sync");
+         if ((error = dlerror()) != NULL)
+         {
+              DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+         }
       }
       else
       {
