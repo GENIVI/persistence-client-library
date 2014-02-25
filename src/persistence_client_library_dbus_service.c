@@ -35,7 +35,11 @@ pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
 
-pthread_mutex_t gMainLoopMtx         = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_mutex_t gDeliverpMtx         = PTHREAD_MUTEX_INITIALIZER;
+
+
+pthread_mutex_t gMainCondMtx         = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;
 
 pthread_t gMainLoopThread;
@@ -575,7 +579,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  }
                                  else
                                  {
-                                    pthread_mutex_lock(&gMainLoopMtx);
+                                    pthread_mutex_lock(&gMainCondMtx);
                                     switch (buf[0])
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
@@ -617,7 +621,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           break;
                                     }
                                     pthread_cond_signal(&gMainLoopCond);
-                                    pthread_mutex_unlock(&gMainLoopMtx);
+                                    pthread_mutex_unlock(&gMainCondMtx);
                                  }
                               }
                            }
@@ -673,13 +677,18 @@ int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2
 {
    int rval = 0;
 
-   pthread_mutex_lock(&gMainLoopMtx);
+   pthread_mutex_lock(&gDeliverpMtx);
+
+
+   pthread_mutex_lock(&gMainCondMtx);
 
    deliverToMainloop_NM(mainloopCmd, param1, param2);
 
-   // wait for condition variable
-   pthread_cond_wait(&gMainLoopCond, &gMainLoopMtx);
-   pthread_mutex_unlock(&gMainLoopMtx);
+   pthread_cond_wait(&gMainLoopCond, &gMainCondMtx);
+   pthread_mutex_unlock(&gMainCondMtx);
+
+
+   pthread_mutex_unlock(&gDeliverpMtx);
 
    return rval;
 }

@@ -459,9 +459,9 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   }
 
                   *size = strlen(dbPath);
-                  *path = malloc((*size)+1);    // allocate 1 byte for the string termination
-                  memcpy(*path, dbPath, (*size)+1);
-                  (*path)[(*size)+1] = '\0';   // terminate string
+                  *path = malloc((*size)+1);       // allocate 1 byte for the string termination
+                  memcpy(*path, dbPath, (*size));
+                  (*path)[(*size)] = '\0';         // terminate string
                   gOssHandleArray[handle].filePath = *path;
 
                   if(access(*path, F_OK) == -1)

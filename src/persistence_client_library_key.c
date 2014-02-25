@@ -72,17 +72,16 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
                if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_handle_open != NULL) )
                {
                   int flag = 0, mode = 0;
-                  handle = gPersCustomFuncs[idx].custom_plugin_handle_open(workaroundPath, flag, mode);
+                  gPersCustomFuncs[idx].custom_plugin_handle_open(workaroundPath, flag, mode);
                }
                else
                {
                   handle = EPERS_NOPLUGINFUNCT;
                }
             }
-            else
-            {
-               handle = get_persistence_handle_idx();
-            }
+
+            // generate handle for custom and for normal key
+            handle = get_persistence_handle_idx();
 
             if((handle < MaxPersHandle) && (0 <= handle))
             {
@@ -136,16 +135,17 @@ int pclKeyHandleClose(int key_handle)
                rval = EPERS_NOPLUGINFUNCT;
             }
          }
-         else
+
+         if(rval != EPERS_NOPLUGINFUNCT)
          {
             set_persistence_handle_close_idx(key_handle);
             rval = 1;
-         }
 
-         // invalidate entries
-         memset(gKeyHandleArray[key_handle].dbPath, 0, DbPathMaxLen);
-         memset(gKeyHandleArray[key_handle].dbKey  ,0, DbKeyMaxLen);
-         gKeyHandleArray[key_handle].info.configKey.storage = -1;
+            // invalidate entries
+            memset(gKeyHandleArray[key_handle].dbPath, 0, DbPathMaxLen);
+            memset(gKeyHandleArray[key_handle].dbKey  ,0, DbKeyMaxLen);
+            gKeyHandleArray[key_handle].info.configKey.storage = -1;
+         }
       }
       else
       {

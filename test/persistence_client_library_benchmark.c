@@ -28,6 +28,7 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <pthread.h>
 
 
 #define SECONDS2NANO 1000000000L
@@ -38,6 +39,9 @@
 
 // define for the used clock: "CLOCK_MONOTONIC" or "CLOCK_REALTIME"
 #define CLOCK_ID  CLOCK_MONOTONIC
+
+
+const char* gAppName = "lt-persistence_client_library_test";
 
 // definition of weekday to generate random string
 char* dayOfWeek[] = { "Sunday   ",
@@ -63,6 +67,76 @@ inline double getMsDuration(struct timespec* start, struct timespec* end)
 {
    return (double)((end->tv_sec * SECONDS2NANO) + end->tv_nsec) - ((start->tv_sec * SECONDS2NANO) + start->tv_nsec)/NANO2MIL;
 }
+
+
+
+void init_benchmark(int numLoops)
+{
+   int i = 0;
+   long long durationInit = 0;
+   long long durationDeInit = 0;
+   struct timespec initStart, initEnd;
+   struct timespec deInitStart, deInitEnd;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   printf("\nTest  i n i t / d e i n i t   performance: %d times\n", numLoops);
+
+   // init
+   clock_gettime(CLOCK_ID, &initStart);
+   (void)pclInitLibrary(gAppName , shutdownReg);
+   clock_gettime(CLOCK_ID, &initEnd);
+   durationInit += getNsDuration(&initStart, &initEnd);
+
+   // deinit
+   clock_gettime(CLOCK_ID, &deInitStart);
+   pclDeinitLibrary();
+   clock_gettime(CLOCK_ID, &deInitEnd);
+   durationDeInit += getNsDuration(&deInitStart, &deInitEnd);
+
+   printf(" Init   (single)  => %f ms \n",   (double)((double)durationInit/NANO2MIL));
+   printf(" Deinit (single)  => %f ms \n", (double)((double)durationDeInit/NANO2MIL));
+
+   durationInit = 0;
+   durationDeInit = 0;
+
+
+   clock_gettime(CLOCK_ID, &initStart);
+   (void)pclInitLibrary(gAppName , shutdownReg);
+   clock_gettime(CLOCK_ID, &initEnd);
+   durationInit += getNsDuration(&initStart, &initEnd);
+
+   // deinit
+   clock_gettime(CLOCK_ID, &deInitStart);
+   pclDeinitLibrary();
+   clock_gettime(CLOCK_ID, &deInitEnd);
+   durationDeInit += getNsDuration(&deInitStart, &deInitEnd);
+
+   printf(" Init   (single)  => %f ms \n",   (double)((double)durationInit/NANO2MIL));
+   printf(" Deinit (single)  => %f ms \n", (double)((double)durationDeInit/NANO2MIL));
+
+   durationInit = 0;
+   durationDeInit = 0;
+
+   for(i=0; i<numLoops; i++)
+   {
+      // init
+      clock_gettime(CLOCK_ID, &initStart);
+      (void)pclInitLibrary(gAppName , shutdownReg);
+      clock_gettime(CLOCK_ID, &initEnd);
+      durationInit += getNsDuration(&initStart, &initEnd);
+
+      // deinit
+      clock_gettime(CLOCK_ID, &deInitStart);
+      (void)pclDeinitLibrary();
+      clock_gettime(CLOCK_ID, &deInitEnd);
+      durationDeInit += getNsDuration(&deInitStart, &deInitEnd);
+   }
+
+   printf(" Init             => %f ms \n",   (double)((double)durationInit/NANO2MIL/numLoops));
+   printf(" Deinit           => %f ms \n", (double)((double)durationDeInit/NANO2MIL/numLoops));
+
+}
+
 
 
 void read_benchmark(int numLoops)
@@ -318,16 +392,59 @@ void handle_benchmark(int numLoops)
 }
 
 
+void* do_something(void* dataPtr)
+{
+   int i = 0;
+   int value = *((int*)dataPtr);
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   // init library
+   (void)pclInitLibrary(gAppName , shutdownReg);
+
+   for(i=0; i < 5000; i++)
+   {
+      switch(value)
+      {
+      case 1:
+         (void)pclKeyWriteData(0x84, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+      case 2:
+         (void)pclKeyWriteData(0x84, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+      case 3:
+         (void)pclKeyWriteData(0x84, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+         break;
+      default:
+         printf("Nothing!\n;");
+         break;
+      }
+   }
+
+   // deinit library
+   pclDeinitLibrary();
+
+   return NULL;
+}
 
 
 int main(int argc, char *argv[])
 {
    int ret = 0;
-   int numLoops = 5000;
-   long long duration = 0, resolution = 0;
+
+#if 0
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   const char* appName = "lt-persistence_client_library_test";
-   struct timespec initStart, initEnd, clockRes;
+   int numLoops = 5000;
+   long long resolution = 0;
+
+   struct timespec clockRes;
+#else
+
+   int toThread1 = 0, toThread2 = 0, toThread3 = 0;
+   int* retval1, retval2, retval3;
+
+   pthread_t thread1, thread2, thread3;
+
+#endif
+
+
    struct tm *locTime;
 
    time_t t = time(0);
@@ -341,25 +458,26 @@ int main(int argc, char *argv[])
                                          locTime->tm_mday, (locTime->tm_mon)+1, (locTime->tm_year+1900),
                                          locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
-   printf("\n\n============================\n");
-   printf("      PCL benchmark\n");
-   printf("============================\n\n");
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("noty","tests the persistence client library");
 
+
+#if 0
+   printf("\n\n============================\n");
+   printf("      PCL benchmark\n");
+   printf("============================\n\n");
 
    clock_getres(CLOCK_ID, &clockRes);
    resolution = ((clockRes.tv_sec * SECONDS2NANO) + clockRes.tv_nsec);
    printf("Clock resolution  => %f ms\n\n", (double)((double)resolution/NANO2MIL));
 
 
-   clock_gettime(CLOCK_ID, &initStart);
-   ret = pclInitLibrary(appName , shutdownReg);
-   clock_gettime(CLOCK_ID, &initEnd);
-   duration = getNsDuration(&initStart, &initEnd);
-   printf("Init library  => %lld ns | %f ms\n", duration, (double)((double)duration/NANO2MIL));
+   init_benchmark(1000);
 
+
+   // init library
+   (void)pclInitLibrary(gAppName , shutdownReg);
 
    read_benchmark(numLoops);
 
@@ -368,16 +486,33 @@ int main(int argc, char *argv[])
    handle_benchmark(numLoops);
 
 
-#if 0
-   printf("\nPress a key to end test\n");
-   getchar();
+   // deinit library
+   pclDeinitLibrary();
+
+#else
+
+   toThread1 = 1;
+
+   ret = pthread_create(&thread1, NULL, do_something, &toThread1);
+   pthread_setschedprio(thread1, sched_get_priority_max(SCHED_OTHER));
+
+   toThread2 = 2;
+   ret = pthread_create(&thread2, NULL, do_something, &toThread2);
+   pthread_setschedprio(thread2, sched_get_priority_max(SCHED_OTHER));
+
+   toThread3 = 3;
+   ret = pthread_create(&thread3, NULL, do_something, &toThread3);
+   pthread_setschedprio(thread3, sched_get_priority_max(SCHED_OTHER));
+
+
+   // wait until the dbus mainloop has ended
+   pthread_join(thread1, (void**)&retval1);
+   // wait until the dbus mainloop has ended
+   pthread_join(thread2, (void**)&retval2);
+   // wait until the dbus mainloop has ended
+   pthread_join(thread3, (void**)&retval3);
 #endif
 
-   clock_gettime(CLOCK_ID, &initStart);
-   pclDeinitLibrary();
-   clock_gettime(CLOCK_ID, &initEnd);
-   duration = ((initEnd.tv_sec * SECONDS2NANO) + initEnd.tv_nsec) - ((initStart.tv_sec * SECONDS2NANO) + initStart.tv_nsec);
-   printf("\nDeinit library  => %lld ns | %f ms\n", duration, (double)((double)duration/NANO2MIL));
 
 
    // unregister debug log and trace
