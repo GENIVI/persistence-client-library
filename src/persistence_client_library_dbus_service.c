@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+
 pthread_cond_t  gDbusInitializedCond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t gDbusInitializedMtx  = PTHREAD_MUTEX_INITIALIZER;
 
@@ -37,7 +38,6 @@ pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
 
 
 pthread_mutex_t gDeliverpMtx         = PTHREAD_MUTEX_INITIALIZER;
-
 
 pthread_mutex_t gMainCondMtx         = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;

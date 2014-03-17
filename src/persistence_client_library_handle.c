@@ -68,7 +68,7 @@ int get_persistence_handle_idx()
          }
          else
          {
-            handle = -1;
+            handle = EPERS_MAXHANDLE;
             DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_persistence_handle_idx => Reached maximum of open handles: "), DLT_INT(MaxPersHandle));
          }
       }

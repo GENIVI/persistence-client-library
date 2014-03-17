@@ -52,7 +52,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    {
       gShutdownMode = shutdownMode;
 
-      DLT_REGISTER_CONTEXT(gDLTContext,"pers","Context for persistence client library logging");
+      DLT_REGISTER_CONTEXT(gDLTContext,"PCL","Context for persistence client library logging");
       DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
                            DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
 
