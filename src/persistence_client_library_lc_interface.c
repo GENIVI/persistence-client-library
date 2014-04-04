@@ -19,15 +19,15 @@
 
 #include "persistence_client_library_lc_interface.h"
 
-#include "../include_protected/persistence_client_library_data_organization.h"
-#include "../include_protected/persistence_client_library_db_access.h"
+#include "persistence_client_library_data_organization.h"
+#include "persistence_client_library_db_access.h"
 
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_prct_access.h"
-#include "persistence_client_library_itzam_errors.h"
+
 
 #include <errno.h>
 #include <stdio.h>
@@ -46,7 +46,7 @@ int check_lc_request(int request, int requestID)
       {
          if(-1 == deliverToMainloop_NM(CMD_LC_PREPARE_SHUTDOWN, request, requestID) )
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
             rval = NsmErrorStatus_Fail;
          }
          else
@@ -57,7 +57,7 @@ int check_lc_request(int request, int requestID)
       }
       default:
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => Unknown lifecycle message"), DLT_INT(request));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => Unknown lifecycle message"), DLT_INT(request));
          break;
       }
    }
@@ -84,12 +84,12 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
       if (reply == 0)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
       }
 
       dbus_message_unref(reply);
@@ -103,17 +103,17 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
    if (reply == 0)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &msgReturn, DBUS_TYPE_INVALID))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -128,6 +128,8 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
+   (void)user_data;
+
    if((0==strncmp("org.genivi.NodeStateManager.LifeCycleConsumer", dbus_message_get_interface(message), 46)))
    {
       if((0==strncmp("LifecycleRequest", dbus_message_get_member(message), 16)))
@@ -136,7 +138,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
       }
       else
       {
-          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("checkLifecycleMsg -> unknown message "), DLT_STRING(dbus_message_get_interface(message)));
+          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkLifecycleMsg -> unknown message "), DLT_STRING(dbus_message_get_interface(message)));
       }
    }
    return result;
@@ -156,9 +158,3 @@ int unregister_lifecycle(int shutdownMode)
    return deliverToMainloop(CMD_SEND_LC_REGISTER, 0, shutdownMode);
 }
 
-/*
-int send_prepare_shutdown_complete(int requestId, int status)
-{
-   return deliverToMainloop_NM(CMD_SEND_LC_REQUEST, status, requestId);
-}
-*/

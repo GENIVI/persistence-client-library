@@ -20,7 +20,8 @@
  */
 
 
-#include "../include_protected/persistence_client_library_rc_table.h"
+//#include "../include_protected/persistence_client_library_rc_table.h"
+#include <persComRct.h>
 
 /**
  * @brief Read the blacklist configuration file

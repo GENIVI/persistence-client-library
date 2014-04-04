@@ -21,7 +21,7 @@
 #include "persistence_client_library_lc_interface.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_cmd.h"
-#include "../include_protected/persistence_client_library_data_organization.h"
+#include "persistence_client_library_data_organization.h"
 
 
 #include <stdio.h>
@@ -88,13 +88,16 @@ int bContinue = 0;
 /* function to unregister ojbect path message handler */
 static void unregisterMessageHandler(DBusConnection *connection, void *user_data)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPath\n"));
+   (void)connection;
+   (void)user_data;
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPath\n"));
 }
 
 /* catches messages not directed to any registered object path ("garbage collector") */
 static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_HANDLED;
+   (void)user_data;
 
    // org.genivi.persistence.admin  S I G N A L
    if((0==strcmp("org.genivi.persistence.admin", dbus_message_get_interface(message))))
@@ -108,7 +111,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
          }
          else
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> unknown signal:"), DLT_STRING(dbus_message_get_interface(message)) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> unknown signal:"), DLT_STRING(dbus_message_get_interface(message)) );
          }
       }
    }
@@ -155,12 +158,12 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
 
                if (reply == 0)
                {
-                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => DBus No memory"), DLT_STRING(dbus_message_get_interface(message)) );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => DBus No memory"), DLT_STRING(dbus_message_get_interface(message)) );
                }
 
                if (!dbus_connection_send(connection, reply, 0))
                {
-                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => DBus No memory"), DLT_STRING(dbus_message_get_interface(message)) );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => DBus No memory"), DLT_STRING(dbus_message_get_interface(message)) );
                }
 
                result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;;
@@ -179,7 +182,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
                }
                else
                {
-                  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => gChangeNotifyCallback is not set (possibly NULL)") );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback => gChangeNotifyCallback is not set (possibly NULL)") );
                }
                result = DBUS_HANDLER_RESULT_HANDLED;
             }
@@ -215,12 +218,12 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
          }
          else
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> unknown property:"), DLT_STRING(dbus_message_get_interface(message)) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> unknown property:"), DLT_STRING(dbus_message_get_interface(message)) );
          }
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> not a signal:"), DLT_STRING(dbus_message_get_member(message)) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback -> not a signal:"), DLT_STRING(dbus_message_get_member(message)) );
       }
    }
    return result;
@@ -230,7 +233,9 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
 
 static void  unregisterObjectPathFallback(DBusConnection *connection, void *user_data)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPathFallback\n"));
+   (void)connection;
+   (void)user_data;
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPathFallback\n"));
 }
 
 
@@ -239,15 +244,15 @@ void* run_mainloop(void* dataPtr)
 {
    // persistence admin message
    static const struct DBusObjectPathVTable vtablePersAdmin
-      = {unregisterMessageHandler, checkPersAdminMsg, NULL, };
+      = {unregisterMessageHandler, checkPersAdminMsg, NULL, NULL, NULL, NULL};
 
    // lifecycle message
    static const struct DBusObjectPathVTable vtableLifecycle
-      = {unregisterMessageHandler, checkLifecycleMsg, NULL, };
+      = {unregisterMessageHandler, checkLifecycleMsg, NULL, NULL, NULL, NULL};
 
    // fallback
    static const struct DBusObjectPathVTable vtableFallback
-      = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, };
+      = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, NULL, NULL, NULL};
 
    // setup the dbus
    mainLoop(vtablePersAdmin, vtableLifecycle, vtableFallback, dataPtr);
@@ -273,7 +278,7 @@ int setup_dbus_mainloop(void)
    // Connect to the bus and check for errors
    if(pAddress != NULL)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("setup_dbus_mainloop -> Use specific dbus address:"), DLT_STRING(pAddress) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setup_dbus_mainloop -> Use specific dbus address:"), DLT_STRING(pAddress) );
 
       conn = dbus_connection_open_private(pAddress, &err);
 
@@ -281,7 +286,7 @@ int setup_dbus_mainloop(void)
       {
          if(!dbus_bus_register(conn, &err))
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_bus_register() Error :"), DLT_STRING(err.message) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_bus_register() Error :"), DLT_STRING(err.message) );
             dbus_error_free (&err);
             pthread_mutex_unlock(&gDbusInitializedMtx);
             return -1;
@@ -289,7 +294,7 @@ int setup_dbus_mainloop(void)
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open_private() Error :"), DLT_STRING(err.message) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open_private() Error :"), DLT_STRING(err.message) );
          dbus_error_free(&err);
          pthread_mutex_unlock(&gDbusInitializedMtx);
          return -1;
@@ -297,7 +302,7 @@ int setup_dbus_mainloop(void)
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("Use default dbus bus (DBUS_BUS_SYSTEM)"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Use default dbus bus (DBUS_BUS_SYSTEM)"));
 
       conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
@@ -306,7 +311,7 @@ int setup_dbus_mainloop(void)
    rval = pthread_create(&gMainLoopThread, NULL, run_mainloop, conn);
    if(rval)
    {
-     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
      pthread_mutex_unlock(&gDbusInitializedMtx);
      return -1;
    }
@@ -325,6 +330,7 @@ int setup_dbus_mainloop(void)
 static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 {
    dbus_bool_t result = FALSE;
+   (void)data;
 
    if (ARRAY_SIZE(gPollInfo.fds)>gPollInfo.nfds)
    {
@@ -362,7 +368,9 @@ static void removeWatch(DBusWatch *watch, void *data)
 {
    void* w_data = dbus_watch_get_data(watch);
 
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT( (int)watch) );
+   (void)data;
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT( (int)watch) );
 
    if(w_data)
       free(w_data);
@@ -374,7 +382,8 @@ static void removeWatch(DBusWatch *watch, void *data)
 
 static void watchToggled(DBusWatch *watch, void *data)
 {
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT( (int)watch) );
+   (void)data;
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT( (int)watch) );
 
    if(dbus_watch_get_enabled(watch))
       addWatch(watch, data);
@@ -386,6 +395,7 @@ static void watchToggled(DBusWatch *watch, void *data)
 
 static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
 {
+   (void)data;
    dbus_bool_t ret = FALSE;
 
    if (ARRAY_SIZE(gPollInfo.fds)>gPollInfo.nfds)
@@ -409,18 +419,18 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
             }
             else
             {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => timerfd_settime() failed"), DLT_STRING(strerror(errno)) );
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => timerfd_settime() failed"), DLT_STRING(strerror(errno)) );
             }
          }
          else
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => timerfd_create() failed"), DLT_STRING(strerror(errno)) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => timerfd_create() failed"), DLT_STRING(strerror(errno)) );
          }
       }
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => cannot create another fd to be poll()'ed"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => cannot create another fd to be poll()'ed"));
    }
 
    return ret;
@@ -430,15 +440,16 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
 
 static void removeTimeout(DBusTimeout *timeout, void *data)
 {
-
    int i = gPollInfo.nfds;
+   (void)data;
+
    while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
 
    if (0<i)
    {
       if (-1==close(gPollInfo.fds[i].fd))
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("removeTimeout => close() timerfd"), DLT_STRING(strerror(errno)) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("removeTimeout => close() timerfd"), DLT_STRING(strerror(errno)) );
       }
 
       --gPollInfo.nfds;
@@ -460,15 +471,17 @@ static void removeTimeout(DBusTimeout *timeout, void *data)
 static void timeoutToggled(DBusTimeout *timeout, void *data)
 {
    int i = gPollInfo.nfds;
+   (void)data;
+
    while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
-   DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("timeoutToggled") );
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("timeoutToggled") );
    if (0<i)
    {
       const int interval = (TRUE==dbus_timeout_get_enabled(timeout))?dbus_timeout_get_interval(timeout):0;
       const struct itimerspec its = { .it_value= {interval/1000, interval%1000} };
       if (-1!=timerfd_settime(gPollInfo.fds[i].fd, 0, &its, NULL))
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("timeoutToggled => timerfd_settime()"), DLT_STRING(strerror(errno)) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("timeoutToggled => timerfd_settime()"), DLT_STRING(strerror(errno)) );
       }
    }
 }
@@ -487,7 +500,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
    if (dbus_error_is_set(&err))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => Connection Error:"), DLT_STRING(err.message) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => Connection Error:"), DLT_STRING(err.message) );
       dbus_error_free(&err);
    }
    else if (NULL != conn)
@@ -495,7 +508,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
       dbus_connection_set_exit_on_disconnect(conn, FALSE);
       if (-1 == (gEfds = eventfd(0, 0)))
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => eventfd() failed w/ errno:"), DLT_INT(errno) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => eventfd() failed w/ errno:"), DLT_INT(errno) );
       }
       else
       {
@@ -518,7 +531,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             if(   (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
                || (TRUE!=dbus_connection_set_timeout_functions(conn, addTimeout, removeTimeout, timeoutToggled, NULL, NULL)) )
             {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => dbus_connection_set_watch_functions() failed"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => dbus_connection_set_watch_functions() failed"));
             }
             else
             {
@@ -534,7 +547,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
                   if (0>ret)
                   {
-                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => poll() failed w/ errno "), DLT_INT(errno) );
+                     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => poll() failed w/ errno "), DLT_INT(errno) );
                   }
                   else if (0==ret)
                   {
@@ -555,13 +568,13 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               unsigned long long nExpCount = 0;
                               if ((ssize_t)sizeof(nExpCount)!=read(gPollInfo.fds[i].fd, &nExpCount, sizeof(nExpCount)))
                               {
-                                 DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read failed"));
+                                 DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read failed"));
                               }
-                              DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => timeout"));
+                              DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => timeout"));
 
                               if (FALSE==dbus_timeout_handle(gPollInfo.objects[i].timeout))
                               {
-                                 DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => dbus_timeout_handle() failed!?"));
+                                 DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => dbus_timeout_handle() failed!?"));
                               }
                               bContinue = TRUE;
                            }
@@ -575,7 +588,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  while ((-1==(ret = read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR == errno));
                                  if(ret < 0)
                                  {
-                                    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
+                                    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
                                  }
                                  else
                                  {
@@ -617,7 +630,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                        */
                                        // ******************************************************
                                        default:
-                                          DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
+                                          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
                                           break;
                                     }
                                     pthread_cond_signal(&gMainLoopCond);
@@ -702,7 +715,7 @@ int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int par
 
    if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
    {
-     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
      rval = -1;
    }
 

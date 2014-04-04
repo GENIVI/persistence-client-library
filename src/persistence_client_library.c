@@ -25,20 +25,20 @@
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library.h"
 #include "persistence_client_library_backup_filelist.h"
-#include "../include_protected/persistence_client_library_db_access.h"
+#include "persistence_client_library_db_access.h"
+
+#if USE_FILECACHE
+   #include <persistence_file_cache.h>
+#endif
 
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <dlfcn.h>
-
-#include <dlt/dlt.h>
-#include <dlt/dlt_common.h>
-
 #include <dbus/dbus.h>
 
 /// debug log and trace (DLT) setup
-DLT_DECLARE_CONTEXT(gDLTContext);
+DLT_DECLARE_CONTEXT(gPclDLTContext);
 
 static int gShutdownMode = 0;
 
@@ -52,8 +52,8 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    {
       gShutdownMode = shutdownMode;
 
-      DLT_REGISTER_CONTEXT(gDLTContext,"PCL","Context for persistence client library logging");
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
+      DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
                            DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
 
       /// environment variable for on demand loading of custom libraries
@@ -63,12 +63,20 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       /// blacklist path environment variable
       const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
 
+#if USE_FILECACHE
+   printf("* * * * * * Using the filecache!  * * * * * * * * *\n");
+
+   pfcInitCache(appName);
+#else
+   printf("* * * * * * N O T  using the filecache! * * * * * *\n");
+#endif
+
 #if USE_PASINTERFACE == 1
       //printf("* ADMIN INTERFACE is  - e n a b l e d - \n");
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
 #else
       //printf("* ADMIN INTERFACE is  - d i s a b l e d - enable with \"./configure --enable-pasinterface\"\n");
-      DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 
 
@@ -86,12 +94,12 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       if(readBlacklistConfigFile(pBlacklistPath) == -1)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(pBlacklistPath));
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(pBlacklistPath));
       }
 
       if(setup_dbus_mainloop() == -1)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_DBUS_MAINLOOP;
       }
@@ -102,7 +110,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          // register for lifecycle and persistence admin service dbus messages
          if(register_lifecycle(shutdownMode) == -1)
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
             pthread_mutex_unlock(&gDbusPendingRegMtx);
             return EPERS_REGISTER_LIFECYCLE;
          }
@@ -110,7 +118,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 #if USE_PASINTERFACE == 1
       if(register_pers_admin_service() == -1)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_REGISTER_ADMIN;
       }
@@ -136,19 +144,19 @@ int pclInitLibrary(const char* appName, int shutdownMode)
                   {
                      if( (gPersCustomFuncs[i].custom_plugin_init) != NULL)
                      {
-                        DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => Loaded plugin: "),
+                        DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => Loaded plugin: "),
                                                            DLT_STRING(get_custom_client_lib_name(i)));
                         gPersCustomFuncs[i].custom_plugin_init();
                      }
                      else
                      {
-                        DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin functions: "),
+                        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin functions: "),
                                                             DLT_STRING(get_custom_client_lib_name(i)));
                      }
                   }
                   else
                   {
-                     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin: "),
+                     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin: "),
                                           DLT_STRING(get_custom_client_lib_name(i)));
                   }
                }
@@ -161,7 +169,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
       }
 
       // assign application name
@@ -173,7 +181,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    else if(gPclInitialized >= PCLinitialized)
    {
       gPclInitialized++; // increment init counter
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitialized) );
    }
    return rval;
@@ -188,7 +196,7 @@ int pclDeinitLibrary(void)
    if(gPclInitialized == PCLinitialized)
    {
       int* retval;
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle and persistence admin service dbus messages
@@ -217,7 +225,7 @@ int pclDeinitLibrary(void)
       pers_rct_close_all();
 
       // close opend database
-      pers_db_close_all();
+      database_close_all();
 
       // close persistence handles
       close_all_persistence_handle();
@@ -236,11 +244,11 @@ int pclDeinitLibrary(void)
 
       gPclInitialized = PCLnotInitialized;
 
-      DLT_UNREGISTER_CONTEXT(gDLTContext);
+      DLT_UNREGISTER_CONTEXT(gPclDLTContext);
    }
    else if(gPclInitialized > PCLinitialized)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
                                            DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitialized));
       gPclInitialized--;   // decrement init counter
    }

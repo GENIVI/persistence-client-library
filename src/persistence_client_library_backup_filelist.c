@@ -19,18 +19,15 @@
 #include "persistence_client_library_backup_filelist.h"
 #include "persistence_client_library_handle.h"
 #include "rbtree.h"
-#include "../include_protected/crc32.h"
-#include "../include_protected/persistence_client_library_data_organization.h"
+
+#include "crc32.h"
+#include "persistence_client_library_data_organization.h"
 
 
-#include <fcntl.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/sendfile.h>
 
 
@@ -176,14 +173,14 @@ int readBlacklistConfigFile(const char* filename)
 	   fd = open(filename, O_RDONLY);
 	   if (fd == -1)
 	   {
-		  DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+		  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
 		  return -1;
 	   }
 
 	   // check for empty file
 	   if(gConfigFileSize == 0)
 	   {
-		  DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
+		  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
 		  close(fd);
 		  return -1;
 	   }
@@ -195,7 +192,7 @@ int readBlacklistConfigFile(const char* filename)
 	   {
 		  gpConfigFileMap = 0;
 		  close(fd);
-		  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+		  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
 
 		  return -1;
 	   }
@@ -245,7 +242,7 @@ int need_backup_key(unsigned int key)
 	     free(item);
 
       rval = -1;
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("need_backup_key ==> item or gRb_tree_bl is NULL"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("need_backup_key ==> item or gRb_tree_bl is NULL"));
    }
 
    return rval;
@@ -376,7 +373,7 @@ int pclCreateFile(const char* path)
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateFile ==> no valid path to create: "), DLT_STRING(path) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateFile ==> no valid path to create: "), DLT_STRING(path) );
    }
 
    return handle;
@@ -402,7 +399,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    if( (backupAvail == 0) && (csumAvail == 0) )
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is a backup file AND a checksum"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is a backup file AND a checksum"));
       // calculate checksum form backup file
       fdBackup = open(backupPath,  O_RDONLY);
       if(fdBackup != -1)
@@ -461,7 +458,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(csumAvail == 0)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a checksum file"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a checksum file"));
 
       fdCsum = open(csumPath,  O_RDONLY);
       if(fdCsum != -1)
@@ -469,7 +466,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
          readSize = read(fdCsum, csumBuf, ChecksumBufSize);
          if(readSize <= 0)
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclVerifyConsistency => read checksum: invalid readSize"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclVerifyConsistency => read checksum: invalid readSize"));
          }
          close(fdCsum);
 
@@ -503,7 +500,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(backupAvail == 0)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a backup file"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is ONLY a backup file"));
 
       // calculate checksum form backup file
       fdBackup = open(backupPath,  O_RDONLY);
@@ -564,7 +561,7 @@ int pclRecoverFromBackup(int backupFd, const char* original)
       // copy data from one file to another
       if((handle = pclBackupDoFileCopy(backupFd, handle)) == -1)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclRecoverFromBackup => couldn't write whole buffer"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclRecoverFromBackup => couldn't write whole buffer"));
       }
    }
 
@@ -595,13 +592,13 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       int csumSize = strlen(csumBuf);
       if(write(csfd, csumBuf, csumSize) != csumSize)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to write checksum to file"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to write checksum to file"));
       }
       close(csfd);
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to create checksum file:"), DLT_STRING(strerror(errno)) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to create checksum file:"), DLT_STRING(strerror(errno)) );
    }
 
    // create backup file, user and group has read/write permission, others have read permission
@@ -615,12 +612,12 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       // copy data from one file to another
       if((readSize = pclBackupDoFileCopy(srcfd, dstFd)) == -1)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error copying file"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error copying file"));
       }
 
       if(close(dstFd) == -1)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error closing fd"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pcl_create_backup => error closing fd"));
       }
 
       // set back to the position
@@ -628,7 +625,7 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to open backup file"),
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclCreateBackup => failed to open backup file"),
                                           DLT_STRING(dstPath), DLT_STRING(strerror(errno)));
    }
 

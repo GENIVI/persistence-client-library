@@ -18,17 +18,34 @@
  */
 
 
-#include "persistence_client_library_prct_access.h"
-#include "persistence_client_library_itzam_errors.h"
-#include "../include_protected/persistence_client_library_db_access.h"
-#include <stdlib.h>
 
+#include "persistence_client_library_prct_access.h"
+#include "persistence_client_library_db_access.h"
+#include <stdlib.h>
+#include <string.h>
+
+#include <persComRct.h>
+#include <persComDbAccess.h>
+#include <persComErrors.h>
 
 
 /// pointer to resource table database
-itzam_btree gResource_table[PrctDbTableSize] = {{0}};
+int gResource_table[PrctDbTableSize] = {-1};
 /// array to hold the information of database is already open
 int gResourceOpen[PrctDbTableSize] = {0};
+
+
+/// persistence resource config table type definition
+typedef enum _PersistenceRCT_e
+{
+   PersistenceRCT_local         = 0,
+   PersistenceRCT_shared_public = 1,
+   PersistenceRCT_shared_group  = 2,
+
+   PersistenceRCT_LastEntry                // last Entry
+
+} PersistenceRCT_e;
+
 
 
 PersistenceRCT_e get_table_id(int ldbid, int* groupId)
@@ -55,32 +72,27 @@ PersistenceRCT_e get_table_id(int ldbid, int* groupId)
    {
       // L O C A L   database
       *groupId = 0;      // no group ID for local data
-      rctType = PersistenceStorage_local;   // we have a local database
+      rctType = PersistenceRCT_local;   // we have a local database
    }
    return rctType;
 }
 
 
-itzam_btree* get_resource_cfg_table_by_idx(int i)
+int get_resource_cfg_table_by_idx(int i)
 {
-   return &gResource_table[i];
+   return gResource_table[i];
 }
 
-int get_resource_cfg_table_status(int i)
-{
-   return gResourceOpen[i];
-}
 
 void invalidate_resource_cfg_table(int i)
 {
-   gResourceOpen[i] = 0;
+   gResource_table[i] = -1;
 }
 
 // status: OK
-itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
+int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
    int arrayIdx = 0;
-   itzam_btree* tree = NULL;
 
    // create array index: index is a combination of resource config table type and group
    arrayIdx = rct + group;
@@ -89,7 +101,6 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
    {
       if(gResourceOpen[arrayIdx] == 0)   // check if database is already open
       {
-         itzam_state  state;
          char filename[DbPathMaxLen] = {0};
 
          switch(rct)    // create db name
@@ -104,30 +115,24 @@ itzam_btree* get_resource_cfg_table(PersistenceRCT_e rct, int group)
             snprintf(filename, DbPathMaxLen, gSharedWtPathKey, gAppId, group, gResTableCfg);
             break;
          default:
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - error: no valid PersistenceRCT_e"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - error: no valid PersistenceRCT_e"));
             break;
          }
 
-         state = itzam_btree_open(&gResource_table[arrayIdx], filename, itzam_comparator_string, error_handler, 0 , 0);
-         if(state != ITZAM_OKAY)
+
+         gResource_table[arrayIdx] = persComRctOpen(filename, 0x00) ;
+         if(gResource_table[arrayIdx] < 0)
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table => itzam_btree_open => Itzam problem"), DLT_STRING(STATE_MESSAGES[state]) );
-            tree = NULL;
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table => RCT problem"));
          }
          else
          {
-            gResourceOpen[arrayIdx] = 1;  // remember the index has an DB entry
-            tree = &gResource_table[arrayIdx];
+             gResourceOpen[arrayIdx] = 1 ;
          }
       }
-      else
-      {
-         tree = &gResource_table[arrayIdx];
-      }
-
    }
 
-   return tree;
+   return gResource_table[arrayIdx];
 }
 
 
@@ -141,28 +146,20 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
    rct = get_table_id(dbContext->context.ldbid, &groupId);
 
    // get resource configuration table
-   itzam_btree* resource_table = get_resource_cfg_table(rct, groupId);
+   int handleRCT = get_resource_cfg_table(rct, groupId);
 
-   if(resource_table != NULL)
+   if(handleRCT >= 0)
    {
-      PersistenceRctEntry_s search;
+      PersistenceConfigurationKey_s sRctEntry ;
+
       // check if resouce id is in write through table
-      if(itzam_true == itzam_btree_find(resource_table, resource_id, &search))
+      int iErrCode = persComRctRead(handleRCT, resource_id, &sRctEntry) ;
+      
+      if(sizeof(PersistenceConfigurationKey_s) == iErrCode)
       {
-         memset(dbContext->configKey.reponsible,  0, MaxConfKeyLengthResp);
-         memset(dbContext->configKey.custom_name, 0, MaxConfKeyLengthCusName);
-         memset(dbContext->configKey.customID,    0,  MaxRctLengthCustom_ID);
-
-         dbContext->configKey.policy      = search.data.policy;
-         dbContext->configKey.storage     = search.data.storage;
-         dbContext->configKey.permission  = search.data.permission;
-         dbContext->configKey.max_size    = search.data.max_size;
-         dbContext->configKey.type        = search.data.type;
-         memcpy(dbContext->configKey.reponsible, search.data.reponsible, MaxConfKeyLengthResp);
-         memcpy(dbContext->configKey.custom_name, search.data.custom_name, MaxConfKeyLengthCusName);
-         memcpy(dbContext->configKey.customID, search.data.customID, MaxRctLengthCustom_ID);
-
-         if(dbContext->configKey.storage != PersistenceStorage_custom )
+         //printf("get_db_context ==> data: %s\n", search.data);
+    	   memcpy(&dbContext->configKey, &sRctEntry, sizeof(dbContext->configKey)) ;
+         if(sRctEntry.storage != PersistenceStorage_custom )
          {
             rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
          }
@@ -170,18 +167,21 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          {
             // if customer storage, we use the custom name as dbPath
             strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
+
+            // and resource_id as dbKey
+            strncpy(dbKey, resource_id, strlen(resource_id));
          }
          resourceFound = 1;
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_WARN, DLT_STRING("get_db_context => itzam_btree_open => resource_table: no value for key:"), DLT_STRING(resource_id) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("get_db_context => persComRctRead => resource_table: no value for key:"), DLT_STRING(resource_id) );
          rval = EPERS_NOKEYDATA;
       }
    }  // resource table
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context =>error resource table"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context =>error resource table"));
       rval = EPERS_NOPRCTABLE;
    }
 
@@ -207,7 +207,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
 
-      DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => create resource not in PRCT => key:"), DLT_STRING(resource_id) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => create resource not in PRCT => key:"), DLT_STRING(resource_id) );
 
       // send create notification
       rval = pers_send_Notification_Signal(dbKey, &dbContext->context, pclNotifyStatus_created);
@@ -292,7 +292,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid);
+               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, "");
             else
                snprintf(dbPath, DbPathMaxLen, gSharedCachePathKey, gAppId, dbContext->context.ldbid, dbKey);
          }
@@ -313,14 +313,14 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, "");
             else
                snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePathKey, gAppId, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId);
+               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, "");
             else
                snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, dbKey);
          }
@@ -331,20 +331,19 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
    else
    {
       // L O C A L   database
-
       if(PersistencePolicy_wc == dbContext->configKey.policy)
       {
          if(dbContext->configKey.type == PersistenceResourceType_key)
-            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId);
+            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, "");
          else
             snprintf(dbPath, DbPathMaxLen, gLocalCachePathKey, gAppId, dbKey);
       }
       else if(PersistencePolicy_wt == dbContext->configKey.policy)
       {
          if(dbContext->configKey.type == PersistenceResourceType_key)
-            snprintf(dbPath, DbPathMaxLen, gLocalWtPath, gAppId);
+            snprintf(dbPath, DbPathMaxLen-1, gLocalWtPath, gAppId, "");
          else
-            snprintf(dbPath, DbPathMaxLen, gLocalWtPathKey, gAppId, dbKey);
+            snprintf(dbPath, DbPathMaxLen-1, gLocalWtPathKey, gAppId, dbKey);
       }
 
       storePolicy = PersistenceStorage_local;   // we have a local database
@@ -352,6 +351,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
 
    //printf("get_db_path_and_key - dbKey  : [key ]: %s \n",  dbKey);
    //printf("get_db_path_and_key - dbPath : [path]: %s\n", dbPath);
+
    return storePolicy;
 }
 

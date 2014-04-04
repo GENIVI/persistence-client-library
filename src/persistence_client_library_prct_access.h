@@ -20,10 +20,8 @@
  * @see
  */
 
-#include "../include_protected/persistence_client_library_data_organization.h"
-#include "../include_protected/persistence_client_library_rc_table.h"
+#include "persistence_client_library_data_organization.h"
 
-#include <itzam.h>
 
 /**
  * @brief Create database search key and database location path
@@ -44,7 +42,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
 
 
 /**
- * Create database search key and database location path
+ * @brief Create database search key and database location path
  *
  * @param dbContext the database context
  * @param resource_id the resource id
@@ -62,24 +60,16 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
 
 /**
- * @brief get the resource configuration table database by id
+ * @brief get the resource configuration table gvbd database by id
  *
- * @param i the index
- *
- * @return pointer to the database table or NULL if no valid database has been found
+ * @return Handle to the gvdb database table or negative value if no valid database has been found
  */
-itzam_btree* get_resource_cfg_table_by_idx(int i);
-
-
+int get_resource_cfg_table_by_idx(int i);
 
 /**
- * @brief get the resource configuration table status
- *
- * @param i the index
- *
- * @return status of database, 1 is db is opened and 0 is closed
+ * Global array for the storage of pointers to resource table databases
  */
-inline int get_resource_cfg_table_status(int i);
+extern int gResource_table[PrctDbTableSize];
 
 
 
@@ -88,7 +78,7 @@ inline int get_resource_cfg_table_status(int i);
  *
  * @param i the index
  */
-inline void invalidate_resource_cfg_table(int i);
+void invalidate_resource_cfg_table(int i);
 
 
 

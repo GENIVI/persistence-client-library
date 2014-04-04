@@ -18,15 +18,15 @@
  */
 
 #include "persistence_client_library_key.h"
-
-#include "../include_protected/persistence_client_library_db_access.h"
-#include "../include_protected/persistence_client_library_rc_table.h"
-#include "../include_protected/crc32.h"
-
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
-#include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_custom_loader.h"
+#include "persistence_client_library_prct_access.h"
+#include "persistence_client_library_db_access.h"
+#include "crc32.h"
+
+#include <persComRct.h>
+
 
 
 // function declaration
@@ -90,18 +90,18 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
                strncpy(gKeyHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
                strncpy(gKeyHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
                gKeyHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-               gKeyHandleArray[handle].dbKey[ DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+               gKeyHandleArray[handle].dbKey[ DbKeyMaxLen-1] = '\0'; // Ensures 0-Termination
                gKeyHandleArray[handle].info = dbContext;
             }
             else
             {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
             }
          }
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - no database context or resource is not a key "));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - no database context or resource is not a key "));
       }
    }
 
@@ -184,7 +184,7 @@ int pclKeyHandleGetSize(int key_handle)
          }
          else
          {
-            size = pers_db_get_key_size(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+            size = persistence_get_data_size(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
                                              &gKeyHandleArray[key_handle].info);
          }
       }
@@ -225,7 +225,7 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
          }
          else
          {
-            size = pers_db_read_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+	         size = persistence_get_data(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
                                         &gKeyHandleArray[key_handle].info, buffer, buffer_size);
          }
       }
@@ -315,7 +315,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
                            if(rval <= 0)
                            {
-                              DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - failed to send notification"));
+                              DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - failed to send notification"));
                               size = rval;
                            }
                         }
@@ -327,7 +327,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
                   }
                   else
                   {
-                     size = pers_db_write_key(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
+                     size = persistence_set_data(gKeyHandleArray[key_handle].dbPath, gKeyHandleArray[key_handle].dbKey,
                                               &gKeyHandleArray[key_handle].info, buffer, buffer_size);
                   }
                }
@@ -344,7 +344,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          }
          else
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
             size = EPERS_MAX_BUFF_SIZE;
          }
       }
@@ -394,7 +394,7 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry
               && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
            {
-              rval = pers_db_delete_key(dbPath, dbKey, &dbContext);
+	           rval = persistence_delete_data(dbPath, dbKey, &dbContext);
            }
            else
            {
@@ -439,7 +439,7 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
          if(   dbContext.configKey.storage < PersistenceStorage_LastEntry
             && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
          {
-            data_size = pers_db_get_key_size(dbPath, dbKey, &dbContext);
+            data_size = persistence_get_data_size(dbPath, dbKey, &dbContext);
          }
          else
          {
@@ -487,7 +487,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
             if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry
                && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
             {
-                  data_size = pers_db_read_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
+                  data_size = persistence_get_data(dbPath, dbKey, &dbContext, buffer, buffer_size);
             }
             else
             {
@@ -496,7 +496,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          }
          else
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - error - no database context or resource is not a key"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - error - no database context or resource is not a key"));
          }
       }
       else
@@ -548,7 +548,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                   if(   dbContext.configKey.storage <  PersistenceStorage_LastEntry
                      && dbContext.configKey.storage >= PersistenceStorage_local)   // check if store policy is valid
                   {
-                     data_size = pers_db_write_key(dbPath, dbKey, &dbContext, buffer, buffer_size);
+                     data_size = persistence_set_data(dbPath, dbKey, &dbContext, buffer, buffer_size);
                   }
                   else
                   {
@@ -562,13 +562,13 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             }
             else
             {
-               DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - error - no database context or resource is not a key"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - error - no database context or resource is not a key"));
             }
          }
          else
          {
             data_size = EPERS_BUFLIMIT;
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
          }
       }
       else
@@ -576,7 +576,6 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
          data_size = EPERS_LOCKFS;
       }
    }
-
    return data_size;
 }
 
@@ -631,7 +630,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: error - resource is not a shared resource or resource is not a key"));
          rval = EPERS_NOTIFY_NOT_ALLOWED;
       }
    }

@@ -22,6 +22,7 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 
 /// handle index
 static int gHandleIdx = 1;
@@ -69,7 +70,7 @@ int get_persistence_handle_idx()
          else
          {
             handle = EPERS_MAXHANDLE;
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("get_persistence_handle_idx => Reached maximum of open handles: "), DLT_INT(MaxPersHandle));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_persistence_handle_idx => Reached maximum of open handles: "), DLT_INT(MaxPersHandle));
          }
       }
       pthread_mutex_unlock(&gMtx);
@@ -99,9 +100,10 @@ void close_all_persistence_handle()
    if(pthread_mutex_lock(&gMtx) == 0)
    {
       // "free" all handles
-      memset(gFreeHandleArray, 0, MaxPersHandle);
-      memset(gOpenFdArray, 0, MaxPersHandle);
-      memset(gOpenFdArray, 0, MaxPersHandle);
+      memset(gFreeHandleArray, 0, sizeof(gFreeHandleArray));
+      memset(gOpenHandleArray, 0, sizeof(gOpenHandleArray));
+      memset(gOpenFdArray,     0, sizeof(gOpenFdArray));
+
 
       // reset variables
       gHandleIdx = 1;

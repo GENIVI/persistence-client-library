@@ -8,8 +8,8 @@ datadir=@datadir@
 Name: persistence client library
 Description: persistence client library 
 Version: @VERSION@
-Requires: automotive-dlt
-Requires.private: libitzam dbus-1
+Requires: automotive-dlt libperscommon
+Requires.private: dbus-1
 Libs: -L${libdir} -lpersistence_client_library -lrt -ldl
-Libs.private: -lpersistence_client_library_common_data -ldbus
+Libs.private: -ldbus
 Cflags: -I${includedir}

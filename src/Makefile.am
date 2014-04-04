@@ -15,18 +15,10 @@ include_HEADERS = ../include/persistence_client_library_key.h \
                   ../include/persistence_client_library.h \
                   ../include/persistence_client_library_error_def.h \
                   ../include/persistence_client_custom.h
-                  
 
-lib_LTLIBRARIES = libpersistence_client_library_common_data.la libpersistence_client_library.la 
+lib_LTLIBRARIES = libpersistence_client_library.la 
 
-
-
-libpersistence_client_library_common_data_la_SOURCES = \
-                                     persistence_client_library_data_organization.c
-
-
-
-libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) -ldl -lpersistence_client_library_common_data
+libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) $(PFC_LIBS) -ldl -lpers_common
 
 libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library.c \
@@ -39,7 +31,7 @@ libpersistence_client_library_la_SOURCES = \
                                      persistence_client_library_dbus_service.c \
                                      persistence_client_library_custom_loader.c \
                                      persistence_client_library_prct_access.c \
-                                     persistence_client_library_itzam_errors.c \
+                                     persistence_client_library_data_organization.c \
                                      persistence_client_library_backup_filelist.c \
                                      persistence_client_library_dbus_cmd.c \
                                      crc32.c \

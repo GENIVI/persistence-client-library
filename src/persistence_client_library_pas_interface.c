@@ -20,10 +20,11 @@
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
 
-#include "../include_protected/persistence_client_library_data_organization.h"
+#include "persistence_client_library_data_organization.h"
 
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 /// flag if access is locked
 static int gLockAccess = 0;
@@ -31,6 +32,7 @@ static int gLockAccess = 0;
 
 int pers_data_sync(void)
 {
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PCL: pers_data_sync()"));
    sync();
    return 1;
 }
@@ -58,9 +60,10 @@ int check_pas_request(unsigned int request, unsigned int requestID)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PCL: check_pas_request; case PasMsg_Block o. PasMsg_WriteBack"));
          if(-1 == deliverToMainloop_NM(CMD_PAS_BLOCK_AND_WRITE_BACK, request, requestID))
          {
-            DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
             rval = PasErrorStatus_FAIL;
          }
          else
@@ -71,6 +74,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
       }
       case PasMsg_Unblock:
       {
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PCL: check_pas_request; case PasMsg_Unblock"));
          pers_unlock_access();
          rval = PasErrorStatus_OK;
          break;
@@ -106,12 +110,12 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
       if(reply == 0)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
       }
 
       dbus_message_unref(reply);
@@ -125,17 +129,17 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
    if (reply == 0)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorReturn, DBUS_TYPE_INVALID))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest => DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -161,12 +165,12 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 
       if(reply == 0)
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
       }
 
       dbus_message_unref(reply);
@@ -178,17 +182,17 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 
    if (reply == 0)
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange => DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -202,6 +206,8 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
+   (void)user_data;
+
    if((0==strcmp("org.genivi.persistence.adminconsumer", dbus_message_get_interface(message))))
    {
       if((0==strcmp("PersistenceAdminRequest", dbus_message_get_member(message))))
@@ -210,12 +216,12 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
       }
       else
       {
-         DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg => unknown message"), DLT_STRING(dbus_message_get_member(message)));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg => unknown message"), DLT_STRING(dbus_message_get_member(message)));
       }
    }
    else
    {
-      DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg => unknown message"), DLT_STRING(dbus_message_get_interface(message)));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg => unknown message"), DLT_STRING(dbus_message_get_interface(message)));
    }
    return result;
 }
@@ -229,7 +235,7 @@ int register_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(CMD_SEND_PAS_REGISTER, 1,  (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock)))
    {
-    DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("register_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
+    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("register_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
     rval = -1;
    }
    else
@@ -248,7 +254,7 @@ int unregister_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(CMD_SEND_PAS_REGISTER, 0,  (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock)))
    {
-     DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
      rval = -1;
    }
    else
@@ -258,4 +264,5 @@ int unregister_pers_admin_service(void)
    }
    return rval;
 }
+
 

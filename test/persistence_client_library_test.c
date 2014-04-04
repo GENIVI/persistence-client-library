@@ -10,7 +10,6 @@
 ******************************************************************************/
  /**
  * @file           persistence_client_library_test.c
- * @ingroup        Persistence client library test
  * @author         Ingo Huerner
  * @brief          Test of persistence client library
  * @see            
@@ -34,16 +33,14 @@
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_key.h"
 #include "../include/persistence_client_library.h"
+#include "../include/persistence_client_library_error_def.h"
 
-
-// protected header, should be used only be persistence components
-// included here for testing purpose
-#include "../include_protected/persistence_client_library_db_access.h"
 
 
 #define BUF_SIZE     64
 #define NUM_OF_FILES 3
 #define READ_SIZE    1024
+#define MaxAppNameLen 256
 
 /// application id
 char gTheAppId[MaxAppNameLen] = {0};
@@ -117,6 +114,9 @@ START_TEST(test_GetData)
     *       ==> local USER value (user 3, seat 2)
     */
    ret = pclKeyReadData(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);
+   printf("Ist:  %s\n", buffer);
+   printf("Soll: %s\n", "WT_ /var/opt/user_manual_climateControl.pdf");
+
    x_fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
@@ -310,9 +310,11 @@ START_TEST(test_SetData)
     *       ==> local USER value (user 1, seat 2)
     * Resource ID: 69
     */
-
+   printf("function: %s ==> line: %d\n", __FUNCTION__, __LINE__);
    ret = pclKeyWriteData(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+   printf("function: %s ==> line: %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
+   printf("function: %s ==> line: %d\n", __FUNCTION__, __LINE__);
 #if 1
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
    /**
@@ -376,6 +378,8 @@ START_TEST(test_SetData)
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(0xFF, "69", 1, 2, buffer, READ_SIZE);
+   printf("Verify ist  : %s \n", buffer);
+   printf("Verify soll : %s \n", sysTimeBuffer);
    x_fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
    x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
 
@@ -482,6 +486,7 @@ START_TEST(test_GetDataSize)
     *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
     */
    size = pclKeyGetSize(0x84, "links/last_link", 2, 1);
+   printf("=>=>=>=> soll: %d | ist: %d\n", strlen("CACHE_ /last_exit/queens"), size);
    x_fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 #endif
    pclDeinitLibrary();
@@ -595,37 +600,55 @@ START_TEST(test_DataFile)
    x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
 
    size = pclFileGetSize(fd);
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
+   printf("Soll: 68 | Ist: %d\n", size);
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(size == 68, "Wrong file size");
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
 
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    size = pclFileReadData(fd, buffer, READ_SIZE);
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
-
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
 
    ret = pclFileClose(fd);
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == 0, "Failed to close file");
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
 
    // open ------------------------------------------------------------
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    fd = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
 
    size = pclFileWriteData(fd, writeBuffer, strlen(writeBuffer));
    x_fail_unless(size == strlen(writeBuffer), "Failed to write data");
-
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    ret = pclFileClose(fd);
+   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == 0, "Failed to close file");
 
-
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    // remove ----------------------------------------------------------
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    ret = pclFileRemove(0xFF, "media/mediaDBWrite.db", 1, 1);
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
 
    fd = open("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db",O_RDWR);
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(fd == -1, "Failed to remove file, file still exists");
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    close(fd);
-
+   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
 
    // map file --------------------------------------------------------
+
    fd = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
 
    size = pclFileGetSize(fd);
@@ -864,6 +887,7 @@ END_TEST
 
 
 
+#if 0
 /**
  * Test for  i n t e r n a l  structures.
  * Test the cursor functions.
@@ -936,6 +960,7 @@ START_TEST(test_Cursor)
    pclDeinitLibrary();
 }
 END_TEST
+#endif
 
 
 
@@ -1231,9 +1256,6 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
    tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
 
-   TCase * tc_Cursor = tcase_create("Cursor");
-   tcase_add_test(tc_Cursor, test_Cursor);
-
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
 
@@ -1265,7 +1287,6 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_persDataHandleOpen);
    suite_add_tcase(s, tc_persDataFile);
    suite_add_tcase(s, tc_persDataFileRecovery);
-   suite_add_tcase(s, tc_Cursor);
    suite_add_tcase(s, tc_ReadDefault);
    suite_add_tcase(s, tc_ReadConfDefault);
    suite_add_tcase(s, tc_GetPath);
@@ -1274,6 +1295,7 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_FileOpenCreate);
 
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
+
    return s;
 }
 
@@ -1292,7 +1314,7 @@ int main(int argc, char *argv[])
    gTheAppId[MaxAppNameLen-1] = '\0';
 
    /// debug log and trace (DLT) setup
-   DLT_REGISTER_APP("test","tests the persistence client library");
+   DLT_REGISTER_APP("PCLt","tests the persistence client library");
 
 #if 1
    Suite * s = persistencyClientLib_suite();

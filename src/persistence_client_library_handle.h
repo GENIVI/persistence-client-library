@@ -20,9 +20,9 @@
  * @see            
  */
 
-#include "../include_protected/persistence_client_library_data_organization.h"
-#include "../include_protected/persistence_client_library_rc_table.h"
+#include "persistence_client_library_data_organization.h"
 
+#include <persComRct.h>
 
 /// key handle structure definition
 typedef struct _PersistenceKeyHandle_s
@@ -31,8 +31,7 @@ typedef struct _PersistenceKeyHandle_s
    char dbPath[DbPathMaxLen];       /// path to the database
    char dbKey[DbKeyMaxLen];         /// database key
    char resourceID[DbResIDMaxLen];  /// resourceID
-}
-PersistenceKeyHandle_s;
+} PersistenceKeyHandle_s;
 
 
 /// file handle structure definition
@@ -43,8 +42,9 @@ typedef struct _PersistenceFileHandle_s
    char backupPath[DbPathMaxLen];         /// path to the backup file
    char csumPath[DbPathMaxLen];           /// path to the checksum file
    char* filePath;                        /// the path
-}
-PersistenceFileHandle_s;
+} PersistenceFileHandle_s;
+
+
 
 
 /// persistence key handle array
@@ -80,12 +80,9 @@ int get_persistence_handle_idx();
 void set_persistence_handle_close_idx(int handle);
 
 
-
-/**
- * @brief close open file handles
- *
- */
 void close_all_persistence_handle();
+
+
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */

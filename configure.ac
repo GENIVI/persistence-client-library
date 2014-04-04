@@ -69,7 +69,7 @@ AC_CHECK_FUNCS([fdatasync ftruncate mkdir munmap rmdir strerror utime dlopen])
 PKG_CHECK_MODULES(DEPS,
                   automotive-dlt
                   dbus-1
-                  libitzam)
+                  libperscommon)
 
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
@@ -113,6 +113,28 @@ else
       AC_DEFINE_UNQUOTED([USE_PASINTERFACE], [1], [pasinterface enabled])   
    fi
 fi
+######################################################################
+
+# enable persistence file cahce component ###########
+AC_ARG_ENABLE([filecache],
+            [AS_HELP_STRING([--enable-filecache],[Enable file cache component])],
+            [use_filecache=$enableval],
+            [use_filecache="no"])
+
+AM_CONDITIONAL([USE_FILECACHE], [test x"$use_filecache" = "no"])
+
+if test "$use_filecache" != "yes" -a "$use_filecache" != "no"; then   
+   AC_MSG_ERROR([Invalid file cache check mode specified: $use_filecache. Only "yes" or "no" is valid])
+else   
+   AC_MSG_NOTICE([Use file cache: $use_filecache])
+
+   if test "$use_filecache" = "yes"; then
+      PKG_CHECK_MODULES(PFC, persistence_file_cache)
+      AC_DEFINE_UNQUOTED([USE_FILECACHE], [1], [filecache enabled])   
+   fi
+fi
+   AC_SUBST(PFC_CFLAGS)
+   AC_SUBST(PFC_LIBS)
 ######################################################################
 
 

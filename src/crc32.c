@@ -51,7 +51,7 @@
  */
 
 
-#include "../include_protected/crc32.h"
+#include "crc32.h"
 
 
 enum crc32ConstantDefinition
@@ -107,7 +107,7 @@ static unsigned int crc32_tab[] =
    0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-const unsigned int pclCrc32(unsigned int crc, const unsigned char *buf, size_t theSize)
+unsigned int pclCrc32(unsigned int crc, const unsigned char *buf, size_t theSize)
 {
    const unsigned char *p = 0;
    unsigned int rval = 0;
@@ -119,10 +119,10 @@ const unsigned int pclCrc32(unsigned int crc, const unsigned char *buf, size_t t
    {
       while(theSize--)
       {
-	     unsigned int index = (crc ^ *p++) & 0xFF;
+	     unsigned int idx = (crc ^ *p++) & 0xFF;
 
-	     if(index < crc32_array_size)
-		     crc = crc32_tab[index] ^ (crc >> 8);
+	     if(idx < crc32_array_size)
+		     crc = crc32_tab[idx] ^ (crc >> 8);
       }
       rval = crc ^ ~0U;
    }

@@ -29,12 +29,54 @@ extern "C" {
 #include "../include/persistence_client_library_error_def.h"
 #include "../include/persistence_client_library_key.h"
 
+#include <persComRct.h>
+
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
 #include <string.h>
 #include <stdio.h>
 
+
+
+/// structure used to manage database context
+typedef struct _PersistenceDbContext_s
+{
+   unsigned int ldbid;
+   unsigned int user_no;
+   unsigned int seat_no;
+} PersistenceDbContext_s;
+
+/// persistence information
+typedef struct _PersistenceInfo_s
+{
+   PersistenceDbContext_s           context;          /**< database context*/
+   PersistenceConfigurationKey_s    configKey;        /**< prct configuration key*/
+
+} PersistenceInfo_s;
+
+
+/** storages to manage the data */
+typedef enum PersDefaultType_e_
+{
+   PersDefaultType_Configurable = 0,  /**< get the data from configurable defaults */
+   PersDefaultType_Factory,           /**< get the data from factory defaults */
+
+   /** insert new entries here ... */
+   PersDefaultType_LastEntry          /**< last entry */
+
+} PersDefaultType_e;
+
+/** storages to manage the data */
+typedef enum PersGetDefault_e_
+{
+   PersGetDefault_Data = 0,           /**< get the data from configurable defaults */
+   PersGetDefault_Size,               /**< get the data from factory defaults */
+
+   /** insert new entries here ... */
+   PersGetDefault_LastEntry           /**< last entry */
+
+} PersGetDefault_e;
 
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersNotifyRegPolicy_e
@@ -165,7 +207,7 @@ extern char gAppId[MaxAppNameLen];
 extern int gMaxKeyValDataSize;
 
 /// the DLT context
-extern DltContext gDLTContext;
+extern DltContext gPclDLTContext;
 
 /// flag to indicate if client library has been initialized
 extern unsigned int gPclInitialized;
