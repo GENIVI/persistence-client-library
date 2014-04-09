@@ -12,7 +12,7 @@ LICENSE     = "MPL-2.0"
 INC_PR      = "r3"
 S           = "${WORKDIR}/git"
 
-DEPENDS        = "libitzam dlt-daemon dbus libcheck"
+DEPENDS        = "dlt-daemon dbus libcheck persistence-common-object"
 RDEPENDS_${PN} = "node-state-manager"
 
 PARALLEL_MAKE = ""
