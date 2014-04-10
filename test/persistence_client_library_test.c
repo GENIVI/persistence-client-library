@@ -116,9 +116,6 @@ START_TEST(test_GetData)
     *       ==> local USER value (user 3, seat 2)
     */
    ret = pclKeyReadData(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);
-   printf("Ist:  %s\n", buffer);
-   printf("Soll: %s\n", "WT_ /var/opt/user_manual_climateControl.pdf");
-
    x_fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
@@ -220,6 +217,7 @@ START_TEST (test_GetDataHandle)
    x_fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    size = pclKeyHandleWriteData(handle2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+   printf("pclKeyHandleWriteData: Soll: %d | ist:%d\n", strlen(sysTimeBuffer), size);
    x_fail_unless(size == strlen(sysTimeBuffer));
    // close
    ret = pclKeyHandleClose(handle2);
@@ -312,11 +310,8 @@ START_TEST(test_SetData)
     *       ==> local USER value (user 1, seat 2)
     * Resource ID: 69
     */
-   printf("function: %s ==> line: %d\n", __FUNCTION__, __LINE__);
    ret = pclKeyWriteData(0xFF, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   printf("function: %s ==> line: %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
-   printf("function: %s ==> line: %d\n", __FUNCTION__, __LINE__);
 #if 1
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
    /**
@@ -380,8 +375,6 @@ START_TEST(test_SetData)
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(0xFF, "69", 1, 2, buffer, READ_SIZE);
-   printf("Verify ist  : %s \n", buffer);
-   printf("Verify soll : %s \n", sysTimeBuffer);
    x_fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
    x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
 
@@ -522,7 +515,6 @@ START_TEST(test_DeleteData)
 
    // delete key
    rval = pclKeyDelete(0xFF, "key_70", 1, 2);
-   printf("pclKeyDelete => soll: 0 | ist: %d\n", rval);
    x_fail_unless(rval >= 0, "Failed to delete key");
 
    // after deleting the key, reading from key must fail now!
@@ -603,52 +595,31 @@ START_TEST(test_DataFile)
    x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
 
    size = pclFileGetSize(fd);
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
-   printf("Soll: 68 | Ist: %d\n", size);
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(size == 68, "Wrong file size");
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
 
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    size = pclFileReadData(fd, buffer, READ_SIZE);
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
 
    ret = pclFileClose(fd);
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == 0, "Failed to close file");
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
 
    // open ------------------------------------------------------------
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    fd = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
 
    size = pclFileWriteData(fd, writeBuffer, strlen(writeBuffer));
    x_fail_unless(size == strlen(writeBuffer), "Failed to write data");
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    ret = pclFileClose(fd);
-   printf("%s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == 0, "Failed to close file");
 
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    // remove ----------------------------------------------------------
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    ret = pclFileRemove(0xFF, "media/mediaDBWrite.db", 1, 1);
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(ret == 0, "File can't be removed ==> /media/mediaDBWrite.db");
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
 
    fd = open("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db",O_RDWR);
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    x_fail_unless(fd == -1, "Failed to remove file, file still exists");
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
    close(fd);
-   printf("* * %s => %d\n", __FUNCTION__, __LINE__);
 
    // map file --------------------------------------------------------
 
@@ -890,83 +861,6 @@ END_TEST
 
 
 
-#if 0
-/**
- * Test for  i n t e r n a l  structures.
- * Test the cursor functions.
- */
-START_TEST(test_Cursor)
-{
-   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
-   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
-   X_TEST_REPORT_REFERENCE("NONE");
-   X_TEST_REPORT_DESCRIPTION("Test of cursor");
-   X_TEST_REPORT_TYPE(GOOD);
-
-   int handle = -1, rval = 0, size = 0, handle1 = 0;
-   char bufferKeySrc[READ_SIZE]  = {0};
-   char bufferDataSrc[READ_SIZE] = {0};
-   char bufferKeyDst[READ_SIZE]  = {0};
-   char bufferDataDst[READ_SIZE] = {0};
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   rval = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(rval <= 1, "Failed to init PCL");
-#if 1
-   // create cursor
-   handle = pers_db_cursor_create("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
-   x_fail_unless(handle != -1, "Failed to create cursor!!");
-
-   // create cursor
-   handle1 = pers_db_cursor_create("/Data/mnt-wt/lt-persistence_client_library_test/wt.itz");
-   x_fail_unless(handle1 != -1, "Failed to create cursor!!");
-
-   do
-   {
-      memset(bufferKeySrc, 0, READ_SIZE);
-      memset(bufferDataSrc, 0, READ_SIZE);
-      memset(bufferKeyDst, 0, READ_SIZE);
-      memset(bufferDataDst, 0, READ_SIZE);
-
-      // get key
-      rval = pers_db_cursor_get_key(handle, bufferKeySrc, 256);
-      x_fail_unless(rval != -1, "Cursor failed to get key!!");
-      // get data
-      rval = pers_db_cursor_get_data(handle, bufferDataSrc, 256);
-
-      x_fail_unless(rval != -1, "Cursor failed to get data!!");
-      // get size
-      size = pers_db_cursor_get_data_size(handle);
-      x_fail_unless(size != -1, "Cursor failed to get size!!");
-      //printf("1. Key: %s | Data: %s » Size: %d \n", bufferKeySrc, bufferDataSrc, size);
-
-      // get key
-      rval = pers_db_cursor_get_key(handle1, bufferKeyDst, 256);
-      x_fail_unless(rval != -1, "Cursor failed to get key!!");
-      // get data
-      rval = pers_db_cursor_get_data(handle1, bufferDataDst, 256);
-      x_fail_unless(rval != -1, "Cursor failed to get data!!");
-      // get size
-      size = pers_db_cursor_get_data_size(handle1);
-      x_fail_unless(size != -1, "Cursor failed to get size!!");
-      //printf("  2. Key: %s | Data: %s » Size: %d \n", bufferKeyDst, bufferDataDst, size);
-   }
-   while( (pers_db_cursor_next(handle) == 0) && (pers_db_cursor_next(handle1) == 0) ); // next cursor
-
-   // destory cursor
-   rval = pers_db_cursor_destroy(handle);
-   x_fail_unless(rval != -1, "Failed to destroy cursor!!");
-
-   rval = pers_db_cursor_destroy(handle1);
-   x_fail_unless(rval != -1, "Failed to destroy cursor!!");
-#endif
-   pclDeinitLibrary();
-}
-END_TEST
-#endif
-
-
-
 START_TEST(test_Plugin)
 {
    X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
@@ -1204,7 +1098,7 @@ START_TEST(test_FileOpenCreate)
    ret = pclFileWriteData(handle, writeBuffer, strlen(writeBuffer));
    x_fail_unless(ret == strlen(writeBuffer), "pclKeyHandleWriteData => error writing data");
 
-
+   /*
    ret = pclFileSeek(handle, 0, SEEK_SET);
    x_fail_unless(ret <= 0, "pclFileSeek => failed to position fd");
 
@@ -1215,6 +1109,8 @@ START_TEST(test_FileOpenCreate)
 
    ret = pclFileClose(handle);
    x_fail_unless(ret <= 0, "pclKeyHandleClose => failed to close");
+	*/
+
 
    // remove file
    remove("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db");
