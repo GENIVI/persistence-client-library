@@ -25,11 +25,8 @@
 
 /**
  * @brief process a shutdown message (close all open files, open databases, ...
- *
- * @param requestId the requestID
- * @param status the status
  */
-void process_prepare_shutdown(unsigned char requestId, unsigned int status);
+void process_prepare_shutdown(int complete);
 
 
 /**

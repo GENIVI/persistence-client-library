@@ -42,6 +42,8 @@ DLT_DECLARE_CONTEXT(gPclDLTContext);
 
 static int gShutdownMode = 0;
 
+static int gCancelCounter = 0;
+
 
 int pclInitLibrary(const char* appName, int shutdownMode)
 {
@@ -172,6 +174,8 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
       }
 
+      pers_unlock_access();
+
       // assign application name
       strncpy(gAppId, appName, MaxAppNameLen);
       gAppId[MaxAppNameLen-1] = '\0';
@@ -221,14 +225,7 @@ int pclDeinitLibrary(void)
          }
       }
 
-      // close all apend rct
-      pers_rct_close_all();
-
-      // close opend database
-      database_close_all();
-
-      // close persistence handles
-      close_all_persistence_handle();
+      process_prepare_shutdown(Shutdown_Full);	// close all db and fd's and block access
 
       // end dbus library
       bContinue = 0;
@@ -260,6 +257,40 @@ int pclDeinitLibrary(void)
 }
 
 
+
+int pclLifecycleSet(int shutdown)
+{
+	int rval = 0;
+
+	if(gShutdownMode == PCL_SHUTDOWN_TYPE_NONE)
+	{
+		if(PCL_SHUTDOWN)
+		{
+			process_prepare_shutdown(Shutdown_Partial);	// close all db and fd's and block access
+		}
+		else if(PCL_SHUTDOWN_CANEL)
+		{
+			if(gCancelCounter < Shutdown_MaxCount)
+			{
+				pers_unlock_access();
+			}
+			else
+			{
+				rval = EPERS_SHTDWN_MAX_CANCEL;
+			}
+		}
+		else
+		{
+			rval = EPERS_COMMON;
+		}
+	}
+	else
+	{
+		rval = EPERS_SHTDWN_NO_PERMIT;
+	}
+
+return rval;
+}
 
 
 

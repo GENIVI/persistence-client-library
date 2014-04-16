@@ -49,10 +49,12 @@ extern "C" {
  * \{
  */
 
+#define PCL_SHUTDOWN             1		/// trigger shutdown
+#define PCL_SHUTDOWN_CANEL       0		// cancel shutdown
 
-#define PCL_SHUTDOWN_TYPE_FAST   2      /// Client registered for fast lifecycle shutdown
-#define PCL_SHUTDOWN_TYPE_NORMAL 1      /// Client registered for normal lifecycle shutdown
-#define PCL_SHUTDOWN_TYPE_NONE   0      /// Client does not register to lifecycle shutdown
+#define PCL_SHUTDOWN_TYPE_FAST   2     /// Client registered for fast lifecycle shutdown
+#define PCL_SHUTDOWN_TYPE_NORMAL 1     /// Client registered for normal lifecycle shutdown
+#define PCL_SHUTDOWN_TYPE_NONE   0     /// Client does not register to lifecycle shutdown
 
 
 /**
@@ -65,7 +67,7 @@ extern "C" {
  * @param shutdownMode shutdown mode ::PCL_SHUTDOWN_TYPE_FAST or ::PCL_SHUTDOWN_TYPE_NORMAL
  *
  * @return positive value: success;
- *   On error a negative value will be returned with th following error codes:
+ *   On error a negative value will be returned with the following error codes:
  *   ::EPERS_NOT_INITIALIZED, ::EPERS_INIT_DBUS_MAINLOOP,
  *   ::EPERS_REGISTER_LIFECYCLE, ::EPERS_REGISTER_ADMIN
  */
@@ -82,6 +84,28 @@ int pclInitLibrary(const char* appname, int shutdownMode);
  *   On error a negative value will be returned.
  */
 int pclDeinitLibrary(void);
+
+
+
+
+/**
+ * @brief pclLifecycleSet client library
+ *        This function can be called if to flush and write back the data form cache to memory device.
+ *        The function is only available if PCL_SHUTDOWN_TYPE_NONE has been used in pclInitLibrary.
+ *
+ * @attention This function is currently  N O T  part of the GENIVI compliance specification
+ * @attention In order to prevent misuse of this function the cancel shutdown request
+ *            can only be called 3 times per lifecycle.
+ *
+ * @parm PCL_SHUTDOWN for write back data when shutdown is requested,
+ *       and PCL_SHUTDOWN_CANEL when shutdown cancel request has been received.
+ *
+ * @return positive value: success;
+ *   On error a negative value will be returned with the following error codes:
+ *   ::EPERS_COMMON, :.EPERS_MAX_CANCEL_SHUTDOWN, ::EPERS_SHTDWN_NO_PERMIT
+ */
+int pclLifecycleSet(int shutdown);
+
 
 /** \} */
 

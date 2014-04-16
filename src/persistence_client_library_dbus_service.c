@@ -600,7 +600,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           process_send_pas_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
-                                          process_prepare_shutdown((buf[2]), buf[1]);
+                                          process_prepare_shutdown(Shutdown_Full);
                                           process_send_lifecycle_request(conn, (buf[2]), buf[1]);
                                           break;
                                        case CMD_SEND_NOTIFY_SIGNAL:

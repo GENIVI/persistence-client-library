@@ -51,17 +51,17 @@ extern "C" {
 #define EPERS_OPENFILE           (-10)
 /// invalid buffer or key
 #define EPERS_DESER_BUFORKEY     (-11)
-/// can't allocat memory for deserialization of keyvalue
+/// can't allocate memory for deserialization of key/value
 #define EPERS_DESER_ALLOCMEM     (-12)
-/// no ploicy avaliable in data to serialize
+/// no ploicy available in data to serialize
 #define EPERS_DESER_POLICY       (-13)
-/// no store type avaliable in data to serialize
+/// no store type available in data to serialize
 #define EPERS_DESER_STORE        (-14)
-/// no permission avaliable in data to serialize
+/// no permission available in data to serialize
 #define EPERS_DESER_PERM         (-15)
-/// no max size avaliable in data to serialize
+/// no max size available in data to serialize
 #define EPERS_DESER_MAXSIZE      (-16)
-/// no responsibility avaliable in data to serialize
+/// no responsibility available in data to serialize
 #define EPERS_DESER_RESP         (-17)
 /// out of array bounds
 #define EPERS_OUTOFBOUNDS        (-18)
@@ -71,7 +71,7 @@ extern "C" {
 #define EPERS_CONFIGNOTAVAILABLE (-20)
 /// can't stat config file
 #define EPERS_CONFIGNOSTAT       (-21)
-/// plugin functin not found
+/// plugin function not found
 #define EPERS_NOPLUGINFCNT       (-22)
 /// dlopen error
 #define EPERS_DLOPENERROR        (-23)
@@ -79,7 +79,7 @@ extern "C" {
 #define EPERS_NOPLUGINFUNCT      (-24)
 /// file remove error
 #define EPERS_FILEREMOVE         (-25)
-/// err code to signalize last entry in DB
+/// err code to signalizes last entry in DB
 #define EPERS_LAST_ENTRY_IN_DB   (-26)
 /// internal database error
 #define EPERS_DB_ERROR_INTERNAL  (-27)
@@ -93,20 +93,24 @@ extern "C" {
 #define EPERS_NOTIFY_SIG         (-31)
 /// client library has not been initialized
 #define EPERS_NOT_INITIALIZED 	(-32)
-// max buffer size
+/// max buffer size
 #define EPERS_MAX_BUFF_SIZE      (-33)
-// failed to setup dbus mainloop
+/// failed to setup dbus mainloop
 #define EPERS_DBUS_MAINLOOP     (-34)
-// failed register lifecycle dbus
+/// failed register lifecycle dbus
 #define EPERS_REGISTER_LIFECYCLE (-35)
-// failed register admin service dbus
+/// failed register admin service dbus
 #define EPERS_REGISTER_ADMIN     (-36)
-// registration on this key is not allowed
+/// registration on this key is not allowed
 #define EPERS_NOTIFY_NOT_ALLOWED (-37)
-// the requested resource is not a file
+/// the requested resource is not a file
 #define EPERS_RESOURCE_NO_FILE   (-38)
-// write to requested resource failed, read onyl resource
+/// write to requested resource failed, read only resource
 #define EPERS_RESOURCE_READ_ONLY (-39)
+/// max numbers of cancel shutdown exceeded
+#define EPERS_SHTDWN_MAX_CANCEL  (-40)
+/// not permitted to use this function
+#define EPERS_SHTDWN_NO_PERMIT  (-42)
 
 #ifdef __cplusplus
 }

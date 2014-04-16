@@ -100,6 +100,10 @@ enum _PersistenceConstantDef
    FileClosed           = 0,        /// flag to identify if file will be closed
    FileOpen             = 1,        /// flag to identify if file has been opend
 
+   Shutdown_Partial      = 0,			/// make partial Shutdown (close but not free everything)
+   Shutdown_Full         = 1,			/// make complete Shutdown (close and free everything)
+   Shutdown_MaxCount     = 3,			/// max number of shutdown cancel calls
+
    NsmShutdownNormal       = 1,     /// lifecycle shutdown normal
    NsmErrorStatus_OK       = 1,     /// lifecycle return OK idicator
    NsmErrorStatus_Fail     = -1,    /// lifecycle return failed indicator

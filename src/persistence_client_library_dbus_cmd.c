@@ -26,6 +26,7 @@
 #include "persistence_client_library_db_access.h"
 
 #include <dlfcn.h>
+#include <errno.h>
 
 
 // function prototype
@@ -168,12 +169,9 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
 
 
 
-void process_prepare_shutdown(unsigned char requestId, unsigned int status)
+void process_prepare_shutdown(int complete)
 {
-   int i = 0;
-
-   (void)requestId;
-   (void)status;
+   int i = 0, rval = 0;
 
    // block write
    pers_lock_access();
@@ -185,7 +183,20 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
       if(gOpenFdArray[tmp] == FileOpen)
       {
          fsync(tmp);
-         close(tmp);
+
+#if USE_FILECACHE
+         rval = pfcCloseFile(tmp);
+#else
+         if(complete > 0)
+         {
+         	rval = close(tmp);
+         }
+#endif
+         if(rval == -1)
+         {
+         	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => failed to close file: "), DLT_STRING(strerror(errno)) );
+         }
+
       }
    }
 
@@ -195,19 +206,27 @@ void process_prepare_shutdown(unsigned char requestId, unsigned int status)
    // close opend database
    database_close_all();
 
-
-   // unload custom client libraries
-   for(i=0; i<PersCustomLib_LastEntry; i++)
+   if(complete > 0)
    {
-      if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
-      {
-         // deinitialize plugin
-         gPersCustomFuncs[i].custom_plugin_deinit();
-         // close library handle
-         dlclose(gPersCustomFuncs[i].handle);
+   	close_all_persistence_handle();
+   }
 
-         invalidate_custom_plugin(i);
-      }
+
+   if(complete > 0)
+   {
+		// unload custom client libraries
+		for(i=0; i<PersCustomLib_LastEntry; i++)
+		{
+			if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
+			{
+				// deinitialize plugin
+				gPersCustomFuncs[i].custom_plugin_deinit();
+				// close library handle
+				dlclose(gPersCustomFuncs[i].handle);
+
+				invalidate_custom_plugin(i);
+			}
+		}
    }
 }
 
