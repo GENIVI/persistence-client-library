@@ -119,11 +119,13 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
             break;
          }
 
+         gResource_table[arrayIdx] = persComRctOpen(filename, 0x00);
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_resource_cfg_table => filename: "), DLT_STRING(filename), DLT_INT(arrayIdx));
 
-         gResource_table[arrayIdx] = persComRctOpen(filename, 0x00) ;
          if(gResource_table[arrayIdx] < 0)
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table => RCT problem"));
+         	gResourceOpen[arrayIdx] = 0;
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table => RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
          }
          else
          {
@@ -187,6 +189,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
    if(resourceFound == 0)
    {
+   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => resource in rct table not found: "), DLT_STRING(resource_id) );
       //
       // resource NOT found in resource table ==> default is local cached key
       //

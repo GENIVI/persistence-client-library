@@ -179,17 +179,27 @@ void process_prepare_shutdown(int complete)
    // flush open files to disk
    for(i=0; i<MaxPersHandle; i++)
    {
-      int tmp = i;
-      if(gOpenFdArray[tmp] == FileOpen)
+      if(gOpenFdArray[i] == FileOpen)
       {
-         fsync(tmp);
+         fsync(i);
 
 #if USE_FILECACHE
-         rval = pfcCloseFile(tmp);
-#else
-         if(complete > 0)
+         if(complete == Shutdown_Full)
          {
-         	rval = close(tmp);
+         	rval = pfcCloseFile(i);
+         }
+         else if(complete == Shutdown_Partial)
+         {
+         	pfcWriteBackAndSync(i);
+         }
+#else
+         if(complete == Shutdown_Full)
+         {
+         	rval = close(i);
+         }
+         else if(complete == Shutdown_Partial)
+         {
+         	fsync(i);
          }
 #endif
          if(rval == -1)

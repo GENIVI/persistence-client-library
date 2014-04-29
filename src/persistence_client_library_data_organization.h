@@ -105,7 +105,7 @@ enum _PersistenceConstantDef
    Shutdown_MaxCount     = 3,			/// max number of shutdown cancel calls
 
    NsmShutdownNormal       = 1,     /// lifecycle shutdown normal
-   NsmErrorStatus_OK       = 1,     /// lifecycle return OK idicator
+   NsmErrorStatus_OK       = 1,     /// lifecycle return OK indicator
    NsmErrorStatus_Fail     = -1,    /// lifecycle return failed indicator
 
    ChecksumBufSize         = 64,       /// max checksum size
@@ -163,16 +163,22 @@ extern const char* gCached;
 extern const char* gWt;
 
 
-/// directory structure node name defintion
+/// directory structure node name definition
 extern const char* gNode;
-/// directory structure user name defintion
+/// directory structure user name definition
 extern const char* gUser;
-/// directory structure seat name defintion
+/// directory structure seat name definition
 extern const char* gSeat;
 
+/// default data folder name definition
+extern const char* gDefDataFolder;
+
+/// path for the backup location
 extern const char* gBackupPrefix;
 
+/// size of cached prefix string
 extern const int gCPathPrefixSize;
+/// size of write through prefix string
 extern const int gWTPathPrefixSize;
 
 /// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>

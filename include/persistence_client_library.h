@@ -20,11 +20,11 @@
  * \par change history
  * Date     Author          Version
  * 25/06/13 Ingo Hürner     1.0.0 - Rework of Init functions
- * 04/11/13 Ingo Hürner     2.0.0 - Added define for shutdown type none
+ * 04/11/13 Ingo Hürner     1.3.0 - Added define for shutdown type none
  *
  */
 /** \ingroup GEN_PERS */
-/** \defgroup PERS_CLIENT Client: initialisation access
+/** \defgroup PERS_CLIENT Client: initialization access
  *  \{
  */
 /** \defgroup PERS_CLIENT_INTERFACE API document
@@ -44,21 +44,29 @@ extern "C" {
 /** \} */
 
 
-/** \defgroup PCL_OVERALL functions for Library Initialisation
- * The following functions have to be called to allow intialisation of the internal interfaces.
+/** \defgroup SHUTDOWN_TYPE notifications type definitions
+ * according to Node State Manager Component
  * \{
  */
-
-#define PCL_SHUTDOWN             1		/// trigger shutdown
-#define PCL_SHUTDOWN_CANEL       0		// cancel shutdown
 
 #define PCL_SHUTDOWN_TYPE_FAST   2     /// Client registered for fast lifecycle shutdown
 #define PCL_SHUTDOWN_TYPE_NORMAL 1     /// Client registered for normal lifecycle shutdown
 #define PCL_SHUTDOWN_TYPE_NONE   0     /// Client does not register to lifecycle shutdown
+/** \} */
+
+
+/** \defgroup PCL_OVERALL functions for Library initialization
+ *  The following functions have to be called for library initialization
+ * \{
+ */
+
+
+#define PCL_SHUTDOWN             1		/// trigger shutdown
+#define PCL_SHUTDOWN_CANEL       0		/// cancel shutdown
 
 
 /**
- * @brief initalize client library.
+ * @brief initialize client library.
  *        This function will be called by the process using the PCL during startup phase.
  *
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
@@ -96,6 +104,11 @@ int pclDeinitLibrary(void);
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  * @attention In order to prevent misuse of this function the cancel shutdown request
  *            can only be called 3 times per lifecycle.
+ *            If this function has been called by an application more then 3 times the application
+ *            will not be able to store it's data anymore during the current lifecycle.
+ *            The application isn't fully operable in this lifecycle anymore.
+ *            In the next lifecycle the application can store data again until the limit above
+ *            has been reached.
  *
  * @parm PCL_SHUTDOWN for write back data when shutdown is requested,
  *       and PCL_SHUTDOWN_CANEL when shutdown cancel request has been received.

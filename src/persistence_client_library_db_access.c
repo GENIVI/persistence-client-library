@@ -619,16 +619,20 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
 
 void pers_rct_close_all()
 {
-   int i = 0, rval = 0;
+   int i = 0;
 
    // close open persistence resource configuration table
    for(i=0; i< PrctDbTableSize; i++)
    {
-      rval =  persComRctClose(i);
-      if (rval != 0)
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => failed to close db:"), DLT_INT(rval));
-      }
+   	if(gResource_table[i] != 0)
+   	{
+			if(persComRctClose(i) != 0)
+			{
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => failed to close db => index:"), DLT_INT(i));
+			}
+
+			gResource_table[i] = 0;
+   	}
    }
 }
 

@@ -216,7 +216,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
  * ::EPERS_LOCKFS or ::EPERS_COMMON
  * If ::EPERS_COMMON will be returned errno will be set.
  */
-int pclFileReleasePath(int pathPandle);
+int pclFileReleasePath(int pathHandle);
 
 /** \} */ 
 

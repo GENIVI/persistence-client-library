@@ -225,7 +225,7 @@ int pclDeinitLibrary(void)
          }
       }
 
-      process_prepare_shutdown(Shutdown_Full);	// close all db and fd's and block access
+      process_prepare_shutdown(Shutdown_Full);	// close all db's and fd's and block access
 
       // end dbus library
       bContinue = 0;
@@ -266,7 +266,7 @@ int pclLifecycleSet(int shutdown)
 	{
 		if(PCL_SHUTDOWN)
 		{
-			process_prepare_shutdown(Shutdown_Partial);	// close all db and fd's and block access
+			process_prepare_shutdown(Shutdown_Partial);	// close all db's and fd's and block access
 		}
 		else if(PCL_SHUTDOWN_CANEL)
 		{
@@ -276,7 +276,7 @@ int pclLifecycleSet(int shutdown)
 			}
 			else
 			{
-				rval = EPERS_SHTDWN_MAX_CANCEL;
+				rval = EPERS_SHUTDOWN_MAX_CANCEL;
 			}
 		}
 		else
@@ -286,10 +286,10 @@ int pclLifecycleSet(int shutdown)
 	}
 	else
 	{
-		rval = EPERS_SHTDWN_NO_PERMIT;
+		rval = EPERS_SHUTDOWN_NO_PERMIT;
 	}
 
-return rval;
+	return rval;
 }
 
 

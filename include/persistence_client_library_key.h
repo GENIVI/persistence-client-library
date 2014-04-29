@@ -71,15 +71,10 @@ typedef struct _pclNotification_s
    unsigned int seat_no;                     /// seat id
 } pclNotification_s;
 
-/** \defgroup SHUTDOWN_TYPE shutdown notification type definitions
- *  according to Node State Manager component
- * \{
- */
 
 
 /** \} */
 
-/** \} */
 
 /** definition of the change callback
  *

@@ -201,6 +201,7 @@ START_TEST (test_GetDataHandle)
    x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = pclKeyHandleReadData(handle, buffer, READ_SIZE);
+   printf("* * * * * => => => B U F F E R : \"%s\"\n", buffer);
    x_fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyHandleGetSize(handle);
@@ -217,7 +218,6 @@ START_TEST (test_GetDataHandle)
    x_fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    size = pclKeyHandleWriteData(handle2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   printf("pclKeyHandleWriteData: Soll: %d | ist:%d\n", strlen(sysTimeBuffer), size);
    x_fail_unless(size == strlen(sysTimeBuffer));
    // close
    ret = pclKeyHandleClose(handle2);
@@ -296,6 +296,23 @@ START_TEST(test_SetData)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    x_fail_unless(ret <= 1, "Failed to init PCL");
+
+#if 1
+   /**
+    * Logical DB ID: 0xFF with user 3 and seat 2
+    *       ==> local USER value (user 3, seat 2)
+    */
+   ret = pclKeyWriteData(0xFF, "status/open_document",      3, 2, "WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+   x_fail_unless(ret == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Wrong write size");
+
+
+   ret = pclKeyWriteData(0x84, "links/last_link",      2, 1, "CACHE_ /last_exit/queens", strlen("CACHE_ /last_exit/queens"));
+   x_fail_unless(ret == strlen("CACHE_ /last_exit/queens"), "Wrong write size");
+
+   ret = pclKeyWriteData(0xFF, "posHandle/last_position", 0, 0, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   x_fail_unless(ret == strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""), "Wrong write size");
+#endif
+
 #if 1
    time_t t = time(0);
 
@@ -481,7 +498,6 @@ START_TEST(test_GetDataSize)
     *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
     */
    size = pclKeyGetSize(0x84, "links/last_link", 2, 1);
-   printf("=>=>=>=> soll: %d | ist: %d\n", strlen("CACHE_ /last_exit/queens"), size);
    x_fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 #endif
    pclDeinitLibrary();
@@ -731,17 +747,18 @@ START_TEST(test_DataHandle)
    handleArray[3] = pclFileOpen(0xFF, "media/mediaDB_write_04.db", 1, 1);
    x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_04.db");
 
-   (void)pclFileReadData(handleArray[0], buffer, READ_SIZE);
+   ret = pclFileReadData(handleArray[0], buffer, READ_SIZE);
+   x_fail_unless(ret >= 0, "Failed to read handle idx \"0\"!!");
    x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_01.db",
          strlen("/user/1/seat/1/media/mediaDB_write_01.db"))
          == 0, "Buffer not correctly read => mediaDB_write_01.db");
 
-   (void)pclFileReadData(handleArray[1], buffer, READ_SIZE);
+   ret = pclFileReadData(handleArray[1], buffer, READ_SIZE);
    x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_02.db",
          strlen("/user/1/seat/1/media/mediaDB_write_02.db"))
          == 0, "Buffer not correctly read => mediaDB_write_02.db");
 
-   (void)pclFileReadData(handleArray[2], buffer, READ_SIZE);
+   ret = pclFileReadData(handleArray[2], buffer, READ_SIZE);
    x_fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_03.db",
          strlen("/user/1/seat/1/media/mediaDB_write_03.db"))
          == 0, "Buffer not correctly read => mediaDB_write_03.db");
@@ -1079,45 +1096,6 @@ END_TEST
 
 
 
-START_TEST(test_FileOpenCreate)
-{
-   int handle = -1, ret = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   char buffer[128] = {0};
-   char* writeBuffer = "test_FileOpenCreate: write some data to the file!";
-
-   (void)pclInitLibrary(gTheAppId, shutdownReg);
-
-   // remove file
-   remove("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db");
-
-   handle = pclFileOpen(0xFF, "media/mediaDBWrite.db", 1, 1);
-   x_fail_unless(handle != -1, "Could not open file ==> /media/mediaDBWrite.db");
-
-
-   ret = pclFileWriteData(handle, writeBuffer, strlen(writeBuffer));
-   x_fail_unless(ret == strlen(writeBuffer), "pclKeyHandleWriteData => error writing data");
-
-   /*
-   ret = pclFileSeek(handle, 0, SEEK_SET);
-   x_fail_unless(ret <= 0, "pclFileSeek => failed to position fd");
-
-
-   ret = pclFileReadData(handle, buffer, 128);
-   x_fail_unless(ret == strlen(writeBuffer), "pclKeyHandleReadData => error read data");
-   x_fail_unless(strncmp(buffer, writeBuffer, strlen(writeBuffer)) == 0, "pclKeyHandleReadData => Buffer not correctly read");
-
-   ret = pclFileClose(handle);
-   x_fail_unless(ret <= 0, "pclKeyHandleClose => failed to close");
-	*/
-
-
-   // remove file
-   remove("/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media/mediaDBWrite.db");
-
-   pclDeinitLibrary();
-}
-END_TEST
 
 
 
@@ -1173,9 +1151,6 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_NegHandle = tcase_create("NegHandle");
    tcase_add_test(tc_NegHandle, test_NegHandle);
 
-   TCase * tc_FileOpenCreate = tcase_create("FileOpenCreate");
-   tcase_add_test(tc_FileOpenCreate, test_FileOpenCreate);
-
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
    suite_add_tcase(s, tc_persSetDataNoPRCT);
@@ -1191,7 +1166,6 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_GetPath);
    suite_add_tcase(s, tc_InitDeinit);
    suite_add_tcase(s, tc_NegHandle);
-   suite_add_tcase(s, tc_FileOpenCreate);
 
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
 

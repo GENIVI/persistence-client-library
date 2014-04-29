@@ -212,9 +212,46 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
             if(handle == -1 && errno == ENOENT) // file does not exist, create file and folder
             {
-               if( (handle = pclCreateFile(dbPath)) == -1)
+
+               if((handle = pclCreateFile(dbPath)) == -1)
                {
                   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => failed to create file: "), DLT_STRING(dbPath));
+               }
+               else
+               {
+               	// check if there is default data available
+               	char pathPrefix[DbPathMaxLen] = {0};
+               	char defaultPath[DbPathMaxLen] = {0};
+               	int defaultHandle = -1;
+
+               	// create path to default data
+               	if(dbContext.configKey.policy == PersistencePolicy_wc)
+               	{
+               		snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
+               	}
+               	else if(dbContext.configKey.policy == PersistencePolicy_wt)
+               	{
+               		snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
+               	}
+
+               	snprintf(defaultPath, DbPathMaxLen, "%s%s%s", pathPrefix, gDefDataFolder, resource_id);
+               	printf("=> => => => defaultPath: %s => resourceID: %s\n", defaultPath, resource_id);
+
+               	defaultHandle = open(defaultPath, O_RDONLY);
+               	if(defaultHandle != -1)	// check if default data is available
+               	{
+							// copy default data
+							struct stat buf;
+							memset(&buf, 0, sizeof(buf));
+
+							fstat(defaultHandle, &buf);
+							sendfile(handle, defaultHandle, 0, buf.st_size);
+               		close(defaultHandle);
+               	}
+               	else
+               	{
+               		printf(" = = = =  Failed to open file: %d => %s\n", defaultHandle, strerror(errno));
+               	}
                }
             }
 

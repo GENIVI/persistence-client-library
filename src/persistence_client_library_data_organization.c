@@ -37,13 +37,14 @@ const char* gWt             = "/wt.itz";
 const char* gCached        = "/cached.itz";
 
 
-/// directory structure node name defintion
+/// directory structure node name definition
 const char* gNode = "/node";
-/// directory structure user name defintion
+/// directory structure user name definition
 const char* gUser = "/user/";
-/// directory structure seat name defintion
+/// directory structure seat name definition
 const char* gSeat = "/seat/";
-
+/// default data folder name definition
+const char* gDefDataFolder = "/defaultData/";
 
 /// cached path location
 #define CACHEPREFIX         "/Data/mnt-c/"

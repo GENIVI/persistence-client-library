@@ -16,8 +16,13 @@
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
  * @brief          Error definition header
- * @see
+ *
+ * @par change history
+ * Date     Author           Version
+ * 29/04/14 Ingo Huerner     1.0.0 - Added cancel shutdown errors
+ *
  */
+
 /** \ingroup GEN_PERS */
 /** \defgroup PERS_GEN_ERROR Client Library: Generic errors
  *  \{
@@ -108,9 +113,9 @@ extern "C" {
 /// write to requested resource failed, read only resource
 #define EPERS_RESOURCE_READ_ONLY (-39)
 /// max numbers of cancel shutdown exceeded
-#define EPERS_SHTDWN_MAX_CANCEL  (-40)
+#define EPERS_SHUTDOWN_MAX_CANCEL (-40)
 /// not permitted to use this function
-#define EPERS_SHTDWN_NO_PERMIT  (-42)
+#define EPERS_SHUTDOWN_NO_PERMIT  (-42)
 
 #ifdef __cplusplus
 }
