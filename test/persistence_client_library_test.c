@@ -48,7 +48,6 @@ char gTheAppId[MaxAppNameLen] = {0};
 // definition of weekday
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
-
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
@@ -1118,6 +1117,8 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persDeleteData = tcase_create("DeleteData");
    tcase_add_test(tc_persDeleteData, test_DeleteData);
 
+
+
    TCase * tc_persGetDataHandle = tcase_create("GetDataHandle");
    tcase_add_test(tc_persGetDataHandle, test_GetDataHandle);
 
@@ -1194,7 +1195,7 @@ int main(int argc, char *argv[])
    SRunner * sr = srunner_create(s);
    srunner_set_xml(sr, "/tmp/persistenceClientLibraryTest.xml");
    srunner_set_log(sr, "/tmp/persistenceClientLibraryTest.log");
-   srunner_run_all(sr, /*CK_NORMAL*/ CK_VERBOSE);
+   srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE*/);
 
    nr_failed = srunner_ntests_failed(sr);
    nr_run = srunner_ntests_run(sr);

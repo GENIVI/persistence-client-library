@@ -559,7 +559,7 @@ int pclRecoverFromBackup(int backupFd, const char* original)
    if(handle != -1)
    {
       // copy data from one file to another
-      if((handle = pclBackupDoFileCopy(backupFd, handle)) == -1)
+      if(pclBackupDoFileCopy(backupFd, handle) == -1)
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclRecoverFromBackup => couldn't write whole buffer"));
       }

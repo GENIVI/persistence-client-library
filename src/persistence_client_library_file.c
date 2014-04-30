@@ -41,6 +41,11 @@
 
 
 
+// local function prototype
+int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
+
+
+
 int pclFileClose(int fd)
 {
    int rval = EPERS_NOT_INITIALIZED;
@@ -219,38 +224,10 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                }
                else
                {
-               	// check if there is default data available
-               	char pathPrefix[DbPathMaxLen] = {0};
-               	char defaultPath[DbPathMaxLen] = {0};
-               	int defaultHandle = -1;
 
-               	// create path to default data
-               	if(dbContext.configKey.policy == PersistencePolicy_wc)
+               	if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
                	{
-               		snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
-               	}
-               	else if(dbContext.configKey.policy == PersistencePolicy_wt)
-               	{
-               		snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
-               	}
-
-               	snprintf(defaultPath, DbPathMaxLen, "%s%s%s", pathPrefix, gDefDataFolder, resource_id);
-               	printf("=> => => => defaultPath: %s => resourceID: %s\n", defaultPath, resource_id);
-
-               	defaultHandle = open(defaultPath, O_RDONLY);
-               	if(defaultHandle != -1)	// check if default data is available
-               	{
-							// copy default data
-							struct stat buf;
-							memset(&buf, 0, sizeof(buf));
-
-							fstat(defaultHandle, &buf);
-							sendfile(handle, defaultHandle, 0, buf.st_size);
-               		close(defaultHandle);
-               	}
-               	else
-               	{
-               		printf(" = = = =  Failed to open file: %d => %s\n", defaultHandle, strerror(errno));
+               		printf("pclFileOpen => No default data!!\n");
                	}
                }
             }
@@ -544,7 +521,18 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   if(access(*path, F_OK) == -1)
                   {
                      // file does not exist, create it.
-                     int handle = pclCreateFile(*path);
+                     int handle = 0;
+                     if((handle = pclCreateFile(*path)) == -1)
+                     {
+                        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => failed to create file: "), DLT_STRING(*path));
+                     }
+                     else
+                     {
+								if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
+								{
+									printf("pclFileCreatePath => No default data!!\n");
+								}
+                     }
                      close(handle);    // don't need the open file
                   }
                }
@@ -630,5 +618,42 @@ int pclFileReleasePath(int pathHandle)
 
 
 
+
+int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
+{
+	// check if there is default data available
+	char pathPrefix[DbPathMaxLen]  = { [0 ... DbPathMaxLen-1] = 0};
+	char defaultPath[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
+	int defaultHandle = -1;
+	int rval = 0;
+
+	// create path to default data
+	if(policy == PersistencePolicy_wc)
+	{
+		snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
+	}
+	else if(policy == PersistencePolicy_wt)
+	{
+		snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
+	}
+
+	snprintf(defaultPath, DbPathMaxLen, "%s%s%s", pathPrefix, gDefDataFolder, resource_id);
+
+	defaultHandle = open(defaultPath, O_RDONLY);
+	if(defaultHandle != -1)	// check if default data is available
+	{
+		// copy default data
+		struct stat buf;
+		memset(&buf, 0, sizeof(buf));
+
+		fstat(defaultHandle, &buf);
+		sendfile(handle, defaultHandle, 0, buf.st_size);
+		close(defaultHandle);
+	}
+	else
+	{
+		rval = -1; // no default data available
+	}
+}// getDefault
 
 

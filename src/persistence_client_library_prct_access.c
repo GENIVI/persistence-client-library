@@ -186,7 +186,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       rval = EPERS_NOPRCTABLE;
    }
 
-   if(resourceFound == 0)
+   if((resourceFound == 0) && (dbContext->context.ldbid == 0xFF) ) // create only when the resource is local data
    {
    	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => resource in rct table not found: "), DLT_STRING(resource_id) );
       //
