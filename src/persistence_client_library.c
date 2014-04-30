@@ -174,6 +174,9 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table => error number:"), DLT_INT(status));
       }
 
+      // initialize keyHandle array
+      memset(gKeyHandleArray, 0, sizeof(gKeyHandleArray));
+
       pers_unlock_access();
 
       // assign application name
@@ -291,7 +294,6 @@ int pclLifecycleSet(int shutdown)
 
 	return rval;
 }
-
 
 
 

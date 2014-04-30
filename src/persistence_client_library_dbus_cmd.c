@@ -36,9 +36,9 @@ void msg_pending_func(DBusPendingCall *call, void *data);
 
 void process_reg_notification_signal(DBusConnection* conn)
 {
-   char ruleChanged[DbusMatchRuleSize] = {0};
-   char ruleDeleted[DbusMatchRuleSize] = {0};
-   char ruleCreated[DbusMatchRuleSize] = {0};
+   char ruleChanged[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
+   char ruleDeleted[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
+   char ruleCreated[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
 
    // add match for  c h a n g e
    snprintf(ruleChanged, DbusMatchRuleSize,
@@ -79,9 +79,9 @@ void process_send_notification_signal(DBusConnection* conn)
    DBusMessage* message;
    const char* notifyReason = NULL;
 
-   char ldbidArray[DbusSubMatchSize] = {0};
-   char userArray[DbusSubMatchSize]  = {0};
-   char seatArray[DbusSubMatchSize]  = {0};
+   char ldbidArray[DbusSubMatchSize] = {[0 ... DbusSubMatchSize-1] = 0};
+   char userArray[DbusSubMatchSize]  = {[0 ... DbusSubMatchSize-1] = 0};
+   char seatArray[DbusSubMatchSize]  = {[0 ... DbusSubMatchSize-1] = 0};
    char* pldbidArra = ldbidArray;
    char* puserArray = userArray;
    char* pseatArray = seatArray;

@@ -30,9 +30,9 @@
 
 
 /// pointer to resource table database
-int gResource_table[PrctDbTableSize] = {-1};
+int gResource_table[PrctDbTableSize] = {[0 ... PrctDbTableSize-1] = -1};
 /// array to hold the information of database is already open
-int gResourceOpen[PrctDbTableSize] = {0};
+int gResourceOpen[PrctDbTableSize] = { [0 ... PrctDbTableSize-1] = 0 };
 
 
 /// persistence resource config table type definition
@@ -101,7 +101,7 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
    {
       if(gResourceOpen[arrayIdx] == 0)   // check if database is already open
       {
-         char filename[DbPathMaxLen] = {0};
+         char filename[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
 
          switch(rct)    // create db name
          {
@@ -120,11 +120,10 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
          }
 
          gResource_table[arrayIdx] = persComRctOpen(filename, 0x00);
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_resource_cfg_table => filename: "), DLT_STRING(filename), DLT_INT(arrayIdx));
 
          if(gResource_table[arrayIdx] < 0)
          {
-         	gResourceOpen[arrayIdx] = 0;
+         	gResourceOpen[arrayIdx] = -1;
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table => RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
          }
          else

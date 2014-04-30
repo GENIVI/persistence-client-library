@@ -624,14 +624,14 @@ void pers_rct_close_all()
    // close open persistence resource configuration table
    for(i=0; i< PrctDbTableSize; i++)
    {
-   	if(gResource_table[i] != 0)
+   	if(gResource_table[i] != -1)
    	{
-			if(persComRctClose(i) != 0)
+			if(persComRctClose(i) == -1)
 			{
 				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => failed to close db => index:"), DLT_INT(i));
 			}
 
-			gResource_table[i] = 0;
+			gResource_table[i] = -1;
    	}
    }
 }

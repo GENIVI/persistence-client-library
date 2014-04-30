@@ -94,7 +94,8 @@ const char* gDeleteSignal = "PersistenceResDelete";
 const char* gCreateSignal = "PersistenceResCreate";
 
 
-char gNotifykey[DbKeyMaxLen] = {0};
+char gNotifykey[DbKeyMaxLen] = { [0 ... DbKeyMaxLen-1] = 0};
+
 unsigned int gNotifyLdbid  = 0;
 unsigned int gNotifyUserNo = 0;
 unsigned int gNotifySeatNo = 0;
@@ -108,7 +109,7 @@ int gDbusPendingRvalue = 0;
 
 
 /// application id
-char gAppId[MaxAppNameLen] = {0};
+char gAppId[MaxAppNameLen] = { [0 ... MaxAppNameLen-1] = 0};
 
 
 /// max key value data size [default 16kB]

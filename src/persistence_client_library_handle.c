@@ -28,10 +28,10 @@
 static int gHandleIdx = 1;
 
 /// open file descriptor handle array
-int gOpenFdArray[MaxPersHandle] = {0};
+int gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 
 /// handle array
-int gOpenHandleArray[MaxPersHandle] = {0};
+int gOpenHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 
 /// persistence key handle array
 PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
@@ -44,7 +44,7 @@ PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
 
 
 /// free handle array
-int gFreeHandleArray[MaxPersHandle] = {0};
+int gFreeHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 int gFreeHandleIdxHead = 0;
 pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
 
