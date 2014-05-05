@@ -111,6 +111,7 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
       {
          if (PersGetDefault_Data == job)
          {
+         	read_size = persComDbReadKey(handleDefaultDB, key, (char*)buffer, buffer_size);
          }
          else if (PersGetDefault_Size == job)
          {
