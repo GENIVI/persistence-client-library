@@ -30,6 +30,8 @@ extern "C" {
 #include "../include/persistence_client_library_key.h"
 
 #include <persComRct.h>
+#include <persComDbAccess.h>
+#include <persComDataOrg.h>
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
@@ -113,14 +115,14 @@ enum _PersistenceConstantDef
    DbusSubMatchSize        = 12,       /// max character sub match size
    DbusMatchRuleSize       = 300,      /// max character size of the dbus match rule size
 
-   PrctKeySize             = 64,       /// persistence resource config table max key size
-   PrctValueSize           = 256,      /// persistence resource config table max value size
+   PrctKeySize             = PERS_RCT_MAX_LENGTH_RESOURCE_ID,       		/// persistence resource config table max key size
+   PrctValueSize           = sizeof(PersistenceConfigurationKey_s),   	/// persistence resource config table max value size
    PrctDbTableSize         = 1024,     /// number of persistence resource config tables to store
 
    RDRWBufferSize          = 1024,     /// write buffer size
 
-   DbKeySize               = 64,       /// database max key size
-   DbValueSize             = 16384,    /// database max value size
+   DbKeySize               = PERS_DB_MAX_LENGTH_KEY_NAME,	/// database max key size
+   DbValueSize             = PERS_DB_MAX_SIZE_KEY_DATA,    	/// database max value size
    DbTableSize             = 1024,     /// database table size
 
    PasMsg_Block            = 0x0001,   /// persistence administration service block access
@@ -131,18 +133,18 @@ enum _PersistenceConstantDef
    PasErrorStatus_OK       = 0x0002,   /// persistence administration service msg return status
    PasErrorStatus_FAIL     = 0x8000,   /// persistence administration service msg return status
 
-   CustLibMaxLen = 128,             /// max length of the custom library name and path
-   DbKeyMaxLen   = 128,             /// max database key length
-   DbResIDMaxLen = 128,             /// max database key length
-   DbPathMaxLen  = 128,             /// max database path length
-   MaxAppNameLen = 128,             /// max application name
+   CustLibMaxLen = PERS_RCT_MAX_LENGTH_CUSTOM_NAME,		/// max length of the custom library name and path
+   DbKeyMaxLen   = PERS_DB_MAX_LENGTH_KEY_NAME,       	/// max database key length
+   DbResIDMaxLen = PERS_DB_MAX_LENGTH_KEY_NAME,          /// max database key length
+   DbPathMaxLen  = PERS_ORG_MAX_LENGTH_PATH_FILENAME,    /// max database path length
+   MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,      /// max application name
    MaxPersHandle = 256,             /// max number of parallel open persistence handles
 
    MaxConfKeyLengthResp    = 32,    /// length of the config key responsible name
    MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
    MaxRctLengthCustom_ID   = 64,    /// length of the customer ID
 
-   defaultMaxKeyValDataSize = 16384 /// default limit the key-value data size to 16kB
+   defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA  /// default limit the key-value data size to 16kB
 };
 
 

@@ -115,7 +115,7 @@ else
 fi
 ######################################################################
 
-# enable persistence file cahce component ###########
+# enable persistence file cache component ###########
 AC_ARG_ENABLE([filecache],
             [AS_HELP_STRING([--enable-filecache],[Enable file cache component])],
             [use_filecache=$enableval],
