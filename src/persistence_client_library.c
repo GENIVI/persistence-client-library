@@ -66,18 +66,14 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
 
 #if USE_FILECACHE
-   printf("* * * * * * Using the filecache!  * * * * * * * * *\n");
-
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
    pfcInitCache(appName);
-#else
-   printf("* * * * * * N O T  using the filecache! * * * * * *\n");
 #endif
 
+
 #if USE_PASINTERFACE == 1
-      //printf("* ADMIN INTERFACE is  - e n a b l e d - \n");
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
 #else
-      //printf("* ADMIN INTERFACE is  - d i s a b l e d - enable with \"./configure --enable-pasinterface\"\n");
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 

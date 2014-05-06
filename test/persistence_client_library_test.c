@@ -609,8 +609,10 @@ START_TEST(test_DataFile)
    fd = pclFileOpen(0xFF, "media/mediaDB.db", 1, 1);
    x_fail_unless(fd != -1, "Could not open file ==> /media/mediaDB.db");
 
+
    size = pclFileGetSize(fd);
    x_fail_unless(size == 68, "Wrong file size");
+
 
    size = pclFileReadData(fd, buffer, READ_SIZE);
    x_fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
@@ -1026,25 +1028,21 @@ END_TEST
 
 START_TEST(test_InitDeinit)
 {
-   int i = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   for(i=0; i< 3; i++)
-   {
-      // initialize and deinitialize 1. time
-      (void)pclInitLibrary(gTheAppId, shutdownReg);
-      pclDeinitLibrary();
+	// initialize and deinitialize 1. time
+	(void)pclInitLibrary(gTheAppId, shutdownReg);
+	pclDeinitLibrary();
 
 
-      // initialize and deinitialize 2. time
-      (void)pclInitLibrary(gTheAppId, shutdownReg);
-      pclDeinitLibrary();
+	// initialize and deinitialize 2. time
+	(void)pclInitLibrary(gTheAppId, shutdownReg);
+	pclDeinitLibrary();
 
 
-      // initialize and deinitialize 3. time
-      (void)pclInitLibrary(gTheAppId, shutdownReg);
-      pclDeinitLibrary();
-   }
+	// initialize and deinitialize 3. time
+	(void)pclInitLibrary(gTheAppId, shutdownReg);
+	pclDeinitLibrary();
 }
 END_TEST
 
@@ -1104,53 +1102,67 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_persGetData = tcase_create("GetData");
    tcase_add_test(tc_persGetData, test_GetData);
+   tcase_set_timeout(tc_persGetData, 8);
 
    TCase * tc_persSetData = tcase_create("SetData");
    tcase_add_test(tc_persSetData, test_SetData);
+   tcase_set_timeout(tc_persSetData, 8);
 
    TCase * tc_persSetDataNoPRCT = tcase_create("SetDataNoPRCT");
    tcase_add_test(tc_persSetDataNoPRCT, test_SetDataNoPRCT);
+   tcase_set_timeout(tc_persSetDataNoPRCT, 8);
 
    TCase * tc_persGetDataSize = tcase_create("GetDataSize");
    tcase_add_test(tc_persGetDataSize, test_GetDataSize);
+   tcase_set_timeout(tc_persGetDataSize, 8);
 
    TCase * tc_persDeleteData = tcase_create("DeleteData");
    tcase_add_test(tc_persDeleteData, test_DeleteData);
-
-
+   tcase_set_timeout(tc_persDeleteData, 8);
 
    TCase * tc_persGetDataHandle = tcase_create("GetDataHandle");
    tcase_add_test(tc_persGetDataHandle, test_GetDataHandle);
+   tcase_set_timeout(tc_persGetDataHandle, 8);
 
    TCase * tc_persDataHandle = tcase_create("DataHandle");
    tcase_add_test(tc_persDataHandle, test_DataHandle);
+   tcase_set_timeout(tc_persGetData, 8);
 
    TCase * tc_persDataHandleOpen = tcase_create("DataHandleOpen");
    tcase_add_test(tc_persDataHandleOpen, test_DataHandleOpen);
+   tcase_set_timeout(tc_persDataHandleOpen, 8);
 
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
+   tcase_set_timeout(tc_persDataFile, 8);
 
    TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
    tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
+   tcase_set_timeout(tc_persDataFileRecovery, 8);
 
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
+   tcase_set_timeout(tc_Plugin, 8);
 
    TCase * tc_ReadDefault = tcase_create("ReadDefault");
    tcase_add_test(tc_ReadDefault, test_ReadDefault);
+   tcase_set_timeout(tc_ReadDefault, 8);
 
    TCase * tc_ReadConfDefault = tcase_create("ReadConfDefault");
    tcase_add_test(tc_ReadConfDefault, test_ReadConfDefault);
+   tcase_set_timeout(tc_ReadConfDefault, 8);
 
    TCase * tc_GetPath = tcase_create("GetPath");
    tcase_add_test(tc_GetPath, test_GetPath);
+   tcase_set_timeout(tc_GetPath, 8);
 
    TCase * tc_InitDeinit = tcase_create("InitDeinit");
    tcase_add_test(tc_InitDeinit, test_InitDeinit);
+   tcase_set_timeout(tc_InitDeinit, 8);
 
    TCase * tc_NegHandle = tcase_create("NegHandle");
    tcase_add_test(tc_NegHandle, test_NegHandle);
+   tcase_set_timeout(tc_NegHandle, 8);
 
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
@@ -1160,13 +1172,15 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_persGetDataHandle);
    suite_add_tcase(s, tc_persDataHandle);
    suite_add_tcase(s, tc_persDataHandleOpen);
-   suite_add_tcase(s, tc_persDataFile);
-   suite_add_tcase(s, tc_persDataFileRecovery);
    suite_add_tcase(s, tc_ReadDefault);
    suite_add_tcase(s, tc_ReadConfDefault);
+
+   suite_add_tcase(s, tc_persDataFile);
+   suite_add_tcase(s, tc_persDataFileRecovery);
    suite_add_tcase(s, tc_GetPath);
-   suite_add_tcase(s, tc_InitDeinit);
    suite_add_tcase(s, tc_NegHandle);
+   suite_add_tcase(s, tc_InitDeinit);
+
 
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
 

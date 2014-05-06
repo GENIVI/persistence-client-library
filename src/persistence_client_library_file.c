@@ -207,7 +207,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                close(handle);
             }
 
-            handle = pfcOpenFile(dbPath);
+            handle = pfcOpenFile(dbPath, DontCreateFile);
 #else
             if(handle <= 0)   // check if open is needed or already done in verifyConsistency
             {
@@ -224,10 +224,9 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                }
                else
                {
-
                	if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
                	{
-               		printf("pclFileOpen => No default data!!\n");
+               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen: no default data available: "), DLT_STRING(resource_id));
                	}
                }
             }
@@ -530,7 +529,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                      {
 								if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
 								{
-									printf("pclFileCreatePath => No default data!!\n");
+									DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileCreatePath => no default data available: "), DLT_STRING(resource_id));
 								}
                      }
                      close(handle);    // don't need the open file
@@ -647,7 +646,16 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 		memset(&buf, 0, sizeof(buf));
 
 		fstat(defaultHandle, &buf);
-		sendfile(handle, defaultHandle, 0, buf.st_size);
+		rval = sendfile(handle, defaultHandle, 0, buf.st_size);
+		if(rval != -1)
+		{
+			rval = lseek(handle, 0, SEEK_SET); // set fd back to beginning of the file
+		}
+		else
+		{
+			DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileGetDefaultData => failed to copy file "), DLT_STRING(strerror(errno)));
+		}
+
 		close(defaultHandle);
 	}
 	else

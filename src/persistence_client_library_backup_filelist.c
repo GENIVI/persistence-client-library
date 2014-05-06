@@ -24,6 +24,11 @@
 #include "persistence_client_library_data_organization.h"
 
 
+#if USE_FILECACHE
+   #include <persistence_file_cache.h>
+#endif
+
+
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -369,7 +374,11 @@ int pclCreateFile(const char* path)
       // finally create the file
       strncat(createPath, "/", DbPathMaxLen-1);
       strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+#if USE_FILECACHE
+      handle = pfcOpenFile(createPath, CreateFile);
+#else
       handle = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+#endif
    }
    else
    {
