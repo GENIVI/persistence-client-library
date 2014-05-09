@@ -55,8 +55,8 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       gShutdownMode = shutdownMode;
 
       DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
-                           DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
+                              DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
 
       /// environment variable for on demand loading of custom libraries
       const char *pOnDemandLoad = getenv("PERS_CUSTOM_LIB_LOAD_ON_DEMAND");
@@ -69,14 +69,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
    pfcInitCache(appName);
 #endif
-
-
-#if USE_PASINTERFACE == 1
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
-#else
-      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
-#endif
-
 
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
 
@@ -105,7 +97,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
       {
-         // register for lifecycle and persistence admin service dbus messages
+         // register for lifecycle dbus messages
          if(register_lifecycle(shutdownMode) == -1)
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
@@ -114,12 +106,19 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          }
       }
 #if USE_PASINTERFACE == 1
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
       if(register_pers_admin_service() == -1)
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_REGISTER_ADMIN;
       }
+	  else
+	  {
+         DLT_LOG(gDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary => Successfully established IPC protocol for PCL."));
+	  }
+#else
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 
       /// get custom library names to load
@@ -202,12 +201,20 @@ int pclDeinitLibrary(void)
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
-      // unregister for lifecycle and persistence admin service dbus messages
+      // unregister for lifecycle dbus messages
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
          rval = unregister_lifecycle(gShutdownMode);
 
 #if USE_PASINTERFACE == 1
       rval = unregister_pers_admin_service();
+      if(0 != rval)
+	  {
+		  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary => Failed to de-initialize IPC protocol for PCL."));
+	  }
+      else
+      {
+    	  DLT_LOG(gDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary => Successfully de-initialized IPC protocol for PCL."));
+      }
 #endif
 
       // unload custom client libraries

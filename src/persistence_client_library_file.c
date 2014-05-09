@@ -178,8 +178,8 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          }
 
          strncpy(fileSubPath, dbPath+length, DbPathMaxLen);
-         snprintf(backupPath, DbPathMaxLen-1, "%s%s", gBackupPrefix, fileSubPath);
-         snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, ".crc");
+         snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
+         snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
 
          if(shared_DB >= 0)                                          // check valid database context
          {
@@ -255,19 +255,22 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
             handle = pclCreateFile(dbPath);
 
-            if(handle < MaxPersHandle && handle > 0)
+            if(handle != -1)
             {
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+		        if(handle < MaxPersHandle)
+		        {
+		           __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
 
-               strcpy(gFileHandleArray[handle].backupPath, backupPath);
-               strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-               gFileHandleArray[handle].backupCreated = 0;
-               gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
-            }
-            else
-            {
-               close(handle);
-               handle = EPERS_MAXHANDLE;
+		           strcpy(gFileHandleArray[handle].backupPath, backupPath);
+		           strcpy(gFileHandleArray[handle].csumPath,   csumPath);
+		           gFileHandleArray[handle].backupCreated = 0;
+		           gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+		        }
+		        else
+		        {
+		           close(handle);
+		           handle = EPERS_MAXHANDLE;
+		        }
             }
          }
       }
@@ -481,8 +484,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
                && pclBackupNeeded(dbPath) )
             {
-               snprintf(backupPath, DbPathMaxLen-1, "%s%s", dbPath, "~");
-               snprintf(csumPath,   DbPathMaxLen-1, "%s%s", dbPath, "~.crc");
+               snprintf(backupPath, DbPathMaxLen-1, "%s%s", dbPath, gBackupPostfix);
+               snprintf(csumPath,   DbPathMaxLen-1, "%s%s", dbPath, gBackupCsPostfix);
 
                if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
@@ -513,33 +516,47 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
                   *size = strlen(dbPath);
                   *path = malloc((*size)+1);       // allocate 1 byte for the string termination
-                  memcpy(*path, dbPath, (*size));
-                  (*path)[(*size)] = '\0';         // terminate string
-                  gOssHandleArray[handle].filePath = *path;
 
-                  if(access(*path, F_OK) == -1)
+                  /* Check if malloc was successful */
+                  if(NULL != (*path))
                   {
-                     // file does not exist, create it.
-                     int handle = 0;
-                     if((handle = pclCreateFile(*path)) == -1)
+							memcpy(*path, dbPath, (*size));
+							(*path)[(*size)] = '\0';         // terminate string
+							gOssHandleArray[handle].filePath = *path;
+
+                     if(access(*path, F_OK) == -1)
                      {
-                        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => failed to create file: "), DLT_STRING(*path));
-                     }
-                     else
-                     {
-								if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
+								// file does not exist, create it.
+								int handle = 0;
+								if((handle = pclCreateFile(*path)) == -1)
 								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileCreatePath => no default data available: "), DLT_STRING(resource_id));
+									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => failed to create file: "), DLT_STRING(*path));
+								}
+								else
+								{
+									if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
+									{
+										DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileCreatePath => no default data available: "), DLT_STRING(resource_id));
+									}
+									close(handle);    // don't need the open file
 								}
                      }
-                     close(handle);    // don't need the open file
+                  }
+						else
+                  {
+               	     handle = EPERS_DESER_ALLOCMEM;
+               	     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
+               	                          DLT_STRING("pclFileCreatePath: malloc() failed for path:"),
+               	                          DLT_STRING(dbPath),
+               	                          DLT_STRING("With the size:"),
+                  	                      DLT_UINT(*size));
                   }
                }
                else
-               {
-                  set_persistence_handle_close_idx(handle);
-                  handle = EPERS_MAXHANDLE;
-               }
+					{
+						set_persistence_handle_close_idx(handle);
+						handle = EPERS_MAXHANDLE;
+					}
             }
          }
          else  // requested resource is not in the RCT, so create resource as local/cached.
@@ -552,8 +569,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             {
                if(handle < MaxPersHandle)
                {
-                  snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, "~");
-                  snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, "~.crc");
+                  snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, gBackupPostfix);
+                  snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, gBackupCsPostfix);
 
                   __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
                   strncpy(gOssHandleArray[handle].backupPath, backupPath, DbPathMaxLen);

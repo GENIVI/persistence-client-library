@@ -180,7 +180,10 @@ int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int use
  */
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, pclNotifyStatus_e reason);
 
-
+/**
+ * @brief close all open persistence resource configuration tables
+ *
+ */
 void pers_rct_close_all();
 
 #ifdef __cplusplus

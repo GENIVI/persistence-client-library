@@ -67,7 +67,7 @@ extern int gOpenHandleArray[MaxPersHandle];
 /**
  * @brief get persistence handle
  *
- * @return a new handle or 0 if an error occured
+ * @return a new handle or 0 if an error occured or EPERS_MAXHANDLE if max no of handles is reached
  */
 int get_persistence_handle_idx();
 
@@ -80,9 +80,11 @@ int get_persistence_handle_idx();
 void set_persistence_handle_close_idx(int handle);
 
 
+/**
+ * @brief close open key handles
+ *
+ */
 void close_all_persistence_handle();
-
-
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */

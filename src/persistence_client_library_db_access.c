@@ -101,6 +101,7 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
    PersDefaultType_e i = PersDefaultType_Configurable;
    int handleDefaultDB = -1;
    int read_size = EPERS_NOKEY;
+   char dltMessage[DbPathMaxLen] = {0};
 
    key = pers_get_raw_key(key); /* We need only the raw key without a prefixed '/node/' or '/user/1/seat/0' etc... */
 
@@ -130,42 +131,39 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
 
          if(read_size < 0) // check read_size
          {
-            if (PersDefaultType_Configurable == i)
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Key '"),
-                                                  DLT_STRING(key),
-                                                  DLT_STRING("' not found in "),
-                                                  DLT_STRING(dbPath),
-                                                  DLT_STRING(gLocalConfigurableDefault));
-            }
-            else if (PersDefaultType_Factory == i)
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Key '"),
-                                                  DLT_STRING(key),
-                                                  DLT_STRING("' not found in "),
-                                                  DLT_STRING(dbPath),
-                                                  DLT_STRING(gLocalFactoryDefault));
-            }
-            else
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_get_defaults ==> unknown PersDefaultType: "),
-                                                   DLT_INT(i));
-            }
-
             if(PERS_COM_ERR_NOT_FOUND == read_size)
             {
                read_size = EPERS_NOKEY;
             }
          }
-         else
+         else /* read_size >= 0 --> default value found */
          {
+            if (PersDefaultType_Configurable == i)
+            {
+               snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, gLocalConfigurableDefault);
+            }
+            if (PersDefaultType_Factory == i)
+            {
+                snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
+            }
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Default data will be used for Key"),
+                                               DLT_STRING(key),
+                                               DLT_STRING("from"),
+                                               DLT_STRING(dltMessage));
             break;
          }
       }
    }
 
-   return read_size;
+   if (read_size < 0)
+   {
+       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Default data not available for Key"),
+                                          DLT_STRING(key),
+                                          DLT_STRING("Path:"),
+                                          DLT_STRING(dbPath));
+   }
 
+   return read_size;
 }
 
 
@@ -334,13 +332,12 @@ int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
          read_size = EPERS_NOPLUGINFUNCT;
       }
 
-      if (1 > read_size)
+      if (1 > read_size) /* Try to get default values */
       {
          info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
          info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
          (void)get_db_path_and_key(info, key, NULL, dbPath);
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Custom Key not available. Try to get default keys from:"),
-                                            DLT_STRING(dbPath),
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get default data of key:"),
                                             DLT_STRING(key));
          ret_defaults = pers_get_defaults(dbPath, key, buffer, buffer_size, PersGetDefault_Data);
          if (0 < ret_defaults)
@@ -372,14 +369,16 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data ==> persComDbWriteKey() failure"));
          }
-
-         if(PersistenceStorage_shared == info->configKey.storage)
+         else
          {
-            int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
-            if(rval <= 0)
+            if(PersistenceStorage_shared == info->configKey.storage)
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data ==> failed to send notification signal"));
-               write_size = rval;
+               int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+               if(rval <= 0)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data ==> failed to send notification signal"));
+                  write_size = rval;
+               }
             }
          }
 
@@ -406,7 +405,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
          }
          write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
 
-         if (write_size == buffer_size) /* Check return value and send notification if OK */
+         if ((0 < write_size) && ((unsigned int)write_size == buffer_size)) /* Check return value and send notification if OK */
          {
             int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
             if(rval <= 0)
@@ -470,8 +469,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info)
          info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
          info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
          (void)get_db_path_and_key(info, key, NULL, dbPath);
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Custom Key not available. Try to get default keys from:"),
-                                            DLT_STRING(dbPath),
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get size of default data for key:"),
                                             DLT_STRING(key));
          ret_defaults = pers_get_defaults(dbPath, key, NULL, 0, PersGetDefault_Size);
          if (0 < ret_defaults)
@@ -622,12 +620,12 @@ void pers_rct_close_all()
 {
    int i = 0;
 
-   // close open persistence resource configuration table
+   // close all open persistence resource configuration tables
    for(i=0; i< PrctDbTableSize; i++)
    {
    	if(gResource_table[i] != -1)
    	{
-			if(persComRctClose(i) == -1)
+			if(persComRctClose(i) != 0)
 			{
 				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => failed to close db => index:"), DLT_INT(i));
 			}

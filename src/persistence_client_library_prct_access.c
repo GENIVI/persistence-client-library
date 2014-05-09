@@ -188,7 +188,6 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
    if((resourceFound == 0) && (dbContext->context.ldbid == 0xFF) ) // create only when the resource is local data
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => resource in rct table not found: "), DLT_STRING(resource_id) );
       //
       // resource NOT found in resource table ==> default is local cached key
       //
@@ -211,10 +210,13 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context => create resource not in PRCT => key:"), DLT_STRING(resource_id) );
 
-      // send create notification
-      rval = pers_send_Notification_Signal(dbKey, &dbContext->context, pclNotifyStatus_created);
-
       rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
+   }
+   /* rval contains the return value of function get_db_path_and_key() if positive structure content 'dbContext' is valid.
+    * rval can be 0,1 or 2 but get_db_context should only return '0' for success. */
+   if (0 < rval)
+   {
+	   rval = 0;
    }
 
    return rval;
@@ -230,7 +232,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
    //
    // create resource database key
    //
-   if((dbContext->context.ldbid < 0x80) || (dbContext->context.ldbid == 0xFF) )
+   if(((dbContext->context.ldbid < 0x80) || (dbContext->context.ldbid == 0xFF)) &&  (NULL != dbKey))
    {
       // The LDBID is used to find the DBID in the resource table.
       if((dbContext->context.user_no == 0) && (dbContext->context.seat_no == 0))
@@ -259,7 +261,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       storePolicy = PersistenceStorage_local;
    }
 
-   if((dbContext->context.ldbid >= 0x80) && (dbContext->context.ldbid != 0xFF))
+   if((dbContext->context.ldbid >= 0x80) && (dbContext->context.ldbid != 0xFF) && (NULL != dbKey))
    {
       // The LDBID is used to find the DBID in the resource table.
       // /<LDBID parameter> is added in front of the resource ID as the key string.

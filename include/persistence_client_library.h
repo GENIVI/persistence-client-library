@@ -24,7 +24,7 @@
  *
  */
 /** \ingroup GEN_PERS */
-/** \defgroup PERS_CLIENT Client: initialization access
+/** \defgroup PERS_CLIENT Client: initialisation access
  *  \{
  */
 /** \defgroup PERS_CLIENT_INTERFACE API document

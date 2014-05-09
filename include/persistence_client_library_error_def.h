@@ -116,6 +116,8 @@ extern "C" {
 #define EPERS_SHUTDOWN_MAX_CANCEL (-40)
 /// not permitted to use this function
 #define EPERS_SHUTDOWN_NO_PERMIT  (-42)
+/// requested handle is not valid. \since PCL v7.0.3
+#define EPERS_INVALID_HANDLE     (-1000)
 
 #ifdef __cplusplus
 }

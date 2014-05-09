@@ -16,17 +16,16 @@
  * @see
  */
 
+#include <errno.h>
+#include <dlfcn.h>																/* For dlclose() */
 #include "persistence_client_library_dbus_cmd.h"
 
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_custom_loader.h"
+#include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_pas_interface.h"
-
 #include "persistence_client_library_data_organization.h"
 #include "persistence_client_library_db_access.h"
-
-#include <dlfcn.h>
-#include <errno.h>
 
 
 // function prototype
@@ -60,12 +59,14 @@ void process_reg_notification_signal(DBusConnection* conn)
       dbus_bus_add_match(conn, ruleChanged, NULL);
       dbus_bus_add_match(conn, ruleDeleted, NULL);
       dbus_bus_add_match(conn, ruleCreated, NULL);
+      DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("Registered for change notifications:"), DLT_STRING(ruleChanged));
    }
    else if(gNotifyPolicy == Notify_unregister)
    {
       dbus_bus_remove_match(conn, ruleChanged, NULL);
       dbus_bus_remove_match(conn, ruleDeleted, NULL);
       dbus_bus_remove_match(conn, ruleCreated, NULL);
+      DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("Unregistered for change notifications:"), DLT_STRING(ruleChanged));
    }
 
    dbus_connection_flush(conn);  // flush the connection to add the match

@@ -78,7 +78,7 @@ typedef struct _pclNotification_s
 
 /** definition of the change callback
  *
- * @param notifyStruct structure for notifcation
+ * @param notifyStruct structure for notification
  *
  * @return positive value (0 or greater): success;
  * On error a negative value will be returned with the following error codes: ::EPERS_LOCKFS
@@ -95,7 +95,7 @@ typedef int(* pclChangeNotifyCallback_t)(pclNotification_s * notifyStruct);
  *
  * @param ldbid logical database ID
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
  * @return positive value (0 or greater) : success;
@@ -111,7 +111,7 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
  *
  * @param ldbid logical database ID
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
  * @return positive value (0 or greater): the size;
@@ -153,7 +153,7 @@ int pclKeyHandleGetSize(int key_handle);
  *
  * @param ldbid logical database ID
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  *
  * @return positive value (0 or greater): the key handle to access the value;
@@ -229,7 +229,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
  *
  * @param ldbid logical database ID
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  * @param buffer the buffer to read the persistent data
  * @param buffer_size size of buffer for reading
@@ -247,7 +247,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  *
  * @param ldbid logical database ID of the resource to monitor
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  * @param callback notification callback
  *
@@ -264,7 +264,7 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
  *
  * @param ldbid logical database ID of the resource to monitor
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  * @param callback notification callback
  *
@@ -281,7 +281,7 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
  *
  * @param ldbid logical database ID
  * @param resource_id the resource ID
- * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause ‘0’ is defined as System/node
+ * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
  * @param buffer the buffer containing the persistent data to write
  * @param buffer_size the number of bytes to write (default max size is set to 16kB)

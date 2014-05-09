@@ -25,17 +25,10 @@
 
 /**
  * @brief process a shutdown message (close all open files, open databases, ...
+ *
+ * @param complete The mode: Shutdown_Partial=0; Shutdown_Full=1
  */
 void process_prepare_shutdown(int complete);
-
-
-/**
- * @brief block persistence access and write data back to device
- *
- * @param requestId the requestID
- * @param status the status
- */
-void process_block_and_write_data_back(unsigned int requestID, unsigned int status);
 
 
 /**
@@ -54,6 +47,22 @@ void process_send_notification_signal(DBusConnection* conn);
 void process_reg_notification_signal(DBusConnection* conn);
 
 
+void process_send_lifecycle_request(DBusConnection* conn, int requestId, int status);
+
+
+void process_send_lifecycle_register(DBusConnection* conn, int regType, int shutdownMode);
+
+
+
+/**
+ * @brief block persistence access and write data back to device
+ *
+ * @param requestId the requestID
+ * @param status the status
+ */
+void process_block_and_write_data_back(unsigned int requestID, unsigned int status);
+
+
 
 /**
  * @brief process a request of the persistence admin service
@@ -64,6 +73,7 @@ void process_reg_notification_signal(DBusConnection* conn);
 void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int status);
 
 
+
 /**
  * @brief process a request of the persistence admin service
  *
@@ -71,13 +81,6 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
  * @param notification flag the notificatin flag
  */
 void process_send_pas_register(DBusConnection* conn, int regType, int notificationFlag);
-
-
-
-void process_send_lifecycle_request(DBusConnection* conn, int requestId, int status);
-
-
-void process_send_lifecycle_register(DBusConnection* conn, int regType, int shutdownMode);
 
 
 

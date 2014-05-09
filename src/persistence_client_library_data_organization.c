@@ -22,42 +22,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// rrsource configuration database name
-const char* gResTableCfg = "/resource-table-cfg.itz";
-
 /// configurable default database name
 const char* gConfigDefault = "/configurable-default-data.itz";
-
 /// default database name
 const char* gDefault = "/default-data.itz";
-
 /// write through database name
 const char* gWt             = "/wt.itz";
 /// cached database name
 const char* gCached        = "/cached.itz";
 
-
-/// directory structure node name definition
-const char* gNode = "/node";
-/// directory structure user name definition
-const char* gUser = "/user/";
-/// directory structure seat name definition
-const char* gSeat = "/seat/";
-/// default data folder name definition
 const char* gDefDataFolder = "/defaultData/";
 
+
+// define PERS_ORG_ROOT_PATH comes form persistence common object
+
 /// cached path location
-#define CACHEPREFIX         "/Data/mnt-c/"
+#define CACHEPREFIX         PERS_ORG_ROOT_PATH "/mnt-c/"
 /// write through path location
-#define WTPREFIX            "/Data/mnt-wt/"
+#define WTPREFIX            PERS_ORG_ROOT_PATH "/mnt-wt/"
+/// path for the backup location
+const char* gBackupPrefix  	= PERS_ORG_ROOT_PATH "/mnt-backup/";
 
 /// size of cached path string
 const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
 /// size of write through string
 const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
 
-/// path for the backup location
-const char* gBackupPrefix = "/Data/mnt-backup/";
+
+/// backup filename postfix
+const char* gBackupPostfix 	= "~";
+/// backup checksum filename postfix
+const char* gBackupCsPostfix 	= "~.crc";
 
 /// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
 const char* gLocalCachePath        = CACHEPREFIX "%s";

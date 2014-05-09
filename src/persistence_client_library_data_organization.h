@@ -147,10 +147,6 @@ enum _PersistenceConstantDef
    defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA  /// default limit the key-value data size to 16kB
 };
 
-
-/// resource configuration table name
-extern const char* gResTableCfg;
-
 /// configurable default database name
 extern const char* gConfigDefault;
 
@@ -164,19 +160,15 @@ extern const char* gCached;
 /// write through database name
 extern const char* gWt;
 
-
-/// directory structure node name definition
-extern const char* gNode;
-/// directory structure user name definition
-extern const char* gUser;
-/// directory structure seat name definition
-extern const char* gSeat;
-
 /// default data folder name definition
 extern const char* gDefDataFolder;
 
 /// path for the backup location
 extern const char* gBackupPrefix;
+/// backup filename postfix
+extern const char* gBackupPostfix;
+/// backup checksum filename postfix
+extern const char* gBackupCsPostfix;
 
 /// size of cached prefix string
 extern const int gCPathPrefixSize;
