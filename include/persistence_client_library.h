@@ -24,12 +24,25 @@
  *
  */
 /** \ingroup GEN_PERS */
-/** \defgroup PERS_CLIENT Client: initialisation access
+/** \defgroup PERS_CLIENT Client: initialization access
  *  \{
  */
 /** \defgroup PERS_CLIENT_INTERFACE API document
  *  \{
  */
+
+/**
+ * @mainpage The Persistence Client Library documentation
+ *           GENIVI's Persistence Client Library, known as PCL, is responsible for handling persistent data,
+ *           including all data read and modified during a lifetime of an infotainment system.<br>
+ *           "Persistent data" is data stored in a non-volatile storage such as a hard disk drive or FLASH memory.
+ *           <br><br>
+ *           The Persistence Client Library (PCL) provides an API to applications to read and write persistent data
+ *           via a key-value and a file interface.<br>
+ *           It also provide a plugin API to allow users to extend the client library with custom storage solutions.
+ */
+
+
 
 #ifdef __cplusplus
 extern "C" {

@@ -22,17 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/// configurable default database name
-const char* gConfigDefault = "/configurable-default-data.itz";
-/// default database name
-const char* gDefault = "/default-data.itz";
-/// write through database name
-const char* gWt             = "/wt.itz";
-/// cached database name
-const char* gCached        = "/cached.itz";
-
-const char* gDefDataFolder = "/defaultData/";
-
 
 // define PERS_ORG_ROOT_PATH comes form persistence common object
 
@@ -81,7 +70,7 @@ const char* gSharedPublicCachePathKey = CACHEPREFIX "%s/shared_public%s";
 const char* gSharedPublicWtPathKey    = WTPREFIX "%s/shared_public%s";
 
 /// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
-const char* gLocalCacheFilePath        = CACHEPREFIX "%s/user/%d/seat/%d/%s";
+const char* gLocalCacheFilePath        = CACHEPREFIX "%s"PERS_ORG_USER_FOLDER_NAME_"%d"PERS_ORG_SEAT_FOLDER_NAME_"%d/%s";
 
 
 const char* gChangeSignal = "PersistenceResChange";

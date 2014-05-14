@@ -78,3 +78,15 @@ This is normally a bug in some application using the D-Bus library.
 This is OK unless lifecycle management and the persistence administration service are not running.
 The persistence client library registers to lifecycle management and the persistence administration service.
 If the components are not available and do not respond to the dbus register message, the error message above will be created.
+
+
+----------------------------
+How to create doxygen documentation
+----------------------------
+
+The doxygen package must be installed.
+run "doxygen doc/pcl_doxyfile" and the html documentation will be generated in the doc folder. 
+
+
+
+
