@@ -247,6 +247,10 @@ int pclDeinitLibrary(void)
 
       gPclInitialized = PCLnotInitialized;
 
+#if USE_FILECACHE
+   pfcDeinitCache();
+#endif
+
       DLT_UNREGISTER_CONTEXT(gPclDLTContext);
    }
    else if(gPclInitialized > PCLinitialized)
