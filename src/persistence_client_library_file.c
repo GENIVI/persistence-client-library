@@ -494,7 +494,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                }
                // we don't need the file handle here
                // the application calling this function must use the POSIX open() function to get an file descriptor
-               close(handle);
+               if(handle > 0)
+               	close(handle);
             }
 
             handle = get_persistence_handle_idx();

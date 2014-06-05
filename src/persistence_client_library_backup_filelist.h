@@ -87,7 +87,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[]);
  * @param csumPath the path to the checksum file
  * @param openFlag the file open flags
  *
- * @return
+ * @return -1 if the file could not be recovered or a positive value (>=0) on successful recovery
  */
 int pclVerifyConsistency(const char* origPath, const char* backupPath, const char* csumPath, int openFlags);
 
