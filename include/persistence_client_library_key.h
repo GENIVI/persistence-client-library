@@ -182,6 +182,10 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 /**
  * @brief register a change notification for persistent data
  *
+ * @warning It is only possible to register one callback at the time, not multiple ones.
+ *          If you need to change the callback, call ::pclKeyHandleUnRegisterNotifyOnChange
+ *          and then register a callback again.
+ *
  * @param key_handle key value handle return by key_handle_open()
  * @param callback notification callback
  *
@@ -244,6 +248,10 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
 /**
  * @brief register a change notification for persistent data
+ *
+ * @warning It is only possible to register one callback at the time, not multiple ones.
+ *          If you need to change the callback, call ::pclKeyUnRegisterNotifyOnChange
+ *          and then register a callback again.
  *
  * @param ldbid logical database ID of the resource to monitor
  * @param resource_id the resource ID

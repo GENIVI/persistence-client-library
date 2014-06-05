@@ -164,7 +164,7 @@ void database_close_all();
  *
  * @return 0 of registration was successfull; -1 if registration failes
  */
-int persistence_notify_on_change(char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                      pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
 

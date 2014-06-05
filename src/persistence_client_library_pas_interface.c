@@ -30,13 +30,6 @@
 static int gLockAccess = 0;
 
 
-int pers_data_sync(void)
-{
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PCL: pers_data_sync()"));
-   sync();
-   return 1;
-}
-
 void pers_lock_access(void)
 {
    __sync_fetch_and_add(&gLockAccess,1);

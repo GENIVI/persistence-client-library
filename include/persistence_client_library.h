@@ -128,7 +128,7 @@ int pclDeinitLibrary(void);
  *
  * @return positive value: success;
  *   On error a negative value will be returned with the following error codes:
- *   ::EPERS_COMMON, :.EPERS_MAX_CANCEL_SHUTDOWN, ::EPERS_SHTDWN_NO_PERMIT
+ *   ::EPERS_COMMON, ::EPERS_MAX_CANCEL_SHUTDOWN, ::EPERS_SHTDWN_NO_PERMIT
  */
 int pclLifecycleSet(int shutdown);
 

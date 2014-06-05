@@ -192,7 +192,19 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
-   return handleRegNotifyOnChange(key_handle, callback, Notify_register);
+   int rval = EPERS_COMMON;
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
+   //            DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+   if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
+   {
+      rval = handleRegNotifyOnChange(key_handle, callback, Notify_register);
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: Only one callback is allowed for change notifications."));
+      rval = EPERS_NOTIFY_NOT_ALLOWED;
+   }
+   return rval;
 }
 
 int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
@@ -485,7 +497,19 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
 
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
 {
-   return regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_register);
+   int rval = EPERS_COMMON;
+   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange: "),
+   //            DLT_INT(ldbid), DLT_STRING(resource_id) );
+   if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
+   {
+      rval = regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_register);
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: Only one callback is allowed for change notifications."));
+      rval = EPERS_NOTIFY_NOT_ALLOWED;
+   }
+   return rval;
 }
 
 
@@ -516,13 +540,15 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
          if(   (dbContext.configKey.storage != PersistenceStorage_local)
             && (dbContext.configKey.type    == PersistenceResourceType_key) )
          {
-            rval = persistence_notify_on_change(dbKey, ldbid, user_no, seat_no, callback, regPolicy);
+            rval = persistence_notify_on_change(resource_id, ldbid, user_no, seat_no, callback, regPolicy);
          }
          else
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
             		             DLT_STRING("regNotifyOnChange: Not allowed! Resource is local or it is a file:"),
-            		             DLT_STRING(resource_id));
+            		             DLT_STRING(resource_id),
+                                 DLT_STRING("LDBID:"),
+                                 DLT_UINT(ldbid));
             rval = EPERS_NOTIFY_NOT_ALLOWED;
          }
       }

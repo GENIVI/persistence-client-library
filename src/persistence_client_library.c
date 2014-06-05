@@ -115,7 +115,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       }
 	  else
 	  {
-         DLT_LOG(gDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary => Successfully established IPC protocol for PCL."));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary => Successfully established IPC protocol for PCL."));
 	  }
 #else
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
@@ -209,11 +209,11 @@ int pclDeinitLibrary(void)
       rval = unregister_pers_admin_service();
       if(0 != rval)
 	  {
-		  DLT_LOG(gDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary => Failed to de-initialize IPC protocol for PCL."));
+		  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary => Failed to de-initialize IPC protocol for PCL."));
 	  }
       else
       {
-    	  DLT_LOG(gDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary => Successfully de-initialized IPC protocol for PCL."));
+    	  DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary => Successfully de-initialized IPC protocol for PCL."));
       }
 #endif
 

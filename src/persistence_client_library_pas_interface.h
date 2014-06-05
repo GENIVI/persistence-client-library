@@ -39,9 +39,6 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
 int signal_persModeChange(DBusConnection *connection, DBusMessage *message);
 
-/// synchronize data back to memory device
-int pers_data_sync(void);
-
 
 /// lock access to persistence data
 void pers_lock_access(void);

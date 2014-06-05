@@ -77,6 +77,11 @@ unsigned int gConfigFileSize = 0;
 /// the rb tree
 static jsw_rbtree_t *gRb_tree_bl = NULL;
 
+
+// local function prototypes
+int need_backup_key(unsigned int key);
+
+
 void fillCharTokenArray()
 {
    unsigned int i=0;
@@ -679,6 +684,10 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 
          free(buf);
       }
+      else
+      {
+      	rval = -1;
+      }
    }
    return rval;
 }
@@ -694,7 +703,7 @@ int pclBackupNeeded(const char* path)
 
 int pclGetPosixPermission(PersistencePermission_e permission)
 {
-   int posixPerm = 0;
+   int posixPerm = -1;
 
    switch( (int)permission)
    {

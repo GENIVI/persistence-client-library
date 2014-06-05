@@ -163,9 +163,6 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
    // lock persistence data access
    pers_lock_access();
    // sync data back to memory device
-   pers_data_sync();
-   // send complete notification
-   //pers_admin_service_data_sync_complete(requestID, status);
 }
 
 
