@@ -36,7 +36,7 @@
 #include <dlfcn.h>
 
 
-int check_lc_request(int request, int requestID)
+int check_lc_request(unsigned int request, unsigned int requestID)
 {
    int rval = 0;
 
@@ -68,9 +68,9 @@ int check_lc_request(int request, int requestID)
 
 int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 {
-   int request   = 0,
-       requestID = 0,
-       msgReturn = 0;
+   unsigned int request   = 0,
+                requestID = 0;
+   int msgReturn = 0;
 
    DBusMessage *reply;
    DBusError error;

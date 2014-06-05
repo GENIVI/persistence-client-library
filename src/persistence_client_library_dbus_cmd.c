@@ -398,7 +398,7 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 
 
 
-void process_send_lifecycle_request(DBusConnection* conn, int requestId, int status)
+void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId, unsigned int status)
 {
    DBusError error;
    dbus_error_init (&error);

@@ -47,7 +47,7 @@ void process_send_notification_signal(DBusConnection* conn);
 void process_reg_notification_signal(DBusConnection* conn);
 
 
-void process_send_lifecycle_request(DBusConnection* conn, int requestId, int status);
+void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId, unsigned int status);
 
 
 void process_send_lifecycle_register(DBusConnection* conn, int regType, int shutdownMode);
