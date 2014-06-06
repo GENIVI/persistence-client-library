@@ -42,6 +42,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
 
 int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
+   int rval   = 0;
    int handle = EPERS_NOT_INITIALIZED;
 
    if(gPclInitialized >= PCLinitialized)
@@ -56,8 +57,8 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
       dbContext.context.user_no = user_no;
 
       // get database context: database path and database key
-      handle = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-      if(   (handle >= 0) && (dbContext.configKey.type == PersistenceResourceType_key) )          // check if type matches
+      rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+      if((rval >= 0) && (dbContext.configKey.type == PersistenceResourceType_key))          // check if type matches
       {
          if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
          {
@@ -67,12 +68,11 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
             if((handle < MaxPersHandle) && (0 < handle))
             {
                // remember data in handle array
-               strncpy(gKeyHandleArray[handle].dbPath, dbPath, DbPathMaxLen);
-               strncpy(gKeyHandleArray[handle].dbKey,  dbKey,  DbKeyMaxLen);
-               strncpy(gKeyHandleArray[handle].resourceID,  resource_id,  DbResIDMaxLen);
-               gKeyHandleArray[handle].dbPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-               gKeyHandleArray[handle].dbKey[ DbKeyMaxLen-1] = '\0'; // Ensures 0-Termination
-               gKeyHandleArray[handle].info = dbContext;
+               strncpy(gKeyHandleArray[handle].resource_id, resource_id, DbResIDMaxLen);
+               gKeyHandleArray[handle].resource_id[DbResIDMaxLen-1] = '\0'; /* Ensures 0-Termination */
+               gKeyHandleArray[handle].ldbid   = ldbid;
+               gKeyHandleArray[handle].user_no = user_no;
+               gKeyHandleArray[handle].seat_no = seat_no;
             }
             else
             {
@@ -103,7 +103,7 @@ int pclKeyHandleClose(int key_handle)
    {
       if((key_handle < MaxPersHandle) && (key_handle > 0))
       {
-         if ('\0' != gKeyHandleArray[key_handle].resourceID[0])
+         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
             /* Invalidate key handle data */
         	set_persistence_handle_close_idx(key_handle);
@@ -134,12 +134,12 @@ int pclKeyHandleGetSize(int key_handle)
    {
       if((key_handle < MaxPersHandle) && (key_handle > 0))
       {
-         if ('\0' != gKeyHandleArray[key_handle].resourceID[0])
+         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
-        	 size = pclKeyGetSize(gKeyHandleArray[key_handle].info.context.ldbid,
-                                  gKeyHandleArray[key_handle].resourceID,
-                                  gKeyHandleArray[key_handle].info.context.user_no,
-                                  gKeyHandleArray[key_handle].info.context.seat_no);
+        	 size = pclKeyGetSize(gKeyHandleArray[key_handle].ldbid,
+                                  gKeyHandleArray[key_handle].resource_id,
+                                  gKeyHandleArray[key_handle].user_no,
+                                  gKeyHandleArray[key_handle].seat_no);
          }
          else
          {
@@ -165,12 +165,12 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
    {
       if((key_handle < MaxPersHandle) && (key_handle > 0))
       {
-         if ('\0' != gKeyHandleArray[key_handle].resourceID[0])
+         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
-        	 size = pclKeyReadData(gKeyHandleArray[key_handle].info.context.ldbid,
-                                   gKeyHandleArray[key_handle].resourceID,
-                                   gKeyHandleArray[key_handle].info.context.user_no,
-                                   gKeyHandleArray[key_handle].info.context.seat_no,
+        	 size = pclKeyReadData(gKeyHandleArray[key_handle].ldbid,
+                                   gKeyHandleArray[key_handle].resource_id,
+                                   gKeyHandleArray[key_handle].user_no,
+                                   gKeyHandleArray[key_handle].seat_no,
                                    buffer,
                                    buffer_size);
          }
@@ -222,15 +222,15 @@ int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, 
    {
       if((key_handle < MaxPersHandle) && (key_handle > 0))
       {
-         if ('\0' != gKeyHandleArray[key_handle].resourceID[0])
+         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
-            rval = regNotifyOnChange(gKeyHandleArray[key_handle].info.context.ldbid,
-                                     gKeyHandleArray[key_handle].resourceID,
-                                     gKeyHandleArray[key_handle].info.context.user_no,
-                                     gKeyHandleArray[key_handle].info.context.seat_no,
+            rval = regNotifyOnChange(gKeyHandleArray[key_handle].ldbid,
+                                     gKeyHandleArray[key_handle].resource_id,
+                                     gKeyHandleArray[key_handle].user_no,
+                                     gKeyHandleArray[key_handle].seat_no,
                                      callback,
                                      regPolicy);
-         }
+          }
           else
           {
          	 rval = EPERS_INVALID_HANDLE;
@@ -254,12 +254,12 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
    {
       if((key_handle < MaxPersHandle) && (key_handle > 0))
       {
-         if ('\0' != gKeyHandleArray[key_handle].resourceID[0])
+         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
-        	 size = pclKeyWriteData(gKeyHandleArray[key_handle].info.context.ldbid,
-                                    gKeyHandleArray[key_handle].resourceID,
-                                    gKeyHandleArray[key_handle].info.context.user_no,
-                                    gKeyHandleArray[key_handle].info.context.seat_no,
+        	 size = pclKeyWriteData(gKeyHandleArray[key_handle].ldbid,
+                                    gKeyHandleArray[key_handle].resource_id,
+                                    gKeyHandleArray[key_handle].user_no,
+                                    gKeyHandleArray[key_handle].seat_no,
                                     buffer,
                                     buffer_size);
          }

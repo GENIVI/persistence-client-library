@@ -27,10 +27,10 @@
 /// key handle structure definition
 typedef struct _PersistenceKeyHandle_s
 {
-   PersistenceInfo_s info;          /// persistence info
-   char dbPath[DbPathMaxLen];       /// path to the database
-   char dbKey[DbKeyMaxLen];         /// database key
-   char resourceID[DbResIDMaxLen];  /// resourceID
+   char resource_id[DbResIDMaxLen];   /* Resource ID */
+   unsigned int ldbid;                /* LDBID       */
+   unsigned int user_no;              /* User No     */
+   unsigned int seat_no;              /* Seat No     */
 } PersistenceKeyHandle_s;
 
 
