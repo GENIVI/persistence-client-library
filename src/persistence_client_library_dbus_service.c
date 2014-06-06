@@ -543,7 +543,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
                   while (DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
 
-                  while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, -1)))&&(EINTR==errno));
+                  while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, 750)))&&(EINTR==errno));
 
                   if (0>ret)
                   {
