@@ -170,7 +170,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       }
 
       // initialize keyHandle array
-      memset(gKeyHandleArray, 0, sizeof(gKeyHandleArray));
+      memset(gKeyHandleArray, 0, MaxPersHandle * sizeof(PersistenceKeyHandle_s));
 
       pers_unlock_access();
 

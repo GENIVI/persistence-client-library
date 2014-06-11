@@ -138,7 +138,7 @@ enum _PersistenceConstantDef
    DbResIDMaxLen = PERS_DB_MAX_LENGTH_KEY_NAME,          /// max database key length
    DbPathMaxLen  = PERS_ORG_MAX_LENGTH_PATH_FILENAME,    /// max database path length
    MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,      /// max application name
-   MaxPersHandle = 256,             /// max number of parallel open persistence handles
+   MaxPersHandle = 128,             /// max number of parallel open persistence handles
 
    MaxConfKeyLengthResp    = 32,    /// length of the config key responsible name
    MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
