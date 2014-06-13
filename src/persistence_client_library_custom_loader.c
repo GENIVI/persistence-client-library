@@ -33,13 +33,98 @@
 /// type definition of persistence custom library information
 typedef struct sPersCustomLibInfo
 {
-   char libname[CustLibMaxLen];
-   int valid;
+   char 						libname[CustLibMaxLen];
+   int 						valid;
+   PersInitType_e  		initFunction;
+   PersLoadingType_e 	loadingType;
 } PersCustomLibInfo;
 
 
 /// array with custom client library names
 static PersCustomLibInfo gCustomLibArray[PersCustomLib_LastEntry];
+
+char* gpCustomConfigFileMap = 0;
+char* gpCustomTokenArray[TOKENARRAYSIZE];
+int   gCustomTokenCounter = 0;
+unsigned int gCustomConfigFileSize = 0;
+
+
+
+void fillCustomCharTokenArray()
+{
+   unsigned int i=0;
+   int blankCount=0;
+   char* tmpPointer = gpCustomConfigFileMap;
+
+   // set the first pointer to the start of the file
+   gpCustomTokenArray[blankCount] = tmpPointer;
+   blankCount++;
+
+   while(i < gCustomConfigFileSize)
+   {
+      if(1 != gCharLookup[(int)*tmpPointer])
+      {
+         *tmpPointer = 0;
+
+         // check if we are at the end of the token array
+         if(blankCount >= TOKENARRAYSIZE)
+         {
+            break;
+         }
+         gpCustomTokenArray[blankCount] = tmpPointer+1;
+         blankCount++;
+         gCustomTokenCounter++;
+
+      }
+      tmpPointer++;
+      i++;
+   }
+}
+
+PersLoadingType_e getCustomLoadingType(int i)
+{
+	return gCustomLibArray[i].loadingType;
+}
+
+PersLoadingType_e getLoadingType(const char* type)
+{
+	PersLoadingType_e persLoadingType = LoadType_Undefined;
+
+   if(0 == strcmp(type, "init") )
+   {
+   	persLoadingType = LoadType_PclInit;
+   }
+   else if(0 == strcmp(type, "od") )
+   {
+   	persLoadingType = LoadType_OnDemand;
+   }
+
+   return persLoadingType;
+}
+
+PersInitType_e getCustomInitType(int i)
+{
+	return gCustomLibArray[i].initFunction;
+}
+
+PersInitType_e getInitType(const char* policy)
+{
+	PersInitType_e persInitType = Init_Undefined;
+
+   if(0 == strcmp(policy, "sync"))
+   {
+   	persInitType = Init_Synchronous;
+   }
+   else if (0 == strcmp(policy, "async"))
+   {
+   	persInitType = Init_Asynchronous;
+   }
+
+   return persInitType;
+}
+
+
+
 
 
 PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring)
@@ -124,18 +209,16 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
 
 int get_custom_libraries()
 {
-   int rval = 0, fd = 0, j = 0;
-
+   int rval = 0, fd = 0, j = 0, i= 0;
+   int status = 0;
    struct stat buffer;
-   char* delimiters = " \n";   // search for blank and end of line
-   char* configFileMap = 0;
-   char* token = 0;
+
    const char *filename = getenv("PERS_CLIENT_LIB_CUSTOM_LOAD");
 
-   if(filename == NULL)
-   {
-      filename = "/etc/pclCustomLibConfigFile.cfg";  // use default filename
-   }
+	if(filename == NULL)
+	{
+		filename = "/etc/pclCustomLibConfigFile.cfg";  // use default filename
+	}
 
    for(j=0; j<PersCustomLib_LastEntry; j++)
    {
@@ -143,108 +226,78 @@ int get_custom_libraries()
       gCustomLibArray[j].valid = -1;
    }
 
-
-   if(stat(filename, &buffer) != -1)
+   memset(&buffer, 0, sizeof(buffer));
+   status = stat(filename, &buffer);
+   if(status != -1)
    {
-      if(buffer.st_size > 20)  // file needs to be at least bigger then 20 bytes
-      {
-         fd = open(filename, O_RDONLY);
-         if (fd != -1)
-         {
-            configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+      gCustomConfigFileSize = buffer.st_size;
+   }
 
-            if(configFileMap != MAP_FAILED)
-            {
-               int libId = 0;
+   fd = open(filename, O_RDONLY);
+   if (fd == -1)
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error ==> Error file open: "),
+            DLT_STRING(filename), DLT_STRING("err msg: "), DLT_STRING(strerror(errno)) );
 
-               // get the library identifier (early, secure, emergency, ...)
-               token = strtok(configFileMap, delimiters);
-               libId = custom_client_name_to_id(token, 0);
+      return -1;
+   }
 
+   // check for empty file
+   if(gCustomConfigFileSize >= 0)
+   {
+		// map the config file into memory
+		gpCustomConfigFileMap = (char*)mmap(0, gCustomConfigFileSize, PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-               if(libId < PersCustomLib_LastEntry)
-               {
-                  gCustomLibArray[libId].valid = 1;
-               }
-               else
-               {
-                  munmap(configFileMap, buffer.st_size); // @CB: Add
-                  close(fd); // @CB: Add // close file descriptor before return
-                   return EPERS_OUTOFBOUNDS; // out of array bounds
-               }
+		if (gpCustomConfigFileMap == MAP_FAILED)
+		{
+			gpCustomConfigFileMap = 0;
+			close(fd);
+			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error ==> Error mapping the file"));
+			return -1;
+		}
 
-               // get the library name
-               token  = strtok (NULL, delimiters);
-               strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
-               gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+		// reset the token counter
+		gCustomTokenCounter = 0;
 
-               while( token != NULL )
-               {
-                  // get the library identifier (early, secure, emergency, ...)
-                  token = strtok(NULL, delimiters);
-                  if(token != NULL)
-                  {
-                     libId = custom_client_name_to_id(token, 0);
-                     if(libId < PersCustomLib_LastEntry)
-                     {
-                        gCustomLibArray[libId].valid = 1;
-                     }
-                     else
-                     {
-                        rval = EPERS_OUTOFBOUNDS;
-                        break;
-                     }
-                  }
-                  else
-                  {
-                     break;
-                  }
+		fillCustomCharTokenArray();
 
-                  // get the library name
-                  token  = strtok (NULL, delimiters);
-                  if(token != NULL)
-                  {
-                     strncpy(gCustomLibArray[libId].libname, token, CustLibMaxLen);
-                     gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
-                  }
-                  else
-                  {
-                     break;
-                  }
-               }
+		while( i < TOKENARRAYSIZE )
+		{
+			if(gpCustomTokenArray[i] != 0 && gpCustomTokenArray[i+1] != 0 && gpCustomTokenArray[i+2] != 0 &&gpCustomTokenArray[i+3] != 0 )
+			{
+				int libId = custom_client_name_to_id(gpCustomTokenArray[i], 0);	// get the custom libID
 
-               munmap(configFileMap, buffer.st_size);
+				// assign the libraryname
+				strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], CustLibMaxLen);
+				gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
 
-               #if 0 // debuging
-               for(j=0; j<PersCustomLib_LastEntry; j++)
-               {
-                  printf("Custom libraries => Name: %s | valid: %d \n", gCustomLibArray[j].libname, gCustomLibArray[j].valid);
-               }
-               #endif
-            }
-            else
-            {
-               rval = EPERS_CONFIGMAPFAILED;
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - mapping of file failed"));
-            }
-            close(fd);
-         }
-         else
-         {
-            rval = EPERS_CONFIGNOTAVAILABLE;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - no file with plugins available:"), DLT_STRING(filename), DLT_STRING(strerror(errno)));
-         }
-      }
-      else
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error - invalid file size"), DLT_STRING(filename), DLT_STRING(strerror(errno)));
-      }
+				gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
+				gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);
+				gCustomLibArray[libId].valid        = 1;	// marks as valid;
+#if 0
+				// debug
+				printf("     1. => %s => %d \n",   gpCustomTokenArray[i],   libId);
+				printf("     2. => %s => %s \n",   gpCustomTokenArray[i+1], gCustomLibArray[libId].libname);
+				printf("     3. => %s => %d \n",   gpCustomTokenArray[i+2], (int)gCustomLibArray[libId].initFunction);
+				printf("     4. => %s => %d \n\n", gpCustomTokenArray[i+3], (int)gCustomLibArray[libId].loadingType);
+#endif
+			}
+			else
+			{
+				break;
+			}
+			i+=4;       // move to the next configuration file entry
+		}
+
+		close(fd);
    }
    else
    {
-      rval = EPERS_CONFIGNOSTAT;
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lload config file error - can't stat config file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)));
+   	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error ==> Error file size is 0"));
+      close(fd);
+      rval = -1;
    }
+
    return rval;
 }
 
@@ -390,24 +443,6 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
       rval = EPERS_DLOPENERROR;
    }
 
-   return rval;
-}
-
-
-
-int load_all_custom_libraries()
-{
-   int rval = 0,
-          i = 0;
-
-   for(i=0; i<PersCustomLib_LastEntry; i++)
-   {
-      rval = load_custom_library(i, &gPersCustomFuncs[i]);
-      if( rval < 0)
-      {
-         break;
-      }
-   }
    return rval;
 }
 

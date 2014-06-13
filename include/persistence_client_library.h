@@ -40,6 +40,42 @@
  *           The Persistence Client Library (PCL) provides an API to applications to read and write persistent data
  *           via a key-value and a file interface.<br>
  *           It also provide a plugin API to allow users to extend the client library with custom storage solutions.
+ *
+ * @section Custom plugin configuration file
+ *          @attention
+ *          The plugin configuration file has been changed!
+ *
+ *          The configuration file has now the following format<br>
+ *          <predefinedPluginName> <pathAndLibraryName> <loadingType> <initType>
+ *
+ *          <b>Predefined plugin name</b><br>
+ *          Use one of the following names:
+ *          - early     => predefined custom library for early persistence
+ *          - secure    => predefined custom library for secure persistence
+ *          - emergency => predefined custom library for emengency persistence
+ *          - hwinfo    => predefined custom library for hw information
+ *          - custom1   => custom library 1
+ *          - custom2   => custom library 2
+ *          - custom3   => custom library 3
+ *
+ *          <b>Path and library name:</b><br>
+ *          The name and path of the library
+ *
+ *          <b>Valid loading type:</b>
+ *          - "init" ==> if the plugin must be laoding during the pclInitLibrary function
+ *          - "on"	==> if on demand laoding of the plugin is requested. The plugin will be loaded
+ *          when a plugin function will be loaded the first time
+ *
+ *          <b>Init Type:</b>
+ *          - sync ==> use the "plugin_init" function for plugin initialization
+ *          - async ==> use the "plugin_init_async" function for plugin initialization
+ *
+ *          <b>Example:</b><br>
+ *          hwinfo /usr/local/lib/libhwinfoperscustom.so init async
+ *
+ *          @note
+ *          Make sure that there is only ONE blank between each entry and no blank at the end of the file.
+ *          The parser has been optimized for speed, so there is less error checking.
  */
 
 

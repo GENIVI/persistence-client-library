@@ -179,7 +179,6 @@ void process_prepare_shutdown(int complete)
    {
       if(gOpenFdArray[i] == FileOpen)
       {
-         fsync(i);
 
 #if USE_FILECACHE
          if(complete == Shutdown_Full)

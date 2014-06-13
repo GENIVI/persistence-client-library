@@ -144,6 +144,8 @@ enum _PersistenceConstantDef
    MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
    MaxRctLengthCustom_ID   = 64,    /// length of the customer ID
 
+   TOKENARRAYSIZE = 255,
+
    defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA  /// default limit the key-value data size to 16kB
 };
 
@@ -240,6 +242,9 @@ extern int gDbusPendingRvalue;
  * @param pclNotification_s callback notification structure
  */
 extern int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
+
+/// character lookup table
+extern const char gCharLookup[];
 
 
 #ifdef __cplusplus

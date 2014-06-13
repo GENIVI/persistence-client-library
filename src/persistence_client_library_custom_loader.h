@@ -48,6 +48,24 @@ enum _PersCustomLibDefines_e
 } PersCustomLibDefines_e;
 
 
+/// indicates the init method type
+typedef enum PersInitType_e_
+{
+	Init_Synchronous   = 0,
+	Init_Asynchronous = 1,
+	Init_Undefined
+} PersInitType_e;
+
+
+/// indicates the plugin loading type
+typedef enum PersLoadingType_e_
+{
+	LoadType_PclInit   = 0,	// load plugin during pclInitLibrary function
+	LoadType_OnDemand = 1,	// load the pluing on demand, when a plugin function will be requested the first time.
+	LoadType_Undefined
+} PersLoadingType_e;
+
+
 
 /// structure definition for custom library functions
 typedef struct _Pers_custom_functs_s
@@ -150,16 +168,6 @@ int get_custom_libraries();
 int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s *customFuncts);
 
 
-
-/**
- * @brief get the names of the custom libraries to load
- *
- * @return 0 for success orr a negative value with one of the following errors:
- *  EPERS_NOPLUGINFCNT   EPERS_DLOPENERROR
- */
-int load_all_custom_libraries();
-
-
 /**
  * @brief get the position in the array
  *
@@ -184,5 +192,10 @@ char* get_custom_client_lib_name(int idx);
  */
 void invalidate_custom_plugin(int idx);
 
+
+
+PersLoadingType_e getCustomLoadingType(int i);
+
+PersInitType_e getCustomInitType(int i);
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_CUSTOM_LOADER_H */

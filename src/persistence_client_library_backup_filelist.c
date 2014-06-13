@@ -51,23 +51,6 @@ void* key_val_dup(void *p);
 int key_val_cmp(const void *p1, const void *p2 );
 
 
-
-/// the size of the token array
-enum configConstants
-{
-   TOKENARRAYSIZE = 255
-};
-
-
-const char gCharLookup[] =
-{
-   0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  // from 0x0 (NULL)  to 0x1F (unit seperator)
-   0,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  // from 020 (space) to 0x2F (?)
-   1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  // from 040 (@)     to 0x5F (_)
-   1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1,1,  1,1,1,1,1,1,1     // from 060 (')     to 0x7E (~)
-};
-
-
 char* gpConfigFileMap = 0;
 char* gpTokenArray[TOKENARRAYSIZE] = {0};
 int gTokenCounter = 0;
@@ -82,7 +65,7 @@ static jsw_rbtree_t *gRb_tree_bl = NULL;
 int need_backup_key(unsigned int key);
 
 
-void fillCharTokenArray()
+void fillFileBackupCharTokenArray()
 {
    unsigned int i=0;
    int blankCount=0;
@@ -210,7 +193,7 @@ int readBlacklistConfigFile(const char* filename)
 	   // reset the token counter
 	   gTokenCounter = 0;
 
-	   fillCharTokenArray();
+	   fillFileBackupCharTokenArray();
 
 	   // create filenames and store them in the tree
 	   createAndStoreFileNames();

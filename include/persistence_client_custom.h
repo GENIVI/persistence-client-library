@@ -34,7 +34,7 @@
  *  - 2012.07.14 ihuerner  1.0.0.0  Initial version of the interface
  */
 
- 
+
 /** \ingroup GEN_PERS_CLIENTLIB_INTERFACE API document
  *  \{
  */
