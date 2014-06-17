@@ -103,7 +103,7 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
    int read_size = EPERS_NOKEY;
    char dltMessage[DbPathMaxLen] = {0};
 
-   key = pers_get_raw_key(key); /* We need only the raw key without a prefixed '/node/' or '/user/1/seat/0' etc... */
+   // key = pers_get_raw_key(key); /* We need only the raw key without a prefixed '/node/' or '/user/1/seat/0' etc... */
 
    for(i=0; i<PersDefaultType_LastEntry; i++)
    {
@@ -290,7 +290,7 @@ void database_close_all()
 
 
 
-int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
+int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
 {
    int read_size = -1;
    int ret_defaults = -1;
@@ -301,10 +301,10 @@ int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
       int handleDB = database_get(info, dbPath);
       if(handleDB >= 0)
       {
-         read_size = persComDbReadKey(handleDB, key, (char*)buffer, buffer_size) ;
+         read_size = persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
          if(read_size < 0)
          {
-            read_size = pers_get_defaults(dbPath, key, buffer, buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
+            read_size = pers_get_defaults(dbPath, (char*)resourceID, buffer, buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
          }
       }
    }
@@ -314,18 +314,59 @@ int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
       char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
       snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
-      if( (idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_data != NULL) )
+      if(idx < PersCustomLib_LastEntry)
       {
-         char pathKeyString[128] = {0};
-         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
-         }
-         else
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
-         }
-         read_size = gPersCustomFuncs[idx].custom_plugin_get_data(pathKeyString, (char*)buffer, buffer_size);
+      	int available = 0;
+      	if(gPersCustomFuncs[idx].custom_plugin_get_size == NULL )
+			{
+				if(getCustomLoadingType(idx) == LoadType_OnDemand)
+				{
+					// plugin not loaded, try to load the requested plugin
+					if(load_custom_library(idx, &gPersCustomFuncs[idx]) == 1)
+					{
+						// check again if the plugin function is now available
+						if(gPersCustomFuncs[idx].custom_plugin_get_data != NULL)
+						{
+							available = 1;
+						}
+					}
+				}
+				else if(getCustomLoadingType(idx) == LoadType_PclInit)
+				{
+					if(gPersCustomFuncs[idx].custom_plugin_get_data != NULL)
+					{
+						available = 1;
+					}
+				}
+				else
+				{
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin not available (getData), unknown loading type: "),
+					                                       DLT_INT(getCustomLoadingType(idx)));
+					 read_size = EPERS_COMMON;
+				}
+			}
+      	else
+      	{
+      		available = 1;	// already loaded
+      	}
+
+      	if(available == 1)
+      	{
+				char pathKeyString[128] = {0};
+				if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
+				}
+				else
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+				}
+				read_size = gPersCustomFuncs[idx].custom_plugin_get_data(pathKeyString, (char*)buffer, buffer_size);
+      	}
+      	else
+      	{
+      		read_size = EPERS_NOPLUGINFUNCT;
+      	}
       }
       else
       {
@@ -391,29 +432,71 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
+   	int available = 0;
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_set_data != NULL) )
+      if(idx < PersCustomLib_LastEntry )
       {
-         char pathKeyString[128] = {0};
-         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
-         }
-         else
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
-         }
-         write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
+      	if(gPersCustomFuncs[idx].custom_plugin_set_data != NULL)
+      	{
 
-         if ((0 < write_size) && ((unsigned int)write_size == buffer_size)) /* Check return value and send notification if OK */
-         {
-            int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
-            if(rval <= 0)
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data ==> failed to send notification signal"));
-               write_size = rval;
-            }
-         }
+				if (getCustomLoadingType(idx) == LoadType_OnDemand)
+				{
+					// plugin not loaded, try to load the requested plugin
+					if(load_custom_library(idx, &gPersCustomFuncs[idx]) == 1)
+					{
+						// check again if the plugin function is now available
+						if(gPersCustomFuncs[idx].custom_plugin_set_data != NULL)
+						{
+							available = 1;
+						}
+					}
+				}
+				else if(getCustomLoadingType(idx) == LoadType_PclInit)
+				{
+					if(gPersCustomFuncs[idx].custom_plugin_set_data != NULL)
+					{
+						available = 1;
+					}
+				}
+				else
+				{
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin not available (setData), unknown loading type: "),
+					                                       DLT_INT(getCustomLoadingType(idx)));
+					 write_size = EPERS_COMMON;
+				}
+			}
+      	else
+      	{
+      		available = 1;	// already loaded
+      	}
+
+      	if(available == 1)
+      	{
+				char pathKeyString[128] = {0};
+				if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
+				}
+				else
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+				}
+				write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
+
+				if ((0 < write_size) && ((unsigned int)write_size == buffer_size)) /* Check return value and send notification if OK */
+				{
+					int rval = pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_changed);
+					if(rval <= 0)
+					{
+						DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data ==> failed to send notification signal"));
+						write_size = rval;
+					}
+				}
+      	}
+      	else
+      	{
+      		write_size = EPERS_NOPLUGINFUNCT;
+      	}
       }
       else
       {
@@ -445,19 +528,60 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info)
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
+   	int available = 0;
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_get_size != NULL) )
+      if(idx < PersCustomLib_LastEntry )
       {
-         char pathKeyString[128] = {0};
-         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
-         }
-         else
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
-         }
-         read_size = gPersCustomFuncs[idx].custom_plugin_get_size(pathKeyString);
+      	if(gPersCustomFuncs[idx].custom_plugin_get_size == NULL )
+      	{
+      		if (getCustomLoadingType(idx) == LoadType_OnDemand)
+      		{
+					// plugin not loaded, try to load the requested plugin
+					if(load_custom_library(idx, &gPersCustomFuncs[idx]) == 1)
+					{
+						// check again if the plugin function is now available
+						if(gPersCustomFuncs[idx].custom_plugin_get_size != NULL)
+						{
+							available = 1;
+						}
+					}
+      		}
+      		else if(getCustomLoadingType(idx) == LoadType_PclInit)
+      		{
+   				if(gPersCustomFuncs[idx].custom_plugin_get_size != NULL)
+					{
+   					available = 1;
+					}
+      		}
+				else
+				{
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin not available (getDataSize), unknown loading type: "),
+					                                       DLT_INT(getCustomLoadingType(idx)));
+					 read_size = EPERS_COMMON;
+				}
+      	}
+      	else
+      	{
+      		available = 1;	// already loaded
+      	}
+
+      	if(available == 1)
+      	{
+      		char pathKeyString[128] = {0};
+				if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
+				}
+				else
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+				}
+				read_size = gPersCustomFuncs[idx].custom_plugin_get_size(pathKeyString);
+      	}
+      	else
+      	{
+      		read_size = EPERS_NOPLUGINFUNCT;
+      	}
       }
       else
       {
@@ -518,24 +642,65 @@ int persistence_delete_data(char* dbPath, char* key, PersistenceInfo_s* info)
    }
    else   // custom storage implementation via custom library
    {
+   	int available = 0;
       int idx = custom_client_name_to_id(dbPath, 1);
-      if((idx < PersCustomLib_LastEntry) && (gPersCustomFuncs[idx].custom_plugin_delete_data != NULL) )
+      if(idx < PersCustomLib_LastEntry)
       {
-         char pathKeyString[128] = {0};
-         if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
-         }
-         else
-         {
-            snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
-         }
-         ret = gPersCustomFuncs[idx].custom_plugin_delete_data(pathKeyString);
+      	if(gPersCustomFuncs[idx].custom_plugin_get_size == NULL )
+			{
+				if (getCustomLoadingType(idx) == LoadType_OnDemand)
+				{
+					// plugin not loaded, try to load the requested plugin
+					if(load_custom_library(idx, &gPersCustomFuncs[idx]) == 1)
+					{
+						// check again if the plugin function is now available
+						if(gPersCustomFuncs[idx].custom_plugin_delete_data != NULL)
+						{
+							available = 1;
+						}
+					}
+				}
+				else if(getCustomLoadingType(idx) == LoadType_PclInit)
+				{
+					if(gPersCustomFuncs[idx].custom_plugin_delete_data != NULL)
+					{
+						available = 1;
+					}
+				}
+				else
+				{
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin not available (deleteData), unknown loading type: "),
+					                                       DLT_INT(getCustomLoadingType(idx)));
+					 ret = EPERS_COMMON;
+				}
+			}
+      	else
+      	{
+      		available = 1;	// already loaded
+      	}
 
-         if(0 <= ret) /* Check return value and send notification if OK */
-         {
-            pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
-         }
+      	if(available == 1)
+      	{
+				char pathKeyString[128] = {0};
+				if(info->configKey.customID[0] == '\0')   // if we have not a customID we use the key
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s/%s", info->context.ldbid, info->configKey.custom_name, key);
+				}
+				else
+				{
+					snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
+				}
+				ret = gPersCustomFuncs[idx].custom_plugin_delete_data(pathKeyString);
+
+				if(0 <= ret) /* Check return value and send notification if OK */
+				{
+					pers_send_Notification_Signal(key, &info->context, pclNotifyStatus_deleted);
+				}
+      	}
+      	else
+      	{
+      		ret = EPERS_NOPLUGINFUNCT;
+      	}
       }
       else
       {

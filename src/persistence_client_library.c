@@ -48,18 +48,17 @@ static int gCancelCounter = 0;
 int customAsyncInitClbk(int errcode)
 {
 	printf("Dummy async init Callback\n");
+
+	return 1;
 }
 
 
 int pclInitLibrary(const char* appName, int shutdownMode)
 {
-   int i = 0, rval = 1;
-
-   printf("INIT START\n\n");
+   int rval = 1;
 
    if(gPclInitialized == PCLnotInitialized)
    {
-   	printf("INIT START ==> DO INIT\n\n");
       gShutdownMode = shutdownMode;
 
       DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
@@ -127,72 +126,10 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 
-
-      /// get custom library names to load
-      if(get_custom_libraries() >= 0)
+      // load custom plugins
+      if(load_custom_plugins(customAsyncInitClbk) < 0)
       {
-         // initialize custom library structure
-         for(i = 0; i < PersCustomLib_LastEntry; i++)
-         {
-            invalidate_custom_plugin(i);
-         }
-
-			for(i=0; i < PersCustomLib_LastEntry; i++ )
-			{
-				if(check_valid_idx(i) != -1)
-				{
-					if(getCustomLoadingType(i) == LoadType_PclInit)	// check if the plugin must be loaded on plc init
-					{
-						if(load_custom_library(i, &gPersCustomFuncs[i] ) == 1)
-						{
-							PersInitType_e initType = getCustomInitType(i);
-							if(initType == Init_Synchronous)
-							{
-								if( (gPersCustomFuncs[i].custom_plugin_init) != NULL)
-								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => plugin: "), DLT_STRING(get_custom_client_lib_name(i)));
-									gPersCustomFuncs[i].custom_plugin_init();
-								}
-								else
-								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin functions: "),
-																					DLT_STRING(get_custom_client_lib_name(i)));
-								}
-							}
-							else if(initType == Init_Asynchronous)
-							{
-								if( (gPersCustomFuncs[i].custom_plugin_init_async) != NULL)
-								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => plugin: "), DLT_STRING(get_custom_client_lib_name(i)));
-									gPersCustomFuncs[i].custom_plugin_init_async(customAsyncInitClbk);
-								}
-								else
-								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin functions: "),
-																					DLT_STRING(get_custom_client_lib_name(i)));
-								}
-							}
-							else
-							{
-								DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r unknown init type "), DLT_STRING(get_custom_client_lib_name(i)));
-							}
-						}
-						else
-						{
-							DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => E r r o r could not load plugin: "),
-														DLT_STRING(get_custom_client_lib_name(i)));
-						}
-					}
-				}
-				else
-				{
-					continue;
-				}
-			}
-      }
-      else
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table"));
+      	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
       }
 
       // initialize keyHandle array

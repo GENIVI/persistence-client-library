@@ -80,10 +80,11 @@ START_TEST(test_GetData)
     * Logical DB ID: 0xFF with user 0 and seat 0
     *       ==> local value accessible by all users (user 0, seat 0)
     */
-   ret = pclKeyReadData(0xFF, "pos/last_position",         0, 0, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "CACHE_ +48° 10' 38.95\", +8° 44' 39.06\"",
-               strlen((char*)buffer)) == 0, "Buffer not correctly read");
-   x_fail_unless(ret = strlen("CACHE_ +48° 10' 38.95\", +8° 44' 39.06\""));
+   ret = pclKeyReadData(0xFF, "pos/last_position",         1, 1, buffer, READ_SIZE);
+   //printf("----test_GetData => pos/last_position: \"%s\" => ret: %d \nReference: %s => size: %d\n", buffer, ret, "CACHE_ +48 10' 38.95, +8 44' 39.06", strlen("CACHE_ +48 10' 38.95, +8 44' 39.06"));
+   x_fail_unless(strncmp((char*)buffer, "CACHE_ +48 10' 38.95, +8 44' 39.06",
+                 strlen((char*)buffer)) == 0, "Buffer not correctly read - pos/last_position");
+   x_fail_unless(ret == strlen("CACHE_ +48 10' 38.95, +8 44' 39.06"));
 
    memset(buffer, 0, READ_SIZE);
 
@@ -105,8 +106,9 @@ START_TEST(test_GetData)
     * Logical DB ID: 0 with user 3 and seat 0
     *       ==> public shared user value (user 3, seat 0)
     */
-   ret = pclKeyReadData(0,    "language/current_language", 3, 0, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+   //ret = pclKeyReadData(0,    "language/current_language", 0, 0, buffer, READ_SIZE);
+   //printf("----test_GetData => language/current_language \"%s\" => ret: %d \n", buffer, ret);
+   //x_fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    memset(buffer, 0, READ_SIZE);
 
@@ -115,8 +117,10 @@ START_TEST(test_GetData)
     *       ==> local USER value (user 3, seat 2)
     */
    ret = pclKeyReadData(0xFF, "status/open_document",      3, 2, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0, "Buffer not correctly read");
-
+   //printf("----test_GetData => status/open_document \"%s\" => ret: %d \n", buffer, ret);
+   x_fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0,
+   		        "Buffer not correctly read - status/open_document");
+   x_fail_unless(ret == strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
    memset(buffer, 0, READ_SIZE);
 
    /**
@@ -124,8 +128,10 @@ START_TEST(test_GetData)
     *       ==> shared user value accessible by a group (user 4 and seat 0)
     */
    ret = pclKeyReadData(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0, "Buffer not correctly read");
-
+   //printf("----test_GetData => address/home_address \"%s\" => ret: %d \n", buffer, ret);
+   x_fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0,
+   		        "Buffer not correctly read - address/home_address");
+   x_fail_unless(ret == strlen("WT_ 55327 Heimatstadt, Wohnstrasse 31"));
    memset(buffer, 0, READ_SIZE);
 
    /**
@@ -133,25 +139,23 @@ START_TEST(test_GetData)
     *       ==> local value accessible by ALL USERS (user 0, seat 0)
     */
    ret = pclKeyReadData(0xFF, "pos/last_satellites",       0, 0, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0, "Buffer not correctly read");
-
+   //printf("----test_GetData => pos/last_satellites \"%s\" => ret: %d \n", buffer, ret);
+   x_fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0,
+   		        "Buffer not correctly read - pos/last_satellites");
+   x_fail_unless(ret == strlen("WT_ 17"));
    memset(buffer, 0, READ_SIZE);
 
    /**
-    * Logical DB ID: 0x84 with user 4 and seat 0
+    * Logical DB ID: 0x20 with user 4 and seat 0
     *       ==> shared user value accessible by A GROUP (user 4 and seat 0)
     */
-   ret = pclKeyReadData(0x84, "links/last_link",           2, 0, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/brooklyn", strlen((char*)buffer)) == 0, "Buffer not correctly read");
-
+   ret = pclKeyReadData(0x20, "links/last_link",           2, 0, buffer, READ_SIZE);
+   //printf("----test_GetData => links/last_link \"%s\" => ret: %d \n", buffer, ret);
+   x_fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0,
+   		        "Buffer not correctly read - links/last_link");
+   x_fail_unless(ret == strlen("CACHE_ /last_exit/queens"));
    memset(buffer, 0, READ_SIZE);
 
-   /**
-    * Logical DB ID: 0x84 with user 2 and seat 1
-    *       ==> local merge value
-    */
-   ret = pclKeyReadData(0x84, "links/last_link",           2, 1, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 #endif
    pclDeinitLibrary();
 }
@@ -200,7 +204,6 @@ START_TEST (test_GetDataHandle)
    x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = pclKeyHandleReadData(handle, buffer, READ_SIZE);
-   printf("* * * * * => => => B U F F E R : \"%s\"\n", buffer);
    x_fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyHandleGetSize(handle);
@@ -691,13 +694,12 @@ START_TEST(test_DataFileRecovery)
    x_fail_unless(fd_RW != -1, "Could not open file ==> /media/mediaDB_ReadWrite.db");
    pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
 
-   ret = pclFileClose(fd_RW);
-   if(ret == -1)
+   (void)pclFileClose(fd_RW);
 
-   ret = pclFileClose(fd_RO);
-   if(ret == -1)
+   (void)pclFileClose(fd_RO);
 
 #endif
+
    pclDeinitLibrary();
 }
 END_TEST
@@ -894,36 +896,51 @@ START_TEST(test_Plugin)
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    x_fail_unless(ret <= 1, "Failed to init PCL");
+
 #if 1
-	ret = pclKeyReadData(0xFF, "language/country_code",           0, 0, buffer, READ_SIZE);
-	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
+
+	ret = pclKeyReadData(0xFF, "secured",           0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - secure: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: secure!"));
+	x_fail_unless(ret == strlen("Custom plugin -> plugin_get_data: secure!") );
    x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: secure!",
-               strlen((char*)buffer)) == 0, "Buffer SECURE not correctly read");
+                 strlen((char*)buffer)) == 0, "Buffer SECURE not correctly read");
+	memset(buffer, 0, READ_SIZE);
 
-
-	ret = pclKeyReadData(0xFF, "language/country_code_early",     0, 0, buffer, READ_SIZE);
-	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
-	//printf("B U F F E R - early: %s\n", buffer);
+	ret = pclKeyReadData(0xFF, "early",     0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - early: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: early!"));
+	x_fail_unless(ret == strlen("Custom plugin -> plugin_get_data: early!"));
    x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: early!",
                strlen((char*)buffer)) == 0, "Buffer EARLY not correctly read");
+	memset(buffer, 0, READ_SIZE);
 
-	ret = pclKeyReadData(0xFF, "language/country_code_emergency", 0, 0, buffer, READ_SIZE);
-	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
-	//printf("B U F F E R - emergency: %s\n", buffer);
+	ret = pclKeyReadData(0xFF, "emergency", 0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - emergency: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: emergency!"));
+	x_fail_unless(ret == strlen("Custom plugin -> plugin_get_data: emergency!"));
    x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: emergency!",
                strlen((char*)buffer)) == 0, "Buffer EMERGENCY not correctly read");
+	memset(buffer, 0, READ_SIZE);
 
-	ret = pclKeyReadData(0xFF, "language/info",                   0, 0, buffer, READ_SIZE);
+	ret = pclKeyReadData(0xFF, "hwinfo",   0, 0, buffer, READ_SIZE);
+	//printf("B U F F E R - hwinfo: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: hwinfo!"));
 	x_fail_unless(ret != EPERS_NOT_INITIALIZED);
-	//printf("B U F F E R - hwinfo: %s\n", buffer);
    x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: hwinfo!",
                strlen((char*)buffer)) == 0, "Buffer HWINFO not correctly read");
+	memset(buffer, 0, READ_SIZE);
 
-   ret = pclKeyReadData(0xFF, "language/country_code_custom3",   0, 0, buffer, READ_SIZE);
-   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
-   //printf("B U F F E R - hwinfo: %s\n", buffer);
+   ret = pclKeyReadData(0xFF, "custom2",   0, 0, buffer, READ_SIZE);
+   //printf("B U F F E R - custom2: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: custom2!"));
+   x_fail_unless(ret == strlen("Custom plugin -> plugin_get_data: custom2!"));
+   x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: custom2!",
+               strlen((char*)buffer)) == 0, "Buffer CUSTOM 2 not correctly read");
+   memset(buffer, 0, READ_SIZE);
+
+   ret = pclKeyReadData(0xFF, "custom3",   0, 0, buffer, READ_SIZE);
+   //printf("B U F F E R - custom3: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: custom3!"));
+   x_fail_unless(ret == strlen("Custom plugin -> plugin_get_data: custom3!"));
    x_fail_unless(strncmp((char*)buffer,"Custom plugin -> plugin_get_data: custom3!",
-               strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");
+                 strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");
+   memset(buffer, 0, READ_SIZE);
+
 #endif
 	pclDeinitLibrary();
 }
@@ -950,13 +967,13 @@ START_TEST(test_ReadDefault)
    x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclKeyReadData(0xFF, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
-   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
-   //printf("B U F F E R: %s\n", buffer);
+   //printf(" --- test_ReadConfDefault => statusHandle/default01: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("DEFAULT_01!"));
+   x_fail_unless(ret == strlen("DEFAULT_01!"));
    x_fail_unless(strncmp((char*)buffer,"DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    ret = pclKeyReadData(0xFF, "statusHandle/default02", 3, 2, buffer, READ_SIZE);
-   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
-   //printf("B U F F E R: %s\n", buffer);
+   //printf(" --- test_ReadConfDefault => statusHandle/default02: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("DEFAULT_02!"));
+   x_fail_unless(ret == strlen("DEFAULT_02!"));
    x_fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 #endif
    pclDeinitLibrary();
@@ -982,11 +999,13 @@ START_TEST(test_ReadConfDefault)
    x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
-   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
+   //printf(" --- test_ReadConfDefault => statusHandle/confdefault01: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("CONF_DEFAULT_01!"));
+   x_fail_unless(ret == strlen("CONF_DEFAULT_01!"));
    x_fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_01!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault02",     3, 2, buffer, READ_SIZE);
-   x_fail_unless(ret != EPERS_NOT_INITIALIZED);
+   //printf(" --- test_ReadConfDefault => statusHandle/confdefault02: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("CONF_DEFAULT_02!"));
+   x_fail_unless(ret == strlen("CONF_DEFAULT_02!"));
    x_fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 #endif
    pclDeinitLibrary();
@@ -1050,7 +1069,7 @@ END_TEST
 
 START_TEST(test_NegHandle)
 {
-   int handle = -1, ret = 0;;
+   int handle = -1, ret = 0;
    int negativeHandle = -17;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
@@ -1092,6 +1111,16 @@ END_TEST
 
 
 
+START_TEST(test_NodeHealthTest)
+{
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   (void)pclInitLibrary("node-health-monitor", shutdownReg);
+
+	pclDeinitLibrary();
+
+}
+END_TEST
 
 
 
@@ -1102,70 +1131,75 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_persGetData = tcase_create("GetData");
    tcase_add_test(tc_persGetData, test_GetData);
-   tcase_set_timeout(tc_persGetData, 8);
+   tcase_set_timeout(tc_persGetData, 1);
 
    TCase * tc_persSetData = tcase_create("SetData");
    tcase_add_test(tc_persSetData, test_SetData);
-   tcase_set_timeout(tc_persSetData, 8);
+   tcase_set_timeout(tc_persSetData, 1);
 
    TCase * tc_persSetDataNoPRCT = tcase_create("SetDataNoPRCT");
    tcase_add_test(tc_persSetDataNoPRCT, test_SetDataNoPRCT);
-   tcase_set_timeout(tc_persSetDataNoPRCT, 8);
+   tcase_set_timeout(tc_persSetDataNoPRCT, 1);
 
    TCase * tc_persGetDataSize = tcase_create("GetDataSize");
    tcase_add_test(tc_persGetDataSize, test_GetDataSize);
-   tcase_set_timeout(tc_persGetDataSize, 8);
+   tcase_set_timeout(tc_persGetDataSize, 1);
 
    TCase * tc_persDeleteData = tcase_create("DeleteData");
    tcase_add_test(tc_persDeleteData, test_DeleteData);
-   tcase_set_timeout(tc_persDeleteData, 8);
+   tcase_set_timeout(tc_persDeleteData, 1);
 
    TCase * tc_persGetDataHandle = tcase_create("GetDataHandle");
    tcase_add_test(tc_persGetDataHandle, test_GetDataHandle);
-   tcase_set_timeout(tc_persGetDataHandle, 8);
+   tcase_set_timeout(tc_persGetDataHandle, 1);
 
    TCase * tc_persDataHandle = tcase_create("DataHandle");
    tcase_add_test(tc_persDataHandle, test_DataHandle);
-   tcase_set_timeout(tc_persGetData, 8);
+   tcase_set_timeout(tc_persGetData, 1);
 
    TCase * tc_persDataHandleOpen = tcase_create("DataHandleOpen");
    tcase_add_test(tc_persDataHandleOpen, test_DataHandleOpen);
-   tcase_set_timeout(tc_persDataHandleOpen, 8);
+   tcase_set_timeout(tc_persDataHandleOpen, 1);
 
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
-   tcase_set_timeout(tc_persDataFile, 8);
+   tcase_set_timeout(tc_persDataFile, 1);
 
    TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
    tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
-   tcase_set_timeout(tc_persDataFileRecovery, 8);
+   tcase_set_timeout(tc_persDataFileRecovery, 1);
 
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
-   tcase_set_timeout(tc_Plugin, 8);
+   tcase_set_timeout(tc_Plugin, 1);
 
    TCase * tc_ReadDefault = tcase_create("ReadDefault");
    tcase_add_test(tc_ReadDefault, test_ReadDefault);
-   tcase_set_timeout(tc_ReadDefault, 8);
+   tcase_set_timeout(tc_ReadDefault, 1);
 
    TCase * tc_ReadConfDefault = tcase_create("ReadConfDefault");
    tcase_add_test(tc_ReadConfDefault, test_ReadConfDefault);
-   tcase_set_timeout(tc_ReadConfDefault, 8);
+   tcase_set_timeout(tc_ReadConfDefault, 1);
 
    TCase * tc_GetPath = tcase_create("GetPath");
    tcase_add_test(tc_GetPath, test_GetPath);
-   tcase_set_timeout(tc_GetPath, 8);
+   tcase_set_timeout(tc_GetPath, 1);
 
    TCase * tc_InitDeinit = tcase_create("InitDeinit");
    tcase_add_test(tc_InitDeinit, test_InitDeinit);
-   tcase_set_timeout(tc_InitDeinit, 8);
+   tcase_set_timeout(tc_InitDeinit, 1);
 
    TCase * tc_NegHandle = tcase_create("NegHandle");
    tcase_add_test(tc_NegHandle, test_NegHandle);
-   tcase_set_timeout(tc_NegHandle, 8);
+   tcase_set_timeout(tc_NegHandle, 1);
+
+
+   TCase * tc_NodeHealthTest = tcase_create("NodeHealthTest");
+   tcase_add_test(tc_NodeHealthTest, test_NodeHealthTest);
 
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
+
    suite_add_tcase(s, tc_persSetDataNoPRCT);
    suite_add_tcase(s, tc_persGetDataSize);
    suite_add_tcase(s, tc_persDeleteData);
@@ -1181,8 +1215,10 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_NegHandle);
    suite_add_tcase(s, tc_InitDeinit);
 
+   suite_add_tcase(s, tc_NodeHealthTest);
 
-   //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
+   suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
+
 
    return s;
 }

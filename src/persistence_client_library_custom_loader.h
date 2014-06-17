@@ -43,7 +43,7 @@ typedef enum _PersistenceCustomLibs_e
 /// enumerator fo custom library defines
 enum _PersCustomLibDefines_e
 {
-   PersCustomPathSize = 12
+   PersCustomPathSize = 12		/// the custom library path size
 
 } PersCustomLibDefines_e;
 
@@ -51,8 +51,8 @@ enum _PersCustomLibDefines_e
 /// indicates the init method type
 typedef enum PersInitType_e_
 {
-	Init_Synchronous   = 0,
-	Init_Asynchronous = 1,
+	Init_Synchronous  = 0,	/// initialize the plugin with the synchronous init function
+	Init_Asynchronous = 1,	/// initialize the plugin with the asynchronous init function
 	Init_Undefined
 } PersInitType_e;
 
@@ -60,12 +60,20 @@ typedef enum PersInitType_e_
 /// indicates the plugin loading type
 typedef enum PersLoadingType_e_
 {
-	LoadType_PclInit   = 0,	// load plugin during pclInitLibrary function
-	LoadType_OnDemand = 1,	// load the pluing on demand, when a plugin function will be requested the first time.
+	LoadType_PclInit  = 0,	/// load plugin during pclInitLibrary function
+	LoadType_OnDemand = 1,	/// load the pluing on demand, when a plugin function will be requested the first time.
 	LoadType_Undefined
 } PersLoadingType_e;
 
 
+/**
+ * @brief definition of async init callback function.
+ *        This function will be called when the asynchronous
+ *        init function (custom_plugin_init_async) has finished
+ *
+ * @param error the error code occured while calling init
+ */
+extern int(* gPlugin_callback_async_t)(int errcode);
 
 /// structure definition for custom library functions
 typedef struct _Pers_custom_functs_s
@@ -163,7 +171,6 @@ int get_custom_libraries();
  *
  * @return 0 for success or a negative value with one of the following errors:
  *  EPERS_NOPLUGINFCNT   EPERS_DLOPENERROR
- *
  */
 int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s *customFuncts);
 
@@ -189,13 +196,43 @@ char* get_custom_client_lib_name(int idx);
 
 /**
  * @brief invalidate customer plugin function
+ *
+ * @param idx the plugin index
  */
 void invalidate_custom_plugin(int idx);
 
 
+/**
+ * @brief load the custom plugins.
+ *        The custom library configuration file will be loaded to see
+ *        if there a re plugins that must be loaded in the pclInitLibrary function.
+ *        The other plugins will be loaded on demand.
+ *
+ *
+ * @param pfInitCompletedCB the callback function to be called when
+ *        a plugin with asyncnonous init function will be laoded
+ */
+int load_custom_plugins(plugin_callback_async_t pfInitCompletedCB);
 
+
+/**
+ * @brief Get the custom loading type.
+ *        The loading type is
+ *        ::LoadType_PclInit or ::LoadType_OnDemand
+ *
+ * @param i the custom id, see ::PersistenceCustomLibs_e
+ */
 PersLoadingType_e getCustomLoadingType(int i);
 
+
+/**
+ * @brief Get the custom init type.
+ *        The init type is
+ *        ::Init_Synchronous or ::Init_Asynchronous
+ *
+ * @param i the custom id, see ::PersistenceCustomLibs_e
+ */
 PersInitType_e getCustomInitType(int i);
+
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_CUSTOM_LOADER_H */

@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x04020000U)
+#define  PERSIST_DATA_ACCESS_INTERFACE_VERSION   (0x05000000U)
 
 
 #include "persistence_client_library_data_organization.h"
@@ -104,7 +104,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
  *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_get_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
+int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
 
 
 

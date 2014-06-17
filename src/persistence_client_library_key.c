@@ -106,7 +106,7 @@ int pclKeyHandleClose(int key_handle)
          if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
             /* Invalidate key handle data */
-        	set_persistence_handle_close_idx(key_handle);
+        	   set_persistence_handle_close_idx(key_handle);
             memset(&gKeyHandleArray[key_handle], 0, sizeof(gKeyHandleArray[key_handle]));
             rval = 1;
          }
@@ -137,9 +137,9 @@ int pclKeyHandleGetSize(int key_handle)
          if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
          {
         	 size = pclKeyGetSize(gKeyHandleArray[key_handle].ldbid,
-                                  gKeyHandleArray[key_handle].resource_id,
-                                  gKeyHandleArray[key_handle].user_no,
-                                  gKeyHandleArray[key_handle].seat_no);
+                               gKeyHandleArray[key_handle].resource_id,
+                               gKeyHandleArray[key_handle].user_no,
+                               gKeyHandleArray[key_handle].seat_no);
          }
          else
          {
@@ -398,7 +398,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
             if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
             {
-                  data_size = persistence_get_data(dbPath, dbKey, &dbContext, buffer, buffer_size);
+                  data_size = persistence_get_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
             }
             else
             {

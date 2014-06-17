@@ -52,7 +52,7 @@ int key_val_cmp(const void *p1, const void *p2 );
 
 
 char* gpConfigFileMap = 0;
-char* gpTokenArray[TOKENARRAYSIZE] = {0};
+static char* gpTokenArray[TOKENARRAYSIZE] = {0};
 int gTokenCounter = 0;
 unsigned int gConfigFileSize = 0;
 

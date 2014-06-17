@@ -158,7 +158,6 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       
       if(sizeof(PersistenceConfigurationKey_s) == iErrCode)
       {
-         //printf("get_db_context ==> data: %s\n", search.data);
     	   memcpy(&dbContext->configKey, &sRctEntry, sizeof(dbContext->configKey)) ;
          if(sRctEntry.storage != PersistenceStorage_custom )
          {

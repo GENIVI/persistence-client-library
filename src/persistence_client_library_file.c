@@ -33,13 +33,12 @@
 #include <fcntl.h>   // for open flags
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <stdlib.h>
-
-
+#include <sys/sendfile.h>
 
 // local function prototype
 int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
@@ -680,6 +679,8 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 	{
 		rval = -1; // no default data available
 	}
+
+	return rval;
 }// getDefault
 
 
