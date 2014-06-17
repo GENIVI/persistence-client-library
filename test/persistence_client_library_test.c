@@ -1217,7 +1217,7 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_NodeHealthTest);
 
-   suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
+   //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
 
 
    return s;
