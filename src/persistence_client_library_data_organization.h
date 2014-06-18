@@ -99,7 +99,7 @@ enum _PersistenceConstantDef
    PCLnotInitialized    = 0,        /// indication if PCL is not initialized
    PCLinitialized       = 1,        /// indication if PCL is initialized
 
-   FileClosed           = 0,        /// flag to identify if file will be closed
+   FileClosed           = 1,        /// flag to identify if file will be closed
    FileOpen             = 1,        /// flag to identify if file has been opend
 
    Shutdown_Partial      = 0,			/// make partial Shutdown (close but not free everything)
