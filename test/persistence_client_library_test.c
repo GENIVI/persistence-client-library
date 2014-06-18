@@ -42,13 +42,26 @@
 #define READ_SIZE    1024
 #define MaxAppNameLen 256
 
+#define SOURCE_PATH "/Data/mnt-c/lt-persistence_client_library_test/"
+
+
+static const char* gPathSegemnts[] = {"user/", "1/", "seat/", "1/", "media", NULL };
+
 /// application id
 char gTheAppId[MaxAppNameLen] = {0};
 
 // definition of weekday
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+char* gWriteBackupTestData  = "This is the content of the file /Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db";
+char* gWriteRecoveryTestData = "This is the data to recover: /Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db";
+char* gRecovChecksum = "608a3b5d";	// generated with http://www.tools4noobs.com/online_php_functions/crc32/
 
-char* gWriteBackupTestData = "This is the content of the file /Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db";
+
+void data_teardown(void)
+{
+   printf("* * * tear down * * *\n");	// nothing
+}
+
 
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
@@ -56,6 +69,9 @@ int myChangeCallback(pclNotification_s * notifyStruct)
 
    return 1;
 }
+
+
+
 /**
  * Test the key value interface using different logicalDB id's, users and seats.
  * Each resource below has an entry in the resource configuration table where the
@@ -87,7 +103,6 @@ START_TEST(test_GetData)
    x_fail_unless(strncmp((char*)buffer, "CACHE_ +48 10' 38.95, +8 44' 39.06",
                  strlen((char*)buffer)) == 0, "Buffer not correctly read - pos/last_position");
    x_fail_unless(ret == strlen("CACHE_ +48 10' 38.95, +8 44' 39.06"));
-
    memset(buffer, 0, READ_SIZE);
 
    /**
@@ -99,7 +114,6 @@ START_TEST(test_GetData)
    x_fail_unless(strncmp((char*)buffer, "Custom plugin -> plugin_get_data: secure!",
                strlen((char*)buffer)) == 0, "Buffer not correctly read");
    x_fail_unless(ret = strlen("Custom plugin -> plugin_get_data_handle"));
-
    memset(buffer, 0, READ_SIZE);
    */
 
@@ -111,8 +125,7 @@ START_TEST(test_GetData)
    //ret = pclKeyReadData(0,    "language/current_language", 0, 0, buffer, READ_SIZE);
    //printf("----test_GetData => language/current_language \"%s\" => ret: %d \n", buffer, ret);
    //x_fail_unless(strncmp((char*)buffer, "CACHE_ Kisuaheli", strlen((char*)buffer)) == 0, "Buffer not correctly read");
-
-   memset(buffer, 0, READ_SIZE);
+   //memset(buffer, 0, READ_SIZE);
 
    /**
     * Logical DB ID: 0xFF with user 3 and seat 2
@@ -669,7 +682,7 @@ END_TEST
 
 
 
-void data_setup(void)
+void data_setupBackup(void)
 {
 	int handle = -1;
 	const char* path = "/Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db";
@@ -680,18 +693,13 @@ void data_setup(void)
       printf("setup test: failed to write test data: %s\n", path);
    }
 }
-void data_teardown(void)
-{
-   // nothing
-   printf("* * * tear down * * *\n");
-}
 
-START_TEST(test_DataFileRecovery)
+START_TEST(test_DataFileBackupCreation)
 {
    X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
    X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
    X_TEST_REPORT_REFERENCE("NONE");
-   X_TEST_REPORT_DESCRIPTION("Test of data file recovery");
+   X_TEST_REPORT_DESCRIPTION("Test of file backup creation");
    X_TEST_REPORT_TYPE(GOOD);
 
    int fd_RW = 0, fd_RO = 0, rval = -1, handle = -1;
@@ -705,7 +713,6 @@ START_TEST(test_DataFileRecovery)
    x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
 
-   // test backup creation --------------------------------------------
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
    x_fail_unless(fd_RO != -1, "Could not open file ==> /media/mediaDB_ReadOnly.db");
 
@@ -746,6 +753,87 @@ START_TEST(test_DataFileRecovery)
 }
 END_TEST
 
+
+
+void data_setupRecovery(void)
+{
+	int i = 0;
+   char createPath[128] = {0};
+
+	int handleRecov = -1, handleToBackup = -1, handleToCs = -1;
+	char* corruptData = "Some corrupted data ..  )=§?=34=/%&$%&()Ö:ÄNJH/)(";
+	const char* pathToRecover  = "/Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db";
+	const char* pathToBackup   = "/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db~";
+	const char* pathToChecksum = "/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db~.crc";
+
+   // create directory, even if exist
+   snprintf(createPath, 128, "%s", SOURCE_PATH );
+   while(gPathSegemnts[i] != NULL)
+   {
+   	strncat(createPath, gPathSegemnts[i++], 128-1);
+   	mkdir(createPath, 0744);
+   }
+
+   handleRecov = open(pathToRecover, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+   if(write(handleRecov, corruptData, strlen(corruptData)) == -1)
+   {
+      printf("setup test: failed to write test data: %s\n", pathToRecover);
+   }
+
+   handleToBackup = open(pathToBackup, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+	if(write(handleToBackup, gWriteRecoveryTestData, strlen(gWriteRecoveryTestData)) == -1)
+	{
+		printf("setup test: failed to write test data: %s\n", pathToBackup);
+	}
+
+   handleToCs = open(pathToChecksum, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+	if(write(handleToCs, gRecovChecksum, strlen(gRecovChecksum)) == -1)
+	{
+		printf("setup test: failed to write test data: %s\n", pathToChecksum);
+	}
+
+	close(handleRecov);
+	close(handleToBackup);
+	close(handleToCs);
+
+}
+
+START_TEST(test_DataFileRecovery)
+{
+   X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
+	X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
+	X_TEST_REPORT_REFERENCE("NONE");
+	X_TEST_REPORT_DESCRIPTION("Test file recovery form backup");
+	X_TEST_REPORT_TYPE(GOOD);
+
+	int handle = 0;
+	int ret = 0;
+	unsigned char buffer[READ_SIZE] = {0};
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+	ret = pclInitLibrary(gTheAppId, shutdownReg);
+	x_fail_unless(ret <= 1, "Failed to init PCL");
+
+
+	handle = pclFileOpen(0xFF, "media/mediaDB_DataRecovery.db", 1, 1);
+	//printf("pclFileOpen => handle: %d\n", handle);
+   x_fail_unless(handle != -1, "Could not open file ==> /media/mediaDB_DataRecovery.db");
+
+
+	ret = pclFileReadData(handle, buffer, READ_SIZE);
+	//printf(" ** pclFileReadData => ist-buffer : %s | size: %d\n", buffer, ret);
+	//printf(" ** pclFileReadData => soll-buffer: %s | size: %d\n", gWriteRecoveryTestData, strlen(gWriteRecoveryTestData));
+	x_fail_unless(strncmp((char*)buffer, gWriteRecoveryTestData, strlen(gWriteRecoveryTestData)) == 0, "Recovery failed");
+
+   (void)pclFileClose(handle);
+
+   pclDeinitLibrary();
+
+}
+END_TEST
+
+
+
 /*
  * The the handle function of the key and file interface.
  */
@@ -781,6 +869,7 @@ START_TEST(test_DataHandle)
 
    // test multiple handles
    handleArray[0] = pclFileOpen(0xFF, "media/mediaDB_write_01.db", 1, 1);
+   printf("** **** **** **** ** handleArray[0] => %d\n", handleArray[0]);
    x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
 
    handleArray[1] = pclFileOpen(0xFF, "media/mediaDB_write_02.db", 1, 1);
@@ -1192,6 +1281,10 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_persDataFile, test_DataFile);
    tcase_set_timeout(tc_persDataFile, 1);
 
+   TCase * tc_persDataFileBackupCreation = tcase_create("DataFileBackupCreation");
+   tcase_add_test(tc_persDataFileBackupCreation, test_DataFileBackupCreation);
+   tcase_set_timeout(tc_persDataFileBackupCreation, 1);
+
    TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
    tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
    tcase_set_timeout(tc_persDataFileRecovery, 1);
@@ -1220,7 +1313,6 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_NegHandle, test_NegHandle);
    tcase_set_timeout(tc_NegHandle, 1);
 
-
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
 
@@ -1234,8 +1326,10 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_ReadConfDefault);
 
    suite_add_tcase(s, tc_persDataFile);
+   suite_add_tcase(s, tc_persDataFileBackupCreation);
+   tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
    suite_add_tcase(s, tc_persDataFileRecovery);
-   tcase_add_checked_fixture(tc_persDataFileRecovery, data_setup, data_teardown);
+   tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
 
    suite_add_tcase(s, tc_GetPath);
 

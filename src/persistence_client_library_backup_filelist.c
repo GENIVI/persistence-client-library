@@ -312,10 +312,16 @@ void  key_val_rel(void *p )
 int pclBackupDoFileCopy(int srcFd, int dstFd)
 {
    struct stat buf;
+   int rval = 0;
    memset(&buf, 0, sizeof(buf));
 
    fstat(srcFd, &buf);
-   return sendfile(dstFd, srcFd, 0, buf.st_size);
+   rval = (int)sendfile(dstFd, srcFd, 0, buf.st_size);
+
+   // Reset file position pointer of destination file 'dstFd'
+   lseek(dstFd, 0, SEEK_SET);
+
+   return rval;
 }
 
 
