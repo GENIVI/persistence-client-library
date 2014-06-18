@@ -48,6 +48,8 @@ char gTheAppId[MaxAppNameLen] = {0};
 // definition of weekday
 char* dayOfWeek[] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
+char* gWriteBackupTestData = "This is the content of the file /Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db";
+
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
@@ -667,7 +669,22 @@ END_TEST
 
 
 
+void data_setup(void)
+{
+	int handle = -1;
+	const char* path = "/Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db";
 
+   handle = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+   if(write(handle, gWriteBackupTestData, strlen(gWriteBackupTestData)) == -1)
+   {
+      printf("setup test: failed to write test data: %s\n", path);
+   }
+}
+void data_teardown(void)
+{
+   // nothing
+   printf("* * * tear down * * *\n");
+}
 
 START_TEST(test_DataFileRecovery)
 {
@@ -677,9 +694,11 @@ START_TEST(test_DataFileRecovery)
    X_TEST_REPORT_DESCRIPTION("Test of data file recovery");
    X_TEST_REPORT_TYPE(GOOD);
 
-   int fd_RW = 0, fd_RO = 0;
+   int fd_RW = 0, fd_RO = 0, rval = -1, handle = -1;
    int ret = 0;
-   char* wBuffer = "This is a buffer to write";
+   char* wBuffer = " ==> Appended: Test Data - test_DataFileRecovery! ";
+   const char* path = "/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db~";
+   char rBuffer[1024] = {0};
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary(gTheAppId, shutdownReg);
@@ -692,10 +711,33 @@ START_TEST(test_DataFileRecovery)
 
    fd_RW = pclFileOpen(0xFF, "media/mediaDB_ReadWrite.db", 1, 1);
    x_fail_unless(fd_RW != -1, "Could not open file ==> /media/mediaDB_ReadWrite.db");
-   pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
 
+   rval = pclFileReadData(fd_RW, rBuffer, 10);
+   x_fail_unless(rval == 10, "Failed read 10 bytes");
+   memset(rBuffer, 0, 1024);
+
+   rval = pclFileReadData(fd_RW, rBuffer, 15);
+   x_fail_unless(rval == 15, "Failed read 15 bytes");
+   memset(rBuffer, 0, 1024);
+
+   rval = pclFileReadData(fd_RW, rBuffer, 20);
+   x_fail_unless(rval == 20, "Failed read 20 bytes");
+   memset(rBuffer, 0, 1024);
+
+   rval = pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
+   x_fail_unless(rval == strlen(wBuffer), "Failed write data");
+
+   // verify the backup creation:
+   handle = open(path,  O_RDWR);
+   x_fail_unless(handle != -1, "Could not open file ==> failed to access backup file");
+
+   rval = read(handle, rBuffer, 1024);
+   //printf(" * * * Backup: \nIst : %s \nSoll: %s\n", rBuffer, gWriteBackupTestData);
+   x_fail_unless(strncmp((char*)rBuffer, gWriteBackupTestData, strlen(gWriteBackupTestData)) == 0, "Backup not correctly read");
+
+
+   (void)close(handle);
    (void)pclFileClose(fd_RW);
-
    (void)pclFileClose(fd_RO);
 
 #endif
@@ -1110,21 +1152,6 @@ END_TEST
 
 
 
-
-START_TEST(test_NodeHealthTest)
-{
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   (void)pclInitLibrary("node-health-monitor", shutdownReg);
-
-	pclDeinitLibrary();
-
-}
-END_TEST
-
-
-
-
 static Suite * persistencyClientLib_suite()
 {
    Suite * s  = suite_create("Persistency client library");
@@ -1194,9 +1221,6 @@ static Suite * persistencyClientLib_suite()
    tcase_set_timeout(tc_NegHandle, 1);
 
 
-   TCase * tc_NodeHealthTest = tcase_create("NodeHealthTest");
-   tcase_add_test(tc_NodeHealthTest, test_NodeHealthTest);
-
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
 
@@ -1211,14 +1235,14 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_persDataFile);
    suite_add_tcase(s, tc_persDataFileRecovery);
+   tcase_add_checked_fixture(tc_persDataFileRecovery, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_GetPath);
+
    suite_add_tcase(s, tc_NegHandle);
    suite_add_tcase(s, tc_InitDeinit);
 
-   suite_add_tcase(s, tc_NodeHealthTest);
-
    //suite_add_tcase(s, tc_Plugin); // activate only if the plugins are available
-
 
    return s;
 }

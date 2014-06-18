@@ -603,8 +603,9 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    if(dstFd != -1)
    {
       off_t curPos = 0;
-      // remember the current position
-      curPos = lseek(srcfd, 0, SEEK_CUR);
+
+      curPos = lseek(srcfd, 0, SEEK_CUR);		// remember the current position
+      lseek(srcfd, 0, SEEK_SET);					// set to beginning of file
 
       // copy data from one file to another
       if((readSize = pclBackupDoFileCopy(srcfd, dstFd)) == -1)
