@@ -32,3 +32,41 @@ persistence_lifeCycle_mockup_SOURCES = persistence_lifeCycle_mockup.c
 persistence_lifeCycle_mockup_LDADD = $(DEPS_LIBS)     
   
 TESTS=persistence_client_library_test
+
+
+
+lib_LTLIBRARIES = libearlyperscustom.la 
+libearlyperscustom_la_SOURCES = persistence_test_customlib.c
+libearlyperscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS)
+libearlyperscustom_la_CFLAGS = -DLIBIDENT='"early"'
+
+lib_LTLIBRARIES += libsecureperscustom.la 
+libsecureperscustom_la_SOURCES = persistence_test_customlib.c
+libsecureperscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS)
+libsecureperscustom_la_CFLAGS = -DLIBIDENT='"secure"'
+
+
+lib_LTLIBRARIES += libhwinfoperscustom.la
+libhwinfoperscustom_la_SOURCES = persistence_test_customlib.c
+libhwinfoperscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS)
+libhwinfoperscustom_la_CFLAGS = -DLIBIDENT='"hwinfo"' 
+
+lib_LTLIBRARIES += libcustom1perscustom.la 
+libcustom1perscustom_la_SOURCES = persistence_test_customlib.c
+libcustom1perscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS)
+libcustom1perscustom_la_CFLAGS = -DLIBIDENT='"custom1"' 
+
+lib_LTLIBRARIES += libemergencyperscustom.la 
+libemergencyperscustom_la_SOURCES = persistence_test_customlib.c
+libemergencyperscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS)
+libemergencyperscustom_la_CFLAGS = -DLIBIDENT='"emergency"' 
+
+lib_LTLIBRARIES += libcustom2perscustom.la 
+libcustom2perscustom_la_SOURCES = persistence_test_customlib.c
+libcustom2perscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS)
+libcustom2perscustom_la_CFLAGS = -DLIBIDENT='"custom2"'
+
+lib_LTLIBRARIES += libcustom3perscustom.la 
+libcustom3perscustom_la_SOURCES = persistence_test_customlib.c
+libcustom3perscustom_la_LDFLAGS = -avoid-version -module -shared -export-dynamic $(LDFLAGS) 
+libcustom3perscustom_la_CFLAGS = -DLIBIDENT='"custom3"' 

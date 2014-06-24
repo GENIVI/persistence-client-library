@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("noty","tests the persistence client library");
-   ret = pclInitLibrary("lt-persistence_client_library_dbus_test", shutdownReg);
+   ret = pclInitLibrary("lt-persistence_client_library_test", shutdownReg);
    printf("pclInitLibrary: %d\n", ret);
 
    printf("Press a key to end application\n");
