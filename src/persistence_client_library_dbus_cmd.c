@@ -27,6 +27,18 @@
 #include "persistence_client_library_data_organization.h"
 #include "persistence_client_library_db_access.h"
 
+#if USE_FILECACHE
+   #include <persistence_file_cache.h>
+
+
+	/**
+	 * write back from cache to non volatile memory device
+	 * ATTENTION:
+	 * THIS FUNCTION IS NOT INTENDED TO BE USED BY A NORMAL APPLICATION.
+	 * ONLY SPECIAL APPLICATION ARE ALLOWED TO USING USE THIS FUNCTION
+	 **/
+	 extern int pfcWriteBackAndSync(int handle);
+#endif
 
 // function prototype
 void msg_pending_func(DBusPendingCall *call, void *data);
@@ -116,9 +128,9 @@ void process_send_notification_signal(DBusConnection* conn, unsigned int notifyL
       snprintf(seatArray,  DbusSubMatchSize, "%u", notifySeatNo);
 
       //printf("process_send_Notification_Signal => key: %s | lbid: %d | gUserNo: %d | gSeatNo: %d | gReason: %d \n", gNotifykey, gLdbid, gUserNo, gSeatNo, gReason);
-      message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",    // const char *path,
-                                        "org.genivi.persistence.adminconsumer",     // const char *interface,
-                                        notifyReasonString);                                 // const char *name
+      message = dbus_message_new_signal(gPersAdminConsumerPath,
+      		                            gDbusPersAdminConsInterface,
+                                        notifyReasonString);
 
       ret = dbus_message_append_args(message, DBUS_TYPE_STRING, &pnotifyKey,
                                               DBUS_TYPE_STRING, &pldbidArra,
@@ -246,9 +258,9 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
    DBusError error;
    dbus_error_init (&error);
 
-   DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",       // destination
-                                                      "/org/genivi/persistence/admin",       // path
-                                                       "org.genivi.persistence.admin",       // interface
+   DBusMessage* message = dbus_message_new_method_call(gDbusPersAdminInterface,  			// destination
+   		                                              gDbusPersAdminPath,            	// path
+   		                                              gDbusPersAdminInterface,       	// interface
                                                        "PersistenceAdminRequestCompleted");  // method
    if(conn != NULL)
    {
@@ -293,20 +305,19 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
    if(conn != NULL)
    {
-      const char* objName = "/org/genivi/persistence/adminconsumer";
       const char* busName = dbus_bus_get_unique_name(conn);
 
       if(busName != NULL)
       {
-         DBusMessage* message = dbus_message_new_method_call("org.genivi.persistence.admin",    // destination
-                                                            "/org/genivi/persistence/admin",    // path
-                                                             "org.genivi.persistence.admin",    // interface
-                                                             method);                           // method
+         DBusMessage* message = dbus_message_new_method_call(gDbusPersAdminInterface,   // destination
+         		                                              gDbusPersAdminPath,    		// path
+         		                                              gDbusPersAdminInterface,   // interface
+                                                             method);               // method
 
          if(message != NULL)
          {
             dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
-                                              DBUS_TYPE_STRING, &objName,
+                                              DBUS_TYPE_STRING, &gPersAdminConsumerPath,
                                               DBUS_TYPE_INT32,  &notificationFlag,
                                               DBUS_TYPE_UINT32, &gTimeoutMs,
                                               DBUS_TYPE_INVALID);
@@ -356,26 +367,27 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 
    if(conn != NULL)
    {
-      const char* objName = "/org/genivi/NodeStateManager/LifeCycleConsumer";
       const char* busName = dbus_bus_get_unique_name(conn);
 
-      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
-                                                          "/org/genivi/NodeStateManager/Consumer", // path
-                                                          "org.genivi.NodeStateManager.Consumer",  // interface
+      printf("process_send_lifecycle_register => busName: %s\n", busName);
+
+      DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,           // destination
+      		                                              gDbusLcCons, // path
+      		                                              gDbusLcInterface,  // interface
                                                           method);                                 // method
       if(message != NULL)
       {
          if(regType == 1)   // register
          {
             dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                              DBUS_TYPE_STRING, &objName,
+                                              DBUS_TYPE_STRING, &gDbusLcConsPath,
                                               DBUS_TYPE_UINT32, &shutdownMode,
                                               DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
          }
          else           // unregister
          {
             dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,
-                                              DBUS_TYPE_STRING, &objName,
+                                              DBUS_TYPE_STRING, &gDbusLcConsPath,
                                               DBUS_TYPE_UINT32, &shutdownMode, DBUS_TYPE_INVALID);
          }
 
@@ -406,9 +418,9 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
 
    if(conn != NULL)
    {
-      DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",           // destination
-                                                         "/org/genivi/NodeStateManager/Consumer",  // path
-                                                          "org.genivi.NodeStateManager.Consumer",  // interface
+      DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,           // destination
+      		                                              gDbusLcCons,  // path
+      		                                              gDbusLcInterface,  // interface
                                                           "LifecycleRequestComplete");             // method
       if(message != NULL)
       {

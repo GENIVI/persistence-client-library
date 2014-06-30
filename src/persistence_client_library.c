@@ -26,6 +26,7 @@
 #include "persistence_client_library.h"
 #include "persistence_client_library_backup_filelist.h"
 #include "persistence_client_library_db_access.h"
+#include "persistence_client_library_dbus_cmd.h"
 
 #if USE_FILECACHE
    #include <persistence_file_cache.h>

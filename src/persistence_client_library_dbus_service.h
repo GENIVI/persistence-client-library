@@ -55,6 +55,32 @@ typedef enum ECmd
 } tCmd;
 
 
+
+/// lifecycle consumer interface dbus name
+extern const char* gDbusLcConsterface;
+/// lifecycle consumer dbus interface
+extern const char* gDbusLcCons;
+/// lifecycle consumer dbus destination
+extern const char* gDbusLcConsDest;
+/// lifecycle consumer dbus path
+extern const char* gDbusLcConsPath;
+/// lifecycle consumer debus message
+extern const char* gDbusLcConsMsg;
+/// lifecycle consumer dbus interface
+extern const char* gDbusLcInterface;
+
+/// persistence administrator consumer dbus interface
+extern const char* gDbusPersAdminConsInterface;
+/// persistence administrator consumer dbus
+extern const char* gDbusPersAdminPath;
+/// persistence administrator consumer dbus interface message
+extern const char* gDbusPersAdminConsMsg;
+/// persistence administrator dbus
+extern const char* gDbusPersAdminInterface;
+/// persistence administrator dbus path
+extern const char* gPersAdminConsumerPath;
+
+
 /// command data union definition
 typedef union MainLoopData{
 	struct {

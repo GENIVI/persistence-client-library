@@ -29,7 +29,6 @@
 /// flag if access is locked
 static int gLockAccess = 0;
 
-
 void pers_lock_access(void)
 {
    __sync_fetch_and_add(&gLockAccess,1);
@@ -208,9 +207,11 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
    (void)user_data;
 
-   if((0==strcmp("org.genivi.persistence.adminconsumer", dbus_message_get_interface(message))))
+   printf("checkPersAdminMsg => \n  interface: %s\n  Message: %s \n", dbus_message_get_interface(message), dbus_message_get_member(message));
+
+   if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
    {
-      if((0==strcmp("PersistenceAdminRequest", dbus_message_get_member(message))))
+      if((0==strcmp(gDbusPersAdminConsMsg, dbus_message_get_member(message))))
       {
          result = msg_persAdminRequest(connection, message);
       }

@@ -45,7 +45,21 @@ pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;
 pthread_t gMainLoopThread;
 
 
-//int gEfds;  // communication channel int dbus mainloop
+const char* gDbusLcConsDest    = "org.genivi.NodeStateManager";
+
+const char* gDbusLcConsterface = "org.genivi.NodeStateManager.LifeCycleConsumer";
+const char* gDbusLcConsPath    = "/org/genivi/NodeStateManager/LifeCycleConsumer";
+const char* gDbusLcInterface   = "org.genivi.NodeStateManager.Consumer";
+const char* gDbusLcCons        = "/org/genivi/NodeStateManager/Consumer";
+const char* gDbusLcConsMsg     = "LifecycleRequest";
+
+const char* gDbusPersAdminConsInterface = "org.genivi.persistence.adminconsumer";
+const char* gPersAdminConsumerPath      = "/org/genivi/persistence/adminconsumer";
+const char* gDbusPersAdminPath          = "/org/genivi/persistence/admin";
+const char* gDbusPersAdminInterface     = "org.genivi.persistence.admin";
+const char* gDbusPersAdminConsMsg       = "PersistenceAdminRequest";
+
+
 int gPipeFd[2] = {0};	// communication channel int dbus mainloop
 
 typedef enum EDBusObjectType
@@ -100,7 +114,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
    (void)user_data;
 
    // org.genivi.persistence.admin  S I G N A L
-   if((0==strcmp("org.genivi.persistence.admin", dbus_message_get_interface(message))))
+   if((0==strcmp(gDbusPersAdminInterface, dbus_message_get_interface(message))))
    {
       if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
       {
@@ -116,7 +130,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
       }
    }
    // org.genivi.persistence.admin  S I G N A L
-   else if((0==strcmp("org.genivi.persistence.adminconsumer", dbus_message_get_interface(message))))
+   else if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
    {
       if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
       {
@@ -524,9 +538,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          dbus_bus_add_match(conn, "type='signal',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
 
          // register for messages
-         if (   (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer", &vtable2, userData))
+         if (   (TRUE==dbus_connection_register_object_path(conn, gDbusLcConsPath, &vtable2, userData))
 #if USE_PASINTERFACE == 1
-             && (TRUE==dbus_connection_register_object_path(conn, "/org/genivi/persistence/adminconsumer", &vtable, userData))
+             && (TRUE==dbus_connection_register_object_path(conn, gPersAdminConsumerPath, &vtable, userData))
 #endif
              && (TRUE==dbus_connection_register_fallback(conn, "/", &vtableFallback, userData)) )
          {
@@ -545,7 +559,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
                   while (DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
 
-                  while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, 750)))&&(EINTR==errno));
+                  while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, -1)))&&(EINTR==errno));
 
                   if (0>ret)
                   {
@@ -664,9 +678,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                while (0!=bContinue);
             }
 #if USE_PASINTERFACE == 1
-            dbus_connection_unregister_object_path(conn, "/org/genivi/persistence/adminconsumer");
+            dbus_connection_unregister_object_path(conn, gPersAdminConsumerPath);
 #endif
-            dbus_connection_unregister_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer");
+            dbus_connection_unregister_object_path(conn, gDbusLcConsPath);
             dbus_connection_unregister_object_path(conn, "/");
          }
          //close(gEfds);

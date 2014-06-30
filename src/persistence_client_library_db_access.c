@@ -716,18 +716,17 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
 {
    int rval = 0;
 
-	tMainLoopData data;
-
-	data.message.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
-	data.message.params[0] = ldbid;
-	data.message.params[1] = user_no;
-	data.message.params[2] = seat_no;
-	data.message.params[3] = regPolicy;
-
-	snprintf(data.message.string, DbKeyMaxLen, "%s", key);
-
    if(regPolicy < Notify_lastEntry)
    {
+   	tMainLoopData data;
+
+   	data.message.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
+   	data.message.params[0] = ldbid;
+   	data.message.params[1] = user_no;
+   	data.message.params[2] = seat_no;
+   	data.message.params[3] = regPolicy;
+
+   	snprintf(data.message.string, DbKeyMaxLen, "%s", key);
 
       if(regPolicy == Notify_register)
       {
