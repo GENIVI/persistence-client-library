@@ -162,6 +162,10 @@ int pclDeinitLibrary(void)
    if(gPclInitialized == PCLinitialized)
    {
       int* retval;
+   	tMainLoopData data;
+   	data.message.cmd = (uint32_t)CMD_QUIT;
+   	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
@@ -201,7 +205,7 @@ int pclDeinitLibrary(void)
       bContinue = 0;
 
       // send quit command to dbus mainloop
-      deliverToMainloop_NM(CMD_QUIT, 0, 0);
+      deliverToMainloop_NM(&data);
 
       // wait until the dbus mainloop has ended
       pthread_join(gMainLoopThread, (void**)&retval);

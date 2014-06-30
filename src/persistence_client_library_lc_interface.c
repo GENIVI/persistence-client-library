@@ -44,7 +44,13 @@ int check_lc_request(unsigned int request, unsigned int requestID)
    {
       case NsmShutdownNormal:
       {
-         if(-1 == deliverToMainloop_NM(CMD_LC_PREPARE_SHUTDOWN, request, requestID) )
+      	tMainLoopData data;
+      	data.message.cmd = (uint32_t)CMD_LC_PREPARE_SHUTDOWN;
+      	data.message.params[0] = request;
+      	data.message.params[1] = requestID;
+      	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+         if(-1 == deliverToMainloop_NM(&data) )
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
             rval = NsmErrorStatus_Fail;
@@ -148,13 +154,27 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
 int register_lifecycle(int shutdownMode)
 {
-   return deliverToMainloop(CMD_SEND_LC_REGISTER, 1, shutdownMode);
+	tMainLoopData data;
+
+	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
+	data.message.params[0] = 1;
+	data.message.params[1] = shutdownMode;
+	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+   return deliverToMainloop(&data);
 }
 
 
 
 int unregister_lifecycle(int shutdownMode)
 {
-   return deliverToMainloop(CMD_SEND_LC_REGISTER, 0, shutdownMode);
+	tMainLoopData data;
+
+	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
+	data.message.params[0] = 0;
+	data.message.params[1] = shutdownMode;
+	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+   return deliverToMainloop(&data);
 }
 

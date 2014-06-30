@@ -25,6 +25,8 @@
 #include <sys/eventfd.h>
 #include <sys/timerfd.h>
 
+#include "persistence_client_library_data_organization.h"
+
 /// mutex to make sure main loop is running
 extern pthread_mutex_t gDbusInitializedMtx;
 extern pthread_cond_t  gDbusInitializedCond;
@@ -47,12 +49,21 @@ typedef enum ECmd
    CMD_LC_PREPARE_SHUTDOWN,         /// command to prepare shutdown
    CMD_SEND_NOTIFY_SIGNAL,          /// command send changed notification signal
    CMD_REG_NOTIFY_SIGNAL,           /// command send register/unregister command
-   //CMD_SEND_PAS_REQUEST,            /// command send admin request
    CMD_SEND_PAS_REGISTER,           /// command send admin register/unregister
-   //CMD_SEND_LC_REQUEST,             /// command send lifecycle request
    CMD_SEND_LC_REGISTER,            /// command send lifecycle register/unregister
    CMD_QUIT                         /// quit command
 } tCmd;
+
+
+/// command data union definition
+typedef union MainLoopData{
+	struct {
+		uint32_t cmd;				/// dbus mainloop command
+		uint32_t params[4];	/// unsignet int parameters
+		char string[DbKeyMaxLen];			/// char parameter
+	} message;
+	char payload[128];
+} tMainLoopData;
 
 
 /// pipe file descriptors
@@ -82,10 +93,10 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 int setup_dbus_mainloop(void);
 
 
-int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2);
+int deliverToMainloop(tMainLoopData* payload);
 
 
-int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int param2);
+int deliverToMainloop_NM(tMainLoopData* payload);
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_SERVICE_H_ */

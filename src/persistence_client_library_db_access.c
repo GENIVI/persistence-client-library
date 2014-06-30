@@ -716,13 +716,18 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
 {
    int rval = 0;
 
+	tMainLoopData data;
+
+	data.message.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
+	data.message.params[0] = ldbid;
+	data.message.params[1] = user_no;
+	data.message.params[2] = seat_no;
+	data.message.params[3] = regPolicy;
+
+	snprintf(data.message.string, DbKeyMaxLen, "%s", key);
+
    if(regPolicy < Notify_lastEntry)
    {
-      snprintf(gNotifykey, DbKeyMaxLen, "%s", key);
-      gNotifyLdbid  = ldbid;     // to do: pass correct ==> JUST TESTING!!!!
-      gNotifyUserNo = user_no;
-      gNotifySeatNo = seat_no;
-      gNotifyReason = regPolicy;
 
       if(regPolicy == Notify_register)
       {
@@ -735,7 +740,7 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
          gChangeNotifyCallback = NULL;
       }
 
-      if(-1 == deliverToMainloop(CMD_REG_NOTIFY_SIGNAL, 0, 0))
+      if(-1 == deliverToMainloop(&data))
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_notify_on_change => failed to write to pipe"), DLT_INT(errno));
          rval = -1;
@@ -759,14 +764,17 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    int rval = 1;
    if(reason < pclNotifyStatus_lastEntry)
    {
-      snprintf(gNotifykey,  DbKeyMaxLen,       "%s", key);
+   	tMainLoopData data;
 
-      gNotifyLdbid  = context->ldbid;     // to do: pass correct ==> JUST TESTING!!!!
-      gNotifyUserNo = context->user_no;
-      gNotifySeatNo = context->seat_no;
-      gNotifyReason = reason;
+   	data.message.cmd = (uint32_t)CMD_SEND_NOTIFY_SIGNAL;
+   	data.message.params[0] = context->ldbid;
+   	data.message.params[1] = context->user_no;
+   	data.message.params[2] = context->seat_no;
+   	data.message.params[3] = reason;
 
-      if(-1 == deliverToMainloop(CMD_SEND_NOTIFY_SIGNAL, 0,0) )
+   	snprintf(data.message.string, DbKeyMaxLen, "%s", key);
+
+      if(-1 == deliverToMainloop(&data) )
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal => failed to write to pipe"), DLT_INT(errno));
          rval = EPERS_NOTIFY_SIG;

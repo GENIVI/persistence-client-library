@@ -77,16 +77,6 @@ const char* gChangeSignal = "PersistenceResChange";
 const char* gDeleteSignal = "PersistenceResDelete";
 const char* gCreateSignal = "PersistenceResCreate";
 
-
-char gNotifykey[DbKeyMaxLen] = { [0 ... DbKeyMaxLen-1] = 0};
-
-unsigned int gNotifyLdbid  = 0;
-unsigned int gNotifyUserNo = 0;
-unsigned int gNotifySeatNo = 0;
-pclNotifyStatus_e       gNotifyReason = 0;
-PersNotifyRegPolicy_e   gNotifyPolicy = 0;
-
-
 int gTimeoutMs = 5000;
 
 int gDbusPendingRvalue = 0;

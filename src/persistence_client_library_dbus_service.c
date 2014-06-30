@@ -45,8 +45,8 @@ pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;
 pthread_t gMainLoopThread;
 
 
-int gEfds;  // communication channel int dbus mainloop
-
+//int gEfds;  // communication channel int dbus mainloop
+int gPipeFd[2] = {0};	// communication channel int dbus mainloop
 
 typedef enum EDBusObjectType
 {
@@ -506,7 +506,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    else if (NULL != conn)
    {
       dbus_connection_set_exit_on_disconnect(conn, FALSE);
-      if (-1 == (gEfds = eventfd(0, 0)))
+      //if (-1 == (gEfds = eventfd(0, 0)))
+      if (-1 == (pipe(gPipeFd)))
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => eventfd() failed w/ errno:"), DLT_INT(errno) );
       }
@@ -516,7 +517,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          memset(&gPollInfo, 0 , sizeof(gPollInfo));
 
          gPollInfo.nfds = 1;
-         gPollInfo.fds[0].fd = gEfds;
+         //gPollInfo.fds[0].fd = gEfds;
+         gPollInfo.fds[0].fd = gPipeFd[0];
          gPollInfo.fds[0].events = POLLIN;
 
          dbus_bus_add_match(conn, "type='signal',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
@@ -578,14 +580,15 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               }
                               bContinue = TRUE;
                            }
-                           else if (gPollInfo.fds[i].fd == gEfds)
+                           //else if (gPollInfo.fds[i].fd == gEfds)
+                           else if (gPollInfo.fds[i].fd == gPipeFd[0])
                            {
                               /* internal command */
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
-                                 uint16_t buf[64];
+                              	tMainLoopData readData;
                                  bContinue = TRUE;
-                                 while ((-1==(ret = read(gPollInfo.fds[i].fd, buf, 64)))&&(EINTR == errno));
+                                 while ((-1==(ret = read(gPollInfo.fds[i].fd, readData.payload, 128)))&&(EINTR == errno));
                                  if(ret < 0)
                                  {
                                     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read() failed"), DLT_STRING(strerror(errno)) );
@@ -593,44 +596,38 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  else
                                  {
                                     pthread_mutex_lock(&gMainCondMtx);
-                                    switch (buf[0])
+                                    //printf("--- *** --- Receive => mainloop => cmd: %d | string: %s | size: %d\n\n", readData.message.cmd, readData.message.string, ret);
+                                    switch (readData.message.cmd)
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:
-                                          process_block_and_write_data_back((buf[2]), buf[1]);
-                                          process_send_pas_request(conn, (buf[2]), buf[1]);
+                                          process_block_and_write_data_back(readData.message.params[1] /*requestID*/, readData.message.params[0] /*status*/);
+                                          process_send_pas_request(conn,    readData.message.params[1] /*request*/,   readData.message.params[0] /*status*/);
                                           break;
                                        case CMD_LC_PREPARE_SHUTDOWN:
                                           process_prepare_shutdown(Shutdown_Full);
-                                          process_send_lifecycle_request(conn, (buf[2]), buf[1]);
+                                          process_send_lifecycle_request(conn, readData.message.params[1] /*requestID*/, readData.message.params[0] /*status*/);
                                           break;
                                        case CMD_SEND_NOTIFY_SIGNAL:
-                                          process_send_notification_signal(conn);
+                                          process_send_notification_signal(conn, readData.message.params[0] /*ldbid*/, readData.message.params[1], /*user*/
+                		                                                            readData.message.params[2] /*seat*/,  readData.message.params[3], /*reason*/
+                                                                                 readData.message.string);
                                           break;
                                        case CMD_REG_NOTIFY_SIGNAL:
-                                          process_reg_notification_signal(conn);
+                                          process_reg_notification_signal(conn, readData.message.params[0] /*ldbid*/, readData.message.params[1], /*user*/
+                		                                                           readData.message.params[2] /*seat*/,  readData.message.params[3], /*,policy*/
+                                                                                readData.message.string);
                                           break;
                                        case CMD_SEND_PAS_REGISTER:
-                                          process_send_pas_register(conn, (buf[1]), buf[2]);
+                                          process_send_pas_register(conn, readData.message.params[0] /*regType*/, readData.message.params[1] /*notifyFlag*/);
                                           break;
                                        case CMD_SEND_LC_REGISTER:
-                                          process_send_lifecycle_register(conn, (buf[1]), buf[2]);
+                                          process_send_lifecycle_register(conn, readData.message.params[0] /*regType*/, readData.message.params[1] /*mode*/);
                                           break;
                                        case CMD_QUIT:
                                           bContinue = 0;
                                           break;
-
-                                       // ******************************************************
-                                       /*
-                                       case CMD_SEND_LC_REQUEST:  // remove
-                                         process_send_lifecycle_request(conn, (buf[2]), buf[1]);
-                                         break;
-                                      case CMD_SEND_PAS_REQUEST: /// remove
-                                         process_send_pas_request(conn, (buf[2]), buf[1]);
-                                         break;
-                                       */
-                                       // ******************************************************
                                        default:
-                                          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(buf[0]) );
+                                          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(readData.message.cmd) );
                                           break;
                                     }
                                     pthread_cond_signal(&gMainLoopCond);
@@ -672,7 +669,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             dbus_connection_unregister_object_path(conn, "/org/genivi/NodeStateManager/LifeCycleConsumer");
             dbus_connection_unregister_object_path(conn, "/");
          }
-         close(gEfds);
+         //close(gEfds);
+         close(gPipeFd[0]);
+         close(gPipeFd[1]);
       }
       dbus_connection_close(conn);
       dbus_connection_unref(conn);
@@ -686,16 +685,15 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
 
 
-int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2)
+int deliverToMainloop(tMainLoopData* payload)
 {
    int rval = 0;
 
    pthread_mutex_lock(&gDeliverpMtx);
 
-
    pthread_mutex_lock(&gMainCondMtx);
 
-   deliverToMainloop_NM(mainloopCmd, param1, param2);
+   deliverToMainloop_NM(payload);
 
    pthread_cond_wait(&gMainLoopCond, &gMainCondMtx);
    pthread_mutex_unlock(&gMainCondMtx);
@@ -706,14 +704,15 @@ int deliverToMainloop(tCmd mainloopCmd, unsigned int param1, unsigned int param2
    return rval;
 }
 
-int deliverToMainloop_NM(tCmd mainloopCmd, unsigned int param1, unsigned int param2)
+int deliverToMainloop_NM(tMainLoopData* payload)
 {
-   int rval = 0;
-   uint64_t cmd;
+   int rval = 0, length = 128;
 
-   cmd = ( ((uint64_t)param2 << 32) | ((uint64_t)param1 << 16) | mainloopCmd);
+   //length = sizeof(payload->message) + strlen(payload->message.string) + 1; // TODO calculate the correct length of the message
 
-   if(-1 == write(gEfds, &cmd, (sizeof(uint64_t))))
+   //printf("--- *** --- Send => deliverToMainloop_NM => %d: | String: %s | size: %d\n", payload->message.cmd, payload->message.string, length);
+
+   if(-1 == write(gPipeFd[1], payload->payload, length))
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
      rval = -1;

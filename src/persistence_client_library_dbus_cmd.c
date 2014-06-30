@@ -33,7 +33,8 @@ void msg_pending_func(DBusPendingCall *call, void *data);
 
 
 
-void process_reg_notification_signal(DBusConnection* conn)
+void process_reg_notification_signal(DBusConnection* conn, unsigned int notifyLdbid, unsigned int notifyUserNo,
+                                                           unsigned int notifySeatNo, unsigned int notifyPolicy, const char* notifyKey)
 {
    char ruleChanged[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
    char ruleDeleted[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
@@ -42,26 +43,26 @@ void process_reg_notification_signal(DBusConnection* conn)
    // add match for  c h a n g e
    snprintf(ruleChanged, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            gNotifykey, gNotifyLdbid, gNotifyUserNo, gNotifySeatNo);
+            notifyKey, notifyLdbid, notifyUserNo, notifySeatNo);
 
    // add match for  d e l e t e
    snprintf(ruleDeleted, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResDelete',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            gNotifykey, gNotifyLdbid, gNotifyUserNo, gNotifySeatNo);
+            notifyKey, notifyLdbid, notifyUserNo, notifySeatNo);
 
    // add match for  c r e a t e
    snprintf(ruleCreated, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResCreate',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
-            gNotifykey, gNotifyLdbid, gNotifyUserNo, gNotifySeatNo);
+            notifyKey, notifyLdbid, notifyUserNo, notifySeatNo);
 
-   if(gNotifyPolicy == Notify_register)
+   if(notifyPolicy == Notify_register)
    {
       dbus_bus_add_match(conn, ruleChanged, NULL);
       dbus_bus_add_match(conn, ruleDeleted, NULL);
       dbus_bus_add_match(conn, ruleCreated, NULL);
       DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("Registered for change notifications:"), DLT_STRING(ruleChanged));
    }
-   else if(gNotifyPolicy == Notify_unregister)
+   else if(notifyPolicy == Notify_unregister)
    {
       dbus_bus_remove_match(conn, ruleChanged, NULL);
       dbus_bus_remove_match(conn, ruleDeleted, NULL);
@@ -74,11 +75,12 @@ void process_reg_notification_signal(DBusConnection* conn)
 
 
 
-void process_send_notification_signal(DBusConnection* conn)
+void process_send_notification_signal(DBusConnection* conn, unsigned int notifyLdbid, unsigned int notifyUserNo,
+                                                            unsigned int notifySeatNo, unsigned int notifyReason, const char* notifyKey)
 {
    dbus_bool_t ret;
    DBusMessage* message;
-   const char* notifyReason = NULL;
+   const char* notifyReasonString = NULL;
 
    char ldbidArray[DbusSubMatchSize] = {[0 ... DbusSubMatchSize-1] = 0};
    char userArray[DbusSubMatchSize]  = {[0 ... DbusSubMatchSize-1] = 0};
@@ -86,37 +88,37 @@ void process_send_notification_signal(DBusConnection* conn)
    char* pldbidArra = ldbidArray;
    char* puserArray = userArray;
    char* pseatArray = seatArray;
-   char* pnotifyKey = gNotifykey;
+   char* pnotifyKey = (char*)notifyKey;
 
-   switch(gNotifyReason)
+   switch(notifyReason)
    {
       case pclNotifyStatus_deleted:
-         notifyReason = gDeleteSignal;
+      	notifyReasonString = gDeleteSignal;
          break;
       case  pclNotifyStatus_created:
-         notifyReason = gCreateSignal;
+      	notifyReasonString = gCreateSignal;
          break;
       case pclNotifyStatus_changed:
-         notifyReason = gChangeSignal;
+      	notifyReasonString = gChangeSignal;
          break;
       default:
-         notifyReason = NULL;
+      	notifyReasonString = NULL;
          break;
    }
 
-   if(notifyReason != NULL)
+   if(notifyReasonString != NULL)
    {
       // dbus_bus_add_match is used for the notification mechanism,
       // and this works only for type DBUS_TYPE_STRING as message arguments
       // this is the reason to use string instead of integer types directly
-      snprintf(ldbidArray, DbusSubMatchSize, "%u", gNotifyLdbid);
-      snprintf(userArray,  DbusSubMatchSize, "%u", gNotifyUserNo);
-      snprintf(seatArray,  DbusSubMatchSize, "%u", gNotifySeatNo);
+      snprintf(ldbidArray, DbusSubMatchSize, "%u", notifyLdbid);
+      snprintf(userArray,  DbusSubMatchSize, "%u", notifyUserNo);
+      snprintf(seatArray,  DbusSubMatchSize, "%u", notifySeatNo);
 
       //printf("process_send_Notification_Signal => key: %s | lbid: %d | gUserNo: %d | gSeatNo: %d | gReason: %d \n", gNotifykey, gLdbid, gUserNo, gSeatNo, gReason);
       message = dbus_message_new_signal("/org/genivi/persistence/adminconsumer",    // const char *path,
                                         "org.genivi.persistence.adminconsumer",     // const char *interface,
-                                        notifyReason);                                 // const char *name
+                                        notifyReasonString);                                 // const char *name
 
       ret = dbus_message_append_args(message, DBUS_TYPE_STRING, &pnotifyKey,
                                               DBUS_TYPE_STRING, &pldbidArra,

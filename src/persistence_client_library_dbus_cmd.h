@@ -36,7 +36,8 @@ void process_prepare_shutdown(int complete);
  *
  * @param conn the dbus connection
  */
-void process_send_notification_signal(DBusConnection* conn);
+void process_send_notification_signal(DBusConnection* conn, unsigned int notifyLdbid, unsigned int notifyUserNo,
+                                                            unsigned int notifySeatNo, unsigned int notifyReason, const char* notifyKey);
 
 
 /**
@@ -44,7 +45,8 @@ void process_send_notification_signal(DBusConnection* conn);
  *
  * @param conn the dbus connection
  */
-void process_reg_notification_signal(DBusConnection* conn);
+void process_reg_notification_signal(DBusConnection* conn, unsigned int notifyLdbid, unsigned int notifyUserNo,
+                                                           unsigned int notifySeatNo, unsigned int notifyPolicy, const char* notifyKey);
 
 
 void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId, unsigned int status);

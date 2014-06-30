@@ -53,8 +53,15 @@ int check_pas_request(unsigned int request, unsigned int requestID)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
+      	tMainLoopData data;
+
+      	data.message.cmd = (uint32_t)CMD_PAS_BLOCK_AND_WRITE_BACK;
+      	data.message.params[0] = request;
+      	data.message.params[1] = requestID;
+      	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PCL: check_pas_request; case PasMsg_Block o. PasMsg_WriteBack"));
-         if(-1 == deliverToMainloop_NM(CMD_PAS_BLOCK_AND_WRITE_BACK, request, requestID))
+         if(-1 == deliverToMainloop_NM(&data))
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
             rval = PasErrorStatus_FAIL;
@@ -226,7 +233,14 @@ int register_pers_admin_service(void)
 {
    int rval =  0;
 
-   if(-1 == deliverToMainloop(CMD_SEND_PAS_REGISTER, 1,  (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock)))
+	tMainLoopData data;
+
+	data.message.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
+	data.message.params[0] = 1;
+	data.message.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);
+	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+   if(-1 == deliverToMainloop(&data))
    {
     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("register_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
     rval = -1;
@@ -245,7 +259,13 @@ int unregister_pers_admin_service(void)
 {
    int rval =  0;
 
-   if(-1 == deliverToMainloop(CMD_SEND_PAS_REGISTER, 0,  (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock)))
+	tMainLoopData data;
+	data.message.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
+	data.message.params[0] = 0;
+	data.message.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);
+	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+   if(-1 == deliverToMainloop(&data))
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_pers_admin_service => failed to write to pipe"), DLT_INT(errno));
      rval = -1;

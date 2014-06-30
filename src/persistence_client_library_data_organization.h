@@ -210,25 +210,6 @@ extern const char* gDeleteSignal;
 /// create signal string
 extern const char* gCreateSignal;
 
-
-/**
- * Global notification variables, will be used to pass
- * the notification information into the mainloop.
- */
-/// notification key string
-extern char gNotifykey[DbKeyMaxLen];
-/// notification lbid
-extern unsigned int gNotifyLdbid;
-/// notification user number
-extern unsigned int gNotifyUserNo;
-/// notification seat number
-extern unsigned int gNotifySeatNo;
-/// notification reason (created, changed, deleted)
-extern pclNotifyStatus_e      gNotifyReason;
-/// notification policy (register or unregister)
-extern PersNotifyRegPolicy_e  gNotifyPolicy;
-
-
 // dbus timeout (5 seconds)
 extern int gTimeoutMs;
 
