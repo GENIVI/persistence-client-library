@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>     /* atoi */
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
@@ -429,9 +430,9 @@ int main(int argc, char *argv[])
 {
    int ret = 0;
 
-#if 0
+#if 1
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   int numLoops = 5000;
+   int numLoops = 500;		// number of default loops
    long long resolution = 0;
 
    struct timespec clockRes;
@@ -447,6 +448,20 @@ int main(int argc, char *argv[])
 
    struct tm *locTime;
 
+   int opt;
+
+	while ((opt = getopt(argc, argv, "l:")) != -1)
+	{
+		switch (opt)
+		{
+			case 'l':
+				numLoops = atoi(optarg);
+				break;
+		  }
+	 }
+
+	printf("Number of loops: %d\n", numLoops);
+
    time_t t = time(0);
    locTime = localtime(&t);
    snprintf(sysTimeBuffer, BUFFER_SIZE, "The benchmark string to do write benchmarking: \"%s %.2d.%.2d.%d - %d:%.2d:%.2d Uhr\" [time and date]", dayOfWeek[locTime->tm_wday],
@@ -460,10 +475,10 @@ int main(int argc, char *argv[])
 
 
    /// debug log and trace (DLT) setup
-   DLT_REGISTER_APP("noty","tests the persistence client library");
+   DLT_REGISTER_APP("PCLb","tests the persistence client library");
 
 
-#if 0
+#if 1
    printf("\n\n============================\n");
    printf("      PCL benchmark\n");
    printf("============================\n\n");
@@ -471,7 +486,6 @@ int main(int argc, char *argv[])
    clock_getres(CLOCK_ID, &clockRes);
    resolution = ((clockRes.tv_sec * SECONDS2NANO) + clockRes.tv_nsec);
    printf("Clock resolution  => %f ms\n\n", (double)((double)resolution/NANO2MIL));
-
 
    init_benchmark(1000);
 
