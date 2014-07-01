@@ -446,7 +446,6 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout => cannot create another fd to be poll()'ed"));
    }
-
    return ret;
 }
 
@@ -531,7 +530,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
          memset(&gPollInfo, 0 , sizeof(gPollInfo));
 
          gPollInfo.nfds = 1;
-         //gPollInfo.fds[0].fd = gEfds;
          gPollInfo.fds[0].fd = gPipeFd[0];
          gPollInfo.fds[0].events = POLLIN;
 
@@ -557,7 +555,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                {
                   bContinue = 0; /* assume error */
 
-                  while (DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
+                  while(DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
 
                   while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, -1)))&&(EINTR==errno));
 
@@ -572,8 +570,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                   else
                   {
                      int i;
+                     int bQuit = FALSE;
 
-                     for (i=0; gPollInfo.nfds>i; ++i)
+                     for (i=0; gPollInfo.nfds>i && !bQuit; ++i)
                      {
                         /* anything to do */
                         if (0!=gPollInfo.fds[i].revents)
@@ -582,6 +581,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                            {
                               /* time-out occured */
                               unsigned long long nExpCount = 0;
+
                               if ((ssize_t)sizeof(nExpCount)!=read(gPollInfo.fds[i].fd, &nExpCount, sizeof(nExpCount)))
                               {
                                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => read failed"));
@@ -594,9 +594,9 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               }
                               bContinue = TRUE;
                            }
-                           //else if (gPollInfo.fds[i].fd == gEfds)
                            else if (gPollInfo.fds[i].fd == gPipeFd[0])
                            {
+
                               /* internal command */
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
@@ -639,6 +639,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           break;
                                        case CMD_QUIT:
                                           bContinue = 0;
+                                          bQuit = TRUE;
                                           break;
                                        default:
                                           DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop => command not handled"), DLT_INT(readData.message.cmd) );
@@ -652,6 +653,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                            else
                            {
                               int flags = 0;
+
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
                                  flags |= DBUS_WATCH_READABLE;
@@ -668,7 +670,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               {
                                  flags |= DBUS_WATCH_HANGUP;
                               }
-
                               bContinue = dbus_watch_handle(gPollInfo.objects[i].watch, flags);
                            }
                         }
@@ -683,7 +684,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             dbus_connection_unregister_object_path(conn, gDbusLcConsPath);
             dbus_connection_unregister_object_path(conn, "/");
          }
-         //close(gEfds);
+
          close(gPipeFd[0]);
          close(gPipeFd[1]);
       }
@@ -731,7 +732,6 @@ int deliverToMainloop_NM(tMainLoopData* payload)
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
      rval = -1;
    }
-
    return rval;
 }
 

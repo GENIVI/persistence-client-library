@@ -84,7 +84,7 @@ int plugin_delete_data(const char* path)
 // OK
 int plugin_handle_get_data(int handle, char* buffer, int size)
 {
-   int strSize = 99;
+   //int strSize = 99;
    //printf("plugin_handle_get_data: %s\n", LIBIDENT);
 
    return snprintf(buffer, size, "Custom plugin -> plugin_get_data_handle: %s!", LIBIDENT);
@@ -100,7 +100,7 @@ int plugin_handle_get_data(int handle, char* buffer, int size)
 // OK
 int plugin_get_data(const char* path, char* buffer, int size)
 {
-   int strSize = 99;
+   //int strSize = 99;
 
    //printf("Custom plugin -> plugin_get_data: %s!\n", LIBIDENT);
 
@@ -117,20 +117,20 @@ int plugin_get_data(const char* path, char* buffer, int size)
 // OK
 int plugin_init()
 {
-   int rval = 99;
+   //int rval = 99;
 
    //printf("* * * * * plugin_init sync  => %s!\n", LIBIDENT);
 
-   return rval;
+   return 1;
 }
 
 int plugin_init_async(plugin_callback_async_t pfInitCompletedCB)
 {
-   int rval = -1;
+   //int rval = -1;
 
 	//printf("* * * * * plugin_init_async => %s!\n", LIBIDENT);
 
-	return rval;
+	return 1;
 }
 
 
@@ -290,12 +290,14 @@ int plugin_get_backup(char* backup_id, int size)
 int plugin_clear_all_data(void)
 {
    printf("plugin_clear_all_data\n");
+   return 1;
 }
 
 
 int plugin_sync(void)
 {
    printf("plugin_sync\n");
+   return 1;
 }
 
 

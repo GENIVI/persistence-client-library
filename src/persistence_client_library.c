@@ -202,9 +202,6 @@ int pclDeinitLibrary(void)
 
       process_prepare_shutdown(Shutdown_Full);	// close all db's and fd's and block access
 
-      // end dbus library
-      bContinue = 0;
-
       // send quit command to dbus mainloop
       deliverToMainloop_NM(&data);
 

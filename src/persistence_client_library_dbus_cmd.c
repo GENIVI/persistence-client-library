@@ -369,8 +369,6 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
    {
       const char* busName = dbus_bus_get_unique_name(conn);
 
-      printf("process_send_lifecycle_register => busName: %s\n", busName);
-
       DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,           // destination
       		                                              gDbusLcCons, // path
       		                                              gDbusLcInterface,  // interface

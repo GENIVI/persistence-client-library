@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
    resolution = ((clockRes.tv_sec * SECONDS2NANO) + clockRes.tv_nsec);
    printf("Clock resolution  => %f ms\n\n", (double)((double)resolution/NANO2MIL));
 
-   init_benchmark(1000);
+   init_benchmark(numLoops);
 
 
    // init library

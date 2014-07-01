@@ -23,6 +23,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
@@ -319,14 +320,14 @@ START_TEST(test_SetData)
     * Logical DB ID: 0xFF with user 3 and seat 2
     *       ==> local USER value (user 3, seat 2)
     */
-   ret = pclKeyWriteData(0xFF, "status/open_document",      3, 2, "WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+   ret = pclKeyWriteData(0xFF, "status/open_document",      3, 2, (unsigned char*)"WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
    x_fail_unless(ret == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Wrong write size");
 
 
-   ret = pclKeyWriteData(0x84, "links/last_link",      2, 1, "CACHE_ /last_exit/queens", strlen("CACHE_ /last_exit/queens"));
+   ret = pclKeyWriteData(0x84, "links/last_link",      2, 1, (unsigned char*)"CACHE_ /last_exit/queens", strlen("CACHE_ /last_exit/queens"));
    x_fail_unless(ret == strlen("CACHE_ /last_exit/queens"), "Wrong write size");
 
-   ret = pclKeyWriteData(0xFF, "posHandle/last_position", 0, 0, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   ret = pclKeyWriteData(0xFF, "posHandle/last_position", 0, 0, (unsigned char*)"WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
    x_fail_unless(ret == strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""), "Wrong write size");
 #endif
 
@@ -1178,21 +1179,26 @@ END_TEST
 
 START_TEST(test_InitDeinit)
 {
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   int i = 0;
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-	// initialize and deinitialize 1. time
-	(void)pclInitLibrary(gTheAppId, shutdownReg);
-	pclDeinitLibrary();
-
-
-	// initialize and deinitialize 2. time
-	(void)pclInitLibrary(gTheAppId, shutdownReg);
-	pclDeinitLibrary();
+   for(i=1; i<20; i++)
+   {
+		// initialize and deinitialize 1. time
+		(void)pclInitLibrary(gTheAppId, shutdownReg);
+		pclDeinitLibrary();
 
 
-	// initialize and deinitialize 3. time
-	(void)pclInitLibrary(gTheAppId, shutdownReg);
-	pclDeinitLibrary();
+		// initialize and deinitialize 2. time
+		(void)pclInitLibrary(gTheAppId, shutdownReg);
+		pclDeinitLibrary();
+
+
+		// initialize and deinitialize 3. time
+		(void)pclInitLibrary(gTheAppId, shutdownReg);
+		pclDeinitLibrary();
+   }
+
 }
 END_TEST
 

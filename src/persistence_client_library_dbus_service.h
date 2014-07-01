@@ -34,10 +34,6 @@ extern pthread_mutex_t gDbusPendingRegMtx;
 
 extern pthread_mutex_t gMainCondMtx;
 
-// declared in persistence_client_library_dbus_service.c
-// used to end dbus library
-extern int bContinue;
-
 extern pthread_t gMainLoopThread;
 
 

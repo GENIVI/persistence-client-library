@@ -136,8 +136,6 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
    (void)user_data;
 
-   printf("checkLifecycleMsg ==> \n   Interface: %s \n   Message: %s \n", dbus_message_get_interface(message), dbus_message_get_member(message));
-
    if((0==strncmp(gDbusLcConsterface, dbus_message_get_interface(message), 46)))
    {
       if((0==strncmp(gDbusLcConsMsg, dbus_message_get_member(message), 16)))
