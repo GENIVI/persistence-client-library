@@ -30,16 +30,19 @@
 
 
 /// pointer to resource table database
-int gResource_table[PrctDbTableSize] = {[0 ... PrctDbTableSize-1] = -1};
+static int gResource_table[PrctDbTableSize] = {[0 ... PrctDbTableSize-1] = -1};
 /// array to hold the information of database is already open
-int gResourceOpen[PrctDbTableSize] = { [0 ... PrctDbTableSize-1] = 0 };
+static int gResourceOpen[PrctDbTableSize] = { [0 ... PrctDbTableSize-1] = 0 };
 
 
 /// persistence resource config table type definition
 typedef enum _PersistenceRCT_e
 {
+	/// resource is local (only visible for an application)
    PersistenceRCT_local         = 0,
+   /// resource is visible for public
    PersistenceRCT_shared_public = 1,
+   /// resource is visible for a group
    PersistenceRCT_shared_group  = 2,
 
    PersistenceRCT_LastEntry                // last Entry

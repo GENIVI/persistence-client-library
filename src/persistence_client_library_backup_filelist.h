@@ -49,7 +49,7 @@ int pclCreateFile(const char* path);
  *
  * @param srcPath the path of the file
  * @param srcfd the file descriptor of the file
- * @param csumpath the path where to checksum will be stored
+ * @param csumPath the path where to checksum will be stored
  * @param csumBuf the checksum string
  *
  * @return -1 on error or a positive value indicating number of bytes of the backup file created
@@ -60,7 +60,7 @@ int pclCreateBackup(const char* srcPath, int srcfd, const char* csumPath, const 
 /**
  * @brief recover file form backup
  *
- * @param backupfd the file descriptor of the backup file
+ * @param backupFd the file descriptor of the backup file
  * @param original the path of the file to be recovered
  *
  * @return 0 on success -1 on error
@@ -85,7 +85,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[]);
  * @param origPath the path of the file to verify
  * @param backupPath the path of the backup file
  * @param csumPath the path to the checksum file
- * @param openFlag the file open flags
+ * @param openFlags the file open flags
  *
  * @return -1 if the file could not be recovered or a positive value (>=0) on successful recovery
  */
@@ -106,7 +106,7 @@ inline int pclBackupNeeded(const char* path);
 /**
  * @brief translate persistence permission into POSIX file open permissions
  *
- * @param permission the permission enumerator ::PersistencePermission_e
+ * @param permission the permission enumerator PersistencePermission_e
  *
  * @return the POSIX file permission will be returned of -1 in an error case.
  *         If an unknown PersistencePermission_e will be detected the

@@ -12,7 +12,7 @@
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
- * @file           persistence_client_library_data_access.h
+ * @file           persistence_client_library_db_access.h
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
  * @brief          Header of the persistence client library database access.
@@ -51,6 +51,7 @@ char* pers_get_raw_key(char *key);
  * @brief open the default value database specified by the 'DefaultType'
  *
  * @param dbPath path to the directory were the databases are included in.
+ * @param DefaultType the default type
  *
  * @return >= 0 for valid handler; if an error occured the following error code:
  *   EPERS_COMMON
@@ -70,7 +71,7 @@ int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType);
  *
  * @return the number of bytes read or the size of the key (depends on parameter 'job').
            negative value if an error occured and the following error code:
- *   EPERS_NOKEY
+ *         EPERS_NOKEY
  */
 int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job);
 
@@ -97,6 +98,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key
+ * @param resourceID the resource id
  * @param info persistence information
  * @param buffer the buffer holding the data
  * @param buffer_size the size of the buffer
@@ -160,9 +162,9 @@ void database_close_all();
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause '0' is defined as System/node
  * @param seat_no  the seat number
  * @param callback the function callback to be called
- * @param regPolic ::Notify_register to register; ::Notify_unregister to unregister
+ * @param regPolicy ::Notify_register to register; ::Notify_unregister to unregister
  *
- * @return 0 of registration was successfull; -1 if registration failes
+ * @return 0 of registration was successful; -1 if registration fails
  */
 int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                      pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
@@ -176,13 +178,13 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
  * @param context the database context
  * @param reason the reason of the signal, values see pclNotifyStatus_e.
  *
- * @return 0 of registration was successfull; -1 if registration failes
+ * @return 0 of registration was successful; -1 if registration failes
  */
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, pclNotifyStatus_e reason);
 
+
 /**
  * @brief close all open persistence resource configuration tables
- *
  */
 void pers_rct_close_all();
 

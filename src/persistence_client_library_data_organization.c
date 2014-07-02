@@ -32,44 +32,44 @@
 /// path for the backup location
 const char* gBackupPrefix  	= PERS_ORG_ROOT_PATH "/mnt-backup/";
 
-/// size of cached path string
+// size of cached path string
 const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
-/// size of write through string
+// size of write through string
 const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
 
 
-/// backup filename postfix
+// backup filename postfix
 const char* gBackupPostfix 	= "~";
-/// backup checksum filename postfix
+// backup checksum filename postfix
 const char* gBackupCsPostfix 	= "~.crc";
 
-/// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
 const char* gLocalCachePath        = CACHEPREFIX "%s";
-/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
 const char* gLocalWtPath           = WTPREFIX "%s";
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
 const char* gSharedCachePath       = CACHEPREFIX "%s/shared_group_%x";
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
 const char* gSharedWtPath          = WTPREFIX "%s/shared_group_%x";
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
 const char* gSharedPublicCachePath = CACHEPREFIX "%s/shared_public";
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
 const char* gSharedPublicWtPath    = WTPREFIX "%s/shared_public";
 
-/// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
 const char* gLocalCachePathKey        = CACHEPREFIX "%s%s";
-/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
 const char* gLocalWtPathKey           = WTPREFIX "%s%s";
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
 const char* gSharedCachePathKey       = CACHEPREFIX "%s/shared_group_%x%s";
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
 const char* gSharedWtPathKey          = WTPREFIX "%s/shared_group_%x%s";
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
 const char* gSharedPublicCachePathKey = CACHEPREFIX "%s/shared_public%s";
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
 const char* gSharedPublicWtPathKey    = WTPREFIX "%s/shared_public%s";
 
-/// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
+// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
 const char* gLocalCacheFilePath        = CACHEPREFIX "%s"PERS_ORG_USER_FOLDER_NAME_"%d"PERS_ORG_SEAT_FOLDER_NAME_"%d/%s";
 
 

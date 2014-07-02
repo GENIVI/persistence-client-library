@@ -59,8 +59,9 @@ const char* gDbusPersAdminPath          = "/org/genivi/persistence/admin";
 const char* gDbusPersAdminInterface     = "org.genivi.persistence.admin";
 const char* gDbusPersAdminConsMsg       = "PersistenceAdminRequest";
 
+/// communication channel into the dbus mainloop
+static int gPipeFd[2] = {0};
 
-int gPipeFd[2] = {0};	// communication channel int dbus mainloop
 
 typedef enum EDBusObjectType
 {
@@ -70,13 +71,15 @@ typedef enum EDBusObjectType
 } tDBusObjectType;
 
 
+
+/// object entry
 typedef struct SObjectEntry
 {
-   tDBusObjectType objtype; /** libdbus' object */
+   tDBusObjectType objtype;	/// libdbus' object
    union
    {
-      DBusWatch * watch;      /** watch "object" */
-      DBusTimeout * timeout;  /** timeout "object" */
+      DBusWatch * watch;		/// watch "object"
+      DBusTimeout * timeout;	/// timeout "object"
    };
 } tObjectEntry;
 
@@ -85,16 +88,16 @@ typedef struct SObjectEntry
 /// polling structure
 typedef struct SPollInfo
 {
-   int nfds;
-   struct pollfd fds[10];
-   tObjectEntry objects[10];
+   int nfds;						/// number of polls
+   struct pollfd fds[10];		/// poll file descriptors array
+   tObjectEntry objects[10];	/// poll object
 } tPollInfo;
 
 
 /// polling information
-static tPollInfo gPollInfo;
+static tPollInfo gPollInfo;	/// polling information
 
-int bContinue = 0;
+int bContinue = 0;				/// indicator if dbus mainloop shall continue
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
@@ -600,7 +603,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                               /* internal command */
                               if (0!=(gPollInfo.fds[i].revents & POLLIN))
                               {
-                              	tMainLoopData readData;
+                              	MainLoopData_u readData;
                                  bContinue = TRUE;
                                  while ((-1==(ret = read(gPollInfo.fds[i].fd, readData.payload, 128)))&&(EINTR == errno));
                                  if(ret < 0)
@@ -700,7 +703,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
 
 
-int deliverToMainloop(tMainLoopData* payload)
+int deliverToMainloop(MainLoopData_u* payload)
 {
    int rval = 0;
 
@@ -719,7 +722,7 @@ int deliverToMainloop(tMainLoopData* payload)
    return rval;
 }
 
-int deliverToMainloop_NM(tMainLoopData* payload)
+int deliverToMainloop_NM(MainLoopData_u* payload)
 {
    int rval = 0, length = 128;
 

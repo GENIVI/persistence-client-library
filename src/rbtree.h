@@ -26,7 +26,7 @@
    OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
  /**
- * @file           pers_rbtree.h
+ * @file           rbtree.h
  * @ingroup        Persistence device access layer
  * @author         Ingo Huerner
  * @brief          Definition of rbtree functions

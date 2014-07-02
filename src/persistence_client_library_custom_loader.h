@@ -25,17 +25,25 @@
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersistenceCustomLibs_e
 {
-   PersCustomLib_early       = 0,  /// predefined custom library for early persistence
-   PersCustomLib_secure      = 1,  /// predefined custom library for secure persistence
-   PersCustomLib_emergency   = 2,  /// predefined custom library for emengency persistence
-   PersCustomLib_HWinfo      = 3,  /// predefined custom library for hw information
-   PersCustomLib_Custom1     = 4,  /// custom library 1
-   PersCustomLib_Custom2     = 5,  /// custom library 2
-   PersCustomLib_Custom3     = 6,  /// custom library 3
+	/// predefined custom library for early persistence
+   PersCustomLib_early       = 0,
+   /// predefined custom library for secure persistence
+   PersCustomLib_secure      = 1,
+   /// predefined custom library for emengency persistence
+   PersCustomLib_emergency   = 2,
+   /// predefined custom library for hw information
+   PersCustomLib_HWinfo      = 3,
+   /// custom library 1
+   PersCustomLib_Custom1     = 4,
+   /// custom library 2
+   PersCustomLib_Custom2     = 5,
+   /// custom library 3
+   PersCustomLib_Custom3     = 6,
 
    // insert new entries here ...
 
-   PersCustomLib_LastEntry         /// last entry
+   /// last entry
+   PersCustomLib_LastEntry
 
 } PersistenceCustomLibs_e;
 
@@ -43,7 +51,8 @@ typedef enum _PersistenceCustomLibs_e
 /// enumerator fo custom library defines
 enum _PersCustomLibDefines_e
 {
-   PersCustomPathSize = 12		/// the custom library path size
+	/// the custom library path size
+   PersCustomPathSize = 12
 
 } PersCustomLibDefines_e;
 
@@ -51,8 +60,11 @@ enum _PersCustomLibDefines_e
 /// indicates the init method type
 typedef enum PersInitType_e_
 {
-	Init_Synchronous  = 0,	/// initialize the plugin with the synchronous init function
-	Init_Asynchronous = 1,	/// initialize the plugin with the asynchronous init function
+	/// initialize the plugin with the synchronous init function
+	Init_Synchronous  = 0,
+	/// initialize the plugin with the asynchronous init function
+	Init_Asynchronous = 1,
+	/// undefined
 	Init_Undefined
 } PersInitType_e;
 
@@ -60,8 +72,11 @@ typedef enum PersInitType_e_
 /// indicates the plugin loading type
 typedef enum PersLoadingType_e_
 {
-	LoadType_PclInit  = 0,	/// load plugin during pclInitLibrary function
-	LoadType_OnDemand = 1,	/// load the pluing on demand, when a plugin function will be requested the first time.
+	/// load plugin during pclInitLibrary function
+	LoadType_PclInit  = 0,
+	/// load the pluing on demand, when a plugin function will be requested the first time.
+	LoadType_OnDemand = 1,
+	/// undefined
 	LoadType_Undefined
 } PersLoadingType_e;
 
@@ -178,7 +193,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
 /**
  * @brief get the position in the array
  *
- * @param customLib the enumerator id identifying the custom library
+ * @param idx the index to identifying the custom library
  *
  * @return the array position or -1 if the position can't be found
  */
@@ -188,6 +203,8 @@ int check_valid_idx(int idx);
 
 /**
  * @brief get the custom library name form an index
+ *
+ * @param idx the index to identifying the custom library
  *
  * @return the name of the custom library ot NULL if invalid
  */

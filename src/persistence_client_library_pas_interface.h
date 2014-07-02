@@ -34,9 +34,15 @@
  */
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data);
 
-//DBusHandlerResult checkPersAdminSignal(DBusConnection * connection, DBusMessage * message, void * user_data);
 
-
+/**
+ * @brief Check if the persMode changed signal has been received
+ *
+ * @param connection the debus connection
+ * @param message the dbus message
+ *
+ * @return DBUS_HANDLER_RESULT_HANDLED or DBUS_HANDLER_RESULT_NOT_YET_HANDLED
+ */
 int signal_persModeChange(DBusConnection *connection, DBusMessage *message);
 
 

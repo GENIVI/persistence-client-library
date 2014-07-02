@@ -43,14 +43,14 @@ typedef struct sPersCustomLibInfo
 /// array with custom client library names
 static PersCustomLibInfo gCustomLibArray[PersCustomLib_LastEntry];
 
-char* gpCustomConfigFileMap = 0;
+static char* gpCustomConfigFileMap = 0;
 static char* gpCustomTokenArray[TOKENARRAYSIZE];
-int   gCustomTokenCounter = 0;
-unsigned int gCustomConfigFileSize = 0;
+static int   gCustomTokenCounter = 0;
+static unsigned int gCustomConfigFileSize = 0;
 
 int(* gPlugin_callback_async_t)(int errcode);
 
-void fillCustomCharTokenArray()
+static void fillCustomCharTokenArray()
 {
    unsigned int i=0;
    int blankCount=0;
@@ -81,12 +81,8 @@ void fillCustomCharTokenArray()
    }
 }
 
-PersLoadingType_e getCustomLoadingType(int i)
-{
-	return gCustomLibArray[i].loadingType;
-}
 
-PersLoadingType_e getLoadingType(const char* type)
+static PersLoadingType_e getLoadingType(const char* type)
 {
 	PersLoadingType_e persLoadingType = LoadType_Undefined;
 
@@ -102,12 +98,8 @@ PersLoadingType_e getLoadingType(const char* type)
    return persLoadingType;
 }
 
-PersInitType_e getCustomInitType(int i)
-{
-	return gCustomLibArray[i].initFunction;
-}
 
-PersInitType_e getInitType(const char* policy)
+static PersInitType_e getInitType(const char* policy)
 {
 	PersInitType_e persInitType = Init_Undefined;
 
@@ -124,7 +116,16 @@ PersInitType_e getInitType(const char* policy)
 }
 
 
+PersLoadingType_e getCustomLoadingType(int i)
+{
+	return gCustomLibArray[i].loadingType;
+}
 
+
+PersInitType_e getCustomInitType(int i)
+{
+	return gCustomLibArray[i].initFunction;
+}
 
 
 PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int substring)

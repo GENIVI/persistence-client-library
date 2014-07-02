@@ -41,8 +41,10 @@
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gPclDLTContext);
 
-static int gShutdownMode = 0;
 
+/// global variable to store lifecycle shutdown mode
+static int gShutdownMode = 0;
+/// global shutdown cancel counter
 static int gCancelCounter = 0;
 
 
@@ -134,7 +136,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       }
 
       // initialize keyHandle array
-      memset(gKeyHandleArray, 0, MaxPersHandle * sizeof(PersistenceKeyHandle_s));
+      init_key_handle_array();
 
       pers_unlock_access();
 
@@ -163,7 +165,7 @@ int pclDeinitLibrary(void)
    if(gPclInitialized == PCLinitialized)
    {
       int* retval;
-   	tMainLoopData data;
+   	MainLoopData_u data;
    	data.message.cmd = (uint32_t)CMD_QUIT;
    	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
@@ -240,11 +242,11 @@ int pclLifecycleSet(int shutdown)
 
 	if(gShutdownMode == PCL_SHUTDOWN_TYPE_NONE)
 	{
-		if(PCL_SHUTDOWN)
+		if(shutdown == PCL_SHUTDOWN)
 		{
 			process_prepare_shutdown(Shutdown_Partial);	// close all db's and fd's and block access
 		}
-		else if(PCL_SHUTDOWN_CANEL)
+		else if(shutdown == PCL_SHUTDOWN_CANEL)
 		{
 			if(gCancelCounter < Shutdown_MaxCount)
 			{

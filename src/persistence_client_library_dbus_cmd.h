@@ -35,6 +35,11 @@ void process_prepare_shutdown(int complete);
  * @brief send notification signal
  *
  * @param conn the dbus connection
+ * @param notifyLdbid the ldbid to notify on
+ * @param notifyUserNo the user number to notify on
+ * @param notifySeatNo the seat to notify on
+ * @param notifyReason the notify reason to notify on
+ * @param notifyKey the notification key
  */
 void process_send_notification_signal(DBusConnection* conn, unsigned int notifyLdbid, unsigned int notifyUserNo,
                                                             unsigned int notifySeatNo, unsigned int notifyReason, const char* notifyKey);
@@ -44,14 +49,32 @@ void process_send_notification_signal(DBusConnection* conn, unsigned int notifyL
  * @brief register for notification signal
  *
  * @param conn the dbus connection
+ * @param notifyLdbid the ldbid to notify on
+ * @param notifyUserNo the user number to notify on
+ * @param notifySeatNo the seat to notify on
+ * @param notifyPolicy the notify policy to notify on
+ * @param notifyKey the notification key
  */
 void process_reg_notification_signal(DBusConnection* conn, unsigned int notifyLdbid, unsigned int notifyUserNo,
                                                            unsigned int notifySeatNo, unsigned int notifyPolicy, const char* notifyKey);
 
-
+/**
+ * @brief send lifecycle request
+ *
+ * @param conn the dbus connection
+ * @param requestId the request id
+ * @param status the status
+ */
 void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId, unsigned int status);
 
 
+/**
+ * @brief send lifecycle register message
+ *
+ * @param conn the dbus connection
+ * @param regType the request type
+ * @param shutdownMode the shutdown mode to register on
+ */
 void process_send_lifecycle_register(DBusConnection* conn, int regType, int shutdownMode);
 
 
@@ -59,7 +82,7 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 /**
  * @brief block persistence access and write data back to device
  *
- * @param requestId the requestID
+ * @param requestID the requestID
  * @param status the status
  */
 void process_block_and_write_data_back(unsigned int requestID, unsigned int status);
@@ -69,7 +92,8 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
 /**
  * @brief process a request of the persistence admin service
  *
- * @param requestId the requestID
+ * @param conn the dbus connection
+ * @param requestID the requestID
  * @param status the status
  */
 void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int status);
@@ -79,8 +103,9 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
 /**
  * @brief process a request of the persistence admin service
  *
+ * @param conn the dbus connection
  * @param regType the registration type (1 for register; 0 for unregister)
- * @param notification flag the notificatin flag
+ * @param notificationFlag flag the notificatin flag
  */
 void process_send_pas_register(DBusConnection* conn, int regType, int notificationFlag);
 

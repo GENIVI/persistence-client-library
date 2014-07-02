@@ -37,7 +37,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 /**
  * @brief send register message 'RegisterShutdownClient' to com.contiautomotive.NodeStateManager.Consumer
  *
- * @param the shutdown mode: NSM_SHUTDOWN_TYPE_NORMAL or NSM_SHUTDOWN_TYPE_FAST;
+ * @param shutdownMode NSM_SHUTDOWN_TYPE_NORMAL or NSM_SHUTDOWN_TYPE_FAST;
  *
  * @return 0 on success or -1 on error
  */
@@ -47,7 +47,7 @@ int register_lifecycle(int shutdownMode);
 /**
  * @brief send register message 'UnRegisterShutdownClient' to com.contiautomotive.NodeStateManager.Consumer
  *
- * @param the shutdown mode: NSM_SHUTDOWN_TYPE_NORMAL or NSM_SHUTDOWN_TYPE_FAST;
+ * @param shutdownMode NSM_SHUTDOWN_TYPE_NORMAL or NSM_SHUTDOWN_TYPE_FAST;
  *
  * @return 0 on success or -1 on error
  */

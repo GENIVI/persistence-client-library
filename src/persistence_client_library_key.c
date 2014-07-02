@@ -30,8 +30,8 @@
 
 
 // function declaration
-int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
-int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
+static int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
+static int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                       pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
 // ----------------------------------------------------------------------------
@@ -62,22 +62,8 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
       {
          if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
          {
-            // generate handle for custom and for normal key
-            handle = get_persistence_handle_idx();
-
-            if((handle < MaxPersHandle) && (0 < handle))
-            {
-               // remember data in handle array
-               strncpy(gKeyHandleArray[handle].resource_id, resource_id, DbResIDMaxLen);
-               gKeyHandleArray[handle].resource_id[DbResIDMaxLen-1] = '\0'; /* Ensures 0-Termination */
-               gKeyHandleArray[handle].ldbid   = ldbid;
-               gKeyHandleArray[handle].user_no = user_no;
-               gKeyHandleArray[handle].seat_no = seat_no;
-            }
-            else
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - handleId out of bounds:"), DLT_INT(handle));
-            }
+				// remember data in handle array
+				handle = set_key_handle_data(get_persistence_handle_idx(), resource_id, ldbid, user_no, seat_no);
          }
          else
          {
@@ -101,13 +87,15 @@ int pclKeyHandleClose(int key_handle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if((key_handle < MaxPersHandle) && (key_handle > 0))
+   	PersistenceKeyHandle_s persHandle;
+
+   	if(get_key_handle_data(key_handle, &persHandle) != -1)
       {
-         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
+   		if ('\0' != persHandle.resource_id[0])
          {
             /* Invalidate key handle data */
         	   set_persistence_handle_close_idx(key_handle);
-            memset(&gKeyHandleArray[key_handle], 0, sizeof(gKeyHandleArray[key_handle]));
+            clear_key_handle_array(key_handle);
             rval = 1;
          }
          else
@@ -132,14 +120,14 @@ int pclKeyHandleGetSize(int key_handle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if((key_handle < MaxPersHandle) && (key_handle > 0))
+   	PersistenceKeyHandle_s persHandle;
+
+   	if(get_key_handle_data(key_handle, &persHandle) != -1)
       {
-         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
+         if ('\0' != persHandle.resource_id[0])
          {
-        	 size = pclKeyGetSize(gKeyHandleArray[key_handle].ldbid,
-                               gKeyHandleArray[key_handle].resource_id,
-                               gKeyHandleArray[key_handle].user_no,
-                               gKeyHandleArray[key_handle].seat_no);
+        	 size = pclKeyGetSize(persHandle.ldbid, persHandle.resource_id,
+        			                persHandle.user_no, persHandle.seat_no);
          }
          else
          {
@@ -163,16 +151,15 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if((key_handle < MaxPersHandle) && (key_handle > 0))
+   	PersistenceKeyHandle_s persHandle;
+
+   	if(get_key_handle_data(key_handle, &persHandle) != -1)
       {
-         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
+         if ('\0' != persHandle.resource_id[0])
          {
-        	 size = pclKeyReadData(gKeyHandleArray[key_handle].ldbid,
-                                   gKeyHandleArray[key_handle].resource_id,
-                                   gKeyHandleArray[key_handle].user_no,
-                                   gKeyHandleArray[key_handle].seat_no,
-                                   buffer,
-                                   buffer_size);
+        	 size = pclKeyReadData(persHandle.ldbid, persHandle.resource_id,
+        			                 persHandle.user_no, persHandle.seat_no,
+                                buffer, buffer_size);
          }
          else
          {
@@ -220,16 +207,15 @@ int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, 
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if((key_handle < MaxPersHandle) && (key_handle > 0))
+   	PersistenceKeyHandle_s persHandle;
+
+      if(get_key_handle_data(key_handle, &persHandle) != -1)
       {
-         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
+         if ('\0' != persHandle.resource_id[0])
          {
-            rval = regNotifyOnChange(gKeyHandleArray[key_handle].ldbid,
-                                     gKeyHandleArray[key_handle].resource_id,
-                                     gKeyHandleArray[key_handle].user_no,
-                                     gKeyHandleArray[key_handle].seat_no,
-                                     callback,
-                                     regPolicy);
+            rval = regNotifyOnChange(persHandle.ldbid,   persHandle.resource_id,
+            		                   persHandle.user_no, persHandle.seat_no,
+                                     callback, regPolicy);
           }
           else
           {
@@ -252,16 +238,15 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if((key_handle < MaxPersHandle) && (key_handle > 0))
+   	PersistenceKeyHandle_s persHandle;
+
+      if(get_key_handle_data(key_handle, &persHandle) != -1)
       {
-         if ('\0' != gKeyHandleArray[key_handle].resource_id[0])
+         if ('\0' != persHandle.resource_id[0])
          {
-        	 size = pclKeyWriteData(gKeyHandleArray[key_handle].ldbid,
-                                    gKeyHandleArray[key_handle].resource_id,
-                                    gKeyHandleArray[key_handle].user_no,
-                                    gKeyHandleArray[key_handle].seat_no,
-                                    buffer,
-                                    buffer_size);
+        	 size = pclKeyWriteData(persHandle.ldbid,   persHandle.resource_id,
+        			                  persHandle.user_no, persHandle.seat_no,
+                                    buffer, buffer_size);
          }
          else
          {

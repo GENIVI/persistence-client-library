@@ -27,30 +27,56 @@
 
 #include "persistence_client_library_data_organization.h"
 
-/// mutex to make sure main loop is running
-extern pthread_mutex_t gDbusInitializedMtx;
-extern pthread_cond_t  gDbusInitializedCond;
-extern pthread_mutex_t gDbusPendingRegMtx;
-
-extern pthread_mutex_t gMainCondMtx;
-
-extern pthread_t gMainLoopThread;
-
-
 /// command definitions for main loop
 typedef enum ECmd
 {
-   CMD_NONE = 0,                    /// command none
-   CMD_PAS_BLOCK_AND_WRITE_BACK,    /// command block access and write data back
-   CMD_LC_PREPARE_SHUTDOWN,         /// command to prepare shutdown
-   CMD_SEND_NOTIFY_SIGNAL,          /// command send changed notification signal
-   CMD_REG_NOTIFY_SIGNAL,           /// command send register/unregister command
-   CMD_SEND_PAS_REGISTER,           /// command send admin register/unregister
-   CMD_SEND_LC_REGISTER,            /// command send lifecycle register/unregister
-   CMD_QUIT                         /// quit command
+	/// command none
+   CMD_NONE = 0,
+   /// command block access and write data back
+   CMD_PAS_BLOCK_AND_WRITE_BACK,
+   /// command to prepare shutdown
+   CMD_LC_PREPARE_SHUTDOWN,
+   /// command send changed notification signal
+   CMD_SEND_NOTIFY_SIGNAL,
+   /// command send register/unregister command
+   CMD_REG_NOTIFY_SIGNAL,
+   /// command send admin register/unregister
+   CMD_SEND_PAS_REGISTER,
+   /// command send lifecycle register/unregister
+   CMD_SEND_LC_REGISTER,
+   /// quit command
+   CMD_QUIT
 } tCmd;
 
 
+/// command data union definition
+typedef union MainLoopData_u_{
+
+	/// message structure
+	struct {
+		/// dbus mainloop command
+		uint32_t cmd;
+		/// unsigned int parameters
+		uint32_t params[4];
+		/// string parameter
+		char string[DbKeyMaxLen];
+	} message;
+
+	/// the message payload
+	char payload[128];
+} MainLoopData_u;
+
+
+/// mutex to make sure main loop is running
+extern pthread_mutex_t gDbusInitializedMtx;
+/// dbus init conditional variable
+extern pthread_cond_t  gDbusInitializedCond;
+/// dbus pending mutex
+extern pthread_mutex_t gDbusPendingRegMtx;
+/// dbus mainloop conditional variable
+extern pthread_mutex_t gMainCondMtx;
+/// dbus mainloop mutex
+extern pthread_t gMainLoopThread;
 
 /// lifecycle consumer interface dbus name
 extern const char* gDbusLcConsterface;
@@ -77,21 +103,6 @@ extern const char* gDbusPersAdminInterface;
 extern const char* gPersAdminConsumerPath;
 
 
-/// command data union definition
-typedef union MainLoopData{
-	struct {
-		uint32_t cmd;				/// dbus mainloop command
-		uint32_t params[4];	/// unsignet int parameters
-		char string[DbKeyMaxLen];			/// char parameter
-	} message;
-	char payload[128];
-} tMainLoopData;
-
-
-/// pipe file descriptors
-extern int gEfds;
-
-
 /**
  * @brief DBus main loop to dispatch events and dbus messages
  *
@@ -106,7 +117,6 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
              DBusObjectPathVTable vtableFallback, void* userData);
 
 
-
 /**
  * @brief Setup the dbus main dispatching loop
  *
@@ -115,10 +125,28 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 int setup_dbus_mainloop(void);
 
 
-int deliverToMainloop(tMainLoopData* payload);
+/**
+ * @brief deliver message to mainloop (blocking)
+ *        The function blocks until the message has
+ *        been delivered to the mainloop
+ *
+ * @param payload the message to deliver to the mainloop (command and data)
+ *
+ * @return 0
+ */
+int deliverToMainloop(MainLoopData_u* payload);
 
 
-int deliverToMainloop_NM(tMainLoopData* payload);
+/**
+ * @brief deliver message to mainloop (non blocking)
+ *        The function does N O T  block until the message has
+ *        been delivered to the mainloop
+ *
+ * @param payload the message to deliver to the mainloop (command and data)
+ *
+ * @return 0
+ */
+int deliverToMainloop_NM(MainLoopData_u* payload);
 
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_SERVICE_H_ */

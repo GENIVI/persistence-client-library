@@ -44,7 +44,7 @@ int check_lc_request(unsigned int request, unsigned int requestID)
    {
       case NsmShutdownNormal:
       {
-      	tMainLoopData data;
+      	MainLoopData_u data;
       	data.message.cmd = (uint32_t)CMD_LC_PREPARE_SHUTDOWN;
       	data.message.params[0] = request;
       	data.message.params[1] = requestID;
@@ -154,7 +154,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
 int register_lifecycle(int shutdownMode)
 {
-	tMainLoopData data;
+	MainLoopData_u data;
 
 	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
 	data.message.params[0] = 1;
@@ -168,7 +168,7 @@ int register_lifecycle(int shutdownMode)
 
 int unregister_lifecycle(int shutdownMode)
 {
-	tMainLoopData data;
+	MainLoopData_u data;
 
 	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
 	data.message.params[0] = 0;

@@ -17,40 +17,40 @@
  * @see
  */
 
-
 #include "persistence_client_library_handle.h"
 
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
-/// handle index
-static int gHandleIdx = 1;
 
-/// open file descriptor handle array
-int gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
-
-/// handle array
-int gOpenHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
-
-/// persistence key handle array
-PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
-
-/// persistence file handle array
-PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
-
-/// persistence handle array for OSS and third party handles
-PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
-
-
-/// free handle array
-int gFreeHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
-int gFreeHandleIdxHead = 0;
+pthread_mutex_t gKeyHandleAccessMtx      = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gFileHandleAccessMtx     = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gOssFileHandleAccessMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
 
 
+// open file descriptor handle array
+int gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
+// handle array
+int gOpenHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 
-/// get persistence handle
+// handle index
+static int gHandleIdx = 1;
+/// free handle array
+static int gFreeHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
+/// free handle array head index
+static int gFreeHandleIdxHead = 0;
+
+// persistence key handle array
+static PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
+// persistence file handle array
+static PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
+// persistence handle array for OSS and third party handles
+static PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
+
+
+
 int get_persistence_handle_idx()
 {
    int handle = 0;
@@ -75,12 +75,10 @@ int get_persistence_handle_idx()
       }
       pthread_mutex_unlock(&gMtx);
    }
-
    return handle;
 }
 
 
-/// close persistence handle
 void set_persistence_handle_close_idx(int handle)
 {
    if(pthread_mutex_lock(&gMtx) == 0)
@@ -94,7 +92,6 @@ void set_persistence_handle_close_idx(int handle)
 }
 
 
-
 void close_all_persistence_handle()
 {
    if(pthread_mutex_lock(&gMtx) == 0)
@@ -104,11 +101,241 @@ void close_all_persistence_handle()
       memset(gOpenHandleArray, 0, sizeof(gOpenHandleArray));
       memset(gOpenFdArray,     0, sizeof(gOpenFdArray));
 
-
       // reset variables
       gHandleIdx = 1;
       gFreeHandleIdxHead = 0;
 
       pthread_mutex_unlock(&gMtx);
    }
+}
+
+
+int set_key_handle_data(int idx, const char* id, unsigned int ldbid,  unsigned int user_no, unsigned int seat_no)
+{
+	int handle = -1;
+
+	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
+	{
+		if((idx < MaxPersHandle) && (0 < idx))
+		{
+			strncpy(gKeyHandleArray[idx].resource_id, id, DbResIDMaxLen);
+			gKeyHandleArray[idx].resource_id[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+			gKeyHandleArray[idx].ldbid   = ldbid;
+			gKeyHandleArray[idx].user_no = user_no;
+			gKeyHandleArray[idx].seat_no = seat_no;
+
+			handle = idx;
+		}
+		else
+		{
+			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("set_key_handle_data: error - index out of bounds:"), DLT_INT(idx));
+		}
+
+		pthread_mutex_unlock(&gKeyHandleAccessMtx);
+   }
+
+	return handle;
+}
+
+
+int get_key_handle_data(int idx, PersistenceKeyHandle_s* handleStruct)
+{
+	int rval = -1;
+
+	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
+	{
+		if((idx < MaxPersHandle) && (idx > 0))
+		{
+			strncpy(handleStruct->resource_id, gKeyHandleArray[idx].resource_id, DbResIDMaxLen);
+
+			handleStruct->ldbid   = gKeyHandleArray[idx].ldbid;
+			handleStruct->user_no = gKeyHandleArray[idx].user_no;
+			handleStruct->seat_no = gKeyHandleArray[idx].seat_no;
+
+			rval = 0;
+		}
+
+		pthread_mutex_unlock(&gKeyHandleAccessMtx);
+	}
+
+   return rval;
+}
+
+
+void init_key_handle_array()
+{
+	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
+	{
+		memset(gKeyHandleArray, 0, MaxPersHandle * sizeof(PersistenceKeyHandle_s));
+
+		pthread_mutex_unlock(&gKeyHandleAccessMtx);
+	}
+}
+
+
+void clear_key_handle_array(int idx)
+{
+	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
+	{
+		memset(&gKeyHandleArray[idx], 0, sizeof(gKeyHandleArray[idx]));
+		pthread_mutex_unlock(&gKeyHandleAccessMtx);
+	}
+}
+
+
+int set_file_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
+		                   const char* backup, const char* csumPath, char* filePath)
+{
+	int rval = 0;
+
+	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+	{
+		if(idx < MaxPersHandle && idx > 0 )
+		{
+			strcpy(gFileHandleArray[idx].backupPath, backup);
+			strcpy(gFileHandleArray[idx].csumPath,   csumPath);
+			gFileHandleArray[idx].backupCreated = backupCreated;
+			gFileHandleArray[idx].permission = permission;
+			gFileHandleArray[idx].filePath = filePath; // check to do if this works
+		}
+		pthread_mutex_unlock(&gFileHandleAccessMtx);
+	}
+
+	return rval;
+}
+
+
+int get_file_permission(int idx)
+{
+	int permission = (int)PersistencePermission_LastEntry;
+
+	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+	{
+		if(idx < MaxPersHandle && idx > 0 )
+		{
+			permission =  gFileHandleArray[idx].permission;
+		}
+		else
+		{
+			permission = -1;
+		}
+		pthread_mutex_unlock(&gFileHandleAccessMtx);
+	}
+	return permission;
+}
+
+
+char* get_file_backup_path(int idx)
+{
+	return gFileHandleArray[idx].backupPath;
+}
+
+char* get_file_checksum_path(int idx)
+{
+	return gFileHandleArray[idx].csumPath;
+}
+
+
+void set_file_backup_status(int idx, int status)
+{
+	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+	{
+		gFileHandleArray[idx].backupCreated = status;
+
+		pthread_mutex_unlock(&gFileHandleAccessMtx);
+	}
+}
+
+int get_file_backup_status(int idx)
+{
+	return gFileHandleArray[idx].backupCreated;
+}
+
+//----------------------------------------------------------
+//----------------------------------------------------------
+
+int set_ossfile_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
+		                   const char* backup, const char* csumPath, char* filePath)
+{
+	int rval = 0;
+
+	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+	{
+		if(idx < MaxPersHandle && idx > 0 )
+		{
+			strcpy(gOssHandleArray[idx].backupPath, backup);
+			strcpy(gOssHandleArray[idx].csumPath,   csumPath);
+			gOssHandleArray[idx].backupCreated = backupCreated;
+			gOssHandleArray[idx].permission = permission;
+			gOssHandleArray[idx].filePath = filePath; // check to do if this works
+		}
+		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+	}
+
+	return rval;
+}
+
+
+int get_ossfile_permission(int idx)
+{
+	int permission = (int)PersistencePermission_LastEntry;
+
+	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+	{
+		if(idx < MaxPersHandle && idx > 0 )
+		{
+			permission =  gOssHandleArray[idx].permission;
+		}
+		else
+		{
+			permission = -1;
+		}
+		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+	}
+
+	return permission;
+}
+
+
+char* get_ossfile_backup_path(int idx)
+{
+	return gOssHandleArray[idx].backupPath;
+}
+
+
+char* get_ossfile_file_path(int idx)
+{
+	return gOssHandleArray[idx].filePath;
+}
+
+void set_ossfile_file_path(int idx, char* file)
+{
+	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+	{
+		gOssHandleArray[idx].filePath = file;
+
+		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+	}
+}
+
+
+char* get_ossfile_checksum_path(int idx)
+{
+	return gOssHandleArray[idx].csumPath;
+}
+
+
+void set_ossfile_backup_status(int idx, int status)
+{
+	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+	{
+		gOssHandleArray[idx].backupCreated = status;
+
+		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+	}
+}
+
+int get_ossfile_backup_status(int idx)
+{
+	return gOssHandleArray[idx].backupCreated;
 }

@@ -27,42 +27,40 @@
 /// key handle structure definition
 typedef struct _PersistenceKeyHandle_s
 {
-   char resource_id[DbResIDMaxLen];   /* Resource ID */
-   unsigned int ldbid;                /* LDBID       */
-   unsigned int user_no;              /* User No     */
-   unsigned int seat_no;              /* Seat No     */
+	/// Resource ID
+   char resource_id[DbResIDMaxLen];
+   /// logical database id
+   unsigned int ldbid;
+   /// User No
+   unsigned int user_no;
+   /// Seat No
+   unsigned int seat_no;
 } PersistenceKeyHandle_s;
 
 
 /// file handle structure definition
 typedef struct _PersistenceFileHandle_s
 {
-   PersistencePermission_e permission;    /// access permission read/write
-   int backupCreated;                     /// flag to indicate if a backup has already been created
-   char backupPath[DbPathMaxLen];         /// path to the backup file
-   char csumPath[DbPathMaxLen];           /// path to the checksum file
-   char* filePath;                        /// the path
+	/// access permission read/write
+	PersistencePermission_e permission;
+	/// flag to indicate if a backup has already been created
+   int backupCreated;
+   /// path to the backup file
+   char backupPath[DbPathMaxLen];
+   /// path to the checksum file
+   char csumPath[DbPathMaxLen];
+   /// the file path
+   char* filePath;
 } PersistenceFileHandle_s;
-
-
-
-
-/// persistence key handle array
-extern PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
-
-
-/// persistence file handle array
-extern PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
-
-/// persistence handle array for OSS and third party handles
-extern PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
-
 
 /// open file descriptor handle array
 extern int gOpenFdArray[MaxPersHandle];
 
 /// handle array
 extern int gOpenHandleArray[MaxPersHandle];
+
+//----------------------------------------------------------------
+//----------------------------------------------------------------
 
 /**
  * @brief get persistence handle
@@ -75,7 +73,7 @@ int get_persistence_handle_idx();
 /**
  * @brief close persistence handle
  *
- * @param the handle to close
+ * @param handle to close
  */
 void set_persistence_handle_close_idx(int handle);
 
@@ -85,6 +83,213 @@ void set_persistence_handle_close_idx(int handle);
  *
  */
 void close_all_persistence_handle();
+
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ * @param id the resource id
+ * @param ldbid the logical database id
+ * @param user_no the user identifier
+ * @param seat_no the seat number
+ *
+ * @return a positive value (0 or greather) or -1 on error
+ */
+int set_key_handle_data(int idx, const char* id, unsigned int ldbid,  unsigned int user_no, unsigned int seat_no);
+
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ * @param handleStruct the handle structure
+ *
+ * @return 0 on success, -1 on error
+ */
+int get_key_handle_data(int idx, PersistenceKeyHandle_s* handleStruct);
+
+
+/**
+ * @brief initialize the key handle array to defined values
+ */
+void init_key_handle_array();
+
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ *
+ */
+void clear_key_handle_array(int idx);
+
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ * @param permission the permission (read/write, read only, write only)
+ * @param backupCreated 0 is a backup has not been created or 1 if a backup has been created
+ * @param backup path to the backup file
+ * @param csumPath the path to the checksum file
+ * @param filePath the path to the file
+ *
+ */
+int set_file_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
+		                   const char* backup, const char* csumPath,  char* filePath);
+
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ *
+ * @return the file permission
+ */
+int get_file_permission(int idx);
+
+
+/**
+ * @brief set data to the key handle
+ * @attention "N index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return the path to the backup
+ */
+char* get_file_backup_path(int idx);
+
+
+/**
+ * @brief get the file checksum path
+ * @attention "N index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return the checksum path
+ */
+char* get_file_checksum_path(int idx);
+
+
+/**
+ * @brief set the file backup status of the file
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ * @param status the backup status, 0 backup has been created,
+ *                                  1 backup has not been created
+ */
+void set_file_backup_status(int idx, int status);
+
+
+/**
+ * @brief get the backup status of the file
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return 0 if no backup has been created,
+ *         1 if backup has been created
+ */
+int get_file_backup_status(int idx);
+
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ * @param permission the permission (read/write, read only, write only)
+ * @param backupCreated 0 is a backup has not been created or 1 if a backup has been created
+ * @param backup path to the backup file
+ * @param csumPath the path to the checksum file
+ * @param filePath the path to the file
+ *
+ */
+int set_ossfile_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
+		                   const char* backup, const char* csumPath,  char* filePath);
+
+
+/**
+ * @brief set data to the key handle
+ *
+ * @param idx the index
+ *
+ * @return the file permission
+ */
+int get_ossfile_permission(int idx);
+
+
+/**
+ * @brief get file backup path
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return the path to the backup
+ */
+char* get_ossfile_backup_path(int idx);
+
+
+/**
+ * @brief get file path
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return the path to the backup
+ */
+char* get_ossfile_file_path(int idx);
+
+
+/**
+ * @brief get the file checksum path
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return the checksum path
+ */
+char* get_ossfile_checksum_path(int idx);
+
+/**
+ * @brief get the file checksum path
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ * @param file pointer to the file and path
+ *
+ * @return the checksum path
+ */
+void set_ossfile_file_path(int idx, char* file);
+
+/**
+ * @brief set the file backup status of the file
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ * @param status the backup status, 0 backup has been created,
+ *                                  1 backup has not been created
+ */
+void set_ossfile_backup_status(int idx, int status);
+
+
+/**
+ * @brief get the backup status of the file
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return 0 if no backup has been created,
+ *         1 if backup has been created
+ */
+int get_ossfile_backup_status(int idx);
 
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */

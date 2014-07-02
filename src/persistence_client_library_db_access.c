@@ -9,7 +9,7 @@
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
  /**
- * @file           persistence_client_library_data_access.c
+ * @file           persistence_client_library_db_access.c
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
  * @brief          Implementation of persistence database access
@@ -167,7 +167,7 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
 }
 
 
-int database_get(PersistenceInfo_s* info, const char* dbPath)
+static int database_get(PersistenceInfo_s* info, const char* dbPath)
 {
    int arrayIdx = 0;
    int handleDB = -1;
@@ -718,7 +718,7 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
 
    if(regPolicy < Notify_lastEntry)
    {
-   	tMainLoopData data;
+   	MainLoopData_u data;
 
    	data.message.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
    	data.message.params[0] = ldbid;
@@ -763,7 +763,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    int rval = 1;
    if(reason < pclNotifyStatus_lastEntry)
    {
-   	tMainLoopData data;
+   	MainLoopData_u data;
 
    	data.message.cmd = (uint32_t)CMD_SEND_NOTIFY_SIGNAL;
    	data.message.params[0] = context->ldbid;
@@ -795,14 +795,14 @@ void pers_rct_close_all()
    // close all open persistence resource configuration tables
    for(i=0; i< PrctDbTableSize; i++)
    {
-   	if(gResource_table[i] != -1)
+   	if(get_resource_cfg_table_by_idx(i) != -1)
    	{
-			if(persComRctClose(gResource_table[i]) != 0)
+			if(persComRctClose(get_resource_cfg_table_by_idx(i)) != 0)
 			{
 				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown => failed to close db => index:"), DLT_INT(i));
 			}
 
-			gResource_table[i] = -1;
+			invalidate_resource_cfg_table(i);
    	}
    }
 }

@@ -22,17 +22,13 @@
 
 #include "persistence_client_library_data_organization.h"
 
-
 /**
  * @brief Create database search key and database location path
  *
  * @param dbContext the database context
  * @param resource_id the resource id
- * @param user_no user identification
- * @param seat_no seat identifier
  * @param dbKey the array where the database key will be stored
  * @param dbPath the array where the database location path will be stored
- * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
  *
  * @return 1 if shared database and 0 if local database or PersistenceStoragePolicy_LastEntry
  *         when no valid database has been found
@@ -46,12 +42,9 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
  *
  * @param dbContext the database context
  * @param resource_id the resource id
- * @param user_no user identification
- * @param seat_no seat identifier
  * @param isFile identifier if this resource is a file (used for file/key creation if resource does not exist)
  * @param dbKey the array where the database key will be stored
  * @param dbPath the array where the database location path will be stored
- * @param cached_resource flag to identify if the resource is cached (value 1)or write through (value 0)
  *
  * @return 0 or a negative value with one of the following errors: EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
@@ -62,15 +55,9 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 /**
  * @brief get the resource configuration table gvbd database by id
  *
- * @return Handle to the gvdb database table or negative value if no valid database has been found
+ * @return i Handle to the gvdb database table or negative value if no valid database has been found
  */
 int get_resource_cfg_table_by_idx(int i);
-
-/**
- * Global array for the storage of pointers to resource table databases
- */
-extern int gResource_table[PrctDbTableSize];
-
 
 
 /**

@@ -44,109 +44,151 @@ extern "C" {
 /// structure used to manage database context
 typedef struct _PersistenceDbContext_s
 {
+	/// lofical database id
    unsigned int ldbid;
+   /// user number
    unsigned int user_no;
+   /// seat number
    unsigned int seat_no;
 } PersistenceDbContext_s;
 
 /// persistence information
 typedef struct _PersistenceInfo_s
 {
-   PersistenceDbContext_s           context;          /**< database context*/
-   PersistenceConfigurationKey_s    configKey;        /**< prct configuration key*/
+	/// database context ::PersistenceDbContext_s
+   PersistenceDbContext_s           context;
+   /// Persistence resource configuration key
+   PersistenceConfigurationKey_s    configKey;
 
 } PersistenceInfo_s;
 
 
-/** storages to manage the data */
+/// storages to manage the data
 typedef enum PersDefaultType_e_
 {
-   PersDefaultType_Configurable = 0,  /**< get the data from configurable defaults */
-   PersDefaultType_Factory,           /**< get the data from factory defaults */
+	/// get the data from configurable defaults
+   PersDefaultType_Configurable = 0,
+   /// get the data from factory defaults
+   PersDefaultType_Factory,
 
    /** insert new entries here ... */
-   PersDefaultType_LastEntry          /**< last entry */
+
+   /// last entry
+   PersDefaultType_LastEntry
 
 } PersDefaultType_e;
 
-/** storages to manage the data */
+/// storages to manage the data
 typedef enum PersGetDefault_e_
 {
-   PersGetDefault_Data = 0,           /**< get the data from configurable defaults */
-   PersGetDefault_Size,               /**< get the data from factory defaults */
+	/// get the data from configurable defaults
+   PersGetDefault_Data = 0,
+   /// get the data from factory defaults
+   PersGetDefault_Size,
 
    /** insert new entries here ... */
-   PersGetDefault_LastEntry           /**< last entry */
+
+   /// last entry
+   PersGetDefault_LastEntry
 
 } PersGetDefault_e;
 
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersNotifyRegPolicy_e
 {
-   Notify_register   = 0,  /**< register to change notifications*/
-   Notify_unregister = 1,  /**< unregister for change notifications */
-   Notify_lastEntry,       /**<last entry */
+	/// register to change notifications
+   Notify_register   = 0,
+   ///  unregister for change notifications
+   Notify_unregister = 1,
+
+   /// last entry
+   Notify_lastEntry,
 } PersNotifyRegPolicy_e;
 
 
 /// constant definitions
 enum _PersistenceConstantDef
 {
-   ResIsNoFile          = 0,        /// flag to identify that resource a not file
-   ResIsFile            = 1,        /// flag to identify that resource a file
-   AccessNoLock         = 1,        /// flag to indicate that access is not locked
-
-   PCLnotInitialized    = 0,        /// indication if PCL is not initialized
-   PCLinitialized       = 1,        /// indication if PCL is initialized
-
-   FileClosed           = 1,        /// flag to identify if file will be closed
-   FileOpen             = 1,        /// flag to identify if file has been opend
-
-   Shutdown_Partial      = 0,			/// make partial Shutdown (close but not free everything)
-   Shutdown_Full         = 1,			/// make complete Shutdown (close and free everything)
-   Shutdown_MaxCount     = 3,			/// max number of shutdown cancel calls
-
-   NsmShutdownNormal       = 1,     /// lifecycle shutdown normal
-   NsmErrorStatus_OK       = 1,     /// lifecycle return OK indicator
-   NsmErrorStatus_Fail     = -1,    /// lifecycle return failed indicator
-
-   ChecksumBufSize         = 64,       /// max checksum size
-
-   DbusSubMatchSize        = 12,       /// max character sub match size
-   DbusMatchRuleSize       = 300,      /// max character size of the dbus match rule size
-
-   PrctKeySize             = PERS_RCT_MAX_LENGTH_RESOURCE_ID,       		/// persistence resource config table max key size
-   PrctValueSize           = sizeof(PersistenceConfigurationKey_s),   	/// persistence resource config table max value size
-   PrctDbTableSize         = 1024,     /// number of persistence resource config tables to store
-
-   RDRWBufferSize          = 1024,     /// write buffer size
-
-   DbKeySize               = PERS_DB_MAX_LENGTH_KEY_NAME,	/// database max key size
-   DbValueSize             = PERS_DB_MAX_SIZE_KEY_DATA,    	/// database max value size
-   DbTableSize             = 1024,     /// database table size
-
-   PasMsg_Block            = 0x0001,   /// persistence administration service block access
-   PasMsg_Unblock          = 0x0002,   /// persistence administration service unblock access
-   PasMsg_WriteBack        = 0x0010,   /// persistence administration service write_back
-
-   PasErrorStatus_RespPend = 0x0001,   /// persistence administration service msg return status
-   PasErrorStatus_OK       = 0x0002,   /// persistence administration service msg return status
-   PasErrorStatus_FAIL     = 0x8000,   /// persistence administration service msg return status
-
-   CustLibMaxLen = PERS_RCT_MAX_LENGTH_CUSTOM_NAME,		/// max length of the custom library name and path
-   DbKeyMaxLen   = PERS_DB_MAX_LENGTH_KEY_NAME,       	/// max database key length
-   DbResIDMaxLen = PERS_DB_MAX_LENGTH_KEY_NAME,          /// max database key length
-   DbPathMaxLen  = PERS_ORG_MAX_LENGTH_PATH_FILENAME,    /// max database path length
-   MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,      /// max application name
-   MaxPersHandle = 128,             /// max number of parallel open persistence handles
-
-   MaxConfKeyLengthResp    = 32,    /// length of the config key responsible name
-   MaxConfKeyLengthCusName = 32,    /// length of the config key custom name
-   MaxRctLengthCustom_ID   = 64,    /// length of the customer ID
-
+	/// flag to identify that resource a not file
+   ResIsNoFile          = 0,
+   /// flag to identify that resource a file
+   ResIsFile            = 1,
+   /// flag to indicate that access is not locked
+   AccessNoLock         = 1,
+   /// indication if PCL is not initialized
+   PCLnotInitialized    = 0,
+   /// indication if PCL is initialized
+   PCLinitialized       = 1,
+   /// flag to identify if file will be closed
+   FileClosed           = 1,
+   /// flag to identify if file has been opened
+   FileOpen             = 1,
+   /// make partial Shutdown (close but not free everything)
+   Shutdown_Partial      = 0,
+   /// make complete Shutdown (close and free everything)
+   Shutdown_Full         = 1,
+   /// max number of shutdown cancel calls
+   Shutdown_MaxCount     = 3,
+   /// lifecycle shutdown normal
+   NsmShutdownNormal       = 1,
+   /// lifecycle return OK indicator
+   NsmErrorStatus_OK       = 1,
+   /// lifecycle return failed indicator
+   NsmErrorStatus_Fail     = -1,
+   /// max checksum size
+   ChecksumBufSize         = 64,
+   /// max character sub match size
+   DbusSubMatchSize        = 12,
+   /// max character size of the dbus match rule size
+   DbusMatchRuleSize       = 300,
+   /// persistence resource config table max key size
+   PrctKeySize             = PERS_RCT_MAX_LENGTH_RESOURCE_ID,
+   /// persistence resource config table max value size
+   PrctValueSize           = sizeof(PersistenceConfigurationKey_s),
+   /// number of persistence resource config tables to store
+   PrctDbTableSize         = 1024,
+   /// write buffer size
+   RDRWBufferSize          = 1024,
+   /// database max key size
+   DbKeySize               = PERS_DB_MAX_LENGTH_KEY_NAME,
+   /// database max value size
+   DbValueSize             = PERS_DB_MAX_SIZE_KEY_DATA,
+   /// database table size
+   DbTableSize             = 1024,
+   /// persistence administration service block access
+   PasMsg_Block            = 0x0001,
+   /// persistence administration service unblock access
+   PasMsg_Unblock          = 0x0002,
+   /// persistence administration service write_back
+   PasMsg_WriteBack        = 0x0010,
+   /// persistence administration service msg return status
+   PasErrorStatus_RespPend = 0x0001,
+   /// persistence administration service msg return status
+   PasErrorStatus_OK       = 0x0002,
+   /// persistence administration service msg return status
+   PasErrorStatus_FAIL     = 0x8000,
+   /// max length of the custom library name and path
+   CustLibMaxLen = PERS_RCT_MAX_LENGTH_CUSTOM_NAME,
+   /// max database key length
+   DbKeyMaxLen   = PERS_DB_MAX_LENGTH_KEY_NAME,
+   /// max database key length
+   DbResIDMaxLen = PERS_DB_MAX_LENGTH_KEY_NAME,
+   /// max database path length
+   DbPathMaxLen  = PERS_ORG_MAX_LENGTH_PATH_FILENAME,
+   /// max application name
+   MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,
+   /// max number of parallel open persistence handles
+   MaxPersHandle = 128,
+   /// length of the config key responsible name
+   MaxConfKeyLengthResp    = 32,
+   /// length of the config key custom name
+   MaxConfKeyLengthCusName = 32,
+   /// length of the customer ID
+   MaxRctLengthCustom_ID   = 64,
+   /// token array size
    TOKENARRAYSIZE = 255,
-
-   defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA  /// default limit the key-value data size to 16kB
+   /// default limit the key-value data size to 16kB
+   defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA
 };
 
 /// path for the backup location
@@ -161,33 +203,33 @@ extern const int gCPathPrefixSize;
 /// size of write through prefix string
 extern const int gWTPathPrefixSize;
 
-/// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
+/// path prefix for local cached database: /Data/mnt_c/&lt;appId&gt;/&lt;database_name&gt;
 extern const char* gLocalCachePath;
-/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+/// path prefix for local write through database /Data/mnt_wt/&lt;appId&gt;/&lt;database_name&gt;
 extern const char* gLocalWtPath;
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
 extern const char* gSharedCachePath;
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
 extern const char* gSharedWtPath;
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//&lt;database_name&gt;
 extern const char* gSharedPublicCachePath;
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/&lt;database_name&gt;
 extern const char* gSharedPublicWtPath;
 
-/// path prefix for local cached database: /Data/mnt_c/<appId>/<database_name>
+/// path prefix for local cached database: /Data/mnt_c/&lt;appId&gt;/&lt;database_name&gt;
 extern const char* gLocalCachePathKey;
-/// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+/// path prefix for local write through database /Data/mnt_wt/&lt;appId&gt;/&lt;database_name&gt;
 extern const char* gLocalWtPathKey;
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
 extern const char* gSharedCachePathKey;
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
 extern const char* gSharedWtPathKey;
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//&lt;database_name&gt;
 extern const char* gSharedPublicCachePathKey;
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/&lt;database_name&gt;
 extern const char* gSharedPublicWtPathKey;
 
-/// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/>userno>/<seat>/>seatno>/<resource>
+/// path prefix for local cached files: /Data/mnt_c/&lt;appId&gt;/&lt;user&gt;/&gt;userno&gt;/&lt;seat&gt;/&gt;seatno&gt;/&lt;resource&gt;
 extern const char* gLocalCacheFilePath;
 
 /// application id

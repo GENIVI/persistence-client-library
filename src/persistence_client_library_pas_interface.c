@@ -52,7 +52,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
       {
-      	tMainLoopData data;
+      	MainLoopData_u data;
 
       	data.message.cmd = (uint32_t)CMD_PAS_BLOCK_AND_WRITE_BACK;
       	data.message.params[0] = request;
@@ -232,7 +232,7 @@ int register_pers_admin_service(void)
 {
    int rval =  0;
 
-	tMainLoopData data;
+	MainLoopData_u data;
 
 	data.message.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
 	data.message.params[0] = 1;
@@ -258,7 +258,7 @@ int unregister_pers_admin_service(void)
 {
    int rval =  0;
 
-	tMainLoopData data;
+	MainLoopData_u data;
 	data.message.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
 	data.message.params[0] = 0;
 	data.message.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);

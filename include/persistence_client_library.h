@@ -41,12 +41,22 @@
  *           via a key-value and a file interface.<br>
  *           It also provide a plugin API to allow users to extend the client library with custom storage solutions.
  *
- * @section Custom plugin configuration file
+ * @section doc Further documentation
+ * @subsection docUser User Manual
+ *          There is a a user manual for the client library available,
+ *          see: http://docs.projects.genivi.org/persistence-client-library/1.0/GENIVI_Persistence_Client_Library_UserManual.pdf
+ *
+ * @subsection docArch Architecture Manual
+ *          For more information about the persistence architecture,
+ *          see: http://docs.projects.genivi.org/persistence-client-library/1.0/GENIVI_Persistence_ArchitectureDocumentation.pdf
+ *
+ *
+ * @section plugin Custom plugin configuration file
  *          @attention
  *          The plugin configuration file has been changed!
  *
  *          The configuration file has now the following format<br>
- *          <predefinedPluginName> <pathAndLibraryName> <loadingType> <initType>
+ *          &lt;predefinedPluginName&gt; &lt;pathAndLibraryName&gt; &lt;loadingType&gt; &lt;initType&gt;
  *
  *          <b>Predefined plugin name</b><br>
  *          Use one of the following names:
@@ -125,7 +135,7 @@ extern "C" {
  *
  * @return positive value: success;
  *   On error a negative value will be returned with the following error codes:
- *   ::EPERS_NOT_INITIALIZED, ::EPERS_INIT_DBUS_MAINLOOP,
+ *   ::EPERS_NOT_INITIALIZED, ::EPERS_DBUS_MAINLOOP,
  *   ::EPERS_REGISTER_LIFECYCLE, ::EPERS_REGISTER_ADMIN
  */
 int pclInitLibrary(const char* appname, int shutdownMode);
@@ -159,12 +169,12 @@ int pclDeinitLibrary(void);
  *            In the next lifecycle the application can store data again until the limit above
  *            has been reached.
  *
- * @parm PCL_SHUTDOWN for write back data when shutdown is requested,
- *       and PCL_SHUTDOWN_CANEL when shutdown cancel request has been received.
+ * @param shutdown PCL_SHUTDOWN for write back data when shutdown is requested,
+ *        and PCL_SHUTDOWN_CANEL when shutdown cancel request has been received.
  *
  * @return positive value: success;
  *   On error a negative value will be returned with the following error codes:
- *   ::EPERS_COMMON, ::EPERS_MAX_CANCEL_SHUTDOWN, ::EPERS_SHTDWN_NO_PERMIT
+ *   ::EPERS_COMMON, ::EPERS_SHUTDOWN_MAX_CANCEL, ::EPERS_SHUTDOWN_NO_PERMIT
  */
 int pclLifecycleSet(int shutdown);
 

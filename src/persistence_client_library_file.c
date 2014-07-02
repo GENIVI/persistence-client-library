@@ -26,9 +26,11 @@
 #include "persistence_client_library_db_access.h"
 #include "crc32.h"
 
+
 #if USE_FILECACHE
    #include <persistence_file_cache.h>
 #endif
+
 
 #include <fcntl.h>   // for open flags
 #include <errno.h>
@@ -44,7 +46,6 @@
 int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
 
 
-
 int pclFileClose(int fd)
 {
    int rval = EPERS_NOT_INITIALIZED;
@@ -53,16 +54,18 @@ int pclFileClose(int fd)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(fd < MaxPersHandle)
+   	int  permission = get_file_permission(fd);
+
+      if(permission != -1)	// permission is here also used for range check
       {
-         // check if a backup and checksum file needs to bel deleted
-         if( gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
+         // check if a backup and checksum file needs to be deleted
+         if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
          {
             // remove backup file
-            remove(gFileHandleArray[fd].backupPath);  // we don't care about return value
+            remove(get_file_backup_path(fd));  // we don't care about return value
 
             // remove checksum file
-            remove(gFileHandleArray[fd].csumPath);    // we don't care about return value
+            remove(get_file_checksum_path(fd));    // we don't care about return value
 
          }
          __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
@@ -78,7 +81,6 @@ int pclFileClose(int fd)
     	  rval = EPERS_MAXHANDLE;
       }
    }
-
    return rval;
 }
 
@@ -230,23 +232,19 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                }
             }
 
-            if(handle < MaxPersHandle && handle > 0 )
-            {
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+				if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
+				{
+					if(set_file_handle_data(handle, dbContext.configKey.permission, 0 /*backupCreated*/, backupPath, csumPath, NULL) != -1)
+					{
+						__sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+					}
+					else
+					{
+						close(handle);
+						handle = EPERS_MAXHANDLE;
+					}
+				}
 
-               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
-               {
-                  strcpy(gFileHandleArray[handle].backupPath, backupPath);
-                  strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-                  gFileHandleArray[handle].backupCreated = 0;
-                  gFileHandleArray[handle].permission = dbContext.configKey.permission;
-               }
-            }
-            else
-            {
-               close(handle);
-               handle = EPERS_MAXHANDLE;
-            }
          }
          else  // requested resource is not in the RCT, so create resource as local/cached.
          {
@@ -256,20 +254,16 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
             if(handle != -1)
             {
-		        if(handle < MaxPersHandle)
-		        {
-		           __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
 
-		           strcpy(gFileHandleArray[handle].backupPath, backupPath);
-		           strcpy(gFileHandleArray[handle].csumPath,   csumPath);
-		           gFileHandleArray[handle].backupCreated = 0;
-		           gFileHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
-		        }
-		        else
-		        {
-		           close(handle);
-		           handle = EPERS_MAXHANDLE;
-		        }
+            	if(set_file_handle_data(handle, PersistencePermission_ReadWrite, 0 /*backupCreated*/, backupPath, csumPath, NULL) != -1)
+					{
+						__sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+					}
+					else
+					{
+						close(handle);
+						handle = EPERS_MAXHANDLE;
+					}
             }
          }
       }
@@ -411,21 +405,23 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
-         if(fd < MaxPersHandle)
+      	int permission = get_file_permission(fd);
+         if(permission != -1)
          {
-            if(gFileHandleArray[fd].permission != PersistencePermission_ReadOnly)
+            if(permission != PersistencePermission_ReadOnly)
             {
                // check if a backup file has to be created
-               if(gFileHandleArray[fd].backupCreated == 0)
+               if(get_file_backup_status(fd) == 0)
                {
                   char csumBuf[ChecksumBufSize] = {0};
 
                   // calculate checksum
                   pclCalcCrc32Csum(fd, csumBuf);
-                  // create checksum and backup file
-                  pclCreateBackup(gFileHandleArray[fd].backupPath, fd, gFileHandleArray[fd].csumPath, csumBuf);
 
-                  gFileHandleArray[fd].backupCreated = 1;
+                  // create checksum and backup file
+                  pclCreateBackup(get_file_backup_path(fd), fd, get_file_checksum_path(fd), csumBuf);
+
+                  set_file_backup_status(fd, 1);
                }
 
 #if USE_FILECACHE
@@ -439,6 +435,10 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                size = EPERS_RESOURCE_READ_ONLY;
             }
          }
+			else
+			{
+			   size = EPERS_MAXHANDLE;
+			}
       }
       else
       {
@@ -503,17 +503,6 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             {
                if(handle < MaxPersHandle)
                {
-                  __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
-
-                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
-                  {
-                     strncpy(gOssHandleArray[handle].backupPath, backupPath, DbPathMaxLen);
-                     strncpy(gOssHandleArray[handle].csumPath,   csumPath, DbPathMaxLen);
-
-                     gOssHandleArray[handle].backupCreated = 0;
-                     gOssHandleArray[handle].permission = dbContext.configKey.permission;
-                  }
-
                   *size = strlen(dbPath);
                   *path = malloc((*size)+1);       // allocate 1 byte for the string termination
 
@@ -522,7 +511,6 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   {
 							memcpy(*path, dbPath, (*size));
 							(*path)[(*size)] = '\0';         // terminate string
-							gOssHandleArray[handle].filePath = *path;
 
                      if(access(*path, F_OK) == -1)
                      {
@@ -541,15 +529,16 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 									close(handle);    // don't need the open file
 								}
                      }
+
+                     __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
+
+                     set_ossfile_handle_data(handle, dbContext.configKey.permission, 0/*backupCreated*/, backupPath, csumPath, *path);
                   }
 						else
                   {
                	     handle = EPERS_DESER_ALLOCMEM;
-               	     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
-               	                          DLT_STRING("pclFileCreatePath: malloc() failed for path:"),
-               	                          DLT_STRING(dbPath),
-               	                          DLT_STRING("With the size:"),
-                  	                      DLT_UINT(*size));
+               	     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: malloc() failed for path:"),
+               	                                            DLT_STRING(dbPath), DLT_STRING("With the size:"), DLT_UINT(*size));
                   }
                }
                else
@@ -573,10 +562,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, gBackupCsPostfix);
 
                   __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
-                  strncpy(gOssHandleArray[handle].backupPath, backupPath, DbPathMaxLen);
-                  strncpy(gOssHandleArray[handle].csumPath,   csumPath, DbPathMaxLen);
-                  gOssHandleArray[handle].backupCreated = 0;
-                  gOssHandleArray[handle].permission = PersistencePermission_ReadWrite;  // make it writable
+
+                  set_ossfile_handle_data(handle, PersistencePermission_ReadWrite, 0/*backupCreated*/, backupPath, csumPath, NULL);
                }
                else
                {
@@ -605,22 +592,26 @@ int pclFileReleasePath(int pathHandle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(pathHandle < MaxPersHandle)
+   	int  permission = get_ossfile_permission(pathHandle);
+      if(permission != -1)		// permission is here also used for range check
       {
          // check if a backup and checksum file needs to bel deleted
-         if( gFileHandleArray[pathHandle].permission != PersistencePermission_ReadOnly)
+         if(permission != PersistencePermission_ReadOnly)
          {
             // remove backup file
-            remove(gOssHandleArray[pathHandle].backupPath);  // we don't care about return value
+            remove(get_ossfile_backup_path(pathHandle));  // we don't care about return value
 
             // remove checksum file
-            remove(gOssHandleArray[pathHandle].csumPath);    // we don't care about return value
+            remove(get_ossfile_checksum_path(pathHandle));    // we don't care about return value
 
          }
-         free(gOssHandleArray[pathHandle].filePath);
+         free(get_ossfile_file_path(pathHandle));
+
          __sync_fetch_and_sub(&gOpenHandleArray[pathHandle], FileClosed);   // set closed flag
-         set_persistence_handle_close_idx(pathHandle);
-         gOssHandleArray[pathHandle].filePath = NULL;
+
+         set_persistence_handle_close_idx(pathHandle);			// TODO
+
+         set_ossfile_file_path(pathHandle, NULL);
          rval = 1;
       }
       else

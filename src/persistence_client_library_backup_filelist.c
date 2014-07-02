@@ -44,17 +44,15 @@ typedef struct _key_value_s
 }key_value_s;
 
 
-void  key_val_rel(void *p);
+static void  key_val_rel(void *p);
 
-void* key_val_dup(void *p);
-
-int key_val_cmp(const void *p1, const void *p2 );
+static void* key_val_dup(void *p);
 
 
-char* gpConfigFileMap = 0;
+static char* gpConfigFileMap = 0;
 static char* gpTokenArray[TOKENARRAYSIZE] = {0};
-int gTokenCounter = 0;
-unsigned int gConfigFileSize = 0;
+static int gTokenCounter = 0;
+static unsigned int gConfigFileSize = 0;
 
 
 /// the rb tree
@@ -62,10 +60,10 @@ static jsw_rbtree_t *gRb_tree_bl = NULL;
 
 
 // local function prototypes
-int need_backup_key(unsigned int key);
+static int need_backup_key(unsigned int key);
+static int key_val_cmp(const void *p1, const void *p2 );
 
-
-void fillFileBackupCharTokenArray()
+static void fillFileBackupCharTokenArray()
 {
    unsigned int i=0;
    int blankCount=0;
@@ -100,7 +98,7 @@ void fillFileBackupCharTokenArray()
 }
 
 
-void createAndStoreFileNames()
+static void createAndStoreFileNames()
 {
    int i= 0, j =0;
    char path[128];
@@ -309,7 +307,7 @@ void  key_val_rel(void *p )
 }
 
 
-int pclBackupDoFileCopy(int srcFd, int dstFd)
+static int pclBackupDoFileCopy(int srcFd, int dstFd)
 {
    struct stat buf;
    int rval = 0;
