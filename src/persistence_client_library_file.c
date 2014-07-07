@@ -46,6 +46,28 @@
 int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
 
 
+char* get_raw_string(char* dbKey)
+{
+	char* keyPtr = NULL;
+	int cnt = 0, i = 0;
+
+	for(i=0; i<DbKeyMaxLen; i++)
+	{
+		if(dbKey[i] == '/')
+		{
+			cnt++;
+		}
+
+		if(cnt >= 5)	// stop after the 5th '/' has been found
+		{
+			break;
+		}
+		keyPtr = dbKey+i;
+	}
+	return ++keyPtr;
+}
+
+
 int pclFileClose(int fd)
 {
    int rval = EPERS_NOT_INITIALIZED;
@@ -139,7 +161,6 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 }
 
 
-
 int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int handle = EPERS_NOT_INITIALIZED;
@@ -147,12 +168,13 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
    if(gPclInitialized >= PCLinitialized)
    {
       int shared_DB = 0;
+      int wantBackup = 1;
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen]      = {0};    // database key
-      char dbPath[DbPathMaxLen]    = {0};    // database location
+      char dbKey[DbKeyMaxLen]       = {0};    // database key
+      char dbPath[DbPathMaxLen]     = {0};    // database location
       char backupPath[DbPathMaxLen] = {0};    // backup file
-      char csumPath[DbPathMaxLen]  = {0};    // checksum file
+      char csumPath[DbPathMaxLen]   = {0};    // checksum file
 
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
@@ -188,8 +210,9 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
             // file will be opened writable, so check about data consistency
             if( (dbContext.configKey.permission != PersistencePermission_ReadOnly)
-               && pclBackupNeeded(dbPath) )
+               && (pclBackupNeeded(get_raw_string(dbKey)) == CREATE_BACKUP))
             {
+            	wantBackup = 0;
                if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
                   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
@@ -198,7 +221,11 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup => file is read only OR is in blacklist!"));
+            	if(dbContext.configKey.permission == PersistencePermission_ReadOnly)
+            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup => file is READ ONLY!"), DLT_STRING(dbKey));
+            	else
+            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup => file is in backup blacklist!"), DLT_STRING(dbKey));
+
             }
 
 #if USE_FILECACHE
@@ -234,8 +261,9 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
 				if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
 				{
-					if(set_file_handle_data(handle, dbContext.configKey.permission, 0 /*backupCreated*/, backupPath, csumPath, NULL) != -1)
+					if(set_file_handle_data(handle, dbContext.configKey.permission, backupPath, csumPath, NULL) != -1)
 					{
+						set_file_backup_status(handle, wantBackup);
 						__sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
 					}
 					else
@@ -254,9 +282,9 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
             if(handle != -1)
             {
-
-            	if(set_file_handle_data(handle, PersistencePermission_ReadWrite, 0 /*backupCreated*/, backupPath, csumPath, NULL) != -1)
+            	if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
 					{
+            		set_file_backup_status(handle, 1);
 						__sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
 					}
 					else
@@ -432,6 +460,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
             }
             else
             {
+            	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData: Failed to write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
                size = EPERS_RESOURCE_READ_ONLY;
             }
          }
@@ -481,14 +510,14 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
             // file will be opened writable, so check about data consistency
             if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
-               && pclBackupNeeded(dbPath) )
+               && pclBackupNeeded( get_raw_string(dbPath)) == CREATE_BACKUP)
             {
                snprintf(backupPath, DbPathMaxLen-1, "%s%s", dbPath, gBackupPostfix);
                snprintf(csumPath,   DbPathMaxLen-1, "%s%s", dbPath, gBackupCsPostfix);
 
                if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => file inconsistent, recovery  N O T  possible!"));
                   return -1;
                }
                // we don't need the file handle here
@@ -496,6 +525,10 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                if(handle > 0)
                	close(handle);
             }
+            else
+				{
+					DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileCreatePath: No Backup => read only OR in blacklist!"), DLT_STRING(dbKey));
+				}
 
             handle = get_persistence_handle_idx();
 
@@ -672,6 +705,5 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 	}
 
 	return rval;
-}// getDefault
-
+}
 

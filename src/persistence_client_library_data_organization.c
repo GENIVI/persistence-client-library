@@ -23,12 +23,6 @@
 #include <stdlib.h>
 
 
-// define PERS_ORG_ROOT_PATH comes form persistence common object
-
-/// cached path location
-#define CACHEPREFIX         PERS_ORG_ROOT_PATH "/mnt-c/"
-/// write through path location
-#define WTPREFIX            PERS_ORG_ROOT_PATH "/mnt-wt/"
 /// path for the backup location
 const char* gBackupPrefix  	= PERS_ORG_ROOT_PATH "/mnt-backup/";
 
@@ -72,6 +66,7 @@ const char* gSharedPublicWtPathKey    = WTPREFIX "%s/shared_public%s";
 // path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
 const char* gLocalCacheFilePath        = CACHEPREFIX "%s"PERS_ORG_USER_FOLDER_NAME_"%d"PERS_ORG_SEAT_FOLDER_NAME_"%d/%s";
 
+const char* gBackupFilename = "BackupFileList.info";
 
 const char* gChangeSignal = "PersistenceResChange";
 const char* gDeleteSignal = "PersistenceResDelete";

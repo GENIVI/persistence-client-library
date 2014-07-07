@@ -70,8 +70,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       /// environment variable for max key value data
       const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
-      /// blacklist path environment variable
-      const char *pBlacklistPath = getenv("PERS_BLACKLIST_PATH");
+      char blacklistPath[DbPathMaxLen] = {0};
 
 #if USE_FILECACHE
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
@@ -85,14 +84,12 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          gMaxKeyValDataSize = atoi(pDataSize);
       }
 
-      if(pBlacklistPath == NULL)
-      {
-         pBlacklistPath = "/etc/pclBackupBlacklist.txt";   // default path
-      }
+      // Assemble backup blacklist path
+      sprintf(blacklistPath, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
 
-      if(readBlacklistConfigFile(pBlacklistPath) == -1)
+      if(readBlacklistConfigFile(blacklistPath) == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(pBlacklistPath));
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(blacklistPath));
       }
 
       if(setup_dbus_mainloop() == -1)

@@ -140,8 +140,7 @@ void clear_key_handle_array(int idx);
  * @param filePath the path to the file
  *
  */
-int set_file_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
-		                   const char* backup, const char* csumPath,  char* filePath);
+int set_file_handle_data(int idx, PersistencePermission_e permission, const char* backup, const char* csumPath,  char* filePath);
 
 
 /**

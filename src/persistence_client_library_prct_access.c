@@ -50,7 +50,6 @@ typedef enum _PersistenceRCT_e
 } PersistenceRCT_e;
 
 
-
 PersistenceRCT_e get_table_id(int ldbid, int* groupId)
 {
    PersistenceRCT_e rctType = PersistenceRCT_LastEntry;
@@ -92,7 +91,7 @@ void invalidate_resource_cfg_table(int i)
    gResource_table[i] = -1;
 }
 
-// status: OK
+
 int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
    int arrayIdx = 0;
@@ -226,7 +225,6 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
 
 
-// status: OK
 int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, char dbKey[], char dbPath[])
 {
    int storePolicy = PersistenceStorage_LastEntry;

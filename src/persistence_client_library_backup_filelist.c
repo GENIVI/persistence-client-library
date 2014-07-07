@@ -100,10 +100,8 @@ static void fillFileBackupCharTokenArray()
 
 static void createAndStoreFileNames()
 {
-   int i= 0, j =0;
-   char path[128];
-   const char* gFilePostFix                = ".pers";
-   const char* gKeyPathFormat              = "/%s/%s/%s/%s/%s%s";
+   int i= 0;
+   char path[128] = {0};
    key_value_s* item;
 
    // creat new tree
@@ -111,32 +109,30 @@ static void createAndStoreFileNames()
 
    if(gRb_tree_bl != NULL)
    {
+		while( i < TOKENARRAYSIZE )
+		{
+			if(gpTokenArray[i+1]  != 0 )
+			{
+				memset(path, 0, sizeof(path));
+				snprintf(path, 128, "%s", gpTokenArray[i]);    // storage type
 
-      for(i=0; i<128; i++)
-      {
-         // assemble path
-         snprintf(path, 128, gKeyPathFormat, gpTokenArray[j+2],      // storage type
-                                             gpTokenArray[j+3],      // policy id
-                                             gpTokenArray[j+4],      // profileID
-                                             gpTokenArray[j],        // application id
-                                             gpTokenArray[j+1],      // filename
-                                             gFilePostFix);          // file postfix
-
-         // asign key and value to the rbtree item
-         item = malloc(sizeof(key_value_s));
-         if(item != NULL)
-         {
-            item->key = pclCrc32(0, (unsigned char*)path, strlen(path));
-            // we don't need the path name here, we just need to know that this key is available in the tree
-            item->value = "";
-            jsw_rbinsert(gRb_tree_bl, item);
-            free(item);
-         }
-         j+=5;
-         if(gpTokenArray[j] == NULL)
-         {
-            break;
-         }
+				// asign key and value to the rbtree item
+				item = malloc(sizeof(key_value_s));
+				if(item != NULL)
+				{
+					//printf("createAndStoreFileNames => path: %s\n", path);
+					item->key = pclCrc32(0, (unsigned char*)path, strlen(path));
+					// we don't need the path name here, we just need to know that this key is available in the tree
+					item->value = "";
+					jsw_rbinsert(gRb_tree_bl, item);
+					free(item);
+				}
+				i+=1;
+			}
+			else
+			{
+				break;
+			}
       }
    }
 
@@ -153,7 +149,6 @@ int readBlacklistConfigFile(const char* filename)
 
    if(filename != NULL)
    {
-
 	   memset(&buffer, 0, sizeof(buffer));
 	   status = stat(filename, &buffer);
 	   if(status != -1)
@@ -212,7 +207,7 @@ int readBlacklistConfigFile(const char* filename)
 
 int need_backup_key(unsigned int key)
 {
-   int rval = 1;
+   int rval = CREATE_BACKUP;
    key_value_s* item = NULL;
    key_value_s* foundItem = NULL;
 
@@ -223,7 +218,7 @@ int need_backup_key(unsigned int key)
       foundItem = (key_value_s*)jsw_rbfind(gRb_tree_bl, item);
       if(foundItem != NULL)
       {
-         rval = 0;
+         rval = DONT_CREATE_BACKUP;
       }
       free(item);
    }
@@ -232,8 +227,7 @@ int need_backup_key(unsigned int key)
       if(item!=NULL)
 	     free(item);
 
-      rval = -1;
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("need_backup_key ==> item or gRb_tree_bl is NULL"));
+      rval = CREATE_BACKUP;
    }
 
    return rval;

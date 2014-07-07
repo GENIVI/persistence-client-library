@@ -183,8 +183,7 @@ void clear_key_handle_array(int idx)
 }
 
 
-int set_file_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
-		                   const char* backup, const char* csumPath, char* filePath)
+int set_file_handle_data(int idx, PersistencePermission_e permission, const char* backup, const char* csumPath, char* filePath)
 {
 	int rval = 0;
 
@@ -194,7 +193,7 @@ int set_file_handle_data(int idx, PersistencePermission_e permission, int backup
 		{
 			strcpy(gFileHandleArray[idx].backupPath, backup);
 			strcpy(gFileHandleArray[idx].csumPath,   csumPath);
-			gFileHandleArray[idx].backupCreated = backupCreated;
+			gFileHandleArray[idx].backupCreated = 0;		// set to 0 by default
 			gFileHandleArray[idx].permission = permission;
 			gFileHandleArray[idx].filePath = filePath; // check to do if this works
 		}

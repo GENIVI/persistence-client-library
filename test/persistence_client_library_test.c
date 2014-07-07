@@ -58,6 +58,7 @@ char* gWriteRecoveryTestData = "This is the data to recover: /Data/mnt-c/lt-pers
 char* gRecovChecksum = "608a3b5d";	// generated with http://www.tools4noobs.com/online_php_functions/crc32/
 
 
+
 void data_teardown(void)
 {
    printf("* * * tear down * * *\n");	// nothing
@@ -575,6 +576,38 @@ END_TEST
 
 
 
+// creat blacklist file, if this does not exist
+void data_setupBlacklist(void)
+{
+
+/// backup info
+char gBackupInfo[] = {
+"/media/doNotBackupMe.txt_START\n\
+/media/doNotBackupMe_01.txt\n\
+/media/doNotBackupMe_02.txt\n\
+/media/doNotBackupMe_03.txt\n\
+/media/doNotBackupMe_04.txt\n\
+/media/iDontWantDoBeBackuped_01.txt\n\
+/media/iDontWantDoBeBackuped_02.txt\n\
+/media/iDontWantDoBeBackuped_03.txt\n\
+/media/iDontWantDoBeBackuped_04.txt\n\
+/media/iDontWantDoBeBackuped_05.txt_END\n"
+};
+
+	const char* backupBlacklist = "/Data/mnt-c/lt-persistence_client_library_test/BackupFileList.info";
+
+	if(access(backupBlacklist, F_OK) == -1)
+	{
+		int handle = open(backupBlacklist, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+
+		write(handle, gBackupInfo, strlen(gBackupInfo));
+		close(handle);
+	}
+
+	printf("Finished: ==> data_setupBlacklist\n");
+}
+
+
 /*
  * Test the file interface:
  * - open file
@@ -592,15 +625,18 @@ START_TEST(test_DataFile)
    X_TEST_REPORT_TYPE(GOOD);
 
    int fd = 0, i = 0, idx = 0;
-   int size = 0, ret = 0;
+   int size = 0, ret = 0, avail = 100;
    int writeSize = 16*1024;
+   int fdArray[10] = {0};
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    unsigned char buffer[READ_SIZE] = {0};
+   unsigned char wBuffer[READ_SIZE] = {0};
    const char* refBuffer = "/Data/mnt-wt/lt-persistence_client_library_test/user/1/seat/1/media";
    char* writeBuffer;
    char* fileMap = NULL;
 
+   printf("test_DataFile ==> S T A R T\n");
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
@@ -675,6 +711,66 @@ START_TEST(test_DataFile)
    ret = pclFileClose(fd);
    x_fail_unless(ret == 0, "Failed to close file");
 
+
+   // test backup blacklist functionality
+   fdArray[0] = pclFileOpen(0xFF, "media/doNotBackupMe.txt_START", 1, 1);
+   fdArray[1] = pclFileOpen(0xFF, "media/doNotBackupMe.txt_START", 1, 2);
+   fdArray[2] = pclFileOpen(0xFF, "media/doNotBackupMe.txt_START", 20, 10);
+   fdArray[3] = pclFileOpen(0xFF, "media/doNotBackupMe.txt_START", 200, 100);
+
+   fdArray[4] = pclFileOpen(0xFF, "media/doNotBackupMe_01.txt", 2, 1);
+   fdArray[5] = pclFileOpen(0xFF, "media/doNotBackupMe_02.txt", 2, 1);
+   fdArray[6] = pclFileOpen(0xFF, "media/doNotBackupMe_03.txt", 2, 1);
+   fdArray[7] = pclFileOpen(0xFF, "media/doNotBackupMe_04.txt", 2, 1);
+
+   fdArray[8] = pclFileOpen(0xFF, "media/iDontWantDoBeBackuped_04.txt", 2, 1);
+   fdArray[9] = pclFileOpen(0xFF, "media/iDontWantDoBeBackuped_05.txt_END", 2, 1);
+
+   for(i=0; i<10; i++)
+   {
+   	snprintf( (char*)wBuffer, 1024, "Test - %d", i);
+   	pclFileWriteData(fdArray[i], wBuffer, strlen( (char*)wBuffer));
+   }
+
+   //
+   // test if backup blacklist works correctly
+   //
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/doNotBackupMe.txt_START~", F_OK);
+	x_fail_unless(avail == -1, "1. Failed backup => backup available, but should not");
+
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/2/media/doNotBackupMe.txt_START~", F_OK);
+	x_fail_unless(avail == -1, "2. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/20/seat/10/media/doNotBackupMe.txt_START~", F_OK);
+	x_fail_unless(avail == -1, "3. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/doNotBackupMe.txt_START~", F_OK);
+	x_fail_unless(avail == -1, "4. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/2/seat/1/media/doNotBackupMe_01.txt~", F_OK);
+	x_fail_unless(avail == -1, "5. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/2/seat/1/media/doNotBackupMe_02.txt~", F_OK);
+	x_fail_unless(avail == -1, "6. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/2/seat/1/media/doNotBackupMe_03.txt~", F_OK);
+	x_fail_unless(avail == -1, "7. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/2/seat/1/media/doNotBackupMe_04.txt~", F_OK);
+	x_fail_unless(avail == -1, "8. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/2/seat/1/media/iDontWantDoBeBackuped_04.txt~", F_OK);
+	x_fail_unless(avail == -1, "9. Failed backup => backup available, but should not");
+
+	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/2/seat/1/media/iDontWantDoBeBackuped_05.txt_END~", F_OK);
+	x_fail_unless(avail == -1, "10. Failed backup => backup available, but should not");
+
+   for(i=0; i<10; i++)
+   {
+   	pclFileClose(fdArray[i]);
+   }
+
    free(writeBuffer);
 #endif
    pclDeinitLibrary();
@@ -737,6 +833,7 @@ START_TEST(test_DataFileBackupCreation)
 
    // verify the backup creation:
    handle = open(path,  O_RDWR);
+   printf("Path: %s | handle: %d\n", path, handle);
    x_fail_unless(handle != -1, "Could not open file ==> failed to access backup file");
 
    rval = read(handle, rBuffer, 1024);
@@ -870,7 +967,6 @@ START_TEST(test_DataHandle)
 
    // test multiple handles
    handleArray[0] = pclFileOpen(0xFF, "media/mediaDB_write_01.db", 1, 1);
-   printf("** **** **** **** ** handleArray[0] => %d\n", handleArray[0]);
    x_fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
 
    handleArray[1] = pclFileOpen(0xFF, "media/mediaDB_write_02.db", 1, 1);
@@ -1332,8 +1428,11 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_ReadConfDefault);
 
    suite_add_tcase(s, tc_persDataFile);
+   tcase_add_checked_fixture(tc_persDataFile, data_setupBlacklist, data_teardown);
+
    suite_add_tcase(s, tc_persDataFileBackupCreation);
    tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
+
    suite_add_tcase(s, tc_persDataFileRecovery);
    tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
 

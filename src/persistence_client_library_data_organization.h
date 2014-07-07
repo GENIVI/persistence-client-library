@@ -109,6 +109,10 @@ typedef enum _PersNotifyRegPolicy_e
 /// constant definitions
 enum _PersistenceConstantDef
 {
+	/// flag to identify if a backup should NOT be created
+	DONT_CREATE_BACKUP   = 0,
+	/// flag to identify if a backup should be created
+	CREATE_BACKUP        = 1,
 	/// flag to identify that resource a not file
    ResIsNoFile          = 0,
    /// flag to identify that resource a file
@@ -191,6 +195,14 @@ enum _PersistenceConstantDef
    defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA
 };
 
+
+// define PERS_ORG_ROOT_PATH comes form persistence common object
+
+/// cached path location
+#define CACHEPREFIX         PERS_ORG_ROOT_PATH "/mnt-c/"
+/// write through path location
+#define WTPREFIX            PERS_ORG_ROOT_PATH "/mnt-wt/"
+
 /// path for the backup location
 extern const char* gBackupPrefix;
 /// backup filename postfix
@@ -231,6 +243,9 @@ extern const char* gSharedPublicWtPathKey;
 
 /// path prefix for local cached files: /Data/mnt_c/&lt;appId&gt;/&lt;user&gt;/&gt;userno&gt;/&lt;seat&gt;/&gt;seatno&gt;/&lt;resource&gt;
 extern const char* gLocalCacheFilePath;
+
+// backup blacklist filename
+extern const char* gBackupFilename;
 
 /// application id
 extern char gAppId[MaxAppNameLen];
