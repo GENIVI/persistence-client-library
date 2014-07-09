@@ -49,7 +49,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
    {
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen]   = {0};      // database key
+      char dbKey[DbKeyMaxLen]   = {0};    // database key
       char dbPath[DbPathMaxLen] = {0};    // database location
 
       dbContext.context.ldbid   = ldbid;
@@ -338,7 +338,7 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
       {
          if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
          {
-            data_size = persistence_get_data_size(dbPath, dbKey, &dbContext);
+            data_size = persistence_get_data_size(dbPath, dbKey, resource_id, &dbContext);
          }
          else
          {
@@ -529,11 +529,8 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
-            		             DLT_STRING("regNotifyOnChange: Not allowed! Resource is local or it is a file:"),
-            		             DLT_STRING(resource_id),
-                                 DLT_STRING("LDBID:"),
-                                 DLT_UINT(ldbid));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange: Not allowed! Resource is local or it is a file:"),
+            		                  DLT_STRING(resource_id), DLT_STRING("LDBID:"), DLT_UINT(ldbid));
             rval = EPERS_NOTIFY_NOT_ALLOWED;
          }
       }

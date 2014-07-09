@@ -193,44 +193,6 @@ jsw_rbtree_t *jsw_rbnew ( cmp_f cmp, dup_f dup, rel_f rel )
   return rt;
 }
 
-/**
-  <summary>
-  Releases a valid red black tree
-  <summary>
-  <param name="tree">The tree to release</param>
-  <remarks>
-  The tree must have been created using jsw_rbnew
-  </remarks>
-*/
-void jsw_rbdelete ( jsw_rbtree_t *tree )
-{
-  jsw_rbnode_t *it = tree->root;
-  jsw_rbnode_t *save;
-
-  /*
-    Rotate away the left links so that
-    we can treat this like the destruction
-    of a linked list
-  */
-  while ( it != NULL ) {
-    if ( it->link[0] == NULL ) {
-      /* No left links, just kill the node and move on */
-      save = it->link[1];
-      tree->rel ( it->data );
-      free ( it );
-    }
-    else {
-      /* Rotate away the left link and check again */
-      save = it->link[0];
-      it->link[0] = save->link[1];
-      save->link[1] = it;
-    }
-
-    it = save;
-  }
-
-  free ( tree );
-}
 
 /**
   <summary>
@@ -362,6 +324,47 @@ int jsw_rbinsert ( jsw_rbtree_t *tree, void *data )
 
   return 1;
 }
+
+#if 0
+/**
+  <summary>
+  Releases a valid red black tree
+  <summary>
+  <param name="tree">The tree to release</param>
+  <remarks>
+  The tree must have been created using jsw_rbnew
+  </remarks>
+*/
+void jsw_rbdelete ( jsw_rbtree_t *tree )
+{
+  jsw_rbnode_t *it = tree->root;
+  jsw_rbnode_t *save;
+
+  /*
+    Rotate away the left links so that
+    we can treat this like the destruction
+    of a linked list
+  */
+  while ( it != NULL ) {
+    if ( it->link[0] == NULL ) {
+      /* No left links, just kill the node and move on */
+      save = it->link[1];
+      tree->rel ( it->data );
+      free ( it );
+    }
+    else {
+      /* Rotate away the left link and check again */
+      save = it->link[0];
+      it->link[0] = save->link[1];
+      save->link[1] = it;
+    }
+
+    it = save;
+  }
+
+  free ( tree );
+}
+
 
 /**
   <summary>
@@ -632,4 +635,4 @@ void *jsw_rbtprev ( jsw_rbtrav_t *trav )
 }
 
 
-
+#endif

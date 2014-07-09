@@ -598,13 +598,16 @@ char gBackupInfo[] = {
 
 	if(access(backupBlacklist, F_OK) == -1)
 	{
+		int ret = 0;
 		int handle = open(backupBlacklist, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 
-		write(handle, gBackupInfo, strlen(gBackupInfo));
+		ret = write(handle, gBackupInfo, strlen(gBackupInfo));
+		if(ret != strlen(gBackupInfo))
+		{
+			printf("data_setupBlacklist => Wrong size written: %d", ret);
+		}
 		close(handle);
 	}
-
-	printf("Finished: ==> data_setupBlacklist\n");
 }
 
 
@@ -636,7 +639,6 @@ START_TEST(test_DataFile)
    char* writeBuffer;
    char* fileMap = NULL;
 
-   printf("test_DataFile ==> S T A R T\n");
    ret = pclInitLibrary(gTheAppId, shutdownReg);
    x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
@@ -704,9 +706,16 @@ START_TEST(test_DataFile)
    ret = pclFileUnmapData(fileMap, size);
    x_fail_unless(ret != -1, "Failed to unmap file");
 
+   // file seek
+   ret = pclFileSeek(fd, 0, SEEK_CUR);
+   x_fail_unless(ret == 0, "Failed to seek file - pos 0");
+
+   ret = pclFileSeek(fd, 8, SEEK_CUR);
+   x_fail_unless(ret == 8, "Failed to seek file - pos 8");
+
    // negative test
    size = pclFileGetSize(1024);
-   x_fail_unless(ret == 0, "Got size, but should not");
+   x_fail_unless(size == EPERS_NOKEYDATA, "Got size, but should not");
 
    ret = pclFileClose(fd);
    x_fail_unless(ret == 0, "Failed to close file");
@@ -833,7 +842,6 @@ START_TEST(test_DataFileBackupCreation)
 
    // verify the backup creation:
    handle = open(path,  O_RDWR);
-   printf("Path: %s | handle: %d\n", path, handle);
    x_fail_unless(handle != -1, "Could not open file ==> failed to access backup file");
 
    rval = read(handle, rBuffer, 1024);
@@ -1169,6 +1177,17 @@ START_TEST(test_Plugin)
                  strlen((char*)buffer)) == 0, "Buffer CUSTOM 3 not correctly read");
    memset(buffer, 0, READ_SIZE);
 
+   ret = pclKeyWriteData(0xFF, "custom3",   0, 0, (unsigned char*)"This is a message to write", READ_SIZE);
+   x_fail_unless(ret == 321456, "Failed to write custom data");	// plugin should return 321456
+
+
+   ret = pclKeyGetSize(0xFF, "custom3",   0, 0);
+   x_fail_unless(ret == 44332211, "Failed query custom data size");	// plugin should return 44332211
+
+
+   ret = pclKeyDelete(0xFF, "custom3",   0, 0);
+   x_fail_unless(ret == 13579, "Failed query custom data size");	// plugin should return 13579
+
 #endif
 	pclDeinitLibrary();
 }
@@ -1203,6 +1222,10 @@ START_TEST(test_ReadDefault)
    //printf(" --- test_ReadConfDefault => statusHandle/default02: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("DEFAULT_02!"));
    x_fail_unless(ret == strlen("DEFAULT_02!"));
    x_fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   ret = pclKeyGetSize(0xFF, "statusHandle/default01", 3, 2);
+   x_fail_unless(ret == strlen("DEFAULT_01!"), "Invalid size");
+
 #endif
    pclDeinitLibrary();
 }
@@ -1235,6 +1258,10 @@ START_TEST(test_ReadConfDefault)
    //printf(" --- test_ReadConfDefault => statusHandle/confdefault02: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("CONF_DEFAULT_02!"));
    x_fail_unless(ret == strlen("CONF_DEFAULT_02!"));
    x_fail_unless(strncmp((char*)buffer,"CONF_DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
+
+   ret = pclKeyGetSize(0xFF, "statusHandle/confdefault02", 3, 2);
+   x_fail_unless(ret == strlen("CONF_DEFAULT_02!"), "Invalid size");
+
 #endif
    pclDeinitLibrary();
 }
@@ -1275,7 +1302,7 @@ END_TEST
 
 START_TEST(test_InitDeinit)
 {
-   int i = 0;
+   int i = 0, rval = -1;
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    for(i=1; i<20; i++)
@@ -1295,6 +1322,38 @@ START_TEST(test_InitDeinit)
 		pclDeinitLibrary();
    }
 
+
+   // test multiple init/deinit
+   pclInitLibrary(gTheAppId, shutdownReg);
+   pclInitLibrary(gTheAppId, shutdownReg);
+
+   pclDeinitLibrary();
+   pclDeinitLibrary();
+   pclDeinitLibrary();
+
+   // test lifecycle set
+   pclInitLibrary(gTheAppId, shutdownReg);
+   rval = pclLifecycleSet(PCL_SHUTDOWN);
+   x_fail_unless(rval == EPERS_SHUTDOWN_NO_PERMIT, "Lifecycle set allowed, but should not");
+   pclDeinitLibrary();
+
+
+   pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NONE);
+
+   rval = pclLifecycleSet(PCL_SHUTDOWN);
+   x_fail_unless(rval != EPERS_SHUTDOWN_NO_PERMIT, "Lifecycle set NOT allowed, but should");
+
+
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   //EPERS_COMMON
+
+   pclDeinitLibrary();
+
 }
 END_TEST
 
@@ -1312,8 +1371,6 @@ START_TEST(test_NegHandle)
 
    handle = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
    x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
-
-
 
    ret = pclKeyHandleReadData(negativeHandle, buffer, READ_SIZE);
    x_fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleReadData => negative handle not detected");
@@ -1338,6 +1395,43 @@ START_TEST(test_NegHandle)
    ret = pclKeyHandleClose(handle);
 
    pclDeinitLibrary();
+}
+END_TEST
+
+
+
+START_TEST(test_utf8_string)
+{
+	int ret = 0, size = 0;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   const char* utf8StringBuffer = "String °^° Ñ text";
+   unsigned char buffer[128] = {0};
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+   ret = pclKeyReadData(0xFF, "utf8String", 3, 2, buffer, READ_SIZE);
+   x_fail_unless(ret == strlen(utf8StringBuffer), "Wrong write size");
+   x_fail_unless(strncmp((char*)buffer, utf8StringBuffer, ret-1) == 0, "Buffer not correctly read => 1");
+
+   size = pclKeyGetSize(0xFF, "utf8String", 3, 2);
+   x_fail_unless(size == strlen(utf8StringBuffer), "Invalid size");
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
+START_TEST(test_Notifications)
+{
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+	(void)pclInitLibrary(gTheAppId, shutdownReg);
+
+	pclKeyRegisterNotifyOnChange(0x20, "address/home_address", 1, 1, myChangeCallback);
+	pclKeyUnRegisterNotifyOnChange(0x20, "address/home_address", 1, 1, myChangeCallback);
+
+	pclDeinitLibrary();
 }
 END_TEST
 
@@ -1415,9 +1509,16 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_NegHandle, test_NegHandle);
    tcase_set_timeout(tc_NegHandle, 1);
 
+   TCase * tc_utf8_string = tcase_create("UTF-8");
+   tcase_add_test(tc_utf8_string, test_utf8_string);
+   tcase_set_timeout(tc_utf8_string, 1);
+
+   TCase * tc_Notifications = tcase_create("Notifications");
+   tcase_add_test(tc_Notifications, test_Notifications);
+   tcase_set_timeout(tc_Notifications, 1);
+
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
-
    suite_add_tcase(s, tc_persSetDataNoPRCT);
    suite_add_tcase(s, tc_persGetDataSize);
    suite_add_tcase(s, tc_persDeleteData);
@@ -1437,10 +1538,10 @@ static Suite * persistencyClientLib_suite()
    tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
 
    suite_add_tcase(s, tc_GetPath);
-
    suite_add_tcase(s, tc_NegHandle);
    suite_add_tcase(s, tc_InitDeinit);
-
+   suite_add_tcase(s, tc_utf8_string);
+   suite_add_tcase(s, tc_Notifications);
    suite_add_tcase(s, tc_Plugin);
 
    return s;

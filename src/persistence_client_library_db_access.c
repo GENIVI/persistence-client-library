@@ -43,6 +43,7 @@ static int gHandlesDBCreated[DbTableSize][PersistencePolicy_LastEntry] = { {0} }
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, unsigned int reason);
 
 
+#if 0
 char* pers_get_raw_key(char *key)
 {
    char *temp = NULL;
@@ -57,7 +58,7 @@ char* pers_get_raw_key(char *key)
 
    return rawKey;
 }
-
+#endif
 
 int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType)
 {
@@ -229,7 +230,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath)
    return handleDB;
 }
 
-
+#if 0
 void database_close(PersistenceInfo_s* info)
 {
    int arrayIdx = info->configKey.storage + info->context.ldbid;
@@ -251,7 +252,7 @@ void database_close(PersistenceInfo_s* info)
       DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close ==> invalid storage type"), DLT_INT(info->context.ldbid ));
    }
 }
-
+#endif
 void database_close_all()
 {
    int i = 0;
@@ -378,9 +379,8 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
          info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
          info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
          (void)get_db_path_and_key(info, key, NULL, dbPath);
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get default data of key:"),
-                                            DLT_STRING(key));
-         ret_defaults = pers_get_defaults(dbPath, key, buffer, buffer_size, PersGetDefault_Data);
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get default data of key:"), DLT_STRING(key));
+         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, buffer, buffer_size, PersGetDefault_Data);
          if (0 < ret_defaults)
          {
         	 read_size = ret_defaults;
@@ -508,7 +508,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
 
 
 
-int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info)
+int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info)
 {
    int read_size = -1;
    int ret_defaults = -1;
@@ -519,10 +519,11 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info)
       int handleDB = database_get(info, dbPath);
       if(handleDB >= 0)
       {
+
          read_size = persComDbGetKeySize(handleDB, key);
          if(read_size < 0)
          {
-            read_size = pers_get_defaults(dbPath, key, NULL, 0, PersGetDefault_Size);
+            read_size = pers_get_defaults( dbPath, (char*)resourceID, NULL, 0, PersGetDefault_Size);
          }
       }
    }
@@ -595,7 +596,7 @@ int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info)
          (void)get_db_path_and_key(info, key, NULL, dbPath);
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get size of default data for key:"),
                                             DLT_STRING(key));
-         ret_defaults = pers_get_defaults(dbPath, key, NULL, 0, PersGetDefault_Size);
+         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, NULL, 0, PersGetDefault_Size);
          if (0 < ret_defaults)
          {
         	 read_size = ret_defaults;

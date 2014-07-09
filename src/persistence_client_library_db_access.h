@@ -115,12 +115,13 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key
+ * @param resourceID the resource id
  * @param info persistence information
  *
  * @return size of data in bytes read from the key or on error a negative value with the following error codes:
  *  EPERS_NOPRCTABLE or EPERS_NOKEY
  */
-int persistence_get_data_size(char* dbPath, char* key, PersistenceInfo_s* info);
+int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info);
 
 
 
@@ -143,7 +144,7 @@ int persistence_delete_data(char* dbPath, char* key, PersistenceInfo_s* info);
  *
  * @param info persistence information
  */
-void database_close(PersistenceInfo_s* info);
+//void database_close(PersistenceInfo_s* info);
 
 
 

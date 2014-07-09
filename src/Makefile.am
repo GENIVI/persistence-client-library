@@ -2,8 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 
 if DEBUG
-AM_CFLAGS = $(DEPS_CFLAGS) -g -I../include \
-                          -Idbus-1.0
+AM_CFLAGS = -fprofile-arcs -ftest-coverage $(DEPS_CFLAGS) -g -I../include -Idbus-1.0
 else
 AM_CFLAGS = $(DEPS_CFLAGS) -I../include -Idbus-1.0
 #AM_CFLAGS = -fprofile-arcs -ftest-coverage  $(DEPS_CFLAGS) -I../include -Idbus-1.0

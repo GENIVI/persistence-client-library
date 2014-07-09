@@ -64,7 +64,7 @@ int plugin_handle_close(int handle)
 // OK
 int plugin_delete_data(const char* path)
 {
-   int rval = 99;
+   int rval = 13579;
 
    //printf("* * * * * plugin_delete_data - path: %s!\n", path);
 
@@ -184,7 +184,7 @@ int plugin_handle_open(const char* path, int flag, int mode)
 // OK
 int plugin_handle_set_data(int handle, char* buffer, int size)
 {
-   int rval = 99;
+   int rval = 123654;
 
    //printf("* * * * * plugin_handle_set_data: %s!\n", LIBIDENT);
 
@@ -201,7 +201,7 @@ int plugin_handle_set_data(int handle, char* buffer, int size)
 // OK
 int plugin_set_data(const char* path, char* buffer, int size)
 {
-   int rval = 99;
+   int rval = 321456;
 
    //printf("* * * * * plugin_set_data: %s!\n", LIBIDENT);
 
@@ -237,7 +237,7 @@ int plugin_get_status_notification_clbk(plugin_callback_t pFunct)
 
 int plugin_handle_get_size(int handle)
 {
-   int rval = 99;
+   int rval = 11223344;
 
    //printf("* * * * * plugin_get_size_handle: %d | %s!\n", handle, LIBIDENT);
 
@@ -247,7 +247,7 @@ int plugin_handle_get_size(int handle)
 // OK
 int plugin_get_size(const char* path)
 {
-   int rval = 99;
+   int rval = 44332211;
 
    //printf("* * * * * plugin_get_size: %s | %s!\n", path, LIBIDENT);
 
