@@ -193,9 +193,10 @@ int set_file_handle_data(int idx, PersistencePermission_e permission, const char
 		{
 			strcpy(gFileHandleArray[idx].backupPath, backup);
 			strcpy(gFileHandleArray[idx].csumPath,   csumPath);
-			gFileHandleArray[idx].backupCreated = 0;		// set to 0 by default
+			gFileHandleArray[idx].backupCreated = 0;			// set to 0 by default
 			gFileHandleArray[idx].permission = permission;
-			gFileHandleArray[idx].filePath = filePath; // check to do if this works
+			gFileHandleArray[idx].filePath = filePath; 		// check to do if this works
+			gFileHandleArray[idx].cacheStatus = -1; 			// set to -1 by default
 		}
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
@@ -250,6 +251,29 @@ int get_file_backup_status(int idx)
 	return gFileHandleArray[idx].backupCreated;
 }
 
+void set_file_cache_status(int idx, int status)
+{
+	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+	{
+		gFileHandleArray[idx].cacheStatus = status;
+
+		pthread_mutex_unlock(&gFileHandleAccessMtx);
+	}
+}
+
+int get_file_cache_status(int idx)
+{
+	int status = -1;
+	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+	{
+		if(MaxPersHandle >= idx)
+		{
+			status = gFileHandleArray[idx].cacheStatus;
+		}
+		pthread_mutex_unlock(&gFileHandleAccessMtx);
+	}
+	return status;
+}
 //----------------------------------------------------------
 //----------------------------------------------------------
 

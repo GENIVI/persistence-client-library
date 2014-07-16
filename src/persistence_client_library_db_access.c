@@ -482,6 +482,7 @@ int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsig
 					snprintf(pathKeyString, 128, "0x%08X/%s", info->context.ldbid, info->configKey.customID);
 				}
 				write_size = gPersCustomFuncs[idx].custom_plugin_set_data(pathKeyString, (char*)buffer, buffer_size);
+				//write_size = persComDbWriteKey(handleDB, key, (char*)buffer, buffer_size) ;
 
 				if ((0 < write_size) && ((unsigned int)write_size == buffer_size)) /* Check return value and send notification if OK */
 				{

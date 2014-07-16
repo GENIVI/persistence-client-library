@@ -45,6 +45,8 @@ typedef struct _PersistenceFileHandle_s
 	PersistencePermission_e permission;
 	/// flag to indicate if a backup has already been created
    int backupCreated;
+   /// flag to indicate if file must be cached
+   int cacheStatus;
    /// path to the backup file
    char backupPath[DbPathMaxLen];
    /// path to the checksum file
@@ -197,6 +199,28 @@ void set_file_backup_status(int idx, int status);
  */
 int get_file_backup_status(int idx);
 
+
+/**
+ * @brief set the file cache status
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ * @param status the cache status, 0 file must not be cached,
+ *                                 1 file must be cached
+ */
+void set_file_cache_status(int idx, int status);
+
+
+/**
+ * @brief get the cache status of the file
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return 0 if file must not be cached,
+ *         1 if file must be cached
+ */
+int get_file_cache_status(int idx);
 //----------------------------------------------------------------
 //----------------------------------------------------------------
 

@@ -92,7 +92,14 @@ int pclFileClose(int fd)
          }
          __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
 #if USE_FILECACHE
-         rval = pfcCloseFile(fd);
+         if(get_file_cache_status(fd) == 1)
+         {
+         	rval = pfcCloseFile(fd);
+         }
+         else
+         {
+         	rval = close(fd);
+         }
 #else
          rval = close(fd);
 #endif
@@ -114,14 +121,25 @@ int pclFileGetSize(int fd)
 
    if(gPclInitialized >= PCLinitialized)
    {
+      struct stat buf;
 
 #if USE_FILECACHE
-      size = pfcFileGetSize(fd);
-#else
-      struct stat buf;
-      size = fstat(fd, &buf);
+      if(get_file_cache_status(fd) == 1)
+      {
+      	size = pfcFileGetSize(fd);
+      }
+      else
+      {
+			size = fstat(fd, &buf);
 
-      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
+			if(size != -1)
+			{
+				size = buf.st_size;
+			}
+      }
+#else
+
+      size = fstat(fd, &buf);
 
       if(size != -1)
       {
@@ -169,6 +187,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
    {
       int shared_DB = 0;
       int wantBackup = 1;
+      int cacheStatus = -1;
       PersistenceInfo_s dbContext;
 
       char dbKey[DbKeyMaxLen]       = {0};    // database key
@@ -185,7 +204,10 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       // get database context: database path and database key
       shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
-      if(dbContext.configKey.type == PersistenceResourceType_file)   // check if the resource is really a file
+      //
+      // check if the resource is marked as a file resource
+      //
+      if(dbContext.configKey.type == PersistenceResourceType_file)
       {
          // create backup path
          int length = 0;
@@ -204,7 +226,10 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
          snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
 
-         if(shared_DB >= 0)                                          // check valid database context
+         //
+         // check valid database context
+         //
+         if(shared_DB >= 0)
          {
             int flags = pclGetPosixPermission(dbContext.configKey.permission);
 
@@ -229,24 +254,44 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             }
 
 #if USE_FILECACHE
-
             if(handle > 0)   // when the file is open, close it and do a new open unde PFC control
             {
                close(handle);
             }
 
-            handle = pfcOpenFile(dbPath, DontCreateFile);
+            if(strstr(dbPath, WTPREFIX) != NULL)
+				{
+					// if it's a write through resource, add the O_SYNC and O_DIRECT flag to prevent caching
+					handle = open(dbPath, flags);
+					cacheStatus = 0;
+				}
+            else
+            {
+            	handle = pfcOpenFile(dbPath, DontCreateFile);
+            	cacheStatus = 1;
+            }
+
 #else
             if(handle <= 0)   // check if open is needed or already done in verifyConsistency
             {
                handle = open(dbPath, flags);
+
+               if(strstr(dbPath, WTPREFIX) != NULL)
+               {
+               	cacheStatus = 0;
+               }
+               else
+               {
+               	cacheStatus = 1;
+               }
             }
 #endif
-
-            if(handle == -1 && errno == ENOENT) // file does not exist, create file and folder
+            //
+            // file does not exist, create it and get default data
+            //
+            if(handle == -1 && errno == ENOENT)
             {
-
-               if((handle = pclCreateFile(dbPath)) == -1)
+               if((handle = pclCreateFile(dbPath, cacheStatus)) == -1)
                {
                   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => failed to create file: "), DLT_STRING(dbPath));
                }
@@ -257,6 +302,8 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
                		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen: no default data available: "), DLT_STRING(resource_id));
                	}
                }
+
+               set_file_cache_status(handle, cacheStatus);
             }
 
 				if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
@@ -272,13 +319,16 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 						handle = EPERS_MAXHANDLE;
 					}
 				}
-
          }
-         else  // requested resource is not in the RCT, so create resource as local/cached.
+         //
+         // requested resource is not in the RCT, so create resource as local/cached.
+         //
+         else
          {
             // assemble file string for local cached location
             snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
-            handle = pclCreateFile(dbPath);
+            handle = pclCreateFile(dbPath, 1);
+            set_file_cache_status(handle, 1);
 
             if(handle != -1)
             {
@@ -289,7 +339,11 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 					}
 					else
 					{
+#if USE_FILECACHE
+						pfcCloseFile(handle);
+#else
 						close(handle);
+#endif
 						handle = EPERS_MAXHANDLE;
 					}
             }
@@ -297,9 +351,9 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       }
       else
       {
-         handle = EPERS_RESOURCE_NO_FILE;
+         handle = EPERS_RESOURCE_NO_FILE;	// resource is not marked as file in RCT
       }
-   }
+   } // initialized
 
    return handle;
 }
@@ -310,11 +364,19 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
 {
    int readSize = EPERS_NOT_INITIALIZED;
 
+
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
    if(gPclInitialized >= PCLinitialized)
    {
 #if USE_FILECACHE
-      readSize = pfcReadFile(fd, buffer, buffer_size);
+   	if(get_file_cache_status(fd) == 1)
+   	{
+   		readSize = pfcReadFile(fd, buffer, buffer_size);
+   	}
+   	else
+   	{
+   		readSize = read(fd, buffer, buffer_size);
+   	}
 #else
       readSize = read(fd, buffer, buffer_size);
 #endif
@@ -384,7 +446,14 @@ int pclFileSeek(int fd, long int offset, int whence)
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
 #if USE_FILECACHE
-         rval = pfcFileSeek(fd, offset, whence);
+      	if(get_file_cache_status(fd) == 1)
+      	{
+      		rval = pfcFileSeek(fd, offset, whence);
+      	}
+      	else
+      	{
+      		 rval = lseek(fd, offset, whence);
+      	}
 #else
          rval = lseek(fd, offset, whence);
 #endif
@@ -453,9 +522,24 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                }
 
 #if USE_FILECACHE
-               size = pfcWriteFile(fd, buffer, buffer_size);
+               if(get_file_cache_status(fd) == 1)
+               {
+               	size = pfcWriteFile(fd, buffer, buffer_size);
+               }
+               else
+               {
+                  size = write(fd, buffer, buffer_size);
+
+						if(fsync(fd) == -1)
+							DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileWriteData: Failed to fsync ==>!"), DLT_STRING(strerror(errno)));
+               }
 #else
                size = write(fd, buffer, buffer_size);
+               if(get_file_cache_status(fd) == 1)
+               {
+               	if(fsync(fd) == -1)
+               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileWriteData: Failed to fsync ==>!"), DLT_STRING(strerror(errno)));
+               }
 #endif
             }
             else
@@ -510,7 +594,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
             // file will be opened writable, so check about data consistency
             if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
-               && pclBackupNeeded( get_raw_string(dbPath)) == CREATE_BACKUP)
+               && pclBackupNeeded(get_raw_string(dbPath)) == CREATE_BACKUP)
             {
                snprintf(backupPath, DbPathMaxLen-1, "%s%s", dbPath, gBackupPostfix);
                snprintf(csumPath,   DbPathMaxLen-1, "%s%s", dbPath, gBackupCsPostfix);
@@ -547,9 +631,20 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
                      if(access(*path, F_OK) == -1)
                      {
-								// file does not exist, create it.
-								int handle = 0;
-								if((handle = pclCreateFile(*path)) == -1)
+								int handle = 0, cacheStatus = -1;
+				            if(strstr(dbPath, WTPREFIX) != NULL)
+								{
+				            	cacheStatus = 0;
+								}
+				            else
+				            {
+				            	cacheStatus = 1;
+				            }
+
+								handle = pclCreateFile(*path, cacheStatus);	// file does not exist, create it.
+								set_file_cache_status(handle, cacheStatus);
+
+								if(handle == -1)
 								{
 									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => failed to create file: "), DLT_STRING(*path));
 								}
@@ -562,7 +657,6 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 									close(handle);    // don't need the open file
 								}
                      }
-
                      __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
 
                      set_ossfile_handle_data(handle, dbContext.configKey.permission, 0/*backupCreated*/, backupPath, csumPath, *path);
@@ -581,7 +675,10 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 					}
             }
          }
-         else  // requested resource is not in the RCT, so create resource as local/cached.
+         //
+         // requested resource is not in the RCT, so create resource as local/cached.
+         //
+         else
          {
             // assemble file string for local cached location
             snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);

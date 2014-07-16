@@ -38,10 +38,12 @@ int readBlacklistConfigFile(const char* filename);
  * @brief create the file
  *
  * @param path of the file to be created
+ * @param cached 1 if file should be cached,
+ *               0 if file should not be cached
  *
  * @return the handle to his file
  */
-int pclCreateFile(const char* path);
+int pclCreateFile(const char* path, int chached);
 
 
 /**

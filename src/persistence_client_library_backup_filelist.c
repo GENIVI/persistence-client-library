@@ -317,7 +317,7 @@ static int pclBackupDoFileCopy(int srcFd, int dstFd)
 }
 
 
-int pclCreateFile(const char* path)
+int pclCreateFile(const char* path, int chached)
 {
    const char* delimiters = "/\n";   // search for blank and end of line
    char* tokenArray[24];
@@ -360,10 +360,20 @@ int pclCreateFile(const char* path)
       // finally create the file
       strncat(createPath, "/", DbPathMaxLen-1);
       strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+
+
+
 #if USE_FILECACHE
-      handle = pfcOpenFile(createPath, CreateFile);
+      if(chached == 0)
+		{
+      	handle = open(createPath, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+		}
+      else
+      {
+      	handle = pfcOpenFile(createPath, CreateFile);
+      }
 #else
-      handle = open(createPath, O_CREAT|O_RDWR |O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      handle = open(createPath, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 #endif
    }
    else
@@ -576,7 +586,7 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       char pathToCreate[DbPathMaxLen] = {0};
       strncpy(pathToCreate, dstPath, DbPathMaxLen);
 
-      handle = pclCreateFile(pathToCreate);
+      handle = pclCreateFile(pathToCreate, 0);
       close(handle); // don't need the open file
    }
 
