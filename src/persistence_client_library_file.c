@@ -165,8 +165,7 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
-         int mapFlag = PROT_WRITE | PROT_READ;
-         ptr = mmap(addr,size, mapFlag, MAP_SHARED, fd, offset);
+         ptr = mmap(addr,size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, offset);
       }
       else
       {
@@ -363,7 +362,6 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 int pclFileReadData(int fd, void * buffer, int buffer_size)
 {
    int readSize = EPERS_NOT_INITIALIZED;
-
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
    if(gPclInitialized >= PCLinitialized)

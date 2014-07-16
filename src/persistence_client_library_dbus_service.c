@@ -333,10 +333,13 @@ int setup_dbus_mainloop(void)
      return -1;
    }
 
+   (void)pthread_setname_np(gMainLoopThread, "pclDbusLoop");
+
    // wait for condition variable
    pthread_cond_wait(&gDbusInitializedCond, &gDbusInitializedMtx);
 
    pthread_mutex_unlock(&gDbusInitializedMtx);
+
    return rval;
 }
 

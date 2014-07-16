@@ -86,10 +86,8 @@ int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType)
       {
          ret = EPERS_COMMON;
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN,
-                              DLT_STRING("pers_db_open_default() -> persComDbOpen() -> problem open db: "),
-                              DLT_STRING(path),
-                              DLT_STRING(" Code: "),
-                              DLT_INT(ret));
+                              DLT_STRING("pers_db_open_default() -> persComDbOpen() -> problem open db: "), DLT_STRING(path),
+                              DLT_STRING(" Code: "), DLT_INT(ret));
       }
    }
 
@@ -103,8 +101,6 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
    int handleDefaultDB = -1;
    int read_size = EPERS_NOKEY;
    char dltMessage[DbPathMaxLen] = {0};
-
-   // key = pers_get_raw_key(key); /* We need only the raw key without a prefixed '/node/' or '/user/1/seat/0' etc... */
 
    for(i=0; i<PersDefaultType_LastEntry; i++)
    {
@@ -147,10 +143,8 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
             {
                 snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
             }
-            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Default data will be used for Key"),
-                                               DLT_STRING(key),
-                                               DLT_STRING("from"),
-                                               DLT_STRING(dltMessage));
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Default data will be used for Key"), DLT_STRING(key),
+                                                  DLT_STRING("from"), DLT_STRING(dltMessage));
             break;
          }
       }
@@ -158,10 +152,8 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
 
    if (read_size < 0)
    {
-       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Default data not available for Key"),
-                                          DLT_STRING(key),
-                                          DLT_STRING("Path:"),
-                                          DLT_STRING(dbPath));
+       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Default data not available for Key"), DLT_STRING(key),
+                                             DLT_STRING("Path:"), DLT_STRING(dbPath));
    }
 
    return read_size;
@@ -176,12 +168,10 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath)
    // create array index: index is a combination of resource config table type and group
    arrayIdx = info->configKey.storage + info->context.ldbid ;
 
-   //if(arrayIdx <= DbTableSize)
    if(arrayIdx < DbTableSize)
    {
       if(gHandlesDBCreated[arrayIdx][info->configKey.policy] == 0)
       {
-
          char path[DbPathMaxLen] = {0};
 
          if(PersistencePolicy_wt == info->configKey.policy)
@@ -255,37 +245,25 @@ void database_close(PersistenceInfo_s* info)
 #endif
 void database_close_all()
 {
-   int i = 0;
+   int i = 0, j = 0;
 
    for(i=0; i<DbTableSize; i++)
    {
-      // close write cached database
-      if(gHandlesDBCreated[i][PersistencePolicy_wc] == 1)
-      {
-         int iErrorCode = persComDbClose(gHandlesDB[i][PersistencePolicy_wc]);
-         if (iErrorCode < 0)
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close_all => failed to close db => persComDbClose"));
-         }
-         else
-         {
-             gHandlesDBCreated[i][PersistencePolicy_wc] = 0;
-         }
-      }
-
-      // close write through database
-      if(gHandlesDBCreated[i][PersistencePolicy_wt] == 1)
-      {
-         int iErrorCode = persComDbClose(gHandlesDB[i][PersistencePolicy_wt]);
-         if (iErrorCode < 0)
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close_all => failed to close db => persComDbClose"));
-         }
-         else
-         {
-            gHandlesDBCreated[i][PersistencePolicy_wt] = 0;
-         }
-      }
+   	for(j=0; j < PersistencePolicy_na; j++)
+   	{
+			if(gHandlesDBCreated[i][j] == 1)
+			{
+				int iErrorCode = persComDbClose(gHandlesDB[i][j]);
+				if (iErrorCode < 0)
+				{
+					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close_all => failed to close db => persComDbClose"));
+				}
+				else
+				{
+					 gHandlesDBCreated[i][j] = 0;
+				}
+			}
+   	}
    }
 }
 
@@ -312,7 +290,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx =  custom_client_name_to_id(dbPath, 1);
-      char workaroundPath[128];  // workaround, because /sys/ can not be accessed on host!!!!
+      char workaroundPath[128];  								// workaround, because /sys/ can not be accessed on host!!!!
       snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
       if(idx < PersCustomLib_LastEntry)
@@ -378,12 +356,14 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
       {
          info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
          info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
+
          (void)get_db_path_and_key(info, key, NULL, dbPath);
+
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get default data of key:"), DLT_STRING(key));
          ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, buffer, buffer_size, PersGetDefault_Data);
          if (0 < ret_defaults)
          {
-        	 read_size = ret_defaults;
+        	   read_size = ret_defaults;
          }
       }
    }
