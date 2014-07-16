@@ -1311,7 +1311,7 @@ START_TEST(test_InitDeinit)
    int i = 0, rval = -1;
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   for(i=1; i<20; i++)
+   for(i=0; i<5; i++)
    {
 		// initialize and deinitialize 1. time
 		(void)pclInitLibrary(gTheAppId, shutdownReg);
@@ -1509,7 +1509,7 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_InitDeinit = tcase_create("InitDeinit");
    tcase_add_test(tc_InitDeinit, test_InitDeinit);
-   tcase_set_timeout(tc_InitDeinit, 1);
+   tcase_set_timeout(tc_InitDeinit, 3);
 
    TCase * tc_NegHandle = tcase_create("NegHandle");
    tcase_add_test(tc_NegHandle, test_NegHandle);
