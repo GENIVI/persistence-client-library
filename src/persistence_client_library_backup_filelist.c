@@ -48,12 +48,7 @@ static void  key_val_rel(void *p);
 
 static void* key_val_dup(void *p);
 
-
-static char* gpConfigFileMap = 0;
 static char* gpTokenArray[TOKENARRAYSIZE] = {0};
-static int gTokenCounter = 0;
-static unsigned int gConfigFileSize = 0;
-
 
 /// the rb tree
 static jsw_rbtree_t *gRb_tree_bl = NULL;
@@ -63,17 +58,18 @@ static jsw_rbtree_t *gRb_tree_bl = NULL;
 static int need_backup_key(unsigned int key);
 static int key_val_cmp(const void *p1, const void *p2 );
 
-static void fillFileBackupCharTokenArray()
+static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char* fileMap)
 {
    unsigned int i=0;
+   int tokenCounter = 0;
    int blankCount=0;
-   char* tmpPointer = gpConfigFileMap;
+   char* tmpPointer = fileMap;
 
    // set the first pointer to the start of the file
    gpTokenArray[blankCount] = tmpPointer;
    blankCount++;
 
-   while(i < gConfigFileSize)
+   while(i < customConfigFileSize)
    {
       if(   ((unsigned int)*tmpPointer < 127)
          && ((unsigned int)*tmpPointer >= 0))
@@ -89,7 +85,7 @@ static void fillFileBackupCharTokenArray()
 			   }
 			   gpTokenArray[blankCount] = tmpPointer+1;
 			   blankCount++;
-			   gTokenCounter++;
+			   tokenCounter++;
 		   }
 	   }
       tmpPointer++;
@@ -141,63 +137,62 @@ static void createAndStoreFileNames()
 
 int readBlacklistConfigFile(const char* filename)
 {
-   int fd = 0,
-       status = 0,
-       rval = 0;
-
-   struct stat buffer;
+   int rval = 0;
 
    if(filename != NULL)
    {
+		struct stat buffer;
+
 	   memset(&buffer, 0, sizeof(buffer));
-	   status = stat(filename, &buffer);
-	   if(status != -1)
+	   if(stat(filename, &buffer) != -1)
 	   {
-		  gConfigFileSize = buffer.st_size;
-	   }
+			if(buffer.st_size > 0)	// check for empty file
+			{
+				char* configFileMap = 0;
+				int fd = open(filename, O_RDONLY);
 
-	   fd = open(filename, O_RDONLY);
-	   if (fd == -1)
+				if(fd == -1)
+				{
+				  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+				  return EPERS_COMMON;
+				}
+
+				// map the config file into memory
+				configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+				if(configFileMap == MAP_FAILED)
+				{
+				  close(fd);
+				  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+
+				  return EPERS_COMMON;
+				}
+
+				fillFileBackupCharTokenArray(buffer.st_size, configFileMap);
+
+				// create filenames and store them in the tree
+				createAndStoreFileNames();
+
+				munmap(configFileMap, buffer.st_size);
+
+				close(fd);
+			}
+			else
+			{
+				DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error config file size is 0:"), DLT_STRING(filename));
+				return EPERS_COMMON;
+			}
+	   }
+	   else
 	   {
-		  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
-		  return -1;
+	   	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> failed to stat() config file:"), DLT_STRING(filename));
+	   	return EPERS_COMMON;
 	   }
-
-	   // check for empty file
-	   if(gConfigFileSize == 0)
-	   {
-		  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> Error file size is 0:"), DLT_STRING(filename));
-		  close(fd);
-		  return -1;
-	   }
-
-	   // map the config file into memory
-	   gpConfigFileMap = (char*)mmap(0, gConfigFileSize, PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-	   if (gpConfigFileMap == MAP_FAILED)
-	   {
-		  gpConfigFileMap = 0;
-		  close(fd);
-		  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("configReader::readConfigFile ==> Error mapping the file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
-
-		  return -1;
-	   }
-
-	   // reset the token counter
-	   gTokenCounter = 0;
-
-	   fillFileBackupCharTokenArray();
-
-	   // create filenames and store them in the tree
-	   createAndStoreFileNames();
-
-	   munmap(gpConfigFileMap, gConfigFileSize);
-
-	   close(fd);
-   }
+	}
    else
    {
-	   rval = -1;
+   	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("configReader::readConfigFile ==> config file name is NULL:"));
+	   rval = EPERS_COMMON;
    }
 
    return rval;
@@ -209,11 +204,11 @@ int need_backup_key(unsigned int key)
 {
    int rval = CREATE_BACKUP;
    key_value_s* item = NULL;
-   key_value_s* foundItem = NULL;
 
    item = malloc(sizeof(key_value_s));
    if(item != NULL && gRb_tree_bl != NULL)
    {
+   	key_value_s* foundItem = NULL;
       item->key = key;
       foundItem = (key_value_s*)jsw_rbfind(gRb_tree_bl, item);
       if(foundItem != NULL)
@@ -402,7 +397,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    // there is a backup file and a checksum
    // *************************************************
-   if( (backupAvail == 0) && (csumAvail == 0) )
+   if((backupAvail == 0) && (csumAvail == 0) )
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclVerifyConsistency => there is a backup file AND a checksum"));
       // calculate checksum form backup file

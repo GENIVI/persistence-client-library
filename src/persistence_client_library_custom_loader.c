@@ -42,25 +42,22 @@ typedef struct sPersCustomLibInfo
 
 /// array with custom client library names
 static PersCustomLibInfo gCustomLibArray[PersCustomLib_LastEntry];
-
-static char* gpCustomConfigFileMap = 0;
 static char* gpCustomTokenArray[TOKENARRAYSIZE];
-static int   gCustomTokenCounter = 0;
-static unsigned int gCustomConfigFileSize = 0;
 
 int(* gPlugin_callback_async_t)(int errcode);
 
-static void fillCustomCharTokenArray()
+static void fillCustomCharTokenArray(unsigned int customConfigFileSize, char* fileMap)
 {
    unsigned int i=0;
+   int   customTokenCounter = 0;
    int blankCount=0;
-   char* tmpPointer = gpCustomConfigFileMap;
+   char* tmpPointer = fileMap;
 
    // set the first pointer to the start of the file
    gpCustomTokenArray[blankCount] = tmpPointer;
    blankCount++;
 
-   while(i < gCustomConfigFileSize)
+   while(i < customConfigFileSize)
    {
       if(1 != gCharLookup[(int)*tmpPointer])
       {
@@ -73,7 +70,7 @@ static void fillCustomCharTokenArray()
          }
          gpCustomTokenArray[blankCount] = tmpPointer+1;
          blankCount++;
-         gCustomTokenCounter++;
+         customTokenCounter++;
 
       }
       tmpPointer++;
@@ -210,10 +207,8 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
 
 int get_custom_libraries()
 {
-   int rval = 0, fd = 0, j = 0, i= 0;
-   int status = 0;
+   int rval = 0, j = 0;
    struct stat buffer;
-
    const char *filename = getenv("PERS_CLIENT_LIB_CUSTOM_LOAD");
 
 	if(filename == NULL)
@@ -223,82 +218,79 @@ int get_custom_libraries()
 
    for(j=0; j<PersCustomLib_LastEntry; j++)
    {
-      // init pos to -1
-      gCustomLibArray[j].valid = -1;
+      gCustomLibArray[j].valid = -1;	// init pos to -1
    }
 
    memset(&buffer, 0, sizeof(buffer));
-   status = stat(filename, &buffer);
-   if(status != -1)
+   if(stat(filename, &buffer) != -1)
    {
-      gCustomConfigFileSize = buffer.st_size;
-   }
-
-   fd = open(filename, O_RDONLY);
-   if (fd == -1)
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error ==> Error file open: "),
-            DLT_STRING(filename), DLT_STRING("err msg: "), DLT_STRING(strerror(errno)) );
-
-      return EPERS_COMMON;
-   }
-
-   // check for empty file
-   if(gCustomConfigFileSize >= 0)
-   {
-		// map the config file into memory
-		gpCustomConfigFileMap = (char*)mmap(0, gCustomConfigFileSize, PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-		if (gpCustomConfigFileMap == MAP_FAILED)
+		if(buffer.st_size > 0)	// check for empty file
 		{
-			gpCustomConfigFileMap = 0;
+			char* customConfFileMap = NULL;
+			int i = 0;
+			int fd = open(filename, O_RDONLY);
+
+			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
+
+			if (fd == -1)
+			{
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error file open: "),
+						                                 DLT_STRING(filename), DLT_STRING("err msg: "), DLT_STRING(strerror(errno)) );
+				return EPERS_COMMON;
+			}
+
+			// map the config file into memory
+			customConfFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+			if (customConfFileMap == MAP_FAILED)
+			{
+				close(fd);
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error mapping the file"));
+				return EPERS_COMMON;
+			}
+
+			fillCustomCharTokenArray(buffer.st_size, customConfFileMap);
+
+			while( i < TOKENARRAYSIZE )
+			{
+				if(gpCustomTokenArray[i] != 0 && gpCustomTokenArray[i+1] != 0 && gpCustomTokenArray[i+2] != 0 &&gpCustomTokenArray[i+3] != 0 )
+				{
+					int libId = custom_client_name_to_id(gpCustomTokenArray[i], 0);	// get the custom libID
+
+					// assign the libraryname
+					strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], CustLibMaxLen);
+					gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+
+					gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
+					gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);
+					gCustomLibArray[libId].valid        = 1;	// marks as valid;
+	#if 0
+					// debug
+					printf("     1. => %s => %d \n",   gpCustomTokenArray[i],   libId);
+					printf("     2. => %s => %s \n",   gpCustomTokenArray[i+1], gCustomLibArray[libId].libname);
+					printf("     3. => %s => %d \n",   gpCustomTokenArray[i+2], (int)gCustomLibArray[libId].initFunction);
+					printf("     4. => %s => %d \n\n", gpCustomTokenArray[i+3], (int)gCustomLibArray[libId].loadingType);
+	#endif
+				}
+				else
+				{
+					break;
+				}
+				i+=4;       // move to the next configuration file entry
+			}
 			close(fd);
-			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error ==> Error mapping the file"));
-			return EPERS_COMMON;
 		}
-
-		// reset the token counter
-		gCustomTokenCounter = 0;
-
-		fillCustomCharTokenArray();
-
-		while( i < TOKENARRAYSIZE )
+		else
 		{
-			if(gpCustomTokenArray[i] != 0 && gpCustomTokenArray[i+1] != 0 && gpCustomTokenArray[i+2] != 0 &&gpCustomTokenArray[i+3] != 0 )
-			{
-				int libId = custom_client_name_to_id(gpCustomTokenArray[i], 0);	// get the custom libID
-
-				// assign the libraryname
-				strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], CustLibMaxLen);
-				gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
-
-				gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
-				gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);
-				gCustomLibArray[libId].valid        = 1;	// marks as valid;
-#if 0
-				// debug
-				printf("     1. => %s => %d \n",   gpCustomTokenArray[i],   libId);
-				printf("     2. => %s => %s \n",   gpCustomTokenArray[i+1], gCustomLibArray[libId].libname);
-				printf("     3. => %s => %d \n",   gpCustomTokenArray[i+2], (int)gCustomLibArray[libId].initFunction);
-				printf("     4. => %s => %d \n\n", gpCustomTokenArray[i+3], (int)gCustomLibArray[libId].loadingType);
-#endif
-			}
-			else
-			{
-				break;
-			}
-			i+=4;       // move to the next configuration file entry
+			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error file size is 0"));
+			rval = EPERS_COMMON;
 		}
-
-		close(fd);
    }
    else
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load config file error ==> Error file size is 0"));
-      close(fd);
-      rval = EPERS_COMMON;
+   	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> failed to stat() file"));
+   	rval = EPERS_COMMON;
    }
-
    return rval;
 }
 
