@@ -1449,31 +1449,31 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_persGetData = tcase_create("GetData");
    tcase_add_test(tc_persGetData, test_GetData);
-   tcase_set_timeout(tc_persGetData, 1);
+   tcase_set_timeout(tc_persGetData, 2);
 
    TCase * tc_persSetData = tcase_create("SetData");
    tcase_add_test(tc_persSetData, test_SetData);
-   tcase_set_timeout(tc_persSetData, 1);
+   tcase_set_timeout(tc_persSetData, 2);
 
    TCase * tc_persSetDataNoPRCT = tcase_create("SetDataNoPRCT");
    tcase_add_test(tc_persSetDataNoPRCT, test_SetDataNoPRCT);
-   tcase_set_timeout(tc_persSetDataNoPRCT, 1);
+   tcase_set_timeout(tc_persSetDataNoPRCT, 2);
 
    TCase * tc_persGetDataSize = tcase_create("GetDataSize");
    tcase_add_test(tc_persGetDataSize, test_GetDataSize);
-   tcase_set_timeout(tc_persGetDataSize, 1);
+   tcase_set_timeout(tc_persGetDataSize, 2);
 
    TCase * tc_persDeleteData = tcase_create("DeleteData");
    tcase_add_test(tc_persDeleteData, test_DeleteData);
-   tcase_set_timeout(tc_persDeleteData, 1);
+   tcase_set_timeout(tc_persDeleteData, 2);
 
    TCase * tc_persGetDataHandle = tcase_create("GetDataHandle");
    tcase_add_test(tc_persGetDataHandle, test_GetDataHandle);
-   tcase_set_timeout(tc_persGetDataHandle, 1);
+   tcase_set_timeout(tc_persGetDataHandle, 2);
 
    TCase * tc_persDataHandle = tcase_create("DataHandle");
    tcase_add_test(tc_persDataHandle, test_DataHandle);
-   tcase_set_timeout(tc_persGetData, 1);
+   tcase_set_timeout(tc_persGetData, 2);
 
    TCase * tc_persDataHandleOpen = tcase_create("DataHandleOpen");
    tcase_add_test(tc_persDataHandleOpen, test_DataHandleOpen);
@@ -1481,7 +1481,7 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
-   tcase_set_timeout(tc_persDataFile, 1);
+   tcase_set_timeout(tc_persDataFile, 2);
 
    TCase * tc_persDataFileBackupCreation = tcase_create("DataFileBackupCreation");
    tcase_add_test(tc_persDataFileBackupCreation, test_DataFileBackupCreation);
@@ -1489,23 +1489,23 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
    tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
-   tcase_set_timeout(tc_persDataFileRecovery, 1);
+   tcase_set_timeout(tc_persDataFileRecovery, 2);
 
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
-   tcase_set_timeout(tc_Plugin, 1);
+   tcase_set_timeout(tc_Plugin, 2);
 
    TCase * tc_ReadDefault = tcase_create("ReadDefault");
    tcase_add_test(tc_ReadDefault, test_ReadDefault);
-   tcase_set_timeout(tc_ReadDefault, 1);
+   tcase_set_timeout(tc_ReadDefault, 2);
 
    TCase * tc_ReadConfDefault = tcase_create("ReadConfDefault");
    tcase_add_test(tc_ReadConfDefault, test_ReadConfDefault);
-   tcase_set_timeout(tc_ReadConfDefault, 1);
+   tcase_set_timeout(tc_ReadConfDefault, 2);
 
    TCase * tc_GetPath = tcase_create("GetPath");
    tcase_add_test(tc_GetPath, test_GetPath);
-   tcase_set_timeout(tc_GetPath, 1);
+   tcase_set_timeout(tc_GetPath, 2);
 
    TCase * tc_InitDeinit = tcase_create("InitDeinit");
    tcase_add_test(tc_InitDeinit, test_InitDeinit);
@@ -1513,15 +1513,15 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_NegHandle = tcase_create("NegHandle");
    tcase_add_test(tc_NegHandle, test_NegHandle);
-   tcase_set_timeout(tc_NegHandle, 1);
+   tcase_set_timeout(tc_NegHandle, 2);
 
    TCase * tc_utf8_string = tcase_create("UTF-8");
    tcase_add_test(tc_utf8_string, test_utf8_string);
-   tcase_set_timeout(tc_utf8_string, 1);
+   tcase_set_timeout(tc_utf8_string, 2);
 
    TCase * tc_Notifications = tcase_create("Notifications");
    tcase_add_test(tc_Notifications, test_Notifications);
-   tcase_set_timeout(tc_Notifications, 1);
+   tcase_set_timeout(tc_Notifications, 2);
 
    suite_add_tcase(s, tc_persSetData);
    suite_add_tcase(s, tc_persGetData);
@@ -1545,10 +1545,11 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_GetPath);
    suite_add_tcase(s, tc_NegHandle);
-   suite_add_tcase(s, tc_InitDeinit);
    suite_add_tcase(s, tc_utf8_string);
    suite_add_tcase(s, tc_Notifications);
    suite_add_tcase(s, tc_Plugin);
+
+   suite_add_tcase(s, tc_InitDeinit);
 
    return s;
 }
