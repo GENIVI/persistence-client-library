@@ -60,51 +60,87 @@ char* pers_get_raw_key(char *key)
 }
 #endif
 
-int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType)
-{
-   int ret = 0;
-   char path[DbPathMaxLen] = {0};
 
-   if (PersDefaultType_Configurable == DefaultType)
+
+
+static int database_get(PersistenceInfo_s* info, const char* dbPath)
+{
+   int arrayIdx = 0;
+   int handleDB = -1;
+
+   // create array index: index is a combination of resource config table type and group
+   arrayIdx = info->configKey.storage + info->context.ldbid ;
+
+   if(arrayIdx < DbTableSize)
    {
-      snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalConfigurableDefault);
-   }
-   else if (PersDefaultType_Factory== DefaultType)
-   {
-      snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
+      if(gHandlesDBCreated[arrayIdx][info->configKey.policy] == 0)
+      {
+         char path[DbPathMaxLen] = {0};
+
+         if(PersistencePolicy_wt == info->configKey.policy)				/// write through database
+         {
+            snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalWt);
+         }
+         else if(PersistencePolicy_wc == info->configKey.policy)		// cached database
+         {
+            snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalCached);
+         }
+         else if(PersistencePolicy_cd == info->configKey.policy)		// configurable default database
+			{
+			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalConfigurableDefault);
+			}
+			else if(PersistencePolicy_d == info->configKey.policy)		// default database
+			{
+			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
+			}
+         else
+         {
+            handleDB = -2;
+         }
+
+         if (handleDB == -1)
+         {
+            handleDB = persComDbOpen(path, 0x01);
+            if(handleDB >= 0)
+            {
+               gHandlesDB[arrayIdx][info->configKey.policy] = handleDB ;
+               gHandlesDBCreated[arrayIdx][info->configKey.policy] = 1;
+            }
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get ==> persComDbOpen() failed"));
+            }
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get ==> wrong policy! Cannot extend dbPath wit database."));
+         }
+      }
+      else
+      {
+         handleDB = gHandlesDB[arrayIdx][info->configKey.policy];
+      }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_db_open_default ==> unknown DefaultType"));
-      ret = EPERS_COMMON;
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get ==> invalid storage type"), DLT_STRING(dbPath));
    }
-
-   if (EPERS_COMMON != ret)
-   {
-      ret = persComDbOpen(path, 0);
-      if (ret < 0)
-      {
-         ret = EPERS_COMMON;
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN,
-                              DLT_STRING("pers_db_open_default() -> persComDbOpen() -> problem open db: "), DLT_STRING(path),
-                              DLT_STRING(" Code: "), DLT_INT(ret));
-      }
-   }
-
-   return ret;
+   return handleDB;
 }
 
 
-int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job)
+int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job)
 {
    PersDefaultType_e i = PersDefaultType_Configurable;
    int handleDefaultDB = -1;
    int read_size = EPERS_NOKEY;
    char dltMessage[DbPathMaxLen] = {0};
 
-   for(i=0; i<PersDefaultType_LastEntry; i++)
+   info->configKey.policy = PersistencePolicy_cd;
+   for(i=(int)PersistencePolicy_cd; i<(int)PersistencePolicy_na; i++)
    {
-      handleDefaultDB = pers_db_open_default(dbPath, i);
+   	handleDefaultDB = database_get(info, dbPath);
+   	info->configKey.policy++;
       if(handleDefaultDB >= 0)
       {
          if (PersGetDefault_Data == job)
@@ -119,11 +155,6 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_get_defaults ==> unknown job"));
             break;
-         }
-
-         if (0 > persComDbClose(handleDefaultDB))
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_get_defaults ==> persComDbClose returned with error"));
          }
 
          if(read_size < 0) // check read_size
@@ -160,65 +191,6 @@ int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned i
 }
 
 
-static int database_get(PersistenceInfo_s* info, const char* dbPath)
-{
-   int arrayIdx = 0;
-   int handleDB = -1;
-
-   // create array index: index is a combination of resource config table type and group
-   arrayIdx = info->configKey.storage + info->context.ldbid ;
-
-   if(arrayIdx < DbTableSize)
-   {
-      if(gHandlesDBCreated[arrayIdx][info->configKey.policy] == 0)
-      {
-         char path[DbPathMaxLen] = {0};
-
-         if(PersistencePolicy_wt == info->configKey.policy)
-         {
-            snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalWt);
-         }
-         else if(PersistencePolicy_wc == info->configKey.policy)
-         {
-            snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalCached);
-         }
-         else
-         {
-            handleDB = -2;
-         }
-
-         if (handleDB == -1)
-         {
-            handleDB = persComDbOpen(path, 0x01);
-            if(handleDB >= 0)
-            {
-               gHandlesDB[arrayIdx][info->configKey.policy] = handleDB ;
-               gHandlesDBCreated[arrayIdx][info->configKey.policy] = 1;
-            }
-            else
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get ==> persComDbOpen() failed"));
-            }
-         }
-         else
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get ==> wrong policy! Cannot extend dbPath wit database."));
-         }
-      }
-      else
-      {
-         handleDB = gHandlesDB[arrayIdx][info->configKey.policy];
-      }
-   }
-   else
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get ==> invalid storage type"), DLT_STRING(dbPath));
-   }
-
-
-
-   return handleDB;
-}
 
 #if 0
 void database_close(PersistenceInfo_s* info)
@@ -283,7 +255,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
          read_size = persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
          if(read_size < 0)
          {
-            read_size = pers_get_defaults(dbPath, (char*)resourceID, buffer, buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
+            read_size = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
          }
       }
    }
@@ -360,7 +332,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
          (void)get_db_path_and_key(info, key, NULL, dbPath);
 
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get default data of key:"), DLT_STRING(key));
-         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, buffer, buffer_size, PersGetDefault_Data);
+         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, buffer_size, PersGetDefault_Data);
          if (0 < ret_defaults)
          {
         	   read_size = ret_defaults;
@@ -504,7 +476,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
          read_size = persComDbGetKeySize(handleDB, key);
          if(read_size < 0)
          {
-            read_size = pers_get_defaults( dbPath, (char*)resourceID, NULL, 0, PersGetDefault_Size);
+            read_size = pers_get_defaults( dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
          }
       }
    }
@@ -577,7 +549,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
          (void)get_db_path_and_key(info, key, NULL, dbPath);
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Plugin data not available. Try to get size of default data for key:"),
                                             DLT_STRING(key));
-         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, NULL, 0, PersGetDefault_Size);
+         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
          if (0 < ret_defaults)
          {
         	 read_size = ret_defaults;

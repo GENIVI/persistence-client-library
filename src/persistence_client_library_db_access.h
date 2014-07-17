@@ -65,6 +65,7 @@ int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType);
  *
  * @param dbPath the path to the directory where the default databases are in 
  * @param key the database key
+ * @param info the persistence context information
  * @param buffer the buffer holding the data
  * @param buffer_size the size of the buffer
  * @param job the info to specify what to do. Get Data or the DataSize.
@@ -73,7 +74,7 @@ int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType);
            negative value if an error occured and the following error code:
  *         EPERS_NOKEY
  */
-int pers_get_defaults(char* dbPath, char* key, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job);
+int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job);
 
 
 
