@@ -72,7 +72,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen: error - no database context or resource is not a key "));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen - no database context or resource is not a key "));
       }
    }
 
@@ -188,7 +188,7 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: Only one callback is allowed for change notifications."));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleRegisterNotifyOnChange - Only one callback is allowed for change notifications."));
       rval = EPERS_NOTIFY_NOT_ALLOWED;
    }
    return rval;
@@ -296,7 +296,7 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
         {
            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
            {
-	           rval = persistence_delete_data(dbPath, dbKey, &dbContext);
+	           rval = persistence_delete_data(dbPath, dbKey, resource_id, &dbContext);
            }
            else
            {
@@ -392,7 +392,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - error - no database context or resource is not a key"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - no database context or resource is not a key"));
          }
       }
       else
@@ -441,7 +441,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                   // store data
                   if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
                   {
-                     data_size = persistence_set_data(dbPath, dbKey, &dbContext, buffer, buffer_size);
+                     data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
                   }
                   else
                   {
@@ -455,13 +455,13 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - error - no database context or resource is not a key"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData no database context or resource is not a key"));
             }
          }
          else
          {
             data_size = EPERS_BUFLIMIT;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData: error - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
          }
       }
       else
@@ -491,7 +491,7 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange: Only one callback is allowed for change notifications."));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange - Only one callback is allowed for change notifications."));
       rval = EPERS_NOTIFY_NOT_ALLOWED;
    }
    return rval;
@@ -529,7 +529,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange: Not allowed! Resource is local or it is a file:"),
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange - Not allowed! Resource is local or it is a file:"),
             		                  DLT_STRING(resource_id), DLT_STRING("LDBID:"), DLT_UINT(ldbid));
             rval = EPERS_NOTIFY_NOT_ALLOWED;
          }
@@ -537,7 +537,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
       else
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
-                              DLT_STRING("regNotifyOnChange: Not possible! get_db_context() returned:"),
+                              DLT_STRING("regNotifyOnChange - Not possible! get_db_context() returned:"),
                               DLT_INT(rval));
       }
    }

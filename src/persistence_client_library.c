@@ -89,12 +89,12 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       if(readBlacklistConfigFile(blacklistPath) == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary -> failed to access blacklist:"), DLT_STRING(blacklistPath));
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary - failed to access blacklist:"), DLT_STRING(blacklistPath));
       }
 
       if(setup_dbus_mainloop() == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to setup main loop"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to setup main loop"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_DBUS_MAINLOOP;
       }
@@ -114,13 +114,13 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
       if(register_pers_admin_service() == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to pers admin dbus interface"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to register to pers admin dbus interface"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_REGISTER_ADMIN;
       }
 	  else
 	  {
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary => Successfully established IPC protocol for PCL."));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary - Successfully established IPC protocol for PCL."));
 	  }
 #else
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
@@ -146,7 +146,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    else if(gPclInitialized >= PCLinitialized)
    {
       gPclInitialized++; // increment init counter
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitialized) );
    }
 
@@ -166,7 +166,7 @@ int pclDeinitLibrary(void)
    	data.message.cmd = (uint32_t)CMD_QUIT;
    	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
                                          DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle dbus messages
@@ -177,11 +177,11 @@ int pclDeinitLibrary(void)
       rval = unregister_pers_admin_service();
       if(0 != rval)
 	  {
-		  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary => Failed to de-initialize IPC protocol for PCL."));
+		  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Failed to de-initialize IPC protocol for PCL."));
 	  }
       else
       {
-    	  DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary => Successfully de-initialized IPC protocol for PCL."));
+    	  DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Successfully de-initialized IPC protocol for PCL."));
       }
 #endif
 
@@ -220,7 +220,7 @@ int pclDeinitLibrary(void)
    }
    else if(gPclInitialized > PCLinitialized)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary -> D E I N I T  client library - "), DLT_STRING(gAppId),
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
                                            DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitialized));
       gPclInitialized--;   // decrement init counter
    }

@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
    ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
 
    printf("Register for change notification\n");
-   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
-   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
-   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
    ret = pclKeyRegisterNotifyOnChange(0xFF, "69",     1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    printf("Reg => 69: %d\n", ret);
@@ -73,16 +73,16 @@ int main(int argc, char *argv[])
    printf("Press enter to unregister to notifications\n");
    getchar();
 
-   ret = pclKeyUnRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
-   ret = pclKeyUnRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
-   ret = pclKeyUnRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyUnRegisterNotifyOnChange(0x20, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyUnRegisterNotifyOnChange(0x20, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyUnRegisterNotifyOnChange(0x20, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
    printf("Press enter to register to notifications\n");
    getchar();
 
-   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
-   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
-   ret = pclKeyRegisterNotifyOnChange(0x84, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
    printf("Press enter to end\n");
    getchar();

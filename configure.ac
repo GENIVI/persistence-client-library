@@ -10,6 +10,7 @@ m4_define([pers_client_library_tag_version], [pers_client_library_tag_version_ma
 
 
 AC_INIT([Persistence Client Library], [pers_client_library_tag_version], [not-valid@xse.de])
+AC_COPYRIGHT([Copyright (c) 2014 XS Embedded GmbH])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([dist-bzip2])
 AC_GNU_SOURCE()

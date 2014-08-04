@@ -36,6 +36,19 @@ extern "C" {
 
 
 
+/// default database definitions
+typedef enum PersistenceDB_e_
+{
+	/// configurable default database
+	PersistenceDB_confdefault = PersistencePolicy_LastEntry,
+	/// default database
+	PersistenceDB_default,
+
+	PersistenceDB_LastEntry
+
+} PersistenceDefaultDB_e;
+
+
 /**
  * @brief get the raw key without prefixed '/node/', '/user/3/' etc
  *
@@ -83,6 +96,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
  *
  * @param dbPath the path to the database where the key is in 
  * @param key the database key
+ * @param resource_id the resource identifier
  * @param info persistence information
  * @param buffer the buffer holding the data
  * @param buffer_size the size of the buffer
@@ -90,7 +104,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
  * @return the number of bytes written or a negative value if an error occured with the following error codes:
  *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_set_data(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
+int persistence_set_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
 
 
 
@@ -131,12 +145,13 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
  *
  * @param dbPath the path to the database where the key is in
  * @param key the database key to register on
+ * @param resource_id the resource identifier
  * @param info persistence information
  *
  * @return 0 if deletion was successfull;
  *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
  */
-int persistence_delete_data(char* dbPath, char* key, PersistenceInfo_s* info);
+int persistence_delete_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info);
 
 
 

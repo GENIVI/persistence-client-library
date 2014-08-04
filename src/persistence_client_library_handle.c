@@ -70,7 +70,7 @@ int get_persistence_handle_idx()
          else
          {
             handle = EPERS_MAXHANDLE;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_persistence_handle_idx => Reached maximum of open handles: "), DLT_INT(MaxPersHandle));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_persistence_handle_idx - max open handles: "), DLT_INT(MaxPersHandle));
          }
       }
       pthread_mutex_unlock(&gMtx);
@@ -128,7 +128,7 @@ int set_key_handle_data(int idx, const char* id, unsigned int ldbid,  unsigned i
 		}
 		else
 		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("set_key_handle_data: error - index out of bounds:"), DLT_INT(idx));
+			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("set_key_handle_data - index out of bounds:"), DLT_INT(idx));
 		}
 
 		pthread_mutex_unlock(&gKeyHandleAccessMtx);

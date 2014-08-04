@@ -161,7 +161,7 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_libname_to_id - error - id not found for lib:"), DLT_STRING(lib_name));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_client_name_to_id - id not found for lib:"), DLT_STRING(lib_name));
       }
    }
    else
@@ -196,7 +196,7 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_libname_to_id - error - id not found for lib:"), DLT_STRING(lib_name));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_client_name_to_id - id not found for lib:"), DLT_STRING(lib_name));
       }
 
    }
@@ -230,11 +230,11 @@ int get_custom_libraries()
 			int i = 0;
 			int fd = open(filename, O_RDONLY);
 
-			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
+			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_custom_libraries - load config - "), DLT_STRING(filename));
 
 			if (fd == -1)
 			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error file open: "),
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_custom_libraries - Error file open: "),
 						                                 DLT_STRING(filename), DLT_STRING("err msg: "), DLT_STRING(strerror(errno)) );
 				return EPERS_COMMON;
 			}
@@ -245,7 +245,7 @@ int get_custom_libraries()
 			if (customConfFileMap == MAP_FAILED)
 			{
 				close(fd);
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error mapping the file"));
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_custom_libraries - Error mapping the file"));
 				return EPERS_COMMON;
 			}
 
@@ -282,13 +282,13 @@ int get_custom_libraries()
 		}
 		else
 		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error file size is 0"));
+			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_custom_libraries - Error file size is 0"));
 			rval = EPERS_COMMON;
 		}
    }
    else
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> failed to stat() file"));
+   	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_custom_libraries - failed to stat() file"));
    	rval = EPERS_COMMON;
    }
    return rval;
@@ -436,7 +436,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
 				}
 				else
 				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: could not load plugin functions: "),
+					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - could not load plugin functions: "),
 																      DLT_STRING(get_custom_client_lib_name(customLib)));
 					rval = EPERS_COMMON;
 				}
@@ -452,14 +452,14 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
 				}
 				else
 				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library => error: could not load plugin functions: "),
+					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - could not load plugin functions: "),
 																	DLT_STRING(get_custom_client_lib_name(customLib)));
 					rval = EPERS_COMMON;
 				}
 			}
 			else
 			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: unknown init type "),
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - unknown init type "),
 						                                 DLT_STRING(get_custom_client_lib_name(customLib)));
 				rval = EPERS_COMMON;
 			}
@@ -467,13 +467,13 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
       else
       {
          error = dlerror();
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - "), DLT_STRING(error));
          rval = EPERS_DLOPENERROR;
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: - customLib out of bounds"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - customLib out of bounds"));
       rval = EPERS_DLOPENERROR;
    }
 
@@ -530,7 +530,7 @@ int load_custom_plugins(plugin_callback_async_t pfInitCompletedCB)
 				{
 					if(load_custom_library(i, &gPersCustomFuncs[i] ) <= 0)
 					{
-						DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_plugins => E r r o r could not load plugin: "),
+						DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_plugins - could not load plugin: "),
 													DLT_STRING(get_custom_client_lib_name(i)));
 						rval = EPERS_COMMON;
 					}
@@ -544,7 +544,7 @@ int load_custom_plugins(plugin_callback_async_t pfInitCompletedCB)
 	}
 	else
 	{
-		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table"));
+		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_plugins - Failed to load custom library config table"));
 		rval = EPERS_COMMON;
 	}
 

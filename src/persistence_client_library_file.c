@@ -239,16 +239,16 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             	wantBackup = 0;
                if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => file inconsistent, recovery  N O T  possible!"));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - file inconsistent, recovery  N O T  possible!"));
                   return -1;
                }
             }
             else
             {
             	if(dbContext.configKey.permission == PersistencePermission_ReadOnly)
-            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup => file is READ ONLY!"), DLT_STRING(dbKey));
+            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup - file is READ ONLY!"), DLT_STRING(dbKey));
             	else
-            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup => file is in backup blacklist!"), DLT_STRING(dbKey));
+            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup - file is in backup blacklist!"), DLT_STRING(dbKey));
 
             }
 
@@ -292,13 +292,13 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             {
                if((handle = pclCreateFile(dbPath, cacheStatus)) == -1)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen: error => failed to create file: "), DLT_STRING(dbPath));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - failed to create file: "), DLT_STRING(dbPath));
                }
                else
                {
                	if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
                	{
-               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen: no default data available: "), DLT_STRING(resource_id));
+               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen - no default data available: "), DLT_STRING(resource_id));
                	}
                }
 
@@ -413,13 +413,13 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
             rval = remove(dbPath);
             if(rval == -1)
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove => remove ERROR"), DLT_STRING(strerror(errno)) );
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove - remove()"), DLT_STRING(strerror(errno)) );
             }
          }
          else
          {
             rval = shared_DB;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove ==> no valid database context or resource not a file"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove - no valid database context or resource not a file"));
          }
       }
       else
@@ -536,13 +536,13 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                if(get_file_cache_status(fd) == 1)
                {
                	if(fsync(fd) == -1)
-               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileWriteData: Failed to fsync ==>!"), DLT_STRING(strerror(errno)));
+               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileWriteData - Failed to fsync ==>!"), DLT_STRING(strerror(errno)));
                }
 #endif
             }
             else
             {
-            	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData: Failed to write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
+            	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData - Failed to write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
                size = EPERS_RESOURCE_READ_ONLY;
             }
          }
@@ -599,7 +599,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
                if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => file inconsistent, recovery  N O T  possible!"));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath - file inconsistent, recovery  N O T  possible!"));
                   return -1;
                }
                // we don't need the file handle here
@@ -609,7 +609,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             }
             else
 				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileCreatePath: No Backup => read only OR in blacklist!"), DLT_STRING(dbKey));
+					DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileCreatePath - No Backup, read only OR in blacklist!"), DLT_STRING(dbKey));
 				}
 
             handle = get_persistence_handle_idx();
@@ -644,13 +644,13 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
 								if(handle == -1)
 								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath: error => failed to create file: "), DLT_STRING(*path));
+									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath - failed to create file: "), DLT_STRING(*path));
 								}
 								else
 								{
 									if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
 									{
-										DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileCreatePath => no default data available: "), DLT_STRING(resource_id));
+										DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileCreatePath - no default data available: "), DLT_STRING(resource_id));
 									}
 									close(handle);    // don't need the open file
 								}
@@ -789,7 +789,7 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 		}
 		else
 		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileGetDefaultData => failed to copy file "), DLT_STRING(strerror(errno)));
+			DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileGetDefaultData - failed to copy file "), DLT_STRING(strerror(errno)));
 		}
 
 		close(defaultHandle);

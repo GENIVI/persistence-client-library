@@ -52,7 +52,7 @@ int check_lc_request(unsigned int request, unsigned int requestID)
 
          if(-1 == deliverToMainloop_NM(&data) )
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => failed to write to pipe"), DLT_INT(errno));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request - failed to write to pipe"), DLT_INT(errno));
             rval = NsmErrorStatus_Fail;
          }
          else
@@ -63,7 +63,7 @@ int check_lc_request(unsigned int request, unsigned int requestID)
       }
       default:
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request => Unknown lifecycle message"), DLT_INT(request));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("check_lc_request - Unknown lifecycle message"), DLT_INT(request));
          break;
       }
    }
@@ -90,12 +90,12 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
       if (reply == 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest - DBus No memory"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest - DBus No memory"));
       }
 
       dbus_message_unref(reply);
@@ -109,17 +109,17 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
    if (reply == 0)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest - DBus No memory"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &msgReturn, DBUS_TYPE_INVALID))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest - DBus No memory"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest => DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_lifecycleRequest - DBus No memory"));
    }
 
    dbus_connection_flush(connection);
@@ -144,7 +144,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
       }
       else
       {
-          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkLifecycleMsg -> unknown message "), DLT_STRING(dbus_message_get_interface(message)));
+          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkLifecycleMsg - unknown message "), DLT_STRING(dbus_message_get_interface(message)));
       }
    }
    return result;

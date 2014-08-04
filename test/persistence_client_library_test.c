@@ -59,16 +59,21 @@ char* gRecovChecksum = "608a3b5d";	// generated with http://www.tools4noobs.com/
 
 
 
+void data_setup(void)
+{
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+}
+
 void data_teardown(void)
 {
-   printf("* * * tear down * * *\n");	// nothing
+   pclDeinitLibrary();
 }
 
 
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
-
    return 1;
 }
 
@@ -88,12 +93,8 @@ START_TEST(test_GetData)
    X_TEST_REPORT_TYPE(GOOD);
 
    int ret = 0;
-   unsigned int shutdownReg = (PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL);
-
    unsigned char buffer[READ_SIZE] = {0};
 
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 
 #if 1
    /**
@@ -174,7 +175,7 @@ START_TEST(test_GetData)
    memset(buffer, 0, READ_SIZE);
 
 #endif
-   pclDeinitLibrary();
+
 }
 END_TEST
 
@@ -194,15 +195,12 @@ START_TEST (test_GetDataHandle)
    X_TEST_REPORT_TYPE(GOOD);
 
    int ret = 0, handle = 0, handle2 = 0, handle3 = 0, handle4 = 0, size = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    unsigned char buffer[READ_SIZE] = {0};
    struct tm *locTime;
 
    char sysTimeBuffer[128];
 
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    time_t t = time(0);
 
@@ -221,9 +219,11 @@ START_TEST (test_GetDataHandle)
    x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
    ret = pclKeyHandleReadData(handle, buffer, READ_SIZE);
-   x_fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret-1) == 0, "Buffer not correctly read => 1");
+   //printf("pclKeyHandleReadData: \nsoll: %s \nist : %s => ret: %d | strlen: %d\n", "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", buffer, ret, strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
+   x_fail_unless(strncmp((char*)buffer, "WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\"", ret) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyHandleGetSize(handle);
+   //printf("pclKeyHandleGetSize => size: %d\n", size);
    x_fail_unless(size == strlen("WT_ H A N D L E: +48° 10' 38.95\", +8° 44' 39.06\""));
    // ---------------------------------------------------------------------------------------------
 
@@ -251,7 +251,6 @@ START_TEST (test_GetDataHandle)
 #if 0 // plugin test case
    memset(buffer, 0, READ_SIZE);
    handle4 = pclKeyHandleOpen(0xFF, "language/country_code", 0, 0);
-   printf("H A N D L E: %d\n", handle4);
    x_fail_unless(handle4 >= 0, "Failed to open handle /language/country_code");
 
    ret = pclKeyHandleReadData(handle4, buffer, READ_SIZE);
@@ -286,7 +285,6 @@ START_TEST (test_GetDataHandle)
    ret = pclKeyHandleClose(handle3);
    ret = pclKeyHandleClose(handle4);
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -303,18 +301,14 @@ START_TEST(test_SetData)
    X_TEST_REPORT_REFERENCE("NONE");
    X_TEST_REPORT_DESCRIPTION("Test of set data");
    X_TEST_REPORT_TYPE(GOOD);
-
    int ret = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
    unsigned char buffer[READ_SIZE]  = {0};
    char write1[READ_SIZE] = {0};
    char write2[READ_SIZE] = {0};
    char sysTimeBuffer[256];
 
    struct tm *locTime;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 
 #if 1
    /**
@@ -378,7 +372,7 @@ START_TEST(test_SetData)
     *       ==> used for shared testing
     */
    //printf("Write data to trigger change notification\n");
-   ret = pclKeyWriteData(0x84, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
    x_fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
 
    /**
@@ -388,7 +382,7 @@ START_TEST(test_SetData)
     *       ==> used for shared testing
     */
    //printf("Write data to trigger change notification\n");
-   ret = pclKeyWriteData(0x84, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   ret = pclKeyWriteData(0x20, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
    x_fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
 
    /**
@@ -398,7 +392,7 @@ START_TEST(test_SetData)
     *       ==> used for shared testing
     */
    //printf("Write data to trigger change notification\n");
-   ret = pclKeyWriteData(0x84, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   ret = pclKeyWriteData(0x20, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
    x_fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
    /*******************************************************************************************************************************************/
    /*******************************************************************************************************************************************/
@@ -427,7 +421,6 @@ START_TEST(test_SetData)
    x_fail_unless(ret == strlen(write2), "Wrong read size");
 #endif
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -447,12 +440,9 @@ START_TEST(test_SetDataNoPRCT)
    X_TEST_REPORT_TYPE(GOOD);
 
    int ret = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[READ_SIZE] = {0};
    struct tm *locTime;
 
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    time_t t = time(0);
 
@@ -479,7 +469,6 @@ START_TEST(test_SetDataNoPRCT)
    x_fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
    //printf("read buffer  : %s\n", buffer);
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -497,12 +486,7 @@ START_TEST(test_GetDataSize)
    X_TEST_REPORT_DESCRIPTION("Test of get data size");
    X_TEST_REPORT_TYPE(GOOD);
 
-   int size = 0, ret = 0;
-
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
+   int size = 0;
 #if 1
    /**
     * Logical DB ID: 0xFF with user 3 and seat 2
@@ -519,7 +503,6 @@ START_TEST(test_GetDataSize)
    size = pclKeyGetSize(0x84, "links/last_link", 2, 1);
    x_fail_unless(size == strlen("CACHE_ /last_exit/queens"), "Invalid size");
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -539,10 +522,6 @@ START_TEST(test_DeleteData)
 
    int rval = 0;
    unsigned char buffer[READ_SIZE];
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   rval = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(rval <= 1, "Failed to init PCL");
 #if 1
    // read data from key
    rval = pclKeyReadData(0xFF, "key_70", 1, 2, buffer, READ_SIZE);
@@ -570,7 +549,6 @@ START_TEST(test_DeleteData)
    rval = pclKeyReadData(0xFF, "70", 1, 2, buffer, READ_SIZE);
    x_fail_unless(rval == EPERS_NOKEY, "Read form key 70 works, but should fail");
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -595,6 +573,9 @@ char gBackupInfo[] = {
 };
 
 	const char* backupBlacklist = "/Data/mnt-c/lt-persistence_client_library_test/BackupFileList.info";
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
 
 	if(access(backupBlacklist, F_OK) == -1)
 	{
@@ -631,7 +612,6 @@ START_TEST(test_DataFile)
    int size = 0, ret = 0, avail = 100;
    int writeSize = 16*1024;
    int fdArray[10] = {0};
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    unsigned char buffer[READ_SIZE] = {0};
    unsigned char wBuffer[READ_SIZE] = {0};
@@ -639,8 +619,6 @@ START_TEST(test_DataFile)
    char* writeBuffer;
    char* fileMap = NULL;
 
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    writeBuffer = malloc(writeSize);
 
@@ -716,10 +694,9 @@ START_TEST(test_DataFile)
    // negative test
    size = pclFileGetSize(1024);
    x_fail_unless(size < 0 , "Got size, but should not");
-   /*
+
    ret = pclFileClose(fd);
    x_fail_unless(ret == 0, "Failed to close file");
-*/
 
    // test backup blacklist functionality
    fdArray[0] = pclFileOpen(0xFF, "media/doNotBackupMe.txt_START", 1, 1);
@@ -746,7 +723,6 @@ START_TEST(test_DataFile)
    //
 	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/doNotBackupMe.txt_START~", F_OK);
 	x_fail_unless(avail == -1, "1. Failed backup => backup available, but should not");
-
 
 	avail = access("/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/2/media/doNotBackupMe.txt_START~", F_OK);
 	x_fail_unless(avail == -1, "2. Failed backup => backup available, but should not");
@@ -782,7 +758,6 @@ START_TEST(test_DataFile)
 
    free(writeBuffer);
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -792,6 +767,9 @@ void data_setupBackup(void)
 {
 	int handle = -1;
 	const char* path = "/Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db";
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
 
    handle = open(path, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
    if(write(handle, gWriteBackupTestData, strlen(gWriteBackupTestData)) == -1)
@@ -809,14 +787,10 @@ START_TEST(test_DataFileBackupCreation)
    X_TEST_REPORT_TYPE(GOOD);
 
    int fd_RW = 0, fd_RO = 0, rval = -1, handle = -1;
-   int ret = 0;
    char* wBuffer = " ==> Appended: Test Data - test_DataFileRecovery! ";
    const char* path = "/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_ReadWrite.db~";
    char rBuffer[1024] = {0};
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
 
    fd_RO = pclFileOpen(0xFF, "media/mediaDB_ReadOnly.db", 1, 1);
@@ -854,8 +828,6 @@ START_TEST(test_DataFileBackupCreation)
    (void)pclFileClose(fd_RO);
 
 #endif
-
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -871,6 +843,9 @@ void data_setupRecovery(void)
 	const char* pathToRecover  = "/Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db";
 	const char* pathToBackup   = "/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db~";
 	const char* pathToChecksum = "/Data/mnt-backup/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db~.crc";
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
 
    // create directory, even if exist
    snprintf(createPath, 128, "%s", SOURCE_PATH );
@@ -913,28 +888,19 @@ START_TEST(test_DataFileRecovery)
 	X_TEST_REPORT_TYPE(GOOD);
 
 	int handle = 0;
-	int ret = 0;
 	unsigned char buffer[READ_SIZE] = {0};
-	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-	ret = pclInitLibrary(gTheAppId, shutdownReg);
-	x_fail_unless(ret <= 1, "Failed to init PCL");
-
 
 	handle = pclFileOpen(0xFF, "media/mediaDB_DataRecovery.db", 1, 1);
 	//printf("pclFileOpen => handle: %d\n", handle);
    x_fail_unless(handle != -1, "Could not open file ==> /media/mediaDB_DataRecovery.db");
 
 
-	ret = pclFileReadData(handle, buffer, READ_SIZE);
+	/*ret = */(void)pclFileReadData(handle, buffer, READ_SIZE);
 	//printf(" ** pclFileReadData => ist-buffer : %s | size: %d\n", buffer, ret);
 	//printf(" ** pclFileReadData => soll-buffer: %s | size: %d\n", gWriteRecoveryTestData, strlen(gWriteRecoveryTestData));
 	x_fail_unless(strncmp((char*)buffer, gWriteRecoveryTestData, strlen(gWriteRecoveryTestData)) == 0, "Recovery failed");
 
    (void)pclFileClose(handle);
-
-   pclDeinitLibrary();
-
 }
 END_TEST
 
@@ -955,10 +921,7 @@ START_TEST(test_DataHandle)
    int handleArray[4] = {0};
    int ret = 0;
    unsigned char buffer[READ_SIZE] = {0};
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    // test multiple handles
    handleArray[0] = pclFileOpen(0xFF, "media/mediaDB_write_01.db", 1, 1);
@@ -1033,9 +996,7 @@ START_TEST(test_DataHandle)
 
 	ret = pclFileClose(19);
 	x_fail_unless(ret == -1, "Could close file, but should not!!");
-
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1054,10 +1015,6 @@ START_TEST(test_DataHandleOpen)
    X_TEST_REPORT_TYPE(GOOD);
 
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    // open handles ----------------------------------------------------
    hd1 = pclKeyHandleOpen(0xFF, "posHandle/last_position1", 0, 0);
@@ -1117,7 +1074,6 @@ START_TEST(test_DataHandleOpen)
    ret = pclKeyHandleClose(hd9);
    x_fail_unless(ret != -1, "Failed to close handle!!");
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1133,11 +1089,6 @@ START_TEST(test_Plugin)
 
 	int ret = 0;
 	unsigned char buffer[READ_SIZE]  = {0};
-
-	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 
 #if 1
 
@@ -1195,7 +1146,6 @@ START_TEST(test_Plugin)
    x_fail_unless(ret == 13579, "Failed query custom data size");	// plugin should return 13579
 
 #endif
-	pclDeinitLibrary();
 }
 END_TEST
 
@@ -1214,10 +1164,6 @@ START_TEST(test_ReadDefault)
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
 
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclKeyReadData(0xFF, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
    //printf(" --- test_ReadConfDefault => statusHandle/default01: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("DEFAULT_01!"));
@@ -1233,7 +1179,6 @@ START_TEST(test_ReadDefault)
    x_fail_unless(ret == strlen("DEFAULT_01!"), "Invalid size");
 
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1249,11 +1194,6 @@ START_TEST(test_ReadConfDefault)
 
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
-
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclKeyReadData(0xFF, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
    //printf(" --- test_ReadConfDefault => statusHandle/confdefault01: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("CONF_DEFAULT_01!"));
@@ -1269,7 +1209,6 @@ START_TEST(test_ReadConfDefault)
    x_fail_unless(ret == strlen("CONF_DEFAULT_02!"), "Invalid size");
 
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1288,10 +1227,6 @@ START_TEST(test_GetPath)
    const char* thePath = "/Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_create.db";
    unsigned int pathSize = 0;
 
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   ret = pclInitLibrary(gTheAppId, shutdownReg);
-   x_fail_unless(ret <= 1, "Failed to init PCL");
 #if 1
    ret = pclFileCreatePath(0xFF, "media/mediaDB_create.db", 1, 1, &path, &pathSize);
 
@@ -1300,7 +1235,6 @@ START_TEST(test_GetPath)
 
    pclFileReleasePath(ret);
 #endif
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1369,11 +1303,7 @@ START_TEST(test_NegHandle)
 {
    int handle = -1, ret = 0;
    int negativeHandle = -17;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
    unsigned char buffer[128] = {0};
-
-   (void)pclInitLibrary(gTheAppId, shutdownReg);
 
    handle = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
    x_fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
@@ -1399,8 +1329,6 @@ START_TEST(test_NegHandle)
 
    // close handle
    ret = pclKeyHandleClose(handle);
-
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1409,11 +1337,8 @@ END_TEST
 START_TEST(test_utf8_string)
 {
 	int ret = 0, size = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    const char* utf8StringBuffer = "String °^° Ñ text";
    unsigned char buffer[128] = {0};
-
-   (void)pclInitLibrary(gTheAppId, shutdownReg);
 
    ret = pclKeyReadData(0xFF, "utf8String", 3, 2, buffer, READ_SIZE);
    x_fail_unless(ret == strlen(utf8StringBuffer), "Wrong read size");
@@ -1421,8 +1346,6 @@ START_TEST(test_utf8_string)
 
    size = pclKeyGetSize(0xFF, "utf8String", 3, 2);
    x_fail_unless(size == strlen(utf8StringBuffer), "Invalid size");
-
-   pclDeinitLibrary();
 }
 END_TEST
 
@@ -1430,14 +1353,8 @@ END_TEST
 
 START_TEST(test_Notifications)
 {
-	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-	(void)pclInitLibrary(gTheAppId, shutdownReg);
-
 	pclKeyRegisterNotifyOnChange(0x20, "address/home_address", 1, 1, myChangeCallback);
 	pclKeyUnRegisterNotifyOnChange(0x20, "address/home_address", 1, 1, myChangeCallback);
-
-	pclDeinitLibrary();
 }
 END_TEST
 
@@ -1524,15 +1441,34 @@ static Suite * persistencyClientLib_suite()
    tcase_set_timeout(tc_Notifications, 2);
 
    suite_add_tcase(s, tc_persSetData);
+   tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_persGetData);
-   suite_add_tcase(s, tc_persSetDataNoPRCT);
-   suite_add_tcase(s, tc_persGetDataSize);
-   suite_add_tcase(s, tc_persDeleteData);
+   tcase_add_checked_fixture(tc_persGetData, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_persGetDataHandle);
+   tcase_add_checked_fixture(tc_persGetDataHandle, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_persSetDataNoPRCT);
+   tcase_add_checked_fixture(tc_persSetDataNoPRCT, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_persGetDataSize);
+   tcase_add_checked_fixture(tc_persGetDataSize, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_persDeleteData);
+   tcase_add_checked_fixture(tc_persDeleteData, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_persDataHandle);
+   tcase_add_checked_fixture(tc_persDataHandle, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_persDataHandleOpen);
+   tcase_add_checked_fixture(tc_persDataHandleOpen, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_ReadDefault);
+   tcase_add_checked_fixture(tc_ReadDefault, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_ReadConfDefault);
+   tcase_add_checked_fixture(tc_ReadConfDefault, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_persDataFile);
    tcase_add_checked_fixture(tc_persDataFile, data_setupBlacklist, data_teardown);
@@ -1542,12 +1478,20 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_persDataFileRecovery);
    tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
-
    suite_add_tcase(s, tc_GetPath);
+   tcase_add_checked_fixture(tc_GetPath, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_NegHandle);
+   tcase_add_checked_fixture(tc_NegHandle, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_utf8_string);
+   tcase_add_checked_fixture(tc_utf8_string, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_Notifications);
+   tcase_add_checked_fixture(tc_Notifications, data_setup, data_teardown);
+
    suite_add_tcase(s, tc_Plugin);
+   tcase_add_checked_fixture(tc_Plugin, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_InitDeinit);
 
