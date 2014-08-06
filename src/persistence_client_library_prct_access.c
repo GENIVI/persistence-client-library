@@ -89,6 +89,7 @@ int get_resource_cfg_table_by_idx(int i)
 void invalidate_resource_cfg_table(int i)
 {
    gResource_table[i] = -1;
+   gResourceOpen[i] = 0;
 }
 
 
@@ -125,7 +126,7 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 
          if(gResource_table[arrayIdx] < 0)
          {
-         	gResourceOpen[arrayIdx] = -1;
+         	gResourceOpen[arrayIdx] = 0;
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
          }
          else
