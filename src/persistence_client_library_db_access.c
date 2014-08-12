@@ -598,7 +598,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
       int idx = custom_client_name_to_id(dbPath, 1);
       if(idx < PersCustomLib_LastEntry)
       {
-      	if(gPersCustomFuncs[idx].custom_plugin_get_size == NULL )
+      	if(gPersCustomFuncs[idx].custom_plugin_delete_data == NULL )
 			{
 				if (getCustomLoadingType(idx) == LoadType_OnDemand)
 				{
