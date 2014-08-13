@@ -386,9 +386,8 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
       int idx = custom_client_name_to_id(dbPath, 1);
       if(idx < PersCustomLib_LastEntry )
       {
-      	if(gPersCustomFuncs[idx].custom_plugin_set_data != NULL)
+      	if(gPersCustomFuncs[idx].custom_plugin_set_data == NULL)
       	{
-
 				if (getCustomLoadingType(idx) == LoadType_OnDemand)
 				{
 					// plugin not loaded, try to load the requested plugin
