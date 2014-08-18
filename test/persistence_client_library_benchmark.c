@@ -10,9 +10,9 @@
 ******************************************************************************/
  /**
  * @file           persistence_client_library_benchmark.c
- * @ingroup        Persistence client library test
+ * @ingroup        Persistence client library benchmark
  * @author         Ingo Huerner
- * @brief          Test of persistence client library
+ * @brief          Benchmark of persistence client library
  * @see            
  */
 
@@ -42,20 +42,10 @@
 #define CLOCK_ID  CLOCK_MONOTONIC
 
 
-const char* gAppName = "lt-persistence_client_library_test";
-
-// definition of weekday to generate random string
-char* dayOfWeek[] = { "Sunday   ",
-                      "Monday   ",
-                      "Tuesday  ",
-                      "Wednesday",
-                      "Thursday ",
-                      "Friday   ",
-                      "Saturday "};
+const char* gAppName = "lt-persistence_client_library_benchmark";
 
 
 char sysTimeBuffer[BUFFER_SIZE];
-char sysTimeBuffer2[BUFFER_SIZE];
 
 
 
@@ -145,155 +135,93 @@ void read_benchmark(int numLoops)
    int ret = 0, i = 0;
    long long duration = 0;
    struct timespec readStart, readEnd;
-
+   char key[128] = { 0 };
    unsigned char buffer[BUFFER_SIZE] = {0};
+
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   (void)pclInitLibrary(gAppName , shutdownReg);
+
 
    printf("\nTest  r e a d  performance: %d times\n", numLoops);
 
    clock_gettime(CLOCK_ID, &readStart);
-   ret = pclKeyReadData(0xFF, "pos/last_position_ro_bench",      1, 2, buffer, BUFFER_SIZE);
+   ret = pclKeyReadData(0xFF, "pos/last_position_w_bench",      1, 2, buffer, BUFFER_SIZE);
    clock_gettime(CLOCK_ID, &readEnd);
    duration += getNsDuration(&readStart, &readEnd);
-   printf(" INITIAL read 1 \"pos/last_position_ro_bench\"  => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL), ret);
-
-   duration = 0;
-   memset(buffer, 0, BUFFER_SIZE);
-   for(i=0; i<numLoops; i++)
-   {
-      clock_gettime(CLOCK_ID, &readStart);
-      ret = pclKeyReadData(0xFF, "pos/last_position_ro_bench",      1, 2, buffer, BUFFER_SIZE);
-      clock_gettime(CLOCK_ID, &readEnd);
-
-      duration += getNsDuration(&readStart, &readEnd);
-   }
-   printf(" Further read 1 \"pos/last_position_ro_bench\"  => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL/numLoops), ret);
+   printf(" INITIAL read 1 \"pos/last_position_w_bench\"  => %f ms for [%d Kilobytes item]\n", (double)((double)duration/NANO2MIL), ret/1024);
 
 
    duration = 0;
    memset(buffer, 0, BUFFER_SIZE);
    for(i=0; i<numLoops; i++)
    {
+      snprintf(key, 128, "pos/last_position_w_bench%d",i);
       clock_gettime(CLOCK_ID, &readStart);
-      ret = pclKeyReadData(0xFF, "pos/last_position_ro_bench",      1, 2, buffer, BUFFER_SIZE);
+      ret = pclKeyReadData(0xFF, key,      1, 2, buffer, BUFFER_SIZE);
       clock_gettime(CLOCK_ID, &readEnd);
 
       duration += getNsDuration(&readStart, &readEnd);
    }
-   printf(" Further read 1 \"pos/last_position_ro_bench\"  => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL)/numLoops, ret);
 
+  (void)pclDeinitLibrary();
 
-   duration = 0;
-   memset(buffer, 0, BUFFER_SIZE);
-
-      clock_gettime(CLOCK_ID, &readStart);
-      ret = pclKeyReadData(0xFF, "pos/last_position_ro_bench2",      1, 2, buffer, BUFFER_SIZE);
-      clock_gettime(CLOCK_ID, &readEnd);
-
-   duration = getNsDuration(&readStart, &readEnd);
-   printf(" INITIAL read 2 \"pos/last_position_ro_bench2\" => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL), ret);
-
-
-   duration = 0;
-   memset(buffer, 0, BUFFER_SIZE);
-   for(i=0; i<numLoops; i++)
-   {
-      clock_gettime(CLOCK_ID, &readStart);
-      ret = pclKeyReadData(0xFF, "pos/last_position_ro_bench2",      1, 2, buffer, BUFFER_SIZE);
-      clock_gettime(CLOCK_ID, &readEnd);
-
-      duration += getNsDuration(&readStart, &readEnd);
-   }
-   printf(" Further read 2 \"pos/last_position_ro_bench2\" => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL)/numLoops, ret);
-
-
-   duration = 0;
-   memset(buffer, 0, BUFFER_SIZE);
-   for(i=0; i<numLoops; i++)
-   {
-      clock_gettime(CLOCK_ID, &readStart);
-      ret = pclKeyReadData(0xFF, "pos/last_position_ro_bench",      1, 2, buffer, BUFFER_SIZE);
-      clock_gettime(CLOCK_ID, &readEnd);
-
-      duration += getNsDuration(&readStart, &readEnd);
-   }
-   printf(" Further read 1 \"pos/last_position_ro_bench\"  => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL)/numLoops, ret);
-
-
-#if 0
-   printf(" Size [pos/last_position_ro_bench] : %d bytes\n", pclKeyGetSize(0xFF, "pos/last_position_ro_bench",  1, 2));
-   printf(" Size [pos/last_position_ro_bench2]: %d bytes\n", pclKeyGetSize(0xFF, "pos/last_position_ro_bench2", 1, 2));
-#endif
-
+   printf(" Further read \"pos/last_position_w_bench\"  => %f ms for [%d Kilobytes item]\n", (double)((double)duration/NANO2MIL/numLoops), ret/1024);
 }
 
 
 
 void write_benchmark(int numLoops)
 {
-   int ret = 0, ret2 = 0, i = 0;
+   int ret = 0, i = 0;
    long long duration = 0;
+   long long overallDuration = 0;
+
    struct timespec writeStart, writeEnd;
-   unsigned char buffer[BUFFER_SIZE] = {0};
+   //unsigned char buffer[BUFFER_SIZE] = {0};
+   char key[128] = { 0 };
+
+   //unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   //(void)pclInitLibrary(gAppName , shutdownReg);
 
    printf("\nTest  w r i t e  performance: %d times\n", numLoops);
 
    clock_gettime(CLOCK_ID, &writeStart);
-   ret = pclKeyWriteData(0xFF, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+   ret = pclKeyWriteData(0xFF, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, 1024);
    clock_gettime(CLOCK_ID, &writeEnd);
    duration = getNsDuration(&writeStart, &writeEnd);
-   printf(" Initial Write 1 => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL), ret);
+   printf("Initial Write => %f ms [%d Kilobytes]\n", (double)((double)duration/NANO2MIL), ret/1024);
 
+   overallDuration += duration;
    duration = 0;
+
    for(i=0; i<numLoops; i++)
    {
+      snprintf(key, 128, "pos/last_position_w_bench%d",i);
+
       clock_gettime(CLOCK_ID, &writeStart);
-      ret = pclKeyWriteData(0xFF, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+      //ret = pclKeyWriteData(0xFF, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+      ret = pclKeyWriteData(0xFF, key, 1, 2, (unsigned char*)sysTimeBuffer, 1024);
       clock_gettime(CLOCK_ID, &writeEnd);
 
       duration += getNsDuration(&writeStart, &writeEnd);
    }
-   printf(" Further Write 1 => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL)/numLoops, ret);
+   printf("Further Writes => %f ms for [%d Kilobytes item]\n", (double)((double)duration/NANO2MIL)/numLoops, ret/1024);
 
-
+   overallDuration += duration;
    duration = 0;
-   for(i=0; i<numLoops; i++)
-   {
-      clock_gettime(CLOCK_ID, &writeStart);
-      ret2 = pclKeyWriteData(0xFF, "pos/last_position_w_bench2", 1, 2, (unsigned char*)sysTimeBuffer2, strlen(sysTimeBuffer2));
-      clock_gettime(CLOCK_ID, &writeEnd);
 
-      duration += getNsDuration(&writeStart, &writeEnd);
-   }
-   printf(" Initial Write 2 => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL)/numLoops, ret2);
-
-
-   duration = 0;
-   for(i=0; i<numLoops; i++)
-   {
-      clock_gettime(CLOCK_ID, &writeStart);
-      ret2 = pclKeyWriteData(0xFF, "pos/last_position_w_bench2", 1, 2, (unsigned char*)sysTimeBuffer2, strlen(sysTimeBuffer2));
-      clock_gettime(CLOCK_ID, &writeEnd);
-
-      duration += getNsDuration(&writeStart, &writeEnd);
-   }
-   printf(" Further Write 2 => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL)/numLoops, ret2);
-
-
-#if 0
-   printf(" Size [pos/last_position_w_bench]: %d\n", ret);
-   printf(" Size [pos/last_position_w_bench]: %d\n", ret2);
-#endif
-
+   printf("\nTest  deinit performance: %d times\n", numLoops);
    clock_gettime(CLOCK_ID, &writeStart);
-   ret = pclKeyReadData(0xFF, "pos/last_position_w_bench2",      1, 2, buffer, BUFFER_SIZE);
+   (void)pclDeinitLibrary();
    clock_gettime(CLOCK_ID, &writeEnd);
-   duration = getNsDuration(&writeStart, &writeEnd);
-   printf(" Write verification, pclKeyReadData => %f ms [%d bytes]\n", (double)((double)duration/NANO2MIL), ret);
+   duration += getNsDuration(&writeStart, &writeEnd);
 
+   overallDuration += duration;
 
-#if 0
-   printf(" Buffer [pos/last_position_w_bench2]:\n %s \n\n", buffer);
-#endif
+   printf("Deinit => %f ms for \n", (double)((double)duration/NANO2MIL));
+
+   printf("Overall duration for write and deinit => %f ms for [%d bytes]\n", (double)((double)overallDuration/NANO2MIL),  numLoops * ret);
 }
 
 
@@ -321,7 +249,7 @@ void handle_benchmark(int numLoops)
    printf(" Open 1 => %f ms\n", (double)((double)duration/NANO2MIL));
 
    duration = 0;
-   for(i=0; i<2; i++)
+   for(i=0; i<1; i++)
    {
       clock_gettime(CLOCK_ID, &openStart);
       hdl2 = pclKeyHandleOpen(0xFF, "handlePos/last_position_ro_bench2", 1, 2);
@@ -333,17 +261,12 @@ void handle_benchmark(int numLoops)
    }
    printf(" Open 2 => %f ms\n", (double)((double)duration/NANO2MIL));
 
-   /*
-   hdl  = pclKeyHandleOpen(0xFF, "handlePos/last_position_ro_bench", 1, 2);
-   hdl2 = pclKeyHandleOpen(0xFF, "handlePos/last_position_ro_bench2", 1, 2);
-   */
-
-
    duration = 0;
    for(i=0; i<numLoops; i++)
    {
       clock_gettime(CLOCK_ID, &openStart);
       ret = pclKeyHandleReadData(hdl, buffer, BUFFER_SIZE);
+      //printf("pclKeyHandleReadData retval: %d \n ", ret);
       clock_gettime(CLOCK_ID, &openEnd);
 
       duration += getNsDuration(&openStart, &openEnd);
@@ -432,7 +355,7 @@ int main(int argc, char *argv[])
 
 #if 1
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   int numLoops = 500;		// number of default loops
+   int numLoops = 1024;		// number of default loops
    long long resolution = 0;
 
    struct timespec clockRes;
@@ -446,7 +369,6 @@ int main(int argc, char *argv[])
 #endif
 
 
-   struct tm *locTime;
 
    int opt;
 
@@ -462,16 +384,8 @@ int main(int argc, char *argv[])
 
 	printf("Number of loops: %d\n", numLoops);
 
-   time_t t = time(0);
-   locTime = localtime(&t);
-   snprintf(sysTimeBuffer, BUFFER_SIZE, "The benchmark string to do write benchmarking: \"%s %.2d.%.2d.%d - %d:%.2d:%.2d Uhr\" [time and date]", dayOfWeek[locTime->tm_wday],
-                                         locTime->tm_mday, (locTime->tm_mon)+1, (locTime->tm_year+1900),
-                                         locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
-   snprintf(sysTimeBuffer2, BUFFER_SIZE, "The benchmark string to do write benchmarking: \"%s %.2d.%.2d.%d - %d:%.2d:%.2d Uhr\" [time and date]  ==> The benchmark string to do write benchmarking: The quick brown fox jumps over the lazy dog !!!",
-                                         dayOfWeek[locTime->tm_wday],
-                                         locTime->tm_mday, (locTime->tm_mon)+1, (locTime->tm_year+1900),
-                                         locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
+   snprintf(sysTimeBuffer, BUFFER_SIZE, "zu5CXT2WbxCBqnUk0Y4N52H5PRGgVRbNhoY64sZQkRrRw8b6rpBA23Cuf4kxw5PMyo7aX3zdGACf9Z96A5O5MNimlOmmhu6EHDfSVNkA7NLlPX97eh9SOIXiJqQYr85F9eQdGDkbZ9HANfGxekptxeH04EOP2jukxUqKnh2nj33x7TtmMnjfqXFWg0RZ3cRHX1kAQxxr2hUo8uJvNwgooXicXp5L4OWLxIBEkG3yGESQ4dFsy5uoBrZDi78EV7l9dqc7ahA4b8g0TcfYEfiynyRcMPEvKwq4Lvn8T8X001DLu3ig8QAQlzVDF6LTfvvs7hrMCwVKwvtjZBE9UrJ2X8nijX5Ncy8wQ9BkzFI9vqhTt2NOtGCZ808iWPMvamRi1acEPxJI8kIRN8ArIRUidPMTDCWKA97Ffz70zJt5YDaXLNgodKC6dgA5zc99ZwjyRTvXePMQofsQuXLuxFYcamOxtXrRsafjA8CC9Kiu9jOS2tdyYQnoV9oDjJlsvfPqg667oBaGe9b9iyHfqWM42xHVoYj7YERvUiliOB0KYEFM7el8AWc2YnEHq5i0jKhoYHdKll7qqEgoJdvYkczExQ2W85AX8jyFW5XVCeWUTQSYkTnipLI9D27jXw2lYGhh3rlILiM1SFBTYCGflXNfaTsHVAjjda4xpEd6t7JM5E96KkLBBdFWbb2H3wB4qJPgbu2al3X8SUAN4hQ50cUFr1yAFfoGSVYghMShqN5VNUo4s6xXo2FC0jYmeiHQd4dYXUCA31XdruG2f8CPA07ifMveiQl7yEqp4rmHUqzIA5D6SV3IqfYs0Vw8FgBmJZKo9a4JnZjzwlmqa5illZd74vZD0D5iJd4X7gBs3mokEMKN1gMHVIiVQ348sFQuyly2ZKLNCGAglRQAfvHTQSiJiNT7CUJt9OHpUbPyVyaN2gd8LN3b3EAwbLGTS21cI6kSsDcleg9iCmP7VMVhc2Aqu76nKAjDaB7JeRjTSeJ302UwaXWYecN24LNiJKBHXU9q");
 
 
    /// debug log and trace (DLT) setup
@@ -487,21 +401,19 @@ int main(int argc, char *argv[])
    resolution = ((clockRes.tv_sec * SECONDS2NANO) + clockRes.tv_nsec);
    printf("Clock resolution  => %f ms\n\n", (double)((double)resolution/NANO2MIL));
 
-   init_benchmark(numLoops);
 
 
-   // init library
    (void)pclInitLibrary(gAppName , shutdownReg);
+
+   //handle_benchmark(numLoops);
+
+   init_benchmark(numLoops);
 
    read_benchmark(numLoops);
 
+   //pcldeinit is done inside write_benchmark
    write_benchmark(numLoops);
 
-   handle_benchmark(numLoops);
-
-
-   // deinit library
-   pclDeinitLibrary();
 
 #else
 
@@ -536,3 +448,4 @@ int main(int argc, char *argv[])
 
    return ret;
 }
+
