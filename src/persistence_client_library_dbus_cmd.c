@@ -186,6 +186,8 @@ void process_prepare_shutdown(int complete)
 {
    int i = 0, rval = 0;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("process_prepare_shutdown - writing down all changed data and closing all handles"));
+
    // block write
    pers_lock_access();
 

@@ -209,6 +209,8 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
    if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
    {
+   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("checkPersAdminMsg - Received dbus message: "), DLT_STRING(dbus_message_get_member(message)));
+
       if((0==strcmp(gDbusPersAdminConsMsg, dbus_message_get_member(message))))
       {
          result = msg_persAdminRequest(connection, message);

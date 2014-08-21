@@ -617,6 +617,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                  {
                                     pthread_mutex_lock(&gMainCondMtx);
                                     //printf("--- *** --- Receive => mainloop => cmd: %d | string: %s | size: %d\n\n", readData.message.cmd, readData.message.string, ret);
+                                    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
                                     switch (readData.message.cmd)
                                     {
                                        case CMD_PAS_BLOCK_AND_WRITE_BACK:

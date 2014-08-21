@@ -1284,12 +1284,12 @@ START_TEST(test_InitDeinit)
    x_fail_unless(rval != EPERS_SHUTDOWN_NO_PERMIT, "Lifecycle set NOT allowed, but should");
 
 
-   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
-   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
-   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
-   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
-   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
-   rval = pclLifecycleSet(PCL_SHUTDOWN_CANEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
+   rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
    //EPERS_COMMON
 
    pclDeinitLibrary();

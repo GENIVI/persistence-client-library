@@ -167,7 +167,7 @@ int pclDeinitLibrary(void)
    	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
-                                         DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
+                                            DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
 
       // unregister for lifecycle dbus messages
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
@@ -226,6 +226,8 @@ int pclDeinitLibrary(void)
    }
    else
    {
+   	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
+   	                                      DLT_STRING("- NOT INITIALIZED: "));
       rval = EPERS_NOT_INITIALIZED;
    }
    return rval;
@@ -241,10 +243,12 @@ int pclLifecycleSet(int shutdown)
 	{
 		if(shutdown == PCL_SHUTDOWN)
 		{
+			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclLifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
 			process_prepare_shutdown(Shutdown_Partial);	// close all db's and fd's and block access
 		}
-		else if(shutdown == PCL_SHUTDOWN_CANEL)
+		else if(shutdown == PCL_SHUTDOWN_CANCEL)
 		{
+			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclLifecycleSet - PCL_SHUTDOWN_CANCEL -"), DLT_STRING(gAppId), DLT_STRING(" Cancel Counter - "), DLT_INT(gCancelCounter));
 			if(gCancelCounter < Shutdown_MaxCount)
 			{
 				pers_unlock_access();

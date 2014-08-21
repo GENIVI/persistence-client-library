@@ -108,9 +108,38 @@ extern "C" {
  * \{
  */
 
-#define PCL_SHUTDOWN_TYPE_FAST   2     /// Client registered for fast lifecycle shutdown
-#define PCL_SHUTDOWN_TYPE_NORMAL 1     /// Client registered for normal lifecycle shutdown
-#define PCL_SHUTDOWN_TYPE_NONE   0     /// Client does not register to lifecycle shutdown
+
+/**
+ * @brief PCL registered for fast lifecycle shutdown
+ *        A lifecycle register message will be sent to the Node State Manager (NSM).
+ *        When the system performs a fast shutdown the PCL receives this shutdown notification
+ *        from the NSM, and will write back changed data to non volatile memory device.
+ */
+#define PCL_SHUTDOWN_TYPE_FAST   2
+
+/**
+ * @brief PCL registered for normal lifecycle shutdown
+ *        A lifecycle register message will be sent to the Node State Manager (NSM).
+ *        When the system performs a normal shutdown the PCL receives this shutdown notification
+ *        from the NSM, and will write back changed data to non volatile memory device.
+ */
+#define PCL_SHUTDOWN_TYPE_NORMAL 1
+
+/**
+ * @brief PCL does NOT register to lifecycle shutdown
+ *        The PCL does NOT receive any shutdown notification form the Node State Manager (NSM).
+ *        The application itself is responsible to get shutdown information.
+ *        To write back changed data to non volatile memory devicem, the application can use the
+ *        function ::pclLifecycleSet with the parameter ::PCL_SHUTDOWN.
+ *        PCL writes back the data, and blocks any further access to persistent data.
+ *        In order to access data again (e.g. using ::pclKeyWriteData) the application
+ *        needs to call ::pclLifecycleSet again with the parameter ::PCL_SHUTDOWN_CANCEL.
+ *        There is a limitation for calling ::pclLifecycleSet with the parameter ::PCL_SHUTDOWN_CANCEL.
+ *        It can be called only for a limited number, which is defined in ::Shutdown_MaxCount.
+ *
+ * @attention PCL does not receive any shutdown notifications from NSM.
+ */
+#define PCL_SHUTDOWN_TYPE_NONE   0
 /** \} */
 
 
@@ -120,8 +149,10 @@ extern "C" {
  */
 
 
-#define PCL_SHUTDOWN             1		/// trigger shutdown
-#define PCL_SHUTDOWN_CANEL       0		/// cancel shutdown
+/// trigger shutdown
+#define PCL_SHUTDOWN              1
+/// cancel shutdown
+#define PCL_SHUTDOWN_CANCEL       0
 
 
 /**
@@ -145,6 +176,13 @@ int pclInitLibrary(const char* appname, int shutdownMode);
  * @brief deinitialize client library
  *        This function will be called during the shutdown phase of the process which uses the PCL.
  *
+ * @attention If this function will be called the PCL is NOT operational anymore.
+ *            The function ::pclInitLibrary needs to be called to make PCL operational again.
+ *            This function should only be called at the end of the lifecycle.
+ *            It is not recommended to be called during a lifecycle,
+ *            if it's needed your should know what you do and why exactly you need to do this in
+ *            this way.
+ *
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  *
  * @return positive value: success;
@@ -163,8 +201,10 @@ int pclDeinitLibrary(void);
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  * @attention In order to prevent misuse of this function the cancel shutdown request
  *            can only be called 3 times per lifecycle.
- *            If this function has been called by an application more then 3 times the application
- *            will not be able to store it's data anymore during the current lifecycle.
+ *            The function called by an application with the parameter ::PCL_SHUTDOWN_CANCEL
+ *            is limited to a value defined in ::Shutdown_MaxCount.
+ *            When an application has reached this limit, it will not be able to store
+ *            it's data anymore during the current lifecycle.
  *            The application isn't fully operable in this lifecycle anymore.
  *            In the next lifecycle the application can store data again until the limit above
  *            has been reached.
