@@ -30,9 +30,9 @@
 
 #include <sys/mount.h>
 
-#include <persistence_client_library.h>
-#include <persistence_client_library_key.h>
-#include <persistence_client_library_file.h>
+#include "../include/persistence_client_library.h"
+#include "../include/persistence_client_library_key.h"
+#include "../include/persistence_client_library_file.h"
 
 
 #define LC_CNT_START 28
