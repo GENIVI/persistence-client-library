@@ -13,21 +13,35 @@
  * @ingroup        Persistence client library test
  * @author         Ingo Huerner
  * @brief          Persistence Power Fail Safe Test
+ *                 For this test a computer controlled lab power supply will be used.
+ *                 The persistence_pfs_test application sends a command to the power supply
+ *                 using the serial console to switch power off for a couple of seconds to
+ *                 reboot of the system and simulate unexpected power cut in order to proof
+ *                 power fail save of persistence.
+ *
+ * @attention      To run the test the following things need to do to setup the target:
+ *                 There is a script to start this test binary.
+ *                 In otder to start this script on startup, copy the systemd service file "persistenc-pfs-test-start.service"
+ *                 to /lib/systemd/system/.
+ *                 Create also a link from /lib/systemd/system/multi-user.target.wants
+ *                 to the persistence-pfs-test-start.service in /lib/systemd/system/
+ *
  * @see
  */
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/mount.h>
 
 #include "../include/persistence_client_library.h"
@@ -41,11 +55,10 @@
 
 DLT_DECLARE_CONTEXT(gPFSDLTContext);
 
+
 static int gLifecycleCounter = 0;
 
 static const char* gTestInProgressFlag = "/Data/mnt-c/persistence_pfst_test_in_progress";
-
-
 
 static const char* gDefaultKeyValueResName[] =
 {
@@ -137,6 +150,67 @@ int setup_test_data()
 
 
 
+int setup_serial_con(const char* ttyConsole)
+{
+	struct termios tty;
+	int rval = -1;
+
+	memset (&tty, 0, sizeof(tty));
+	tty.c_iflag = IGNPAR;
+	tty.c_oflag = 0;
+	tty.c_cflag = CS8 | CREAD | CLOCAL;	// 8n1, see termios.h for more information
+	tty.c_lflag = 0;
+	tty.c_cc[VMIN] = 1;
+	tty.c_cc[VTIME] = 5;
+
+	printf("Opening connection to %s\n", ttyConsole);
+	rval = open(ttyConsole, O_RDWR  | O_NOCTTY | O_SYNC);
+	if(rval != -1)
+	{
+		if (cfsetospeed (&tty, B115200) == -1)		// 115200 baud
+		{
+		  printf("Failed to set cfsetospeed\n");
+		}
+		if(cfsetispeed (&tty, B115200))				// 115200 baud
+		{
+		  printf("Failed to set cfsetispeed\n");
+		}
+
+		tcsetattr(rval, TCSANOW, &tty);
+
+		printf("tty fd: %d\n", rval);
+	}
+	else
+	{
+		printf("Failed to open console: %s - %s\n", ttyConsole, strerror(errno));
+	}
+
+	return rval;
+}
+
+
+
+/// after this function has been called the system reboots
+void send_serial_shutdown_cmd(int fd)
+{
+	// command for the computer controller power supply to power off and restart after 2.5 second again
+	static const char data[] = { "USET 12.000; ISET 10.000; OUTPUT OFF; WAIT 0.500; OUTPUT ON\n" };
+
+	if(write(fd, data, sizeof(data)) != -1)
+	{
+		fdatasync(fd);
+		printf("Data: %s\n", data);
+	}
+	else
+	{
+		printf("Failed to write to tty - size: %d - error: %s\n", sizeof(data), strerror(errno));
+	}
+
+	close(fd);
+}
+
+
+
 int update_test_progress_flag(const char* filename, int *counter)
 {
    int fd = -1, rval = 0;
@@ -214,6 +288,18 @@ void update_test_data(char* buffer, int lc_counter, int write_counter)
 }
 
 
+void* power_supply_shutdown(void* dataPtr)
+{
+	int fd = (int)(dataPtr);
+	printf("Shutdown thread started fd: %d\n", fd);
+
+	sleep(5);
+	send_serial_shutdown_cmd(fd);
+	printf("    ByBy\n");
+
+	return NULL;
+}
+
 
 int get_lifecycle_count(char* buf)
 {
@@ -229,15 +315,35 @@ int get_write_count(char* buf)
 int main(int argc, char *argv[])
 {
 	int rVal = EXIT_SUCCESS;
+	int ttyfd = -1;
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+	pthread_t gMainLoopThread;
+	struct sched_param param;
+	pthread_attr_t tattr;
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("PFS","power fail safe test");
 
    DLT_REGISTER_CONTEXT(gPFSDLTContext,"PFS","Context for PCL PFS test logging");
 
+   if (argc < 2) {
+       printf ("Please start with %s /dev/ttyS1 (for example)\n", argv[0]);
+       return EXIT_SUCCESS;
+   }
+
+   // setup the serial connection to the power supply
+   ttyfd = setup_serial_con(argv[1]);
+   if(ttyfd == -1)
+   {
+   	printf("Failed to setup serial console: %s\n", argv[0]);
+      return EXIT_SUCCESS;
+   }
+
+#if 0
+   // mount persistence partitions
 	if(-1 != mount_persistence("/dev/sdb") )
 	{
+#endif
 		int numLoops = 10000000, opt = 0;
 
 		while ((opt = getopt(argc, argv, "l:")) != -1)
@@ -261,20 +367,34 @@ int main(int argc, char *argv[])
 		DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("PFS test - Lifecycle counter:"), DLT_INT(gLifecycleCounter),
 				                                DLT_STRING("- number of write loops:"), DLT_INT(numLoops));
 
+		pthread_attr_init(&tattr);
+		param.sched_priority = 49;
+		pthread_attr_setschedparam(&tattr, &param);
+
+		 // create here the dbus connection and pass to main loop
+		if(pthread_create(&gMainLoopThread, &tattr, power_supply_shutdown, (void*)ttyfd) == -1)
+		{
+		  DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop )") );
+		  return -1;
+		}
+
 		pclInitLibrary("pfs_test", shutdownReg);		// register to persistence client library
 
 		// verify the data form previous lifecycle
-		verify_data_key_value();
+		//erify_data_key_value();
 		//verify_data_file();
 
 		// write data
-		write_data_key_value(numLoops);
+		//write_data_key_value(numLoops);
 		//write_data_file(numLoops);
 
 
 		pclDeinitLibrary();									// unregister from persistence client library
 
+
+#if 0
 		unmount_persistence();
+
 	}
 	else
 	{
@@ -282,6 +402,11 @@ int main(int argc, char *argv[])
 		printf("Mount Failed\n");
 		rVal = EXIT_FAILURE;
 	}
+#endif
+
+	printf("press a key to end test\n");
+	getchar();
+	printf("End of PFS app\n");
 
    // unregister debug log and trace
    DLT_UNREGISTER_APP();

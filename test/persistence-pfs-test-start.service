@@ -1,0 +1,12 @@
+[Unit]
+Description=Persistence Power Fails Save test starter script
+After=dbus.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pers_pfs_test_starter.sh
+StandardOutput=syslog+console
+StandardError=syslog+console
+
+[Install]
+WantedBy=multi-user.target
