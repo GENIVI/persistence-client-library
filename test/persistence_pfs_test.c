@@ -113,6 +113,7 @@ static const char* gDefaultFileResNames[] =
 };
 
 
+pthread_mutex_t gPowerDownMtx   = PTHREAD_MUTEX_INITIALIZER;
 
 // forward declaration
 
@@ -122,7 +123,7 @@ void verify_data_file();
 
 
 /// write data until power off occurs
-void write_data_key_value(int numLoops);
+void write_data_key_value(int numLoops, int doCorruptData);
 void write_data_file(int numLoops);
 int mount_persistence(const char* deviceName);
 void unmount_persistence();
@@ -293,9 +294,10 @@ void* power_supply_shutdown(void* dataPtr)
 	int fd = (int)(dataPtr);
 	printf("Shutdown thread started fd: %d\n", fd);
 
-	sleep(5);
+	pthread_mutex_lock(&gPowerDownMtx);
+	printf("   Send power Off command!!!!\n");
 	send_serial_shutdown_cmd(fd);
-	printf("    ByBy\n");
+	printf("   Cut Power OFF => ByBy\n");
 
 	return NULL;
 }
@@ -339,12 +341,14 @@ int main(int argc, char *argv[])
       return EXIT_SUCCESS;
    }
 
+   pthread_mutex_lock(&gPowerDownMtx);		// lock power down mutex and release when powser should be cut off
+
 #if 0
    // mount persistence partitions
 	if(-1 != mount_persistence("/dev/sdb") )
 	{
 #endif
-		int numLoops = 10000000, opt = 0;
+		int numLoops = 1000000, opt = 0;
 
 		while ((opt = getopt(argc, argv, "l:")) != -1)
 		{
@@ -366,8 +370,7 @@ int main(int argc, char *argv[])
 		printf("PFS test - Lifecycle counter: %d - number of test loops: %d\n", gLifecycleCounter, numLoops);
 		DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("PFS test - Lifecycle counter:"), DLT_INT(gLifecycleCounter),
 				                                DLT_STRING("- number of write loops:"), DLT_INT(numLoops));
-
-		pthread_attr_init(&tattr);
+	   pthread_attr_init(&tattr);
 		param.sched_priority = 49;
 		pthread_attr_setschedparam(&tattr, &param);
 
@@ -381,14 +384,16 @@ int main(int argc, char *argv[])
 		pclInitLibrary("pfs_test", shutdownReg);		// register to persistence client library
 
 		// verify the data form previous lifecycle
-		//erify_data_key_value();
+		verify_data_key_value();
 		//verify_data_file();
 
 		// write data
-		//write_data_key_value(numLoops);
+		write_data_key_value(numLoops, gLifecycleCounter%2);	// on odd lifecycle numbers, corrupt db data, otherwise corrupt db header
 		//write_data_file(numLoops);
 
 
+		pthread_mutex_unlock(&gPowerDownMtx);
+		printf("Deinit library\n");
 		pclDeinitLibrary();									// unregister from persistence client library
 
 
@@ -404,8 +409,6 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	printf("press a key to end test\n");
-	getchar();
 	printf("End of PFS app\n");
 
    // unregister debug log and trace
@@ -461,10 +464,19 @@ void verify_data_key_value()
 }
 
 
-void write_data_key_value(int numLoops)
+void write_data_key_value(int numLoops, int doCorruptData)
 {
 	int i=0, k=0, ret = 0;
 
+	if(doCorruptData == 1)
+	{
+		printf("Corrupt Data: numLoops: %d!!!!\n", numLoops);
+	}
+	else
+	{
+		printf("Do  N O T  corrupt data!!!\n");
+	}
+#if 1
 	for(k=0; k<numLoops; k++)
 	{
 		// write key/value data
@@ -476,6 +488,12 @@ void write_data_key_value(int numLoops)
 			strncpy(buffer, gDefaultKeyValueTestData[i], 64);
 			update_test_data(buffer, gLifecycleCounter, k);
 
+			if((k == (int)numLoops-(numLoops/2)) && doCorruptData == 1)
+			{
+				// unlock mutex
+				printf("Now POWER OFF => k: %d \n", k);
+				pthread_mutex_unlock(&gPowerDownMtx);
+			}
 			ret = pclKeyWriteData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, strlen(buffer));
 			if(ret < 0)
 			{
@@ -486,6 +504,9 @@ void write_data_key_value(int numLoops)
 			//printf("write data - key/value - \"%s\"\n", buffer);
 		}
 	}	//num writes per lifecycle
+
+	printf("End of Test\n");
+#endif
 }
 
 

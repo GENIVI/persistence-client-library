@@ -3,9 +3,9 @@
 # Use this script to start the persistence power fail save test after system restart
 
 # HOW TO USE
-# to start this script on startup, copy the systemd service file persistenc-pfs-test-start.service to /lib/systemd/system/
+# to start this script on startup, copy the systemd service file persistence-pfs-test-start.service to /lib/systemd/system/
 # Create also a link from /lib/systemd/system/multi-user.target.wants 
-# to the persistenc-pfs-test-start.service in /lib/systemd/system/
+# to the persistence-pfs-test-start.service in /lib/systemd/system/
 
 echo "Starting persistence power fail save test"
 
