@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
 {
 	int rVal = EXIT_SUCCESS;
 	int ttyfd = -1;
+	char ttydevice[24] = {0};
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 	pthread_t gMainLoopThread;
 	struct sched_param param;
@@ -329,19 +330,15 @@ int main(int argc, char *argv[])
    DLT_REGISTER_CONTEXT(gPFSDLTContext,"PFS","Context for PCL PFS test logging");
 
    if (argc < 2) {
-       printf ("Please start with %s /dev/ttyS1 (for example)\n", argv[0]);
+       printf ("Please start with %s /dev/ttyS1 or /dev/ttyUSB0 (for example)\n", argv[0]);
        return EXIT_SUCCESS;
    }
 
-   // setup the serial connection to the power supply
-   ttyfd = setup_serial_con(argv[1]);
-   if(ttyfd == -1)
-   {
-   	printf("Failed to setup serial console: %s\n", argv[0]);
-      return EXIT_SUCCESS;
-   }
-
    pthread_mutex_lock(&gPowerDownMtx);		// lock power down mutex and release when powser should be cut off
+
+
+   // default serial console
+   strncpy(ttydevice, "/dev/ttyUSB0", 24);
 
 #if 0
    // mount persistence partitions
@@ -350,15 +347,27 @@ int main(int argc, char *argv[])
 #endif
 		int numLoops = 1000000, opt = 0;
 
-		while ((opt = getopt(argc, argv, "l:")) != -1)
+		while ((opt = getopt(argc, argv, "l:s:")) != -1)
 		{
 			switch (opt)
 			{
 				case 'l':
 					numLoops = atoi(optarg);
 					break;
+				case 's':
+				   memset(ttydevice, 0, 24);
+				   strncpy(ttydevice, optarg, 24);
+				   break;
 			  }
 		 }
+
+		// setup the serial connection to the power supply
+		ttyfd = setup_serial_con(ttydevice);
+		if(ttyfd == -1)
+      {
+         printf("Failed to setup serial console: \"%s\"\n", ttydevice);
+         return EXIT_SUCCESS;
+      }
 
 		if(update_test_progress_flag(gTestInProgressFlag, &gLifecycleCounter) == 0)
 		{

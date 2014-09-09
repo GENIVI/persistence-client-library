@@ -39,7 +39,7 @@ else
   numLoops=10000000
 fi
   
-/usr/bin/persistence_pfs_test "-l $numLoops"
+/usr/bin/persistence_pfs_test "-l $numLoops" "-s/dev/ttyUSB0"
 
 # get the return value of the test app
 rval=$?
@@ -52,4 +52,4 @@ if [ "$rval" == 1 ]
 fi
       
 
-echo "End of persistence power fail save test" 
+echo "End of persistence power fail save test"
