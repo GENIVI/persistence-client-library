@@ -49,8 +49,9 @@
 #include "../include/persistence_client_library_file.h"
 
 
-#define LC_CNT_START 28
-#define WR_CNT_START 35
+#define LC_CNT_START 36
+#define WR_CNT_START 43
+#define BASE_STRING_END 31
 
 
 DLT_DECLARE_CONTEXT(gPFSDLTContext);
@@ -60,8 +61,12 @@ static int gLifecycleCounter = 0;
 
 static const char* gTestInProgressFlag = "/Data/mnt-c/persistence_pfst_test_in_progress";
 
+static const char* gOrigPostfix   = "ORIG";
+static const char* gBackupPostfix = "BACK";
+
 static const char* gDefaultKeyValueResName[] =
 {
+	"keyValue_Resource_00",
 	"keyValue_Resource_01",
 	"keyValue_Resource_02",
 	"keyValue_Resource_03",
@@ -70,20 +75,41 @@ static const char* gDefaultKeyValueResName[] =
 	"keyValue_Resource_06",
 	"keyValue_Resource_07",
 	"keyValue_Resource_08",
-	"keyValue_Resource_09"
+	"keyValue_Resource_09",
+	"keyValue_Resource_10",
+	"keyValue_Resource_11",
+	"keyValue_Resource_12",
+	"keyValue_Resource_13",
+	"keyValue_Resource_14",
+	"keyValue_Resource_15",
+	"keyValue_Resource_16",
+	"keyValue_Resource_17",
+	"keyValue_Resource_18",
+	"keyValue_Resource_19",
 };
 
 static const char* gDefaultKeyValueTestData[] =
 {
-	"keyValue pair cache One   : 000000 000000",
-	"keyValue pair cache Two   : 000000 000000",
-	"keyValue pair cache Three : 000000 000000",
-	"keyValue pair cache Four  : 000000 000000",
-	"keyValue pair wt One      : 000000 000000",
-	"keyValue pair wt Two      : 000000 000000",
-	"keyValue pair wt Three    : 000000 000000",
-	"keyValue pair wt Four     : 000000 000000",
-	"keyValue pair wt Six      : 000000 000000"
+	"keyValue pair cache Zero     - %s : 000000 000000",
+	"keyValue pair cache One      - %s : 000000 000000",
+	"keyValue pair cache Two      - %s : 000000 000000",
+	"keyValue pair cache Three    - %s : 000000 000000",
+	"keyValue pair cache Four     - %s : 000000 000000",
+	"keyValue pair cache Five     - %s : 000000 000000",
+	"keyValue pair wt Six         - %s : 000000 000000",
+	"keyValue pair wt Seven       - %s : 000000 000000",
+	"keyValue pair wt eight       - %s : 000000 000000",
+	"keyValue pair wt nine        - %s : 000000 000000",
+	"keyValue pair wt ten         - %s : 000000 000000",
+	"keyValue pair cache eleven   - %s : 000000 000000",
+	"keyValue pair cache twelve   - %s : 000000 000000",
+	"keyValue pair cache thirteen - %s : 000000 000000",
+	"keyValue pair cache fourteen - %s : 000000 000000",
+	"keyValue pair cache fifteen  - %s : 000000 000000",
+	"keyValue pair wt sixteen     - %s : 000000 000000",
+	"keyValue pair wt Seventeen   - %s : 000000 000000",
+	"keyValue pair wt eighteen    - %s : 000000 000000",
+	"keyValue pair wt nineteen    - %s : 000000 000000",
 };
 
 
@@ -113,7 +139,10 @@ static const char* gDefaultFileResNames[] =
 };
 
 
+pthread_cond_t  gPowerDownMtxCond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t gPowerDownMtx   = PTHREAD_MUTEX_INITIALIZER;
+
+
 
 // forward declaration
 
@@ -122,31 +151,88 @@ void verify_data_key_value();
 void verify_data_file();
 
 
+
 /// write data until power off occurs
-void write_data_key_value(int numLoops, int doCorruptData);
+void write_data_key_value(int numLoops, int counter);
 void write_data_file(int numLoops);
 int mount_persistence(const char* deviceName);
 void unmount_persistence();
 
 
+
 /// setup initial test data
 int setup_test_data()
 {
-	int i = 0;
+	int i = 0, ret = 0;
+	char databuffer[64] = {0};
+
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+	pclInitLibrary("pfs_test", shutdownReg);		// register to persistence client library
 
 	// key/value data
 	for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
 	{
-		printf(" key/val - data[%d] => %s\n", i, gDefaultKeyValueTestData[i]);
+		memset(databuffer, 0, 64);
+		snprintf(databuffer, 64, gDefaultKeyValueTestData[i], gBackupPostfix);
+		//printf(" setup_test_data - [%.2d] => %s\n", i, databuffer);
+		ret = pclKeyWriteData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)databuffer, strlen(databuffer));
+		if(ret < 0)
+		{
+			printf("setup_test_data =>  failed to write data: %d\n", ret );
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("write key/value - failed to write data"), DLT_INT(ret));
+		}
+
+		memset(databuffer, 0, 64);
+		snprintf(databuffer, 64, gDefaultKeyValueTestData[i], gOrigPostfix);
+		printf(" setup_test_data - [%.2d] => %s\n", i, databuffer);
+		ret = pclKeyWriteData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)databuffer, strlen(databuffer));
+		if(ret < 0)
+		{
+			printf("setup_test_data =>  failed to write data: %d\n", ret );
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("write key/value - failed to write data"), DLT_INT(ret));
+		}
 	}
 
+
+#if 0
 	// file data
 	for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
 	{
 		printf(" file - data[%d] => %s\n", i, gDefaultFileAPITestData[i]);
 	}
+#endif
 
+	pclDeinitLibrary();									// unregister from persistence client library
+	sync();
 	return 1;
+}
+
+
+
+void verify_test_setup()
+{
+	int i = 0, ret = 0;
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+	char buffer[64] = {0};
+
+	pclInitLibrary("pfs_test", shutdownReg);		// register to persistence client library
+
+	for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
+	{
+		ret = pclKeyReadData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
+		if(ret < 0)
+		{
+			printf("verify_test_setup - key/value - pclKeyReadData FAILED: %s => \"%s\"\n", gDefaultKeyValueResName[i], buffer);
+		}
+
+		//printf("verify_test_setup: [%.2d] => %s\n", i, buffer);
+
+		memset(buffer, 0, 64);
+	}
+
+	pclDeinitLibrary();									// unregister from persistence client library
 }
 
 
@@ -266,6 +352,7 @@ int update_test_progress_flag(const char* filename, int *counter)
    		rval = -1;
    	}
    }
+   syncfs(fd);
    close(fd);
    return rval;
 }
@@ -294,7 +381,9 @@ void* power_supply_shutdown(void* dataPtr)
 	int fd = (int)(dataPtr);
 	printf("Shutdown thread started fd: %d\n", fd);
 
-	pthread_mutex_lock(&gPowerDownMtx);
+   pthread_cond_wait(&gPowerDownMtxCond, &gPowerDownMtx);
+   pthread_mutex_unlock(&gPowerDownMtx);
+
 	printf("   Send power Off command!!!!\n");
 	send_serial_shutdown_cmd(fd);
 	printf("   Cut Power OFF => ByBy\n");
@@ -324,10 +413,14 @@ int main(int argc, char *argv[])
 	struct sched_param param;
 	pthread_attr_t tattr;
 
-   /// debug log and trace (DLT) setup
-   DLT_REGISTER_APP("PFS","power fail safe test");
+	printf("------------------\n");
+	printf("P F S - Test start\n");
+	printf("------------------\n");
 
-   DLT_REGISTER_CONTEXT(gPFSDLTContext,"PFS","Context for PCL PFS test logging");
+   /// debug log and trace (DLT) setup
+   //DLT_REGISTER_APP("PFS","power fail safe test");
+
+   //DLT_REGISTER_CONTEXT(gPFSDLTContext,"PFS","Context for PCL PFS test logging");
 
    if (argc < 2) {
        printf ("Please start with %s /dev/ttyS1 or /dev/ttyUSB0 (for example)\n", argv[0]);
@@ -372,13 +465,20 @@ int main(int argc, char *argv[])
 		if(update_test_progress_flag(gTestInProgressFlag, &gLifecycleCounter) == 0)
 		{
 			printf("PFS test - first lifecycle, setup test data\n");
-			DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("PFS test - first lifecycle, setup test data"));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("PFS test - first lifecycle, setup test data"));
+
+			printf("--- setup data --- \n");
 			setup_test_data();
+
+			printf("--- verify data setup --- \n");
+			verify_test_setup();
 		}
 
 		printf("PFS test - Lifecycle counter: %d - number of test loops: %d\n", gLifecycleCounter, numLoops);
+		/*
 		DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("PFS test - Lifecycle counter:"), DLT_INT(gLifecycleCounter),
 				                                DLT_STRING("- number of write loops:"), DLT_INT(numLoops));
+		*/
 	   pthread_attr_init(&tattr);
 		param.sched_priority = 49;
 		pthread_attr_setschedparam(&tattr, &param);
@@ -386,22 +486,25 @@ int main(int argc, char *argv[])
 		 // create here the dbus connection and pass to main loop
 		if(pthread_create(&gMainLoopThread, &tattr, power_supply_shutdown, (void*)ttyfd) == -1)
 		{
-		  DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop )") );
+		  //DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop )") );
 		  return -1;
 		}
 
 		pclInitLibrary("pfs_test", shutdownReg);		// register to persistence client library
 
 		// verify the data form previous lifecycle
+		printf("--- Verify Data ---!!\n");
 		verify_data_key_value();
 		//verify_data_file();
 
 		// write data
-		write_data_key_value(numLoops, gLifecycleCounter%2);	// on odd lifecycle numbers, corrupt db data, otherwise corrupt db header
+		printf("--- Write Data!! ---\n");
+	   write_data_key_value(numLoops, gLifecycleCounter);	// on odd lifecycle numbers, corrupt db data, otherwise corrupt db header
 		//write_data_file(numLoops);
 
 
-		pthread_mutex_unlock(&gPowerDownMtx);
+      pthread_cond_signal(&gPowerDownMtxCond);
+      pthread_mutex_unlock(&gPowerDownMtx);
 		printf("Deinit library\n");
 		pclDeinitLibrary();									// unregister from persistence client library
 
@@ -412,7 +515,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("PFS test - failed to mount pers partition:"), DLT_INT(gLifecycleCounter) );
+		//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("PFS test - failed to mount pers partition:"), DLT_INT(gLifecycleCounter) );
 		printf("Mount Failed\n");
 		rVal = EXIT_FAILURE;
 	}
@@ -421,9 +524,9 @@ int main(int argc, char *argv[])
 	printf("End of PFS app\n");
 
    // unregister debug log and trace
-   DLT_UNREGISTER_APP();
+   //DLT_UNREGISTER_APP();
 
-   dlt_free();
+   //dlt_free();
 
 	return rVal;
 }
@@ -442,29 +545,68 @@ void verify_data_key_value()
 		ret = pclKeyReadData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
 		if(ret < 0)
 		{
-			DLT_LOG(gPFSDLTContext, DLT_LOG_WARN, DLT_STRING("verify - key/value - => failed to read data"), DLT_INT(ret), DLT_STRING(buffer));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_WARN, DLT_STRING("verify - key/value - => failed to read data"), DLT_INT(ret), DLT_STRING(buffer));
 			printf("verify - key/value - pclKeyReadData FAILED: %s => \"%s\"\n", gDefaultKeyValueResName[i], buffer);
 		}
 		else
 		{
 			int lc_count = get_lifecycle_count(buffer);
 
-			// first verify buffer
-			if(0 == strncmp(gDefaultKeyValueTestData[i], buffer, LC_CNT_START) )
+			// first verify base string
+			if(0 == strncmp(gDefaultKeyValueTestData[i], buffer, BASE_STRING_END) )
 			{
+				char extendedStringOrig[64] = {0};
+				char extendedStringBack[64] = {0};
+
+				snprintf(extendedStringOrig, 64, gDefaultKeyValueTestData[i], gOrigPostfix);
+				snprintf(extendedStringBack, 64, gDefaultKeyValueTestData[i], gBackupPostfix);
+
+
+				/*printf("Reference: %s\n", extendedStringOrig);
+				printf("    found: %s\n",buffer);*/
+
+				// check if original or backup will be used
+				if(0 == strncmp(extendedStringOrig, buffer, LC_CNT_START))
+				{
+				   /*
+					printf("ORIGINAL detected, everything OK:\n");
+					printf("   desired: %s\n", extendedStringOrig);
+					printf("   actual : %s\n", buffer);*/
+				}
+				else if(0 == strncmp(extendedStringBack, buffer, LC_CNT_START))
+				{
+				   /*
+					printf("BACKUP detected, everything OK:\n");
+					printf("   desired: %s\n", extendedStringBack);
+					printf("   actual : %s\n", buffer); */
+				}
+				else
+				{
+
+				   printf("----------------------------------------------------\n");
+					printf("!!!! F A I L U R E !!!!! => lifecycle count - current: %d - found: %d\n", gLifecycleCounter, lc_count);
+					printf("   desired: %s\n", gDefaultKeyValueTestData[i]);
+					printf("   actual : %s\n", buffer);
+					printf("----------------------------------------------------\n");
+				}
+
+
+#if 0
 				if(lc_count != (gLifecycleCounter-1) )
 				{
 					printf("   Failure - LC count - current: %d - previous: %d - \"%s\"\n", gLifecycleCounter, lc_count, buffer);
-					DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("Failure - LC count - current:"), DLT_INT(gLifecycleCounter),
+					/*DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("Failure - LC count - current:"), DLT_INT(gLifecycleCounter),
 							                                 DLT_STRING("- previous:"), DLT_INT(lc_count),
-							                                 DLT_STRING("- buf:"), DLT_STRING(buffer));
+							                                 DLT_STRING("- buf:"), DLT_STRING(buffer));*/
 				}
+#endif
+
 			}
 			else
 			{
 				printf("   Failure - base string does not match - actual: \"%s\" - desired: \"%s\"\n", buffer, gDefaultKeyValueTestData[i]);
-				DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("Failure - base string does not match - actual: "), DLT_STRING(buffer),
-						                                 DLT_STRING("- desired:"), DLT_STRING(gDefaultKeyValueTestData[i]));
+				/*DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("Failure - base string does not match - actual: "), DLT_STRING(buffer),
+						                                 DLT_STRING("- desired:"), DLT_STRING(gDefaultKeyValueTestData[i]));*/
 			}
 
 		}
@@ -473,11 +615,11 @@ void verify_data_key_value()
 }
 
 
-void write_data_key_value(int numLoops, int doCorruptData)
+void write_data_key_value(int numLoops, int counter)
 {
 	int i=0, k=0, ret = 0;
 
-	if(doCorruptData == 1)
+	if( (counter%2) == 1)
 	{
 		printf("Corrupt Data: numLoops: %d!!!!\n", numLoops);
 	}
@@ -497,17 +639,19 @@ void write_data_key_value(int numLoops, int doCorruptData)
 			strncpy(buffer, gDefaultKeyValueTestData[i], 64);
 			update_test_data(buffer, gLifecycleCounter, k);
 
-			if((k == (int)numLoops-(numLoops/2)) && doCorruptData == 1)
+			if(    (k == (int)numLoops/((counter%20)+1))
+             && (counter%2 == 1))
 			{
 				// unlock mutex
 				printf("Now POWER OFF => k: %d \n", k);
-				pthread_mutex_unlock(&gPowerDownMtx);
+            pthread_cond_signal(&gPowerDownMtxCond);
+            pthread_mutex_unlock(&gPowerDownMtx);
 			}
 			ret = pclKeyWriteData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, strlen(buffer));
 			if(ret < 0)
 			{
 				printf("  failed to write data: %d\n", ret );
-				DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("write key/value - failed to write data"), DLT_INT(ret));
+				//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("write key/value - failed to write data"), DLT_INT(ret));
 			}
 
 			//printf("write data - key/value - \"%s\"\n", buffer);
@@ -539,12 +683,12 @@ void verify_data_file()
 		ret = pclFileReadData(handles[i], buffer, 64);
 		if(ret < 0)
 		{
-			DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("verify data - file - failed to read data"), DLT_INT(ret));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("verify data - file - failed to read data"), DLT_INT(ret));
 		}
 		else
 		{
 			printf("verify file - file - \"%s\"\n", buffer);
-			DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("verify file: "), DLT_STRING(buffer));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("verify file: "), DLT_STRING(buffer));
 		}
 	}
 
@@ -554,7 +698,7 @@ void verify_data_file()
 		ret = pclFileClose(handles[i]);
 		if(ret != 0)
 		{
-			DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("close file - failed to close"), DLT_INT(ret));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("close file - failed to close"), DLT_INT(ret));
 		}
 	}
 }
@@ -582,13 +726,13 @@ void write_data_file(int numLoops)
 			strncpy(buffer, gDefaultFileAPITestData[i], 64);
 			update_test_data(buffer, gLifecycleCounter, k);
 
-			DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("- write file:"), DLT_STRING(buffer));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("- write file:"), DLT_STRING(buffer));
 			printf("write data - file - \"%s\"\n", buffer);
 
 			ret = pclFileWriteData(handles[i], buffer, strlen(buffer));
 			if(ret < 0)
 			{
-				DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("write file - failed to write data"), DLT_INT(ret));
+				//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("write file - failed to write data"), DLT_INT(ret));
 			}
 			usleep((int)(rand()/100000));	// sleep a time random period
 			pclFileSeek(handles[i], 0, SEEK_SET);
@@ -602,7 +746,7 @@ void write_data_file(int numLoops)
 		ret = pclFileClose(handles[i]);
 		if(ret != 0)
 		{
-			DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("close file - failed to close"), DLT_INT(ret));
+			//DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("close file - failed to close"), DLT_INT(ret));
 		}
 	}
 }
