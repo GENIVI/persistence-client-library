@@ -162,7 +162,7 @@ extern "C" {
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  *
  * @param appname application name, the name must be a unique name in the system
- * @param shutdownMode shutdown mode ::PCL_SHUTDOWN_TYPE_FAST or ::PCL_SHUTDOWN_TYPE_NORMAL
+ * @param shutdownMode shutdown mode ::PCL_SHUTDOWN_TYPE_FAST or ::PCL_SHUTDOWN_TYPE_NORMAL ::PCL_SHUTDOWN_TYPE_NONE
  *
  * @return positive value: success;
  *   On error a negative value will be returned with the following error codes:

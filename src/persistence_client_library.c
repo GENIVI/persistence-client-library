@@ -32,11 +32,18 @@
    #include <persistence_file_cache.h>
 #endif
 
+#if USE_XSTRACE_PERS
+   #include <xsm_user.h>
+#endif
+
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <dbus/dbus.h>
+
+
+
 
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gPclDLTContext);
@@ -59,6 +66,10 @@ int customAsyncInitClbk(int errcode)
 int pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
+
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
 
    if(gPclInitialized == PCLnotInitialized)
    {
@@ -92,12 +103,18 @@ int pclInitLibrary(const char* appName, int shutdownMode)
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary - failed to access blacklist:"), DLT_STRING(blacklistPath));
       }
 
+#if USE_XSTRACE_PERS
+      xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
       if(setup_dbus_mainloop() == -1)
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to setup main loop"));
          pthread_mutex_unlock(&gDbusPendingRegMtx);
          return EPERS_DBUS_MAINLOOP;
       }
+#if USE_XSTRACE_PERS
+      xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
 
 
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
@@ -110,7 +127,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
             return EPERS_REGISTER_LIFECYCLE;
          }
       }
-#if USE_PASINTERFACE == 1
+#if USE_PASINTERFACE
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
       if(register_pers_admin_service() == -1)
       {
@@ -150,6 +167,10 @@ int pclInitLibrary(const char* appName, int shutdownMode)
                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitialized) );
    }
 
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
+
    return rval;
 }
 
@@ -158,6 +179,10 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 int pclDeinitLibrary(void)
 {
    int i = 0, rval = 1;
+
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
 
    if(gPclInitialized == PCLinitialized)
    {
@@ -230,6 +255,12 @@ int pclDeinitLibrary(void)
    	                                      DLT_STRING("- NOT INITIALIZED: "));
       rval = EPERS_NOT_INITIALIZED;
    }
+
+
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
+
    return rval;
 }
 

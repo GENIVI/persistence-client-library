@@ -4,7 +4,7 @@
 
 # create tag version information
 m4_define([pers_client_library_tag_version_major], [0])
-m4_define([pers_client_library_tag_version_minor], [9])
+m4_define([pers_client_library_tag_version_minor], [10])
 m4_define([pers_client_library_tag_version_micro], [0])
 m4_define([pers_client_library_tag_version], [pers_client_library_tag_version_major().pers_client_library_tag_version_minor().pers_client_library_tag_version_micro()])
 
@@ -17,9 +17,9 @@ AC_GNU_SOURCE()
 
 
 # create library version information
-m4_define([pers_client_library_version_current],  [7])
-m4_define([pers_client_library_version_revision], [1])
-m4_define([pers_client_library_version_age],      [0])
+m4_define([pers_client_library_version_current],  [8])
+m4_define([pers_client_library_version_revision], [0])
+m4_define([pers_client_library_version_age],      [1])
 m4_define([pers_client_library_version], [pers_client_library_version_current():pers_client_library_version_revision():pers_client_library_version_age()])
 
 PERS_CLIENT_LIBRARY_VERSION=pers_client_library_version()
@@ -30,7 +30,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 
 # Overwrite the build in defaults
-#CFLAGS="-Wall -O2"
+CFLAGS="-Wall -O2"
 
 # Checks for programs.
 AC_PROG_CC
@@ -91,7 +91,7 @@ if test "x$enable_tests" != "xno" ; then
 
    AC_DEFINE_UNQUOTED([TESTS_ENABLED], [1], [tests enabled])
 else
-   AC_DEFINE_UNQUOTED([TESTS_ENABLED], [0], [tests enabled])
+   AC_DEFINE_UNQUOTED([TESTS_ENABLED], [0], [tests disabled])
 fi
 AC_MSG_NOTICE([Tests enabled: $enable_tests])
 AC_MSG_NOTICE([Local check enabled: $localcheck])
@@ -116,6 +116,7 @@ else
 fi
 ######################################################################
 
+
 # enable persistence file cache component ###########
 AC_ARG_ENABLE([filecache],
             [AS_HELP_STRING([--enable-filecache],[Enable file cache component])],
@@ -136,6 +137,29 @@ else
 fi
    AC_SUBST(PFC_CFLAGS)
    AC_SUBST(PFC_LIBS)
+######################################################################
+
+
+# enable tracing ###########
+#AC_ARG_ENABLE([xstrace],
+#            [AS_HELP_STRING([--enable-xstrace],[Enable xstrace])],
+#            [use_xstrace=$enableval],
+#            [use_xstrace="no"])
+#
+#AM_CONDITIONAL([USE_XSTRACE_PERS], [test x"$use_xstrace" = "no"])
+#
+#if test "$use_xstrace" != "yes" -a "$use_xstrace" != "no"; then   
+#   AC_MSG_ERROR([Invalid tracing check mode specified: $use_xstrace. Only "yes" or "no" is valid])
+#else   
+#   AC_MSG_NOTICE([Use tracing: $use_xstrace])
+
+#   if test "$use_xstrace" = "yes"; then
+#      AC_CHECK_HEADERS([xsm_user.h])
+#      AC_DEFINE_UNQUOTED([USE_XSTRACE_PERS], [1], [tracing enabled])
+#   else
+#      AC_DEFINE_UNQUOTED([USE_XSTRACE_PERS], [0], [tracing disabled])     
+#   fi
+#fi
 ######################################################################
 
 
