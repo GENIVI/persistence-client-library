@@ -278,6 +278,11 @@ int get_custom_libraries()
 				}
 				i+=4;       // move to the next configuration file entry
 			}
+
+			if(munmap(customConfFileMap, buffer.st_size) == -1)
+			{
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_custom_libraries - failed to unmap - "), DLT_STRING(strerror(errno)));
+			}
 			close(fd);
 		}
 		else

@@ -79,8 +79,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
                               DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
 
-      /// environment variable for max key value data
-      const char *pDataSize = getenv("PERS_MAX_KEY_VAL_DATA_SIZE");
       char blacklistPath[DbPathMaxLen] = {0};
 
 #if USE_FILECACHE
@@ -89,11 +87,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 #endif
 
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
-
-      if(pDataSize != NULL)
-      {
-         gMaxKeyValDataSize = atoi(pDataSize);
-      }
 
       // Assemble backup blacklist path
       sprintf(blacklistPath, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
