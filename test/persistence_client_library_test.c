@@ -57,6 +57,8 @@ char* gWriteBackupTestData  = "This is the content of the file /Data/mnt-c/lt-pe
 char* gWriteRecoveryTestData = "This is the data to recover: /Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db";
 char* gRecovChecksum = "608a3b5d";	// generated with http://www.tools4noobs.com/online_php_functions/crc32/
 
+// function prototype
+void run_concurrency_test();
 
 
 void data_setup(void)
@@ -1360,6 +1362,21 @@ END_TEST
 
 
 
+START_TEST(test_ValidApplication)
+{
+	int ret = 0;
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   ret = pclInitLibrary("InvalidAppID", shutdownReg);
+   //printf("pclInitLibrary => ret: %d\n", ret);
+   x_fail_unless(ret == EPERS_NOPRCTABLE, "pclInitLibrary => invalid application ID not detected");
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
 static Suite * persistencyClientLib_suite()
 {
    Suite * s  = suite_create("Persistency client library");
@@ -1440,6 +1457,10 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_Notifications, test_Notifications);
    tcase_set_timeout(tc_Notifications, 2);
 
+   TCase * tc_ValidApplication = tcase_create("ValidApplication");
+   tcase_add_test(tc_ValidApplication, test_ValidApplication);
+   tcase_set_timeout(tc_ValidApplication, 2);
+
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
 
@@ -1493,6 +1514,8 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_Plugin);
    tcase_add_checked_fixture(tc_Plugin, data_setup, data_teardown);
 
+   suite_add_tcase(s, tc_ValidApplication);
+
    suite_add_tcase(s, tc_InitDeinit);
 
    return s;
@@ -1515,25 +1538,36 @@ int main(int argc, char *argv[])
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("PCLt","tests the persistence client library");
 
-#if 1
-   Suite * s = persistencyClientLib_suite();
-   SRunner * sr = srunner_create(s);
-   srunner_set_xml(sr, "/tmp/persistenceClientLibraryTest.xml");
-   srunner_set_log(sr, "/tmp/persistenceClientLibraryTest.log");
-   srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE*/);
 
-   nr_failed = srunner_ntests_failed(sr);
-   nr_run = srunner_ntests_run(sr);
-
-   tResult = srunner_results(sr);
-   for(i = 0; i< nr_run; i++)
+   if(argc >= 2)
    {
-      (void)tr_rtype(tResult[i]);  // get status of each test
-      //fail = tr_rtype(tResult[i]);  // get status of each test
-      //printf("[%d] Fail: %d \n", i, fail);
-   }
+   	printf("Running concurrency tests\n");
 
-   srunner_free(sr);
+   	run_concurrency_test();
+   }
+   else
+   {
+#if 1
+		Suite * s = persistencyClientLib_suite();
+		SRunner * sr = srunner_create(s);
+		srunner_set_xml(sr, "/tmp/persistenceClientLibraryTest.xml");
+		srunner_set_log(sr, "/tmp/persistenceClientLibraryTest.log");
+		srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE*/);
+
+		printf("Running automated tests\n");
+		nr_failed = srunner_ntests_failed(sr);
+		nr_run = srunner_ntests_run(sr);
+
+		tResult = srunner_results(sr);
+		for(i = 0; i< nr_run; i++)
+		{
+			(void)tr_rtype(tResult[i]);  // get status of each test
+			//fail = tr_rtype(tResult[i]);  // get status of each test
+			//printf("[%d] Fail: %d \n", i, fail);
+		}
+
+		srunner_free(sr);
+   }
 #endif
 
    // unregister debug log and trace
@@ -1543,5 +1577,66 @@ int main(int argc, char *argv[])
 
    return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
 
+}
+
+
+void do_pcl_concurrency_access(const char* applicationID, const char* resourceID, int operation)
+{
+	int ret = 0, i = 0;
+	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+	unsigned char buffer[READ_SIZE] = {0};
+
+	(void)pclInitLibrary(applicationID, shutdownReg);
+
+	for(i=0; i< 200; i++)
+	{
+		printf("[%d] - i: %d", operation, i);
+		if(operation == 0 )
+		{
+			ret = pclKeyWriteData(0x20, resourceID,  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+			if(ret < 0)
+				printf("Failed to write data: %d\n", ret);
+		}
+		else if(operation == 1)
+		{
+			memset(buffer, 0, READ_SIZE);
+			ret = pclKeyReadData(0x20, resourceID, 3, 2, buffer, READ_SIZE);
+			if(ret < 0)
+				printf("Failed to read data: %d\n", ret);
+		}
+		else
+		{
+			printf("invalid operation - end!!");
+			break;
+		}
+	}
+
+	pclDeinitLibrary();
+}
+
+
+void run_concurrency_test()
+{
+	const char* appId_one = "lt-persistence_client_library_test";
+	const char* appId_two = "pfs_test";
+
+	int pid = fork();
+
+	if (pid == 0)
+	{ /*child*/
+		printf("Started child process with PID: [%d] \n", pid);
+
+		do_pcl_concurrency_access(appId_one, "links/last_link2", 0);
+
+		_exit(EXIT_SUCCESS);
+	}
+	else if (pid > 0)
+	{ /*parent*/
+		printf("Started father process with PID: [%d] \n", pid);
+
+		do_pcl_concurrency_access(appId_one, "links/last_link3", 1);
+
+		_exit(EXIT_SUCCESS);
+	}
 }
 

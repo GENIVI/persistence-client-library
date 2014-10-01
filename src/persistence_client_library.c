@@ -57,9 +57,9 @@ static int gCancelCounter = 0;
 
 int customAsyncInitClbk(int errcode)
 {
-	printf("Dummy async init Callback\n");
+  printf("Dummy async init Callback\n");
 
-	return 1;
+  return 1;
 }
 
 
@@ -73,17 +73,26 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
    if(gPclInitialized == PCLnotInitialized)
    {
+    char rctFilename[DbPathMaxLen] = {0};
       gShutdownMode = shutdownMode;
 
       DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
                               DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
 
-      char blacklistPath[DbPathMaxLen] = {0};
+      /* security check for valid application:
+         if the RCT table exists, the application is proven to be valid,
+         otherwise return EPERS_NOPRCTABLE  */
+
+      snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, appName, gResTableCfg);
+
+      if(access(rctFilename, F_OK) == 0)
+      {
+        char blacklistPath[DbPathMaxLen] = {0};
 
 #if USE_FILECACHE
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
-   pfcInitCache(appName);
+    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
+    pfcInitCache(appName);
 #endif
 
       pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
@@ -93,7 +102,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       if(readBlacklistConfigFile(blacklistPath) == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary - failed to access blacklist:"), DLT_STRING(blacklistPath));
+        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary - failed to access blacklist:"), DLT_STRING(blacklistPath));
       }
 
 #if USE_XSTRACE_PERS
@@ -101,9 +110,9 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 #endif
       if(setup_dbus_mainloop() == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to setup main loop"));
-         pthread_mutex_unlock(&gDbusPendingRegMtx);
-         return EPERS_DBUS_MAINLOOP;
+        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to setup main loop"));
+        pthread_mutex_unlock(&gDbusPendingRegMtx);
+        return EPERS_DBUS_MAINLOOP;
       }
 #if USE_XSTRACE_PERS
       xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
@@ -112,26 +121,26 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
       {
-         // register for lifecycle dbus messages
-         if(register_lifecycle(shutdownMode) == -1)
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
-            pthread_mutex_unlock(&gDbusPendingRegMtx);
-            return EPERS_REGISTER_LIFECYCLE;
-         }
+        // register for lifecycle dbus messages
+        if(register_lifecycle(shutdownMode) == -1)
+        {
+          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
+          pthread_mutex_unlock(&gDbusPendingRegMtx);
+          return EPERS_REGISTER_LIFECYCLE;
+        }
       }
 #if USE_PASINTERFACE
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
       if(register_pers_admin_service() == -1)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to register to pers admin dbus interface"));
-         pthread_mutex_unlock(&gDbusPendingRegMtx);
-         return EPERS_REGISTER_ADMIN;
+        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to register to pers admin dbus interface"));
+        pthread_mutex_unlock(&gDbusPendingRegMtx);
+        return EPERS_REGISTER_ADMIN;
       }
-	  else
-	  {
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary - Successfully established IPC protocol for PCL."));
-	  }
+      else
+      {
+        DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary - Successfully established IPC protocol for PCL."));
+      }
 #else
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
@@ -139,7 +148,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       // load custom plugins
       if(load_custom_plugins(customAsyncInitClbk) < 0)
       {
-      	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
+        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
       }
 
       // initialize keyHandle array
@@ -152,6 +161,11 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       gAppId[MaxAppNameLen-1] = '\0';
 
       gPclInitialized++;
+      }
+      else
+      {
+        rval = EPERS_NOPRCTABLE;
+      }
    }
    else if(gPclInitialized >= PCLinitialized)
    {
@@ -180,9 +194,9 @@ int pclDeinitLibrary(void)
    if(gPclInitialized == PCLinitialized)
    {
       int* retval;
-   	MainLoopData_u data;
-   	data.message.cmd = (uint32_t)CMD_QUIT;
-   	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+    MainLoopData_u data;
+    data.message.cmd = (uint32_t)CMD_QUIT;
+    data.message.string[0] = '\0';  // no string parameter, set to 0
 
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
                                             DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
@@ -194,12 +208,12 @@ int pclDeinitLibrary(void)
 #if USE_PASINTERFACE == 1
       rval = unregister_pers_admin_service();
       if(0 != rval)
-	  {
-		  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Failed to de-initialize IPC protocol for PCL."));
-	  }
+    {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Failed to de-initialize IPC protocol for PCL."));
+    }
       else
       {
-    	  DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Successfully de-initialized IPC protocol for PCL."));
+        DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Successfully de-initialized IPC protocol for PCL."));
       }
 #endif
 
@@ -217,7 +231,7 @@ int pclDeinitLibrary(void)
          }
       }
 
-      process_prepare_shutdown(Shutdown_Full);	// close all db's and fd's and block access
+      process_prepare_shutdown(Shutdown_Full);  // close all db's and fd's and block access
 
       // send quit command to dbus mainloop
       deliverToMainloop_NM(&data);
@@ -244,8 +258,8 @@ int pclDeinitLibrary(void)
    }
    else
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
-   	                                      DLT_STRING("- NOT INITIALIZED: "));
+    DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
+                                          DLT_STRING("- NOT INITIALIZED: "));
       rval = EPERS_NOT_INITIALIZED;
    }
 
@@ -261,38 +275,38 @@ int pclDeinitLibrary(void)
 
 int pclLifecycleSet(int shutdown)
 {
-	int rval = 0;
+   int rval = 0;
 
-	if(gShutdownMode == PCL_SHUTDOWN_TYPE_NONE)
-	{
-		if(shutdown == PCL_SHUTDOWN)
-		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclLifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
-			process_prepare_shutdown(Shutdown_Partial);	// close all db's and fd's and block access
-		}
-		else if(shutdown == PCL_SHUTDOWN_CANCEL)
-		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclLifecycleSet - PCL_SHUTDOWN_CANCEL -"), DLT_STRING(gAppId), DLT_STRING(" Cancel Counter - "), DLT_INT(gCancelCounter));
-			if(gCancelCounter < Shutdown_MaxCount)
-			{
-				pers_unlock_access();
-			}
-			else
-			{
-				rval = EPERS_SHUTDOWN_MAX_CANCEL;
-			}
-		}
-		else
-		{
-			rval = EPERS_COMMON;
-		}
-	}
-	else
-	{
-		rval = EPERS_SHUTDOWN_NO_PERMIT;
-	}
+   if(gShutdownMode == PCL_SHUTDOWN_TYPE_NONE)
+   {
+      if(shutdown == PCL_SHUTDOWN)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclLifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
+         process_prepare_shutdown(Shutdown_Partial); // close all db's and fd's and block access
+      }
+      else if(shutdown == PCL_SHUTDOWN_CANCEL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclLifecycleSet - PCL_SHUTDOWN_CANCEL -"), DLT_STRING(gAppId), DLT_STRING(" Cancel Counter - "), DLT_INT(gCancelCounter));
+         if(gCancelCounter < Shutdown_MaxCount)
+         {
+           pers_unlock_access();
+         }
+         else
+         {
+           rval = EPERS_SHUTDOWN_MAX_CANCEL;
+         }
+      }
+      else
+      {
+         rval = EPERS_COMMON;
+      }
+   }
+   else
+   {
+      rval = EPERS_SHUTDOWN_NO_PERMIT;
+   }
 
-	return rval;
+   return rval;
 }
 
 
