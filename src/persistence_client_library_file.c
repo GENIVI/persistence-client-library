@@ -318,6 +318,14 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 						handle = EPERS_MAXHANDLE;
 					}
 				}
+				else
+				{
+				   if(set_file_handle_data(handle, dbContext.configKey.permission, backupPath, csumPath, NULL) == -1)
+				   {
+                  close(handle);
+                  handle = EPERS_MAXHANDLE;
+				   }
+				}
          }
          //
          // requested resource is not in the RCT, so create resource as local/cached.

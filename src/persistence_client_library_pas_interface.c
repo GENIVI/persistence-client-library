@@ -31,6 +31,7 @@ static int gLockAccess = 0;
 
 void pers_lock_access(void)
 {
+   gLockAccess = 0;
    __sync_fetch_and_add(&gLockAccess,1);
 }
 
