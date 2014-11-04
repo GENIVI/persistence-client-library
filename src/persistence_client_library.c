@@ -79,7 +79,8 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
                               DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
-
+#if USE_APPCHECK
+      printf("SECURITY check enabled!!!!!\n");
       /* security check for valid application:
          if the RCT table exists, the application is proven to be valid,
          otherwise return EPERS_NOPRCTABLE  */
@@ -88,6 +89,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
       if(access(rctFilename, F_OK) == 0)
       {
+#endif
         char blacklistPath[DbPathMaxLen] = {0};
 
 #if USE_FILECACHE
@@ -161,11 +163,13 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       gAppId[MaxAppNameLen-1] = '\0';
 
       gPclInitialized++;
+#if USE_APPCHECK
       }
       else
       {
         rval = EPERS_NOPRCTABLE;
       }
+#endif
    }
    else if(gPclInitialized >= PCLinitialized)
    {

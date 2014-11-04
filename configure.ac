@@ -163,6 +163,25 @@ fi
 ######################################################################
 
 
+# enable persistence application security check ###########
+AC_ARG_ENABLE([appcheck],
+            [AS_HELP_STRING([--enable-appcheck],[Enable application security check])],
+            [use_appcheck=$enableval],
+            [use_appcheck="no"])
+
+AM_CONDITIONAL([USE_APPCHECK], [test x"$use_appcheck" = "no"])
+
+if test "$use_appcheck" != "yes" -a "$use_appcheck" != "no"; then   
+   AC_MSG_ERROR([Invalid application security check: $use_appcheck. Only "yes" or "no" is valid])
+else   
+   AC_MSG_NOTICE([Use application security check: $use_appcheck])
+
+   if test "$use_appcheck" = "yes"; then
+      AC_DEFINE_UNQUOTED([USE_APPCHECK], [1], [application check enabled])   
+   fi
+fi
+######################################################################
+
 AC_ARG_ENABLE(debug,
 AS_HELP_STRING([--enable-debug],
                [enable debugging, default: no]),
