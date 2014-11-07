@@ -45,6 +45,7 @@
 // local function prototype
 int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
 
+extern int doAppcheck(void);
 
 char* get_raw_string(char* dbKey)
 {
@@ -76,38 +77,45 @@ int pclFileClose(int fd)
 
    if(gPclInitialized >= PCLinitialized)
    {
-   	int  permission = get_file_permission(fd);
-
-      if(permission != -1)	// permission is here also used for range check
+      if(doAppcheck() == 1)
       {
-         // check if a backup and checksum file needs to be deleted
-         if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
-         {
-            // remove backup file
-            remove(get_file_backup_path(fd));  // we don't care about return value
+         int  permission = get_file_permission(fd);
 
-            // remove checksum file
-            remove(get_file_checksum_path(fd));    // we don't care about return value
-
-         }
-         __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
-#if USE_FILECACHE
-         if(get_file_cache_status(fd) == 1)
+         if(permission != -1)	// permission is here also used for range check
          {
-         	rval = pfcCloseFile(fd);
+            // check if a backup and checksum file needs to be deleted
+            if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
+            {
+               // remove backup file
+               remove(get_file_backup_path(fd));  // we don't care about return value
+
+               // remove checksum file
+               remove(get_file_checksum_path(fd));    // we don't care about return value
+
+            }
+            __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
+   #if USE_FILECACHE
+            if(get_file_cache_status(fd) == 1)
+            {
+               rval = pfcCloseFile(fd);
+            }
+            else
+            {
+               rval = close(fd);
+            }
+   #else
+            rval = close(fd);
+   #endif
+
          }
          else
          {
-         	rval = close(fd);
+           rval = EPERS_MAXHANDLE;
          }
-#else
-         rval = close(fd);
-#endif
-
       }
       else
       {
-    	  rval = EPERS_MAXHANDLE;
+         rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
    return rval;

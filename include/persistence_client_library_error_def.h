@@ -19,6 +19,7 @@
  *
  * @par change history
  * Date     Author           Version
+ * 07/11/14 Ingo Huerner     1.0.1 - Added trusted application error
  * 29/04/14 Ingo Huerner     1.0.0 - Added cancel shutdown errors
  *
  */
@@ -116,6 +117,8 @@ extern "C" {
 #define EPERS_SHUTDOWN_MAX_CANCEL (-40)
 /// not permitted to use this function
 #define EPERS_SHUTDOWN_NO_PERMIT  (-42)
+/// not a trusted application,no access to persistence data
+#define EPERS_SHUTDOWN_NO_TRUSTED (-43)
 /// requested handle is not valid. \since PCL v7.0.3
 #define EPERS_INVALID_HANDLE     (-1000)
 

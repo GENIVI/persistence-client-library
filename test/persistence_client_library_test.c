@@ -1368,8 +1368,9 @@ START_TEST(test_ValidApplication)
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    ret = pclInitLibrary("InvalidAppID", shutdownReg);
-   //printf("pclInitLibrary => ret: %d\n", ret);
-   x_fail_unless(ret == EPERS_NOPRCTABLE, "pclInitLibrary => invalid application ID not detected");
+
+   ret = pclKeyGetSize(0xFF, "JustTesting", 1, 1);
+   x_fail_unless(ret == EPERS_SHUTDOWN_NO_TRUSTED, "pclKeyGetSize => invalid application ID not detected");
 
    pclDeinitLibrary();
 }
@@ -1538,6 +1539,89 @@ int main(int argc, char *argv[])
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("PCLt","tests the persistence client library");
 
+#if 0
+   //Manual test of concurrent access
+   // start 2 instances of  persistence-client_library_test
+   //  persistence-client_library_test -w 5
+   //  persistence-client_library_test -r 5
+   // press any key to proceed in the test
+
+   int opt = 0;
+   int write = 0;
+   int read = 0;
+   int numloops = 0;
+
+   while ((opt = getopt(argc, argv, "w:r:")) != -1)
+   {
+      switch (opt)
+      {
+         case 'w':
+            write = 1;
+            numloops = atoi(optarg);
+            break;
+         case 'r':
+            read = 1;
+            numloops = atoi(optarg);
+            break;
+        }
+    }
+
+
+  const char* appId_one = "lt-persistence_client_library_test";
+  const char* appId_two = "concurrency_test";
+  if (write)
+  {
+     int ret = 0, i = 0;
+     unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+     unsigned char buffer[READ_SIZE] = { 0 };
+
+     (void) pclInitLibrary(appId_one, shutdownReg);
+
+     for (i = 0; i < numloops; i++)
+     {
+        getchar();
+        printf("write: [%d] \n", i);
+
+        ret = pclKeyWriteData(0x20, "links/last_link2", 2, 1, (unsigned char*) "Test notify shared data",
+              strlen("Test notify shared data"));
+        if (ret < 0)
+           printf("Failed to write data: %d\n", ret);
+     }
+
+     pclDeinitLibrary();
+     sleep(1);
+     _exit(EXIT_SUCCESS);
+
+  }
+
+
+
+  if(read)
+  {
+     int ret = 0, i = 0;
+     unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+     unsigned char buffer[READ_SIZE] = { 0 };
+
+     (void) pclInitLibrary(appId_two, shutdownReg);
+
+     for (i = 0; i < numloops; i++)
+     {
+        getchar();
+        printf("read: [%d] \n", i);
+
+
+        memset(buffer, 0, READ_SIZE);
+        ret = pclKeyReadData(0x20, "links/last_link2", 2, 1, buffer, READ_SIZE);
+        if (ret < 0)
+           printf("Failed to read data: %d\n", ret);
+     }
+
+     pclDeinitLibrary();
+     sleep(1);
+     _exit(EXIT_SUCCESS);
+  }
+ #endif
+
 
    if(argc >= 2)
    {
@@ -1588,9 +1672,9 @@ void do_pcl_concurrency_access(const char* applicationID, const char* resourceID
 
 	(void)pclInitLibrary(applicationID, shutdownReg);
 
-	for(i=0; i< 200; i++)
+	for(i=0; i< 10; i++)
 	{
-		printf("[%d] - i: %d", operation, i);
+		printf("[%d] - i: %d \n", operation, i);
 		if(operation == 0 )
 		{
 			ret = pclKeyWriteData(0x20, resourceID,  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
@@ -1600,13 +1684,13 @@ void do_pcl_concurrency_access(const char* applicationID, const char* resourceID
 		else if(operation == 1)
 		{
 			memset(buffer, 0, READ_SIZE);
-			ret = pclKeyReadData(0x20, resourceID, 3, 2, buffer, READ_SIZE);
+			ret = pclKeyReadData(0x20, resourceID, 2, 1, buffer, READ_SIZE);
 			if(ret < 0)
 				printf("Failed to read data: %d\n", ret);
 		}
 		else
 		{
-			printf("invalid operation - end!!");
+			printf("invalid operation - end!! \n");
 			break;
 		}
 	}
@@ -1618,7 +1702,7 @@ void do_pcl_concurrency_access(const char* applicationID, const char* resourceID
 void run_concurrency_test()
 {
 	const char* appId_one = "lt-persistence_client_library_test";
-	const char* appId_two = "pfs_test";
+	const char* appId_two = "concurrency_test";
 
 	int pid = fork();
 
@@ -1626,7 +1710,9 @@ void run_concurrency_test()
 	{ /*child*/
 		printf("Started child process with PID: [%d] \n", pid);
 
-		do_pcl_concurrency_access(appId_one, "links/last_link2", 0);
+		do_pcl_concurrency_access(appId_one, "links/last_link2", 0); //write
+
+                printf("CHILD exits! \n");
 
 		_exit(EXIT_SUCCESS);
 	}
@@ -1634,7 +1720,9 @@ void run_concurrency_test()
 	{ /*parent*/
 		printf("Started father process with PID: [%d] \n", pid);
 
-		do_pcl_concurrency_access(appId_one, "links/last_link3", 1);
+		do_pcl_concurrency_access(appId_two, "links/last_link2", 1); //read
+
+                printf("PARENT exits! \n");
 
 		_exit(EXIT_SUCCESS);
 	}

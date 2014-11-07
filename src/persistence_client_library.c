@@ -53,6 +53,8 @@ DLT_DECLARE_CONTEXT(gPclDLTContext);
 static int gShutdownMode = 0;
 /// global shutdown cancel counter
 static int gCancelCounter = 0;
+/// global flag
+static int gAppCheckFlag = -1;
 
 
 int customAsyncInitClbk(int errcode)
@@ -61,6 +63,55 @@ int customAsyncInitClbk(int errcode)
 
   return 1;
 }
+
+
+
+/* security check for valid application:
+   if the RCT table exists, the application is proven to be valid (trusted),
+   otherwise return EPERS_NOPRCTABLE  */
+void doInitAppcheck(const char* appName)
+{
+#if USE_APPCHECK
+   char rctFilename[DbPathMaxLen] = {0};
+   snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, appName, gResTableCfg);
+
+   if(access(rctFilename, F_OK) == 0)
+   {
+      gAppCheckFlag = 1;   // "trusted" application
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - app check: "), DLT_STRING(appName), DLT_STRING("is a trusted application"));
+   }
+   else
+   {
+      gAppCheckFlag = 0;   // currently not a "trusted" application
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - app check: "), DLT_STRING(appName), DLT_STRING("is NOT a trusted application"));
+   }
+#endif
+}
+
+
+
+int doAppcheck(void)
+{
+   int trusted = 1;
+#if USE_APPCHECK
+   if(gAppCheckFlag != 1)
+   {
+      char rctFilename[DbPathMaxLen] = {0};
+      snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, gAppId, gResTableCfg);
+      if(access(rctFilename, F_OK) == 0)
+      {
+         gAppCheckFlag = 1;   // "trusted" application
+      }
+      else
+      {
+         gAppCheckFlag = 0;   // not a "trusted" application
+         trusted = 0;
+      }
+   }
+#endif
+   return trusted;
+}
+
 
 
 int pclInitLibrary(const char* appName, int shutdownMode)
@@ -73,24 +124,15 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
    if(gPclInitialized == PCLnotInitialized)
    {
-    char rctFilename[DbPathMaxLen] = {0};
       gShutdownMode = shutdownMode;
 
       DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
                               DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
-#if USE_APPCHECK
-      printf("SECURITY check enabled!!!!!\n");
-      /* security check for valid application:
-         if the RCT table exists, the application is proven to be valid,
-         otherwise return EPERS_NOPRCTABLE  */
 
-      snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, appName, gResTableCfg);
+      char blacklistPath[DbPathMaxLen] = {0};
 
-      if(access(rctFilename, F_OK) == 0)
-      {
-#endif
-        char blacklistPath[DbPathMaxLen] = {0};
+      doInitAppcheck(appName);      // check if we have a trusted application
 
 #if USE_FILECACHE
     DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
@@ -163,13 +205,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
       gAppId[MaxAppNameLen-1] = '\0';
 
       gPclInitialized++;
-#if USE_APPCHECK
-      }
-      else
-      {
-        rval = EPERS_NOPRCTABLE;
-      }
-#endif
    }
    else if(gPclInitialized >= PCLinitialized)
    {

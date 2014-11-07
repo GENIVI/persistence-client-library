@@ -34,6 +34,9 @@ static int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t cal
 static int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                       pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
+
+extern int doAppcheck(void);
+
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // function with handle
@@ -45,34 +48,41 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
    int rval   = 0;
    int handle = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(gPclInitialized >= PCLinitialized )
    {
-      PersistenceInfo_s dbContext;
-
-      char dbKey[DbKeyMaxLen]   = {0};    // database key
-      char dbPath[DbPathMaxLen] = {0};    // database location
-
-      dbContext.context.ldbid   = ldbid;
-      dbContext.context.seat_no = seat_no;
-      dbContext.context.user_no = user_no;
-
-      // get database context: database path and database key
-      rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-      if((rval >= 0) && (dbContext.configKey.type == PersistenceResourceType_key))          // check if type matches
+      if(doAppcheck() == 1)
       {
-         if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
+         PersistenceInfo_s dbContext;
+
+         char dbKey[DbKeyMaxLen]   = {0};    // database key
+         char dbPath[DbPathMaxLen] = {0};    // database location
+
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
+
+         // get database context: database path and database key
+         rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+         if((rval >= 0) && (dbContext.configKey.type == PersistenceResourceType_key))          // check if type matches
          {
-				// remember data in handle array
-				handle = set_key_handle_data(get_persistence_handle_idx(), resource_id, ldbid, user_no, seat_no);
+            if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
+            {
+               // remember data in handle array
+               handle = set_key_handle_data(get_persistence_handle_idx(), resource_id, ldbid, user_no, seat_no);
+            }
+            else
+            {
+               handle = EPERS_BADPOL;
+            }
          }
          else
          {
-            handle = EPERS_BADPOL;
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen - no database context or resource is not a key "));
          }
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen - no database context or resource is not a key "));
+         handle = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -87,25 +97,32 @@ int pclKeyHandleClose(int key_handle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-   	PersistenceKeyHandle_s persHandle;
-
-   	if(get_key_handle_data(key_handle, &persHandle) != -1)
+      if(doAppcheck() == 1)
       {
-   		if ('\0' != persHandle.resource_id[0])
+         PersistenceKeyHandle_s persHandle;
+
+         if(get_key_handle_data(key_handle, &persHandle) != -1)
          {
-            /* Invalidate key handle data */
-        	   set_persistence_handle_close_idx(key_handle);
-            clear_key_handle_array(key_handle);
-            rval = 1;
+            if ('\0' != persHandle.resource_id[0])
+            {
+               /* Invalidate key handle data */
+               set_persistence_handle_close_idx(key_handle);
+               clear_key_handle_array(key_handle);
+               rval = 1;
+            }
+            else
+            {
+               rval = EPERS_INVALID_HANDLE;
+            }
          }
          else
          {
-            rval = EPERS_INVALID_HANDLE;
+            rval = EPERS_MAXHANDLE;
          }
       }
       else
       {
-         rval = EPERS_MAXHANDLE;
+         rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -120,23 +137,30 @@ int pclKeyHandleGetSize(int key_handle)
 
    if(gPclInitialized >= PCLinitialized)
    {
-   	PersistenceKeyHandle_s persHandle;
-
-   	if(get_key_handle_data(key_handle, &persHandle) != -1)
+      if(doAppcheck() == 1)
       {
-         if ('\0' != persHandle.resource_id[0])
+         PersistenceKeyHandle_s persHandle;
+
+         if(get_key_handle_data(key_handle, &persHandle) != -1)
          {
-        	 size = pclKeyGetSize(persHandle.ldbid, persHandle.resource_id,
-        			                persHandle.user_no, persHandle.seat_no);
+            if ('\0' != persHandle.resource_id[0])
+            {
+             size = pclKeyGetSize(persHandle.ldbid, persHandle.resource_id,
+                                  persHandle.user_no, persHandle.seat_no);
+            }
+            else
+            {
+             size = EPERS_INVALID_HANDLE;
+            }
          }
          else
          {
-        	 size = EPERS_INVALID_HANDLE;
+            size = EPERS_MAXHANDLE;
          }
       }
       else
       {
-         size = EPERS_MAXHANDLE;
+         size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -151,24 +175,31 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
    if(gPclInitialized >= PCLinitialized)
    {
-   	PersistenceKeyHandle_s persHandle;
-
-   	if(get_key_handle_data(key_handle, &persHandle) != -1)
+      if(doAppcheck() == 1)
       {
-         if ('\0' != persHandle.resource_id[0])
+         PersistenceKeyHandle_s persHandle;
+
+         if(get_key_handle_data(key_handle, &persHandle) != -1)
          {
-        	 size = pclKeyReadData(persHandle.ldbid, persHandle.resource_id,
-        			                 persHandle.user_no, persHandle.seat_no,
-                                buffer, buffer_size);
+            if ('\0' != persHandle.resource_id[0])
+            {
+             size = pclKeyReadData(persHandle.ldbid, persHandle.resource_id,
+                                   persHandle.user_no, persHandle.seat_no,
+                                   buffer, buffer_size);
+            }
+            else
+            {
+             size = EPERS_INVALID_HANDLE;
+            }
          }
          else
          {
-        	 size = EPERS_INVALID_HANDLE;
+            size = EPERS_MAXHANDLE;
          }
       }
       else
       {
-         size = EPERS_MAXHANDLE;
+         size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -238,24 +269,31 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
    if(gPclInitialized >= PCLinitialized)
    {
-   	PersistenceKeyHandle_s persHandle;
-
-      if(get_key_handle_data(key_handle, &persHandle) != -1)
+      if(doAppcheck() == 1)
       {
-         if ('\0' != persHandle.resource_id[0])
+         PersistenceKeyHandle_s persHandle;
+
+         if(get_key_handle_data(key_handle, &persHandle) != -1)
          {
-        	 size = pclKeyWriteData(persHandle.ldbid,   persHandle.resource_id,
-        			                  persHandle.user_no, persHandle.seat_no,
-                                    buffer, buffer_size);
+            if ('\0' != persHandle.resource_id[0])
+            {
+             size = pclKeyWriteData(persHandle.ldbid,   persHandle.resource_id,
+                                    persHandle.user_no, persHandle.seat_no,
+                                       buffer, buffer_size);
+            }
+            else
+            {
+             size = EPERS_INVALID_HANDLE;
+            }
          }
          else
          {
-        	 size = EPERS_INVALID_HANDLE;
+            size = EPERS_MAXHANDLE;
          }
       }
       else
       {
-         size = EPERS_MAXHANDLE;
+         size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -278,35 +316,42 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(doAppcheck() == 1)
       {
-         PersistenceInfo_s dbContext;
+         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+         {
+            PersistenceInfo_s dbContext;
 
-        char dbKey[DbKeyMaxLen]   = {0};      // database key
-        char dbPath[DbPathMaxLen] = {0};    // database location
+           char dbKey[DbKeyMaxLen]   = {0};      // database key
+           char dbPath[DbPathMaxLen] = {0};    // database location
 
-        dbContext.context.ldbid   = ldbid;
-        dbContext.context.seat_no = seat_no;
-        dbContext.context.user_no = user_no;
+           dbContext.context.ldbid   = ldbid;
+           dbContext.context.seat_no = seat_no;
+           dbContext.context.user_no = user_no;
 
-        // get database context: database path and database key
-        rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-        if(   (rval >= 0)
-           && (dbContext.configKey.type == PersistenceResourceType_key) )  // check if type is matching
-        {
-           if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+           // get database context: database path and database key
+           rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+           if(   (rval >= 0)
+              && (dbContext.configKey.type == PersistenceResourceType_key) )  // check if type is matching
            {
-	           rval = persistence_delete_data(dbPath, dbKey, resource_id, &dbContext);
+              if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+              {
+                 rval = persistence_delete_data(dbPath, dbKey, resource_id, &dbContext);
+              }
+              else
+              {
+                rval = EPERS_BADPOL;
+              }
            }
-           else
-           {
-             rval = EPERS_BADPOL;
-           }
-        }
+         }
+         else
+         {
+            rval = EPERS_LOCKFS;
+         }
       }
       else
       {
-         rval = EPERS_LOCKFS;
+         rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -322,23 +367,30 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 
    if(gPclInitialized >= PCLinitialized)
    {
-      PersistenceInfo_s dbContext;
-
-      char dbKey[DbKeyMaxLen]   = {0};      // database key
-      char dbPath[DbPathMaxLen] = {0};    // database location
-
-      dbContext.context.ldbid   = ldbid;
-      dbContext.context.seat_no = seat_no;
-      dbContext.context.user_no = user_no;
-
-      // get database context: database path and database key
-      data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-      if(   (data_size >= 0)
-         && (dbContext.configKey.type == PersistenceResourceType_key) )    // check if type matches
+      if(doAppcheck() == 1)
       {
-         if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+         PersistenceInfo_s dbContext;
+
+         char dbKey[DbKeyMaxLen]   = {0};      // database key
+         char dbPath[DbPathMaxLen] = {0};    // database location
+
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
+
+         // get database context: database path and database key
+         data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+         if(   (data_size >= 0)
+            && (dbContext.configKey.type == PersistenceResourceType_key) )    // check if type matches
          {
-            data_size = persistence_get_data_size(dbPath, dbKey, resource_id, &dbContext);
+            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+            {
+               data_size = persistence_get_data_size(dbPath, dbKey, resource_id, &dbContext);
+            }
+            else
+            {
+              data_size = EPERS_BADPOL;
+            }
          }
          else
          {
@@ -347,7 +399,7 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
       }
       else
       {
-        data_size = EPERS_BADPOL;
+         data_size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -364,40 +416,47 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(doAppcheck() == 1)
       {
-         PersistenceInfo_s dbContext;
-
-         char dbKey[DbKeyMaxLen]   = {0};      // database key
-         char dbPath[DbPathMaxLen] = {0};    // database location
-
-         dbContext.context.ldbid   = ldbid;
-         dbContext.context.seat_no = seat_no;
-         dbContext.context.user_no = user_no;
-
-         // get database context: database path and database key
-         data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-         if(   (data_size >= 0)
-            && (dbContext.configKey.type == PersistenceResourceType_key) )
+         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
+            PersistenceInfo_s dbContext;
 
-            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+            char dbKey[DbKeyMaxLen]   = {0};      // database key
+            char dbPath[DbPathMaxLen] = {0};    // database location
+
+            dbContext.context.ldbid   = ldbid;
+            dbContext.context.seat_no = seat_no;
+            dbContext.context.user_no = user_no;
+
+            // get database context: database path and database key
+            data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+            if(   (data_size >= 0)
+               && (dbContext.configKey.type == PersistenceResourceType_key) )
             {
-                  data_size = persistence_get_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+
+               if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+               {
+                     data_size = persistence_get_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+               }
+               else
+               {
+                  data_size = EPERS_BADPOL;
+               }
             }
             else
             {
-               data_size = EPERS_BADPOL;
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - no database context or resource is not a key"));
             }
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - no database context or resource is not a key"));
+            data_size = EPERS_LOCKFS;
          }
       }
       else
       {
-         data_size = EPERS_LOCKFS;
+         data_size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
@@ -413,60 +472,67 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
    if(gPclInitialized >= PCLinitialized)
    {
-      if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
+      if(doAppcheck() == 1)
       {
-         if(buffer_size <= gMaxKeyValDataSize)  // check data size
+         if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
          {
-            PersistenceInfo_s dbContext;
-
-            unsigned int hash_val_data = 0;
-
-            char dbKey[DbKeyMaxLen]   = {0};      // database key
-            char dbPath[DbPathMaxLen] = {0};    // database location
-
-            dbContext.context.ldbid   = ldbid;
-            dbContext.context.seat_no = seat_no;
-            dbContext.context.user_no = user_no;
-
-            // get database context: database path and database key
-            data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-            if(   (data_size >= 0)
-               && (dbContext.configKey.type == PersistenceResourceType_key))
+            if(buffer_size <= gMaxKeyValDataSize)  // check data size
             {
-               if(dbContext.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
-               {
-                  // get hash value of data to verify storing
-                  hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);
+               PersistenceInfo_s dbContext;
 
-                  // store data
-                  if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+               unsigned int hash_val_data = 0;
+
+               char dbKey[DbKeyMaxLen]   = {0};      // database key
+               char dbPath[DbPathMaxLen] = {0};    // database location
+
+               dbContext.context.ldbid   = ldbid;
+               dbContext.context.seat_no = seat_no;
+               dbContext.context.user_no = user_no;
+
+               // get database context: database path and database key
+               data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+               if(   (data_size >= 0)
+                  && (dbContext.configKey.type == PersistenceResourceType_key))
+               {
+                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
                   {
-                     data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+                     // get hash value of data to verify storing
+                     hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);
+
+                     // store data
+                     if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+                     {
+                        data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+                     }
+                     else
+                     {
+                        data_size = EPERS_BADPOL;
+                     }
                   }
                   else
                   {
-                     data_size = EPERS_BADPOL;
+                     data_size = EPERS_RESOURCE_READ_ONLY;
                   }
                }
                else
                {
-                  data_size = EPERS_RESOURCE_READ_ONLY;
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData no database context or resource is not a key"));
                }
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData no database context or resource is not a key"));
+               data_size = EPERS_BUFLIMIT;
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
             }
          }
          else
          {
-            data_size = EPERS_BUFLIMIT;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+            data_size = EPERS_LOCKFS;
          }
       }
       else
       {
-         data_size = EPERS_LOCKFS;
+         data_size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
    return data_size;
@@ -506,39 +572,46 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
 
    if(gPclInitialized >= PCLinitialized)
    {
-      PersistenceInfo_s dbContext;
+      if(doAppcheck() == 1)
+      {
+         PersistenceInfo_s dbContext;
 
-      //   unsigned int hash_val_data = 0;
-      char dbKey[DbKeyMaxLen]   = {0};      // database key
-      char dbPath[DbPathMaxLen] = {0};    // database location
+         //   unsigned int hash_val_data = 0;
+         char dbKey[DbKeyMaxLen]   = {0};      // database key
+         char dbPath[DbPathMaxLen] = {0};    // database location
 
-      dbContext.context.ldbid   = ldbid;
-      dbContext.context.seat_no = seat_no;
-      dbContext.context.user_no = user_no;
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
 
-      // get database context: database path and database key
-      rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+         // get database context: database path and database key
+         rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
 
-      if (rval==0)  // no error, key found
-	  { 
-         // registration is only on shared and custom keys possible
-         if(   (dbContext.configKey.storage != PersistenceStorage_local)
-            && (dbContext.configKey.type    == PersistenceResourceType_key) )
-         {
-            rval = persistence_notify_on_change(resource_id, ldbid, user_no, seat_no, callback, regPolicy);
+         if (rval==0)  // no error, key found
+        {
+            // registration is only on shared and custom keys possible
+            if(   (dbContext.configKey.storage != PersistenceStorage_local)
+               && (dbContext.configKey.type    == PersistenceResourceType_key) )
+            {
+               rval = persistence_notify_on_change(resource_id, ldbid, user_no, seat_no, callback, regPolicy);
+            }
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange - Not allowed! Resource is local or it is a file:"),
+                                       DLT_STRING(resource_id), DLT_STRING("LDBID:"), DLT_UINT(ldbid));
+               rval = EPERS_NOTIFY_NOT_ALLOWED;
+            }
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange - Not allowed! Resource is local or it is a file:"),
-            		                  DLT_STRING(resource_id), DLT_STRING("LDBID:"), DLT_UINT(ldbid));
-            rval = EPERS_NOTIFY_NOT_ALLOWED;
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
+                                 DLT_STRING("regNotifyOnChange - Not possible! get_db_context() returned:"),
+                                 DLT_INT(rval));
          }
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR,
-                              DLT_STRING("regNotifyOnChange - Not possible! get_db_context() returned:"),
-                              DLT_INT(rval));
+         rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
    }
 
