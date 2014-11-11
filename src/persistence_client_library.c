@@ -53,9 +53,11 @@ DLT_DECLARE_CONTEXT(gPclDLTContext);
 static int gShutdownMode = 0;
 /// global shutdown cancel counter
 static int gCancelCounter = 0;
+
+#if USE_APPCHECK
 /// global flag
 static int gAppCheckFlag = -1;
-
+#endif
 
 int customAsyncInitClbk(int errcode)
 {

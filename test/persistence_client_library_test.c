@@ -1361,7 +1361,7 @@ START_TEST(test_Notifications)
 END_TEST
 
 
-
+#if USE_APPCHECK
 START_TEST(test_ValidApplication)
 {
 	int ret = 0;
@@ -1375,7 +1375,7 @@ START_TEST(test_ValidApplication)
    pclDeinitLibrary();
 }
 END_TEST
-
+#endif
 
 
 static Suite * persistencyClientLib_suite()
@@ -1458,9 +1458,11 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_Notifications, test_Notifications);
    tcase_set_timeout(tc_Notifications, 2);
 
+#if USE_APPCHECK
    TCase * tc_ValidApplication = tcase_create("ValidApplication");
    tcase_add_test(tc_ValidApplication, test_ValidApplication);
    tcase_set_timeout(tc_ValidApplication, 2);
+#endif
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1515,8 +1517,9 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_Plugin);
    tcase_add_checked_fixture(tc_Plugin, data_setup, data_teardown);
 
+#if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);
-
+#endif
    suite_add_tcase(s, tc_InitDeinit);
 
    return s;
