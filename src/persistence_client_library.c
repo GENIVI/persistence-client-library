@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <dbus/dbus.h>
+#include <pthread.h>
 
 
 
@@ -54,6 +55,8 @@ static int gShutdownMode = 0;
 /// global shutdown cancel counter
 static int gCancelCounter = 0;
 
+static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
+
 #if USE_APPCHECK
 /// global flag
 static int gAppCheckFlag = -1;
@@ -66,6 +69,9 @@ int customAsyncInitClbk(int errcode)
   return 1;
 }
 
+// forward declaration
+static int private_pclInitLibrary(const char* appName, int shutdownMode);
+static int private_pclDeinitLibrary(void);
 
 
 /* security check for valid application:
@@ -120,100 +126,114 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
 
+   pthread_mutex_lock(&gInitMutex);
+   if(gPclInitCounter == 0)
+   {
+      DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
+                              DLT_STRING("- init counter: "), DLT_INT(gPclInitCounter) );
+
+      rval = private_pclInitLibrary(appName, shutdownMode);
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
+                                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitCounter) );
+   }
+
+   gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
+   pthread_mutex_unlock(&gInitMutex);
+
+   return rval;
+}
+
+
+
+static int private_pclInitLibrary(const char* appName, int shutdownMode)
+{
+   int rval = 1;
+
 #if USE_XSTRACE_PERS
    xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
 #endif
 
-   if(gPclInitialized == PCLnotInitialized)
-   {
-      gShutdownMode = shutdownMode;
 
-      DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => I N I T  Persistence Client Library - "), DLT_STRING(appName),
-                              DLT_STRING("- init counter: "), DLT_INT(gPclInitialized) );
+   gShutdownMode = shutdownMode;
 
-      char blacklistPath[DbPathMaxLen] = {0};
+   char blacklistPath[DbPathMaxLen] = {0};
 
-      doInitAppcheck(appName);      // check if we have a trusted application
+   doInitAppcheck(appName);      // check if we have a trusted application
 
 #if USE_FILECACHE
-    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
-    pfcInitCache(appName);
+ DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
+ pfcInitCache(appName);
 #endif
 
-      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+   pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
 
-      // Assemble backup blacklist path
-      sprintf(blacklistPath, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
+   // Assemble backup blacklist path
+   sprintf(blacklistPath, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
 
-      if(readBlacklistConfigFile(blacklistPath) == -1)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary - failed to access blacklist:"), DLT_STRING(blacklistPath));
-      }
-
-#if USE_XSTRACE_PERS
-      xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
-      if(setup_dbus_mainloop() == -1)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to setup main loop"));
-        pthread_mutex_unlock(&gDbusPendingRegMtx);
-        return EPERS_DBUS_MAINLOOP;
-      }
-#if USE_XSTRACE_PERS
-      xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
-
-
-      if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
-      {
-        // register for lifecycle dbus messages
-        if(register_lifecycle(shutdownMode) == -1)
-        {
-          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
-          pthread_mutex_unlock(&gDbusPendingRegMtx);
-          return EPERS_REGISTER_LIFECYCLE;
-        }
-      }
-#if USE_PASINTERFACE
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
-      if(register_pers_admin_service() == -1)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to register to pers admin dbus interface"));
-        pthread_mutex_unlock(&gDbusPendingRegMtx);
-        return EPERS_REGISTER_ADMIN;
-      }
-      else
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary - Successfully established IPC protocol for PCL."));
-      }
-#else
-      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
-#endif
-
-      // load custom plugins
-      if(load_custom_plugins(customAsyncInitClbk) < 0)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
-      }
-
-      // initialize keyHandle array
-      init_key_handle_array();
-
-      pers_unlock_access();
-
-      // assign application name
-      strncpy(gAppId, appName, MaxAppNameLen);
-      gAppId[MaxAppNameLen-1] = '\0';
-
-      gPclInitialized++;
-   }
-   else if(gPclInitialized >= PCLinitialized)
+   if(readBlacklistConfigFile(blacklistPath) == -1)
    {
-      gPclInitialized++; // increment init counter
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - I N I T  Persistence Client Library - "), DLT_STRING(gAppId),
-                           DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitialized) );
+     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary - failed to access blacklist:"), DLT_STRING(blacklistPath));
    }
+
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
+   if(setup_dbus_mainloop() == -1)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to setup main loop"));
+     pthread_mutex_unlock(&gDbusPendingRegMtx);
+     return EPERS_DBUS_MAINLOOP;
+   }
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
+
+
+   if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
+   {
+     // register for lifecycle dbus messages
+     if(register_lifecycle(shutdownMode) == -1)
+     {
+       DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary => Failed to register to lifecycle dbus interface"));
+       pthread_mutex_unlock(&gDbusPendingRegMtx);
+       return EPERS_REGISTER_LIFECYCLE;
+     }
+   }
+#if USE_PASINTERFACE
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
+   if(register_pers_admin_service() == -1)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - Failed to register to pers admin dbus interface"));
+     pthread_mutex_unlock(&gDbusPendingRegMtx);
+     return EPERS_REGISTER_ADMIN;
+   }
+   else
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclInitLibrary - Successfully established IPC protocol for PCL."));
+   }
+#else
+   DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("PAS interface is not enabled, enable with \"./configure --enable-pasinterface\""));
+#endif
+
+   // load custom plugins
+   if(load_custom_plugins(customAsyncInitClbk) < 0)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
+   }
+
+   // initialize keyHandle array
+   init_key_handle_array();
+
+   pers_unlock_access();
+
+   // assign application name
+   strncpy(gAppId, appName, MaxAppNameLen);
+   gAppId[MaxAppNameLen-1] = '\0';
+
 
 #if USE_XSTRACE_PERS
    xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
@@ -223,79 +243,26 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 }
 
 
-
 int pclDeinitLibrary(void)
 {
-   int i = 0, rval = 1;
+   int rval = 1;
 
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
+   pthread_mutex_lock(&gInitMutex);
 
-   if(gPclInitialized == PCLinitialized)
+   if(gPclInitCounter == 1)
    {
-      int* retval;
-    MainLoopData_u data;
-    data.message.cmd = (uint32_t)CMD_QUIT;
-    data.message.string[0] = '\0';  // no string parameter, set to 0
-
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
-                                            DLT_STRING("- init counter: "), DLT_INT(gPclInitialized));
+                                            DLT_STRING("- init counter: "), DLT_INT(gPclInitCounter));
+      rval = private_pclDeinitLibrary();
 
-      // unregister for lifecycle dbus messages
-      if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
-         rval = unregister_lifecycle(gShutdownMode);
-
-#if USE_PASINTERFACE == 1
-      rval = unregister_pers_admin_service();
-      if(0 != rval)
-    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Failed to de-initialize IPC protocol for PCL."));
-    }
-      else
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Successfully de-initialized IPC protocol for PCL."));
-      }
-#endif
-
-      // unload custom client libraries
-      for(i=0; i<PersCustomLib_LastEntry; i++)
-      {
-         if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
-         {
-            // deinitialize plugin
-            gPersCustomFuncs[i].custom_plugin_deinit();
-            // close library handle
-            dlclose(gPersCustomFuncs[i].handle);
-
-            invalidate_custom_plugin(i);
-         }
-      }
-
-      process_prepare_shutdown(Shutdown_Full);  // close all db's and fd's and block access
-
-      // send quit command to dbus mainloop
-      deliverToMainloop_NM(&data);
-
-      // wait until the dbus mainloop has ended
-      pthread_join(gMainLoopThread, (void**)&retval);
-
-      pthread_mutex_unlock(&gDbusPendingRegMtx);
-      pthread_mutex_unlock(&gDbusInitializedMtx);
-
-      gPclInitialized = PCLnotInitialized;
-
-#if USE_FILECACHE
-   pfcDeinitCache();
-#endif
-
+      gPclInitCounter--;   // decrement init counter
       DLT_UNREGISTER_CONTEXT(gPclDLTContext);
    }
-   else if(gPclInitialized > PCLinitialized)
+   else if(gPclInitCounter > 1)
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - D E I N I T  client library - "), DLT_STRING(gAppId),
-                                           DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitialized));
-      gPclInitialized--;   // decrement init counter
+                                           DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitCounter));
+      gPclInitCounter--;   // decrement init counter
    }
    else
    {
@@ -303,6 +270,70 @@ int pclDeinitLibrary(void)
                                           DLT_STRING("- NOT INITIALIZED: "));
       rval = EPERS_NOT_INITIALIZED;
    }
+
+   pthread_mutex_unlock(&gInitMutex);
+
+   return rval;
+}
+
+static int private_pclDeinitLibrary(void)
+{
+   int i = 0, rval = 1;
+
+#if USE_XSTRACE_PERS
+   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
+#endif
+
+   int* retval;
+   MainLoopData_u data;
+   data.message.cmd = (uint32_t)CMD_QUIT;
+   data.message.string[0] = '\0';  // no string parameter, set to 0
+
+   // unregister for lifecycle dbus messages
+   if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
+      rval = unregister_lifecycle(gShutdownMode);
+
+#if USE_PASINTERFACE == 1
+   rval = unregister_pers_admin_service();
+   if(0 != rval)
+ {
+   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Failed to de-initialize IPC protocol for PCL."));
+ }
+   else
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Successfully de-initialized IPC protocol for PCL."));
+   }
+#endif
+
+   // unload custom client libraries
+   for(i=0; i<PersCustomLib_LastEntry; i++)
+   {
+      if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
+      {
+         // deinitialize plugin
+         gPersCustomFuncs[i].custom_plugin_deinit();
+         // close library handle
+         dlclose(gPersCustomFuncs[i].handle);
+
+         invalidate_custom_plugin(i);
+      }
+   }
+
+   process_prepare_shutdown(Shutdown_Full);  // close all db's and fd's and block access
+
+   // send quit command to dbus mainloop
+   deliverToMainloop_NM(&data);
+
+   // wait until the dbus mainloop has ended
+   pthread_join(gMainLoopThread, (void**)&retval);
+
+   pthread_mutex_unlock(&gDbusPendingRegMtx);
+   pthread_mutex_unlock(&gDbusInitializedMtx);
+
+
+#if USE_FILECACHE
+   pfcDeinitCache();
+#endif
 
 
 #if USE_XSTRACE_PERS

@@ -119,10 +119,6 @@ enum _PersistenceConstantDef
    ResIsFile            = 1,
    /// flag to indicate that access is not locked
    AccessNoLock         = 1,
-   /// indication if PCL is not initialized
-   PCLnotInitialized    = 0,
-   /// indication if PCL is initialized
-   PCLinitialized       = 1,
    /// flag to identify if file will be closed
    FileClosed           = 1,
    /// flag to identify if file has been opened
@@ -257,7 +253,7 @@ extern int gMaxKeyValDataSize;
 extern DltContext gPclDLTContext;
 
 /// flag to indicate if client library has been initialized
-extern unsigned int gPclInitialized;
+extern unsigned int gPclInitCounter;
 
 
 /// change signal string

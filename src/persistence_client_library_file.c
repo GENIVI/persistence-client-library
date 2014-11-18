@@ -75,7 +75,7 @@ int pclFileClose(int fd)
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -101,9 +101,11 @@ int pclFileClose(int fd)
             }
             else
             {
+               fsync(fd);
                rval = close(fd);
             }
    #else
+            fsync(fd);
             rval = close(fd);
    #endif
 
@@ -127,7 +129,7 @@ int pclFileGetSize(int fd)
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       struct stat buf;
 
@@ -169,7 +171,7 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 #else
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
@@ -190,7 +192,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 {
    int handle = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       int shared_DB = 0;
       int wantBackup = 1;
@@ -380,7 +382,7 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
    int readSize = EPERS_NOT_INITIALIZED;
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
 #if USE_FILECACHE
    	if(get_file_cache_status(fd) == 1)
@@ -406,7 +408,7 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
@@ -455,7 +457,7 @@ int pclFileSeek(int fd, long int offset, int whence)
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileSeek fd:"), DLT_INT(fd));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
@@ -489,7 +491,7 @@ int pclFileUnmapData(void* address, long size)
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
@@ -512,7 +514,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
       {
@@ -581,7 +583,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 {
    int handle = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       int shared_DB = 0;
       PersistenceInfo_s dbContext;
@@ -734,7 +736,7 @@ int pclFileReleasePath(int pathHandle)
 
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
    	int  permission = get_ossfile_permission(pathHandle);
       if(permission != -1)		// permission is here also used for range check

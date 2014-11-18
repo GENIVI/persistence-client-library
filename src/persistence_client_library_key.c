@@ -48,7 +48,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
    int rval   = 0;
    int handle = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized )
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -95,7 +95,7 @@ int pclKeyHandleClose(int key_handle)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -135,7 +135,7 @@ int pclKeyHandleGetSize(int key_handle)
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -173,7 +173,7 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -236,7 +236,7 @@ int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, 
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
    	PersistenceKeyHandle_s persHandle;
 
@@ -267,7 +267,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -314,7 +314,7 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -365,7 +365,7 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 {
    int data_size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -414,7 +414,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 {
    int data_size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -470,7 +470,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 {
    int data_size = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
@@ -570,7 +570,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   if(gPclInitialized >= PCLinitialized)
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
       if(doAppcheck() == 1)
       {
