@@ -480,8 +480,6 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             {
                PersistenceInfo_s dbContext;
 
-               unsigned int hash_val_data = 0;
-
                char dbKey[DbKeyMaxLen]   = {0};      // database key
                char dbPath[DbPathMaxLen] = {0};    // database location
 
@@ -496,9 +494,6 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                {
                   if(dbContext.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
                   {
-                     // get hash value of data to verify storing
-                     hash_val_data = pclCrc32(hash_val_data, buffer, buffer_size);
-
                      // store data
                      if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
                      {
