@@ -42,7 +42,7 @@
 #define CLOCK_ID  CLOCK_MONOTONIC
 
 
-const char* gAppName = "lt-persistence_client_library_test";
+const char* gAppName = "lt-persistence_client_library_benchmark";
 
 
 char sysTimeBuffer[BUFFER_SIZE];
@@ -178,10 +178,8 @@ void write_benchmark(int numLoops)
    long long overallDuration = 0;
 
    struct timespec writeStart, writeEnd;
-   //unsigned char buffer[BUFFER_SIZE] = {0};
    char key[128] = { 0 };
 
-   //unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    //(void)pclInitLibrary(gAppName , shutdownReg);
 
    printf("\nTest  w r i t e  c a c h e d  performance: %d times\n", numLoops);
@@ -349,13 +347,200 @@ void* do_something(void* dataPtr)
 }
 
 
+void pcl_init_simple()
+{
+   long long duration = 0;
+
+   struct timespec start, end;
+   printf("\n*** Measure  i n i t duration\n");
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // initialize the persistence client library
+   // -------------------------------------------------
+   (void)pclInitLibrary(gAppName , PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL);
+
+
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   printf("*** Init duration => %f ms\n", (double)((double)duration/NANO2MIL));
+}
+
+
+void pcl_read_data_simple()
+{
+   int ret = 0;
+   long long duration = 0;
+   unsigned char buffer[BUFFER_SIZE] = {0};
+
+   struct timespec start, end;
+   printf("\n*** Measure  r e a d  duration\n");
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // read data "pos/last_position_w_bench"
+   // -------------------------------------------------
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position_w_bench", 1, 2, buffer, BUFFER_SIZE);
+
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   if(ret < 0)
+   {
+      printf("pcl_read_data_simple => FAILED: %d\n", ret);
+   }
+   printf("*** Read duration \"bench\"   => %f ms\n", (double)((double)duration/NANO2MIL));
+
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // R E A D  data "pos/last_position_w_bench"
+   // -------------------------------------------------
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position_w_bench", 1, 2, buffer, BUFFER_SIZE);
+
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   if(ret < 0)
+   {
+      printf("pcl_read_data_simple => FAILED: %d\n", ret);
+   }
+   printf("*** Read duration \"bench\"   => %f ms\n", (double)((double)duration/NANO2MIL));
+
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // R E A D  data "pos/last_position_w_bench2"
+   // -------------------------------------------------
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position_w_bench2", 1, 2, buffer, BUFFER_SIZE);
+
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   if(ret < 0)
+   {
+      printf("pcl_read_data_simple => FAILED: %d\n", ret);
+   }
+   printf("*** Read duration \"bench2\"  => %f ms\n", (double)((double)duration/NANO2MIL));
+
+
+   clock_gettime(CLOCK_ID, &start);
+
+
+   //
+   // R E A D  data "pos/last_position_w_bench"
+   // -------------------------------------------------
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position_w_bench2", 1, 2, buffer, BUFFER_SIZE);
+
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   if(ret < 0)
+   {
+      printf("pcl_read_data_simple => FAILED: %d\n", ret);
+   }
+   printf("*** Read duration \"bench2\"  => %f ms\n", (double)((double)duration/NANO2MIL));
+}
+
+
+void pcl_write_data_simple()
+{
+   int ret = 0;
+   long long duration = 0;
+   unsigned char buffer[BUFFER_SIZE] = {0};
+   struct timespec start, end;
+
+   memset(buffer, 0xAA55AA55, BUFFER_SIZE);
+
+   printf("\n*** Measure  w r i t e  duration\n");
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // W R I T E  data "pos/last_position_w_bench"
+   // -------------------------------------------------
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "pos/last_position_w_bench", 1, 2, buffer, BUFFER_SIZE);
+
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   if(ret < 0)
+   {
+      printf("pcl_write_data_simple => FAILED: %d\n", ret);
+   }
+   printf("*** Write duration \"bench\"  => %f ms\n", (double)((double)duration/NANO2MIL));
+
+
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // W R I T E  data "pos/last_position_w_bench2"
+   // -------------------------------------------------
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "pos/last_position_w_bench2", 1, 2, buffer, BUFFER_SIZE);
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+   if(ret < 0)
+   {
+      printf("pcl_write_data_simple 2 => FAILED: %d\n", ret);
+   }
+
+   printf("*** Write duration \"bench2\" => %f ms\n", (double)((double)duration/NANO2MIL));
+
+   clock_gettime(CLOCK_ID, &start);
+
+   //
+   // W R I T E  data "pos/last_position_w_bench2"
+   // -------------------------------------------------
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "pos/last_position_w_bench2", 1, 2, buffer, BUFFER_SIZE);
+   clock_gettime(CLOCK_ID, &end);
+   duration = getNsDuration(&start, &end);
+
+
+   if(ret < 0)
+   {
+      printf("pcl_write_data_simple 2 => FAILED: %d\n", ret);
+   }
+   printf("*** Write duration \"bench2\" => %f ms\n", (double)((double)duration/NANO2MIL));
+}
+
+
+void pcl_deinit_data_simple()
+{
+   long long durationDeinit = 0;
+   struct timespec deinitStart, deinitEnd;
+
+   printf("\n*** Measure  d e i n i t duration\n");
+
+   // init
+   clock_gettime(CLOCK_ID, &deinitStart);
+
+   //
+   // uninitialize the persistence client library
+   // -------------------------------------------------
+   (void)pclDeinitLibrary();
+
+   clock_gettime(CLOCK_ID, &deinitEnd);
+   durationDeinit = getNsDuration(&deinitStart, &deinitEnd);
+
+   printf("*** Deinit duration => %f ms\n", (double)((double)durationDeinit/NANO2MIL));
+}
+
+
 int main(int argc, char *argv[])
 {
    int ret = 0;
 
 #if 1
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   int numLoops = 1024;		// number of default loops
+   int numLoops = 1024,    // number of default loops
+       doSimpleBench = 0;
    long long resolution = 0;
 
    struct timespec clockRes;
@@ -372,17 +557,20 @@ int main(int argc, char *argv[])
 
    int opt;
 
-	while ((opt = getopt(argc, argv, "l:")) != -1)
-	{
-		switch (opt)
-		{
-			case 'l':
-				numLoops = atoi(optarg);
-				break;
-		  }
-	 }
+   while ((opt = getopt(argc, argv, "sl:")) != -1)
+   {
+      switch (opt)
+      {
+         case 's':
+            doSimpleBench = 1;
+            break;
+         case 'l':
+            numLoops = atoi(optarg);
+            break;
+        }
+    }
 
-	printf("Number of loops: %d\n", numLoops);
+   printf("Number of loops: %d\n", numLoops);
 
 
    snprintf(sysTimeBuffer, BUFFER_SIZE, "zu5CXT2WbxCBqnUk0Y4N52H5PRGgVRbNhoY64sZQkRrRw8b6rpBA23Cuf4kxw5PMyo7aX3zdGACf9Z96A5O5MNimlOmmhu6EHDfSVNkA7NLlPX97eh9SOIXiJqQYr85F9eQdGDkbZ9HANfGxekptxeH04EOP2jukxUqKnh2nj33x7TtmMnjfqXFWg0RZ3cRHX1kAQxxr2hUo8uJvNwgooXicXp5L4OWLxIBEkG3yGESQ4dFsy5uoBrZDi78EV7l9dqc7ahA4b8g0TcfYEfiynyRcMPEvKwq4Lvn8T8X001DLu3ig8QAQlzVDF6LTfvvs7hrMCwVKwvtjZBE9UrJ2X8nijX5Ncy8wQ9BkzFI9vqhTt2NOtGCZ808iWPMvamRi1acEPxJI8kIRN8ArIRUidPMTDCWKA97Ffz70zJt5YDaXLNgodKC6dgA5zc99ZwjyRTvXePMQofsQuXLuxFYcamOxtXrRsafjA8CC9Kiu9jOS2tdyYQnoV9oDjJlsvfPqg667oBaGe9b9iyHfqWM42xHVoYj7YERvUiliOB0KYEFM7el8AWc2YnEHq5i0jKhoYHdKll7qqEgoJdvYkczExQ2W85AX8jyFW5XVCeWUTQSYkTnipLI9D27jXw2lYGhh3rlILiM1SFBTYCGflXNfaTsHVAjjda4xpEd6t7JM5E96KkLBBdFWbb2H3wB4qJPgbu2al3X8SUAN4hQ50cUFr1yAFfoGSVYghMShqN5VNUo4s6xXo2FC0jYmeiHQd4dYXUCA31XdruG2f8CPA07ifMveiQl7yEqp4rmHUqzIA5D6SV3IqfYs0Vw8FgBmJZKo9a4JnZjzwlmqa5illZd74vZD0D5iJd4X7gBs3mokEMKN1gMHVIiVQ348sFQuyly2ZKLNCGAglRQAfvHTQSiJiNT7CUJt9OHpUbPyVyaN2gd8LN3b3EAwbLGTS21cI6kSsDcleg9iCmP7VMVhc2Aqu76nKAjDaB7JeRjTSeJ302UwaXWYecN24LNiJKBHXU9q");
@@ -391,55 +579,65 @@ int main(int argc, char *argv[])
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("PCLb","tests the persistence client library");
 
-
-#if 1
-   printf("\n\n============================\n");
-   printf("      PCL benchmark\n");
-   printf("============================\n\n");
+   printf("\n\n===============================\n");
+   printf("      PCL benchmark ==> %s\n", (doSimpleBench == 1) ? "simple" : "full");
+   printf("================================\n\n");
 
    clock_getres(CLOCK_ID, &clockRes);
    resolution = ((clockRes.tv_sec * SECONDS2NANO) + clockRes.tv_nsec);
    printf("Clock resolution  => %f ms\n\n", (double)((double)resolution/NANO2MIL));
 
+   if(doSimpleBench == 1)
+   {
+      pcl_init_simple();
 
+      pcl_read_data_simple();
 
-   (void)pclInitLibrary(gAppName , shutdownReg);
+      pcl_write_data_simple();
 
-   //handle_benchmark(numLoops);
+      pcl_deinit_data_simple();
 
-   init_benchmark(numLoops);
+      printf("\n\n");
+   }
+   else
+   {
+#if 1
+      (void)pclInitLibrary(gAppName , shutdownReg);
 
-   read_benchmark(numLoops);
+      //handle_benchmark(numLoops);
 
-   //pcldeinit is done inside write_benchmark
-   write_benchmark(numLoops);
+      init_benchmark(numLoops);
+
+      read_benchmark(numLoops);
+
+      //pcldeinit is done inside write_benchmark
+      write_benchmark(numLoops);
 
 
 #else
 
-   toThread1 = 1;
+      toThread1 = 1;
 
-   ret = pthread_create(&thread1, NULL, do_something, &toThread1);
-   pthread_setschedprio(thread1, sched_get_priority_max(SCHED_OTHER));
+      ret = pthread_create(&thread1, NULL, do_something, &toThread1);
+      pthread_setschedprio(thread1, sched_get_priority_max(SCHED_OTHER));
 
-   toThread2 = 2;
-   ret = pthread_create(&thread2, NULL, do_something, &toThread2);
-   pthread_setschedprio(thread2, sched_get_priority_max(SCHED_OTHER));
+      toThread2 = 2;
+      ret = pthread_create(&thread2, NULL, do_something, &toThread2);
+      pthread_setschedprio(thread2, sched_get_priority_max(SCHED_OTHER));
 
-   toThread3 = 3;
-   ret = pthread_create(&thread3, NULL, do_something, &toThread3);
-   pthread_setschedprio(thread3, sched_get_priority_max(SCHED_OTHER));
+      toThread3 = 3;
+      ret = pthread_create(&thread3, NULL, do_something, &toThread3);
+      pthread_setschedprio(thread3, sched_get_priority_max(SCHED_OTHER));
 
 
-   // wait until the dbus mainloop has ended
-   pthread_join(thread1, (void**)&retval1);
-   // wait until the dbus mainloop has ended
-   pthread_join(thread2, (void**)&retval2);
-   // wait until the dbus mainloop has ended
-   pthread_join(thread3, (void**)&retval3);
+      // wait until the dbus mainloop has ended
+      pthread_join(thread1, (void**)&retval1);
+      // wait until the dbus mainloop has ended
+      pthread_join(thread2, (void**)&retval2);
+      // wait until the dbus mainloop has ended
+      pthread_join(thread3, (void**)&retval3);
 #endif
-
-
+   }
 
    // unregister debug log and trace
    DLT_UNREGISTER_APP();
