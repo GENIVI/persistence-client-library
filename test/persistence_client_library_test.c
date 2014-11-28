@@ -766,6 +766,36 @@ END_TEST
 
 
 
+START_TEST(test_DataFileConfDefault)
+{
+   int fd = 0, ret = 0;
+   char readBuffer[READ_SIZE] = {0};
+   char* refBuffer01 = "Some default file content: 01 Configurable default data 01.";
+   char* refBuffer02 = "Some default file content: 02 Configurable default data 02.";
+
+   // -- file interface ---
+   memset(readBuffer, 0, READ_SIZE);
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData_01.configurable", 99, 99);
+   ret = pclFileReadData(fd, readBuffer, READ_SIZE);
+   printf("Size: %d - Soll:%d\n", ret, strlen(refBuffer01));
+   printf("READ BUFFER: \"%s\"\n", readBuffer);
+   fail_unless(strncmp(readBuffer, refBuffer01, strlen(refBuffer01)) == 0, "Buffer not correctly read => mediaData_01.configurable");
+
+   ret = pclFileClose(fd);
+
+
+   memset(readBuffer, 0, READ_SIZE);
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData_02.configurable", 99, 99);
+   ret = pclFileReadData(fd, readBuffer, READ_SIZE);
+   fail_unless(strncmp(readBuffer, refBuffer02, strlen(refBuffer02)) == 0, "Buffer not correctly read => mediaData_01.configurable");
+
+   printf("READ BUFFER: %s\n", readBuffer);
+   ret = pclFileClose(fd);
+}
+END_TEST
+
+
+
 void data_setupBackup(void)
 {
 	int handle = -1;
@@ -1230,6 +1260,8 @@ START_TEST(test_WriteConfDefault)
    unsigned char writeBuffer2[]  = "And this is a test string which is different form previous test string";
    unsigned char readBuffer[READ_SIZE]  = {0};
 
+
+   // -- key-value interface ---
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01", PCL_USER_DEFAULTDATA, 0, writeBuffer, strlen((char*)writeBuffer));
    fail_unless(ret == strlen((char*)writeBuffer), "Write Conf default data: write size does not match");
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01",  3, 2, readBuffer, READ_SIZE);
@@ -1243,6 +1275,7 @@ START_TEST(test_WriteConfDefault)
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01",  3, 2, readBuffer, READ_SIZE);
    fail_unless(strncmp((char*)readBuffer, (char*)writeBuffer2, strlen((char*)readBuffer)) == 0, "Buffer2 not correctly read");
    //printf(" --- test_ReadConfDefault => statusHandle/writeconfdefault01: \"%s\" => \"%s\" \n    retIst: %d retSoll: %d\n", readBuffer, writeBuffer2, ret, strlen((char*)writeBuffer2));
+
 }
 END_TEST
 
@@ -1522,10 +1555,13 @@ START_TEST(test_DbusInterface)
 END_TEST
 
 
-
 static Suite * persistencyClientLib_suite()
 {
-   Suite * s  = suite_create("Persistency client library");
+   const char* testSuiteName = "Persistency_client_library";
+
+   Suite * s  = suite_create(testSuiteName);
+
+   //setenv("CK_RUN_SUITE", testSuiteName, 1);
 
    TCase * tc_persGetData = tcase_create("GetData");
    tcase_add_test(tc_persGetData, test_GetData);
@@ -1562,6 +1598,10 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
    tcase_set_timeout(tc_persDataFile, 2);
+
+   TCase * tc_DataFileConfDefault = tcase_create("DataFileConfDefault");
+   tcase_add_test(tc_DataFileConfDefault, test_DataFileConfDefault);
+   tcase_set_timeout(tc_DataFileConfDefault, 2);
 
    TCase * tc_persDataFileBackupCreation = tcase_create("DataFileBackupCreation");
    tcase_add_test(tc_persDataFileBackupCreation, test_DataFileBackupCreation);
@@ -1618,6 +1658,8 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_VerifyROnly = tcase_create("VerifyROnly");
    tcase_add_test(tc_VerifyROnly, test_VerifyROnly);
+
+
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1678,14 +1720,19 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_VerifyROnly);
    tcase_add_checked_fixture(tc_VerifyROnly, data_setup, data_teardown);
 
+   suite_add_tcase(s, tc_DataFileConfDefault);
+   tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
+
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);
 #endif
    suite_add_tcase(s, tc_InitDeinit);
 
+#if 0
    suite_add_tcase(s, tc_DbusInterface);
    tcase_add_checked_fixture(tc_DbusInterface, data_setup, data_teardown);
    tcase_set_timeout(tc_DbusInterface, 10);
+#endif
 
    return s;
 }

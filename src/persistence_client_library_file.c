@@ -790,7 +790,13 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 		snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
 	}
 
-	snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+	// first check for  c o n f i g u r a b l e  default data
+	snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_CONFIG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+	if(access(defaultPath, F_OK) )
+	{
+      // if no  c o n f i g u r  a b l e  default data available, check for  d e f a u l t  data
+      snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+	}
 
 	defaultHandle = open(defaultPath, O_RDONLY);
 	if(defaultHandle != -1)	// check if default data is available
