@@ -350,12 +350,20 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
       || PersistenceStorage_shared == info->configKey.storage )
    {
       int handleDB = -1 ;
+      int dbType = info->configKey.policy;      // assign default policy
+      const char* dbInput = key;                      // assign default key
 
+      if(info->context.user_no ==  PCL_USER_DEFAULTDATA)
+      {
+         dbType = PersistenceDB_confdefault;    // change policy when writing configurable default data
+         dbInput = resource_id;                 // change database key when writing configurable default data
+      }
 
-      handleDB = database_get(info, dbPath, info->configKey.policy);
+      handleDB = database_get(info, dbPath, dbType);
+
       if(handleDB >= 0)
       {
-         write_size = persComDbWriteKey(handleDB, key, (char*)buffer, buffer_size) ;
+         write_size = persComDbWriteKey(handleDB, dbInput, (char*)buffer, buffer_size) ;
          if(write_size < 0)
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data - persComDbWriteKey() failure"));

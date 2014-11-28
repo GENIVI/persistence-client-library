@@ -36,13 +36,13 @@
 #define NANO2MIL        1000000L
 #define MIL2SEC            1000L
 
-#define BUFFER_SIZE  1024
+#define BUFFER_SIZE  2048
 
 // define for the used clock: "CLOCK_MONOTONIC" or "CLOCK_REALTIME"
 #define CLOCK_ID  CLOCK_MONOTONIC
 
 
-const char* gAppName = "lt-persistence_client_library_benchmark";
+const char* gAppName = "lt-persistence_client_library_test";
 
 
 char sysTimeBuffer[BUFFER_SIZE];
@@ -146,7 +146,7 @@ void read_benchmark(int numLoops)
    printf("\nTest  r e a d  performance: %d times\n", numLoops);
 
    clock_gettime(CLOCK_ID, &readStart);
-   ret = pclKeyReadData(0xFF, "pos/last_position_w_bench",      1, 2, buffer, BUFFER_SIZE);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position_w_bench",      1, 2, buffer, BUFFER_SIZE);
    clock_gettime(CLOCK_ID, &readEnd);
    duration += getNsDuration(&readStart, &readEnd);
    printf(" INITIAL read 1 \"pos/last_position_w_bench\"  => %f ms for [%d Kilobytes item]\n", (double)((double)duration/NANO2MIL), ret/1024);
@@ -158,7 +158,7 @@ void read_benchmark(int numLoops)
    {
       snprintf(key, 128, "pos/last_position_w_bench%d",i);
       clock_gettime(CLOCK_ID, &readStart);
-      ret = pclKeyReadData(0xFF, key,      1, 2, buffer, BUFFER_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, key,      1, 2, buffer, BUFFER_SIZE);
       clock_gettime(CLOCK_ID, &readEnd);
 
       duration += getNsDuration(&readStart, &readEnd);
@@ -184,10 +184,10 @@ void write_benchmark(int numLoops)
    //unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    //(void)pclInitLibrary(gAppName , shutdownReg);
 
-   printf("\nTest  w r i t e  performance: %d times\n", numLoops);
+   printf("\nTest  w r i t e  c a c h e d  performance: %d times\n", numLoops);
 
    clock_gettime(CLOCK_ID, &writeStart);
-   ret = pclKeyWriteData(0xFF, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, 1024);
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, 1024);
    clock_gettime(CLOCK_ID, &writeEnd);
    duration = getNsDuration(&writeStart, &writeEnd);
    printf("Initial Write => %f ms [%d Kilobytes]\n", (double)((double)duration/NANO2MIL), ret/1024);
@@ -200,8 +200,8 @@ void write_benchmark(int numLoops)
       snprintf(key, 128, "pos/last_position_w_bench%d",i);
 
       clock_gettime(CLOCK_ID, &writeStart);
-      //ret = pclKeyWriteData(0xFF, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-      ret = pclKeyWriteData(0xFF, key, 1, 2, (unsigned char*)sysTimeBuffer, 1024);
+      //ret = pclKeyWriteData(PCL_LDBID_LOCAL, "pos/last_position_w_bench", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, key, 1, 2, (unsigned char*)sysTimeBuffer, 1024);
       clock_gettime(CLOCK_ID, &writeEnd);
 
       duration += getNsDuration(&writeStart, &writeEnd);
@@ -211,7 +211,7 @@ void write_benchmark(int numLoops)
    overallDuration += duration;
    duration = 0;
 
-   printf("\nTest  deinit performance: %d times\n", numLoops);
+   printf("\nTest  w r i t e b a c k performance: %d times\n", numLoops);
    clock_gettime(CLOCK_ID, &writeStart);
    (void)pclDeinitLibrary();
    clock_gettime(CLOCK_ID, &writeEnd);
@@ -219,9 +219,9 @@ void write_benchmark(int numLoops)
 
    overallDuration += duration;
 
-   printf("Deinit => %f ms for \n", (double)((double)duration/NANO2MIL));
+   printf("Writeback for all Writes => %f ms for [%d Megabytes]\n", (double)((double)duration/NANO2MIL), (numLoops * ret) / 1048576);
 
-   printf("Overall duration for write and deinit => %f ms for [%d bytes]\n", (double)((double)overallDuration/NANO2MIL),  numLoops * ret);
+   printf("Overall duration for write cached and writeback benchmark => %f ms for [%d bytes]\n", (double)((double)overallDuration/NANO2MIL),  2 * numLoops * ret);
 }
 
 
@@ -239,7 +239,7 @@ void handle_benchmark(int numLoops)
    for(i=0; i<1; i++)
    {
       clock_gettime(CLOCK_ID, &openStart);
-      hdl = pclKeyHandleOpen(0xFF, "handlePos/last_position_ro_bench", 1, 2);
+      hdl = pclKeyHandleOpen(PCL_LDBID_LOCAL, "handlePos/last_position_ro_bench", 1, 2);
       clock_gettime(CLOCK_ID, &openEnd);
 
       //pclKeyHandleClose(hdl);
@@ -252,7 +252,7 @@ void handle_benchmark(int numLoops)
    for(i=0; i<1; i++)
    {
       clock_gettime(CLOCK_ID, &openStart);
-      hdl2 = pclKeyHandleOpen(0xFF, "handlePos/last_position_ro_bench2", 1, 2);
+      hdl2 = pclKeyHandleOpen(PCL_LDBID_LOCAL, "handlePos/last_position_ro_bench2", 1, 2);
       clock_gettime(CLOCK_ID, &openEnd);
 
       //pclKeyHandleClose(hdl2);
@@ -296,14 +296,14 @@ void handle_benchmark(int numLoops)
 
 
    clock_gettime(CLOCK_ID, &openStart);
-   hdl3 = pclKeyHandleOpen(0xFF, "handlePos/last_position_w_bench", 1, 2);
+   hdl3 = pclKeyHandleOpen(PCL_LDBID_LOCAL, "handlePos/last_position_w_bench", 1, 2);
    clock_gettime(CLOCK_ID, &openEnd);
    duration = getNsDuration(&openStart, &openEnd);
    printf(" Open 3 => %f ms\n", (double)((double)duration/NANO2MIL));
 
 
    clock_gettime(CLOCK_ID, &openStart);
-   hdl4 = pclKeyHandleOpen(0xFF, "handlePos/last_position_w_bench2", 1, 2);
+   hdl4 = pclKeyHandleOpen(PCL_LDBID_LOCAL, "handlePos/last_position_w_bench2", 1, 2);
    clock_gettime(CLOCK_ID, &openEnd);
    duration = getNsDuration(&openStart, &openEnd);
    printf(" Open 4 => %f ms\n", (double)((double)duration/NANO2MIL));

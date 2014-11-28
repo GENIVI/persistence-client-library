@@ -188,7 +188,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       rval = EPERS_NOPRCTABLE;
    }
 
-   if((resourceFound == 0) && (dbContext->context.ldbid == 0xFF) ) // create only when the resource is local data
+   if((resourceFound == 0) && (dbContext->context.ldbid == PCL_LDBID_LOCAL) ) // create only when the resource is local data
    {
       //
       // resource NOT found in resource table ==> default is local cached key
@@ -233,7 +233,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
    //
    // create resource database key
    //
-   if(((dbContext->context.ldbid < 0x80) || (dbContext->context.ldbid == 0xFF)) &&  (NULL != dbKey))
+   if(((dbContext->context.ldbid < 0x80) || (dbContext->context.ldbid == PCL_LDBID_LOCAL)) &&  (NULL != dbKey))
    {
       // The LDBID is used to find the DBID in the resource table.
       if((dbContext->context.user_no == 0) && (dbContext->context.seat_no == 0))
@@ -262,7 +262,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       storePolicy = PersistenceStorage_local;
    }
 
-   if((dbContext->context.ldbid >= 0x80) && (dbContext->context.ldbid != 0xFF) && (NULL != dbKey))
+   if((dbContext->context.ldbid >= 0x80) && (dbContext->context.ldbid != PCL_LDBID_LOCAL) && (NULL != dbKey))
    {
       // The LDBID is used to find the DBID in the resource table.
       // /<LDBID parameter> is added in front of the resource ID as the key string.
@@ -288,7 +288,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
    {
       // S H A R E D  database
 
-      if(dbContext->context.ldbid != 0)
+      if(dbContext->context.ldbid != PCL_LDBID_PUBLIC)
       {
          // Additionally /GROUP/<LDBID_parameter> shall be added inside of the database path listed in the resource table. (Off target)
          //

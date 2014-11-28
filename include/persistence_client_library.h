@@ -21,6 +21,9 @@
  * Date     Author          Version
  * 25/06/13 Ingo Hürner     1.0.0 - Rework of Init functions
  * 04/11/13 Ingo Hürner     1.3.0 - Added define for shutdown type none
+ * 12/11/14 Guy Sagnes      1.4.0 - Add defines for accessing:
+ *                                   - node data, configurable default
+ *                                   - specific logical database (local, shared public)
  *
  */
 /** \ingroup GEN_PERS */
@@ -94,11 +97,14 @@
 extern "C" {
 #endif
 
-/** \defgroup PCL_DEFINES_API Defines, Struct, Enum
- * \{
+/** \defgroup PCL_VERSION_OVERALL library initialization IF Version
+ *  \{
  */
-
-#define  PERSIST_API_INTERFACE_VERSION   (0x01030000U)
+/** Module version :  &lt;genivi_major_version&gt;.&lt;genivi_minor_version&gt;.&lt;patch_version&gt;
+ *  The most significant 2 bytes indicate the original Genivi library initialization IF version (major and minor version).
+ *  The rest of the bytes indicate the patch version created over the original Genivi version.
+*/
+#define  PERSIST_API_INTERFACE_VERSION   (0x01040000U)
 
 /** \} */
 
@@ -143,17 +149,61 @@ extern "C" {
 /** \} */
 
 
-/** \defgroup PCL_OVERALL functions for Library initialization
- *  The following functions have to be called for library initialization
+/** \defgroup PCL_USERDEF specific defines for user parameters 
+ * The valid user value range:
+ *  - 0: NODE data access
+ *  - 1..max value: valid range for dedicated user
+ *  - -1: user to access the configurable default value
+ *
+ * The following allows specific access to the data
  * \{
  */
 
+#define PCL_USER_NODEDATA        0      /*!< user value to access the node value (user independent) */
+#define PCL_USER_DEFAULTDATA    -1      /*!< user value to access directly the configurable default value */
 
-/// trigger shutdown
+/** \} */
+
+/** \defgroup PCL_DBDEF specific defines for logical database parameters 
+ * The valid user value range:
+ *  - 0x00: shared public data
+ *  - 0xFF: local data
+ *  - 0x01..0x7F: shared group
+ *
+ * The following allows specific access to the data
+ * \{
+ */
+
+#define PCL_LDBID_LOCAL        0xFF     /*!< value to access application local managed data */
+#define PCL_LDBID_PUBLIC       0x00     /*!< value to access public shared data, data is under control by the resource configuration in system */
+
+/** \} */
+
+/** \defgroup SHUTDOWN_EVENTS shutdown events definitions
+ * \{
+ */
+
+/**
+ *
+ * @brief   Shutdown event.
+ *          Used with the pclLifecycleSet() function to inform PCL about the shutdown lifecycle state.
+ */
 #define PCL_SHUTDOWN              1
-/// cancel shutdown
+
+
+/**
+ *
+ * @brief   Cancel shutdown event.
+ *          Used with the pclLifecycleSet() function to inform PCL about the cancel shutdown lifecycle state.
+ */
 #define PCL_SHUTDOWN_CANCEL       0
 
+/** \} */
+
+/** \defgroup PCL_OVERALL functions for Library initialization
+ * The following functions have to be called for library initialization.
+ * \{
+ */
 
 /**
  * @brief initialize client library.

@@ -29,6 +29,7 @@
  * @see
  */
 
+
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
@@ -175,7 +176,7 @@ int setup_test_data(const char* postfix)
       memset(databuffer, 0, 64);
       snprintf(databuffer, 64, gDefaultKeyValueTestData[i], postfix);
       printf(" setup_test_data - [%.2d] => %s\n", i, databuffer);
-      ret = pclKeyWriteData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)databuffer, strlen(databuffer));
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)databuffer, strlen(databuffer));
       if(ret < 0)
       {
          printf("setup_test_data =>  failed to write data: %d\n", ret );
@@ -209,7 +210,7 @@ void verify_test_setup()
 
    for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
    {
-      ret = pclKeyReadData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
       if(ret < 0)
       {
          printf("verify_test_setup - key/value - pclKeyReadData FAILED: %s => \"%s\"\n", gDefaultKeyValueResName[i], buffer);
@@ -543,7 +544,7 @@ void verify_data_key_value()
    for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
    {
       memset(buffer, 0, 64);
-      ret = pclKeyReadData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
       if(ret < 0)
       {
          //DLT_LOG(gPFSDLTContext, DLT_LOG_WARN, DLT_STRING("verify - key/value - => failed to read data"), DLT_INT(ret), DLT_STRING(buffer));
@@ -648,7 +649,7 @@ void write_data_key_value(int numLoops, int counter)
             pthread_cond_signal(&gPowerDownMtxCond);
             pthread_mutex_unlock(&gPowerDownMtx);
          }
-         ret = pclKeyWriteData(0xFF, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, strlen(buffer));
+         ret = pclKeyWriteData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, strlen(buffer));
          if(ret < 0)
          {
             printf("  failed to write data: %d\n", ret );
@@ -674,7 +675,7 @@ void verify_data_file()
    // open files
    for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
    {
-      handles[i] = pclFileOpen(0xFF, gDefaultFileResNames[i], 1, 0);
+      handles[i] = pclFileOpen(PCL_LDBID_LOCAL, gDefaultFileResNames[i], 1, 0);
    }
 
    // read data from previous lifecycle - file
@@ -713,7 +714,7 @@ void write_data_file(int numLoops)
    // open files
    for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
    {
-      handles[i] = pclFileOpen(0xFF, gDefaultFileResNames[i], 1, 1);
+      handles[i] = pclFileOpen(PCL_LDBID_LOCAL, gDefaultFileResNames[i], 1, 1);
    }
 
    for(k=0; k<numLoops; k++)
