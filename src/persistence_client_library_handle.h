@@ -47,6 +47,8 @@ typedef struct _PersistenceFileHandle_s
    int backupCreated;
    /// flag to indicate if file must be cached
    int cacheStatus;
+   /// the user id
+   int userId;
    /// path to the backup file
    char backupPath[DbPathMaxLen];
    /// path to the checksum file
@@ -221,6 +223,27 @@ void set_file_cache_status(int idx, int status);
  *         1 if file must be cached
  */
 int get_file_cache_status(int idx);
+
+
+/**
+ * @brief set the user id
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ * @param userID the user id
+ */
+void set_file_user_id(int idx, int userID);
+
+
+/**
+ * @brief get the user id of the file
+ * @attention "No index check will be done"
+ *
+ * @param idx the index
+ *
+ * @return the user id
+ */
+int get_file_user_id(int idx);
 //----------------------------------------------------------------
 //----------------------------------------------------------------
 

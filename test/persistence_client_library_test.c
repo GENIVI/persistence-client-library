@@ -768,7 +768,7 @@ END_TEST
 
 START_TEST(test_DataFileConfDefault)
 {
-   int fd = 0, ret = 0;
+   int fd = 0;
    char readBuffer[READ_SIZE] = {0};
    char* refBuffer01 = "Some default file content: 01 Configurable default data 01.";
    char* refBuffer02 = "Some default file content: 02 Configurable default data 02.";
@@ -776,21 +776,16 @@ START_TEST(test_DataFileConfDefault)
    // -- file interface ---
    memset(readBuffer, 0, READ_SIZE);
    fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData_01.configurable", 99, 99);
-   ret = pclFileReadData(fd, readBuffer, READ_SIZE);
-   printf("Size: %d - Soll:%d\n", ret, strlen(refBuffer01));
-   printf("READ BUFFER: \"%s\"\n", readBuffer);
+   (void)pclFileReadData(fd, readBuffer, READ_SIZE);
    fail_unless(strncmp(readBuffer, refBuffer01, strlen(refBuffer01)) == 0, "Buffer not correctly read => mediaData_01.configurable");
-
-   ret = pclFileClose(fd);
+   (void)pclFileClose(fd);
 
 
    memset(readBuffer, 0, READ_SIZE);
    fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData_02.configurable", 99, 99);
-   ret = pclFileReadData(fd, readBuffer, READ_SIZE);
+   (void)pclFileReadData(fd, readBuffer, READ_SIZE);
    fail_unless(strncmp(readBuffer, refBuffer02, strlen(refBuffer02)) == 0, "Buffer not correctly read => mediaData_01.configurable");
-
-   printf("READ BUFFER: %s\n", readBuffer);
-   ret = pclFileClose(fd);
+   (void)pclFileClose(fd);
 }
 END_TEST
 
@@ -1255,7 +1250,7 @@ START_TEST(test_WriteConfDefault)
    X_TEST_REPORT_DESCRIPTION("Write configurable default data");
    X_TEST_REPORT_TYPE(GOOD); */
 
-   int ret = 0;
+   int ret = 0, fd = 0;
    unsigned char writeBuffer[]  = "This is a test string";
    unsigned char writeBuffer2[]  = "And this is a test string which is different form previous test string";
    unsigned char readBuffer[READ_SIZE]  = {0};
@@ -1275,6 +1270,24 @@ START_TEST(test_WriteConfDefault)
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01",  3, 2, readBuffer, READ_SIZE);
    fail_unless(strncmp((char*)readBuffer, (char*)writeBuffer2, strlen((char*)readBuffer)) == 0, "Buffer2 not correctly read");
    //printf(" --- test_ReadConfDefault => statusHandle/writeconfdefault01: \"%s\" => \"%s\" \n    retIst: %d retSoll: %d\n", readBuffer, writeBuffer2, ret, strlen((char*)writeBuffer2));
+
+
+   // -- file  interface ---
+   memset(readBuffer, 0, READ_SIZE);
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData.configurable", PCL_USER_DEFAULTDATA, 99);
+   ret = pclFileWriteData(fd, writeBuffer,  strlen((char*)writeBuffer));
+   pclFileSeek(fd, 0, SEEK_SET);
+   ret = pclFileReadData(fd, readBuffer, READ_SIZE);
+   fail_unless(strncmp((char*)readBuffer, (char*)writeBuffer, strlen((char*)writeBuffer)) == 0, "Buffer not correctly read");
+   (void)pclFileClose(fd);
+
+   memset(readBuffer, 0, READ_SIZE);
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData.configurable", PCL_USER_DEFAULTDATA, 99);
+   ret = pclFileWriteData(fd, writeBuffer2,  strlen((char*)writeBuffer2));
+   pclFileSeek(fd, 0, SEEK_SET);
+   ret = pclFileReadData(fd, readBuffer, READ_SIZE);
+   fail_unless(strncmp((char*)readBuffer, (char*)writeBuffer2, strlen((char*)writeBuffer2)) == 0, "Buffer2 not correctly read");
+   (void)pclFileClose(fd);
 
 }
 END_TEST

@@ -197,6 +197,7 @@ int set_file_handle_data(int idx, PersistencePermission_e permission, const char
 			gFileHandleArray[idx].permission = permission;
 			gFileHandleArray[idx].filePath = filePath; 		// check to do if this works
 			gFileHandleArray[idx].cacheStatus = -1; 			// set to -1 by default
+			gFileHandleArray[idx].userId = 0;               // default value
 		}
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
@@ -274,6 +275,32 @@ int get_file_cache_status(int idx)
 	}
 	return status;
 }
+
+
+void set_file_user_id(int idx, int userID)
+{
+   if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+   {
+      gFileHandleArray[idx].userId = userID;
+
+      pthread_mutex_unlock(&gFileHandleAccessMtx);
+   }
+}
+
+int get_file_user_id(int idx)
+{
+   int id = -1;
+   if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+   {
+      if(MaxPersHandle >= idx)
+      {
+         id = gFileHandleArray[idx].userId;
+      }
+      pthread_mutex_unlock(&gFileHandleAccessMtx);
+   }
+   return id;
+}
+
 //----------------------------------------------------------
 //----------------------------------------------------------
 

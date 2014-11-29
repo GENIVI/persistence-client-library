@@ -43,9 +43,14 @@
 #include <sys/sendfile.h>
 
 // local function prototype
-int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
+static int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
+static int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id);
+static int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id,
+                       char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no);
+
 
 extern int doAppcheck(void);
+
 
 char* get_raw_string(char* dbKey)
 {
@@ -67,6 +72,7 @@ char* get_raw_string(char* dbKey)
 	}
 	return ++keyPtr;
 }
+
 
 
 int pclFileClose(int fd)
@@ -188,21 +194,208 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 }
 
 
+
+int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no)
+{
+   int handle = -1;
+   int length = 0;
+
+   int wantBackup = 1;
+   int cacheStatus = -1;
+
+   char fileSubPath[DbPathMaxLen] = {0};
+
+   char backupPath[DbPathMaxLen] = {0};    // backup file
+   char csumPath[DbPathMaxLen]   = {0};    // checksum file
+
+   if(dbContext->configKey.policy ==  PersistencePolicy_wc)
+   {
+      length = gCPathPrefixSize;
+   }
+   else
+   {
+      length = gWTPathPrefixSize;
+   }
+
+   strncpy(fileSubPath, dbPath+length, DbPathMaxLen);
+   snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
+   snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
+
+   //
+   // check valid database context
+   //
+   if(shared_DB >= 0)
+   {
+      int flags = pclGetPosixPermission(dbContext->configKey.permission);
+
+      // file will be opened writable, so check about data consistency
+      if( (dbContext->configKey.permission != PersistencePermission_ReadOnly)
+         && (pclBackupNeeded(get_raw_string(dbKey)) == CREATE_BACKUP))
+      {
+         wantBackup = 0;
+         if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - file inconsistent, recovery  N O T  possible!"));
+            return -1;
+         }
+      }
+      else
+      {
+         if(dbContext->configKey.permission == PersistencePermission_ReadOnly)
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup - file is READ ONLY!"), DLT_STRING(dbKey));
+         else
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup - file is in backup blacklist!"), DLT_STRING(dbKey));
+      }
+
+#if USE_FILECACHE
+      if(handle > 0)   // when the file is open, close it and do a new open unde PFC control
+      {
+         close(handle);
+      }
+
+      if(strstr(dbPath, WTPREFIX) != NULL)
+      {
+         // if it's a write through resource, add the O_SYNC and O_DIRECT flag to prevent caching
+         handle = open(dbPath, flags);
+         cacheStatus = 0;
+      }
+      else
+      {
+         handle = pfcOpenFile(dbPath, DontCreateFile);
+         cacheStatus = 1;
+      }
+
+#else
+      if(handle <= 0)   // check if open is needed or already done in verifyConsistency
+      {
+         handle = open(dbPath, flags);
+
+         if(strstr(dbPath, WTPREFIX) != NULL)
+         {
+            cacheStatus = 0;
+         }
+         else
+         {
+            cacheStatus = 1;
+         }
+      }
+#endif
+      //
+      // file does not exist, create it and get default data
+      //
+      if(handle == -1 && errno == ENOENT)
+      {
+         if((handle = pclCreateFile(dbPath, cacheStatus)) == -1)
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - failed to create file: "), DLT_STRING(dbPath));
+         }
+         else
+         {
+            if(pclFileGetDefaultData(handle, resource_id, dbContext->configKey.policy) == -1) // try to get default data
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen - no default data available: "), DLT_STRING(resource_id));
+            }
+         }
+
+         set_file_cache_status(handle, cacheStatus);
+      }
+
+      if(dbContext->configKey.permission != PersistencePermission_ReadOnly)
+      {
+         if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) != -1)
+         {
+            set_file_backup_status(handle, wantBackup);
+            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+         }
+         else
+         {
+            close(handle);
+            handle = EPERS_MAXHANDLE;
+         }
+      }
+      else
+      {
+         if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) == -1)
+         {
+            close(handle);
+            handle = EPERS_MAXHANDLE;
+         }
+      }
+   }
+   //
+   // requested resource is not in the RCT, so create resource as local/cached.
+   //
+   else
+   {
+      // assemble file string for local cached location
+      snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+      handle = pclCreateFile(dbPath, 1);
+      set_file_cache_status(handle, 1);
+
+      if(handle != -1)
+      {
+         if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
+         {
+            set_file_backup_status(handle, 1);
+            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+         }
+         else
+         {
+#if USE_FILECACHE
+            pfcCloseFile(handle);
+#else
+            close(handle);
+#endif
+            handle = EPERS_MAXHANDLE;
+         }
+      }
+   }
+
+   return handle;
+}
+
+
+
+int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id)
+{
+   int flags = pclGetPosixPermission(dbContext->configKey.permission);
+
+   // check if there is default data available
+   char pathPrefix[DbPathMaxLen]  = { [0 ... DbPathMaxLen-1] = 0};
+   char defaultPath[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
+
+   // create path to default data
+   if(dbContext->configKey.policy == PersistencePolicy_wc)
+   {
+      snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
+   }
+   else if(dbContext->configKey.policy == PersistencePolicy_wt)
+   {
+      snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
+   }
+
+   // first check for  c o n f i g u r a b l e  default data
+   snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_CONFIG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+
+   printf("The conf default path: %s\n", defaultPath);
+
+   return open(defaultPath, flags);
+}
+
+
+
 int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int handle = EPERS_NOT_INITIALIZED;
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      int shared_DB = 0;
-      int wantBackup = 1;
-      int cacheStatus = -1;
       PersistenceInfo_s dbContext;
+
+      int shared_DB = 0;
 
       char dbKey[DbKeyMaxLen]       = {0};    // database key
       char dbPath[DbPathMaxLen]     = {0};    // database location
-      char backupPath[DbPathMaxLen] = {0};    // backup file
-      char csumPath[DbPathMaxLen]   = {0};    // checksum file
 
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
@@ -218,152 +411,14 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       //
       if(dbContext.configKey.type == PersistenceResourceType_file)
       {
-         // create backup path
-         int length = 0;
-         char fileSubPath[DbPathMaxLen] = {0};
-
-         if(dbContext.configKey.policy ==  PersistencePolicy_wc)
+         if(user_no == PCL_USER_DEFAULTDATA)
          {
-            length = gCPathPrefixSize;
+            handle = pclFileOpenDefaultData(&dbContext, resource_id);
+            set_file_user_id(handle, PCL_USER_DEFAULTDATA);
          }
          else
          {
-            length = gWTPathPrefixSize;
-         }
-
-         strncpy(fileSubPath, dbPath+length, DbPathMaxLen);
-         snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
-         snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
-
-         //
-         // check valid database context
-         //
-         if(shared_DB >= 0)
-         {
-            int flags = pclGetPosixPermission(dbContext.configKey.permission);
-
-            // file will be opened writable, so check about data consistency
-            if( (dbContext.configKey.permission != PersistencePermission_ReadOnly)
-               && (pclBackupNeeded(get_raw_string(dbKey)) == CREATE_BACKUP))
-            {
-            	wantBackup = 0;
-               if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
-               {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - file inconsistent, recovery  N O T  possible!"));
-                  return -1;
-               }
-            }
-            else
-            {
-            	if(dbContext.configKey.permission == PersistencePermission_ReadOnly)
-            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup - file is READ ONLY!"), DLT_STRING(dbKey));
-            	else
-            		DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: No Backup - file is in backup blacklist!"), DLT_STRING(dbKey));
-
-            }
-
-#if USE_FILECACHE
-            if(handle > 0)   // when the file is open, close it and do a new open unde PFC control
-            {
-               close(handle);
-            }
-
-            if(strstr(dbPath, WTPREFIX) != NULL)
-				{
-					// if it's a write through resource, add the O_SYNC and O_DIRECT flag to prevent caching
-					handle = open(dbPath, flags);
-					cacheStatus = 0;
-				}
-            else
-            {
-            	handle = pfcOpenFile(dbPath, DontCreateFile);
-            	cacheStatus = 1;
-            }
-
-#else
-            if(handle <= 0)   // check if open is needed or already done in verifyConsistency
-            {
-               handle = open(dbPath, flags);
-
-               if(strstr(dbPath, WTPREFIX) != NULL)
-               {
-               	cacheStatus = 0;
-               }
-               else
-               {
-               	cacheStatus = 1;
-               }
-            }
-#endif
-            //
-            // file does not exist, create it and get default data
-            //
-            if(handle == -1 && errno == ENOENT)
-            {
-               if((handle = pclCreateFile(dbPath, cacheStatus)) == -1)
-               {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - failed to create file: "), DLT_STRING(dbPath));
-               }
-               else
-               {
-               	if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
-               	{
-               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen - no default data available: "), DLT_STRING(resource_id));
-               	}
-               }
-
-               set_file_cache_status(handle, cacheStatus);
-            }
-
-				if(dbContext.configKey.permission != PersistencePermission_ReadOnly)
-				{
-					if(set_file_handle_data(handle, dbContext.configKey.permission, backupPath, csumPath, NULL) != -1)
-					{
-						set_file_backup_status(handle, wantBackup);
-						__sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-					}
-					else
-					{
-						close(handle);
-						handle = EPERS_MAXHANDLE;
-					}
-				}
-				else
-				{
-				   if(set_file_handle_data(handle, dbContext.configKey.permission, backupPath, csumPath, NULL) == -1)
-				   {
-                  close(handle);
-                  handle = EPERS_MAXHANDLE;
-				   }
-				}
-         }
-         //
-         // requested resource is not in the RCT, so create resource as local/cached.
-         //
-         else
-         {
-            // assemble file string for local cached location
-            snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
-            handle = pclCreateFile(dbPath, 1);
-            set_file_cache_status(handle, 1);
-
-            if(handle != -1)
-            {
-            	if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
-					{
-            		set_file_backup_status(handle, 1);
-						__sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-					}
-					else
-					{
-#if USE_FILECACHE
-						pfcCloseFile(handle);
-#else
-						close(handle);
-#endif
-						handle = EPERS_MAXHANDLE;
-					}
-            }
+            handle = pclFileOpenRegular(&dbContext, resource_id, dbKey, dbPath, shared_DB, user_no, seat_no);
          }
       }
       else
@@ -385,7 +440,7 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
 #if USE_FILECACHE
-   	if(get_file_cache_status(fd) == 1)
+   	if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
    	{
    		readSize = pfcReadFile(fd, buffer, buffer_size);
    	}
@@ -521,10 +576,10 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
       	int permission = get_file_permission(fd);
          if(permission != -1)
          {
-            if(permission != PersistencePermission_ReadOnly)
+            if(permission != PersistencePermission_ReadOnly )
             {
                // check if a backup file has to be created
-               if(get_file_backup_status(fd) == 0)
+               if(get_file_backup_status(fd) == 0 && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
                {
                   char csumBuf[ChecksumBufSize] = {0};
 
@@ -538,7 +593,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                }
 
 #if USE_FILECACHE
-               if(get_file_cache_status(fd) == 1)
+               if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
                {
                	size = pfcWriteFile(fd, buffer, buffer_size);
                }
