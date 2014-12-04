@@ -60,7 +60,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
       	data.message.params[1] = requestID;
       	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("check_pas_request - case PasMsg_Block o. PasMsg_WriteBack"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chkPasReq - case PasMsg_Block o. PasMsg_WriteBack"));
          if(-1 == deliverToMainloop_NM(&data))
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
@@ -74,7 +74,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
       }
       case PasMsg_Unblock:
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("check_pas_request - case PasMsg_Unblock"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chkPasReq - case PasMsg_Unblock"));
          pers_unlock_access();
          rval = PasErrorStatus_OK;
          break;
@@ -110,12 +110,12 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
       if(reply == 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest - DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPasReq - DBus No mem"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest - DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPasReq - DBus No mem"));
       }
 
       dbus_message_unref(reply);
@@ -129,17 +129,17 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
    if (reply == 0)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest - DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPasReq - DBus No mem"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorReturn, DBUS_TYPE_INVALID))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest - DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPasReq - DBus No mem"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_persAdminRequest - DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPasReq - DBus No mem"));
    }
 
    dbus_connection_flush(connection);
@@ -165,12 +165,12 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 
       if(reply == 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange - DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
       }
 
       if (!dbus_connection_send(connection, reply, 0))
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange - DBus No memory"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
       }
 
       dbus_message_unref(reply);
@@ -182,17 +182,17 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 
    if (reply == 0)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange - DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
    }
 
    if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange - DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
    }
 
    if (!dbus_connection_send(connection, reply, 0))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("signal_persModeChange - DBus No memory"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
    }
 
    dbus_connection_flush(connection);
@@ -210,7 +210,7 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
    if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("checkPersAdminMsg - Received dbus message: "), DLT_STRING(dbus_message_get_member(message)));
+   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("checkPasMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
 
       if((0==strcmp(gDbusPersAdminConsMsg, dbus_message_get_member(message))))
       {
@@ -218,12 +218,12 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg - unknown message"), DLT_STRING(dbus_message_get_member(message)));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPasMsg - unknown msg"), DLT_STRING(dbus_message_get_member(message)));
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPersAdminMsg - unknown message"), DLT_STRING(dbus_message_get_interface(message)));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("checkPasMsg - unknown msg"), DLT_STRING(dbus_message_get_interface(message)));
    }
    return result;
 }
@@ -244,7 +244,7 @@ int register_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(&data))
    {
-    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("register_pers_admin_service - failed to write to pipe"), DLT_INT(errno));
+    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pegPas - failed write pipe"), DLT_INT(errno));
     rval = -1;
    }
    else
@@ -269,7 +269,7 @@ int unregister_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(&data))
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("unregister_pers_admin_service - failed to write to pipe"), DLT_INT(errno));
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("unregPas - failed write pipe"), DLT_INT(errno));
      rval = -1;
    }
    else

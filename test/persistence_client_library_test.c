@@ -1272,7 +1272,6 @@ START_TEST(test_WriteConfDefault)
    // -- file  interface ---
    memset(readBuffer, 0, READ_SIZE);
    fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData.configurable", PCL_USER_DEFAULTDATA, 99);
-   printf("The FD: %d\n", fd);
    ret = pclFileWriteData(fd, writeBuffer,  strlen((char*)writeBuffer));
    pclFileSeek(fd, 0, SEEK_SET);
    ret = pclFileReadData(fd, readBuffer, READ_SIZE);

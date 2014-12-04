@@ -118,7 +118,7 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
             snprintf(filename, DbPathMaxLen, gSharedWtPathKey, gAppId, group, gResTableCfg);
             break;
          default:
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - no valid PersistenceRCT_e"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - no valid PersistenceRCT_e"));
             break;
          }
 
@@ -127,7 +127,7 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
          if(gResource_table[arrayIdx] < 0)
          {
          	gResourceOpen[arrayIdx] = 0;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_resource_cfg_table - RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
          }
          else
          {
@@ -178,13 +178,13 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("get_db_context - resource_table: no value for key:"), DLT_STRING(resource_id) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("gDBCtx - RCT: no value for key:"), DLT_STRING(resource_id) );
          rval = EPERS_NOKEYDATA;
       }
    }  // resource table
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("get_db_context - resource table"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gDBCtx - RCT"));
       rval = EPERS_NOPRCTABLE;
    }
 
@@ -210,7 +210,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
 
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("get_db_context - create resource not in PRCT => key:"), DLT_STRING(resource_id) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("gDBCtx - create res not in PRCT => key:"), DLT_STRING(resource_id) );
 
       rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
    }

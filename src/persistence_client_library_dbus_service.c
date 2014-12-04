@@ -128,7 +128,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback - unknown signal:"), DLT_STRING(dbus_message_get_interface(message)) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - unknown sig:"), DLT_STRING(dbus_message_get_interface(message)) );
          }
       }
    }
@@ -175,12 +175,12 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
 
                if (reply == 0)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback - DBus No memory"), DLT_STRING(dbus_message_get_interface(message)) );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - DBus No mem"), DLT_STRING(dbus_message_get_interface(message)) );
                }
 
                if (!dbus_connection_send(connection, reply, 0))
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback - DBus No memory"), DLT_STRING(dbus_message_get_interface(message)) );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - DBus No mem"), DLT_STRING(dbus_message_get_interface(message)) );
                }
 
                result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;;
@@ -199,7 +199,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
                }
                else
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback - gChangeNotifyCallback is not set (possibly NULL)") );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - gChangeNotifyCallback not set (NULL?)") );
                }
                result = DBUS_HANDLER_RESULT_HANDLED;
             }
@@ -235,12 +235,12 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback - unknown property:"), DLT_STRING(dbus_message_get_interface(message)) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - unknown property:"), DLT_STRING(dbus_message_get_interface(message)) );
          }
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjectPathMessageFallback - not a signal:"), DLT_STRING(dbus_message_get_member(message)) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - not a signal:"), DLT_STRING(dbus_message_get_member(message)) );
       }
    }
    return result;
@@ -252,7 +252,7 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 {
    (void)connection;
    (void)user_data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPathFallback\n"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregObjPathFback"));
 }
 
 
@@ -295,7 +295,7 @@ int setup_dbus_mainloop(void)
    // Connect to the bus and check for errors
    if(pAddress != NULL)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setup_dbus_mainloop - Use specific dbus address:"), DLT_STRING(pAddress) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
 
       conn = dbus_connection_open_private(pAddress, &err);
 
@@ -303,7 +303,7 @@ int setup_dbus_mainloop(void)
       {
          if(!dbus_bus_register(conn, &err))
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_bus_register() :"), DLT_STRING(err.message) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setupMainLoop - _register() :"), DLT_STRING(err.message) );
             dbus_error_free (&err);
             pthread_mutex_unlock(&gDbusInitializedMtx);
             return -1;
@@ -311,7 +311,7 @@ int setup_dbus_mainloop(void)
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbus_connection_open_private() :"), DLT_STRING(err.message) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setupMainLoop - open_private() :"), DLT_STRING(err.message) );
          dbus_error_free(&err);
          pthread_mutex_unlock(&gDbusInitializedMtx);
          return -1;
@@ -319,7 +319,7 @@ int setup_dbus_mainloop(void)
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Use default dbus bus (DBUS_BUS_SYSTEM)"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
 
       conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
@@ -328,7 +328,7 @@ int setup_dbus_mainloop(void)
    rval = pthread_create(&gMainLoopThread, NULL, run_mainloop, conn);
    if(rval)
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) returned an error:"), DLT_INT(rval) );
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop ) ret err:"), DLT_INT(rval) );
      pthread_mutex_unlock(&gDbusInitializedMtx);
      return -1;
    }
@@ -439,12 +439,12 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout - timerfd_settime() failed"), DLT_STRING(strerror(errno)) );
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout - _settime() failed"), DLT_STRING(strerror(errno)) );
             }
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout - timerfd_create() failed"), DLT_STRING(strerror(errno)) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("addTimeout - _create() failed"), DLT_STRING(strerror(errno)) );
          }
       }
    }
@@ -519,7 +519,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
    if (dbus_error_is_set(&err))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - Connection Error:"), DLT_STRING(err.message) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - Con Err:"), DLT_STRING(err.message) );
       dbus_error_free(&err);
    }
    else if (NULL != conn)
@@ -551,7 +551,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             if(   (TRUE!=dbus_connection_set_watch_functions(conn, addWatch, removeWatch, watchToggled, NULL, NULL))
                || (TRUE!=dbus_connection_set_timeout_functions(conn, addTimeout, removeTimeout, timeoutToggled, NULL, NULL)) )
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - dbus_connection_set_watch_functions() failed"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - set_watch_functions() failed"));
             }
             else
             {
@@ -596,7 +596,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
                               if (FALSE==dbus_timeout_handle(gPollInfo.objects[i].timeout))
                               {
-                                 DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - dbus_timeout_handle() failed!?"));
+                                 DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - _timeout_handle() failed!?"));
                               }
                               bContinue = TRUE;
                            }
@@ -649,7 +649,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           bQuit = TRUE;
                                           break;
                                        default:
-                                          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - command not handled"), DLT_INT(readData.message.cmd) );
+                                          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_INT(readData.message.cmd) );
                                           break;
                                     }
                                     pthread_cond_signal(&gMainLoopCond);
@@ -736,7 +736,7 @@ int deliverToMainloop_NM(MainLoopData_u* payload)
 
    if(-1 == write(gPipeFd[1], payload->payload, length))
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deliverToMainloop => failed to write to pipe"), DLT_INT(errno));
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("toMainloop => failed write pipe"), DLT_INT(errno));
      rval = -1;
    }
    return rval;

@@ -73,14 +73,14 @@ void process_reg_notification_signal(DBusConnection* conn, unsigned int notifyLd
       dbus_bus_add_match(conn, ruleChanged, NULL);
       dbus_bus_add_match(conn, ruleDeleted, NULL);
       dbus_bus_add_match(conn, ruleCreated, NULL);
-      DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("Registered for change notifications:"), DLT_STRING(ruleChanged));
+      DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("Reg for change notify:"), DLT_STRING(ruleChanged));
    }
    else if(notifyPolicy == Notify_unregister)
    {
       dbus_bus_remove_match(conn, ruleChanged, NULL);
       dbus_bus_remove_match(conn, ruleDeleted, NULL);
       dbus_bus_remove_match(conn, ruleCreated, NULL);
-      DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("Unregistered for change notifications:"), DLT_STRING(ruleChanged));
+      DLT_LOG(gPclDLTContext, DLT_LOG_VERBOSE, DLT_STRING("unREg for change notify:"), DLT_STRING(ruleChanged));
    }
 
    dbus_connection_flush(conn);  // flush the connection to add the match
@@ -150,22 +150,22 @@ void process_send_notification_signal(DBusConnection* conn, unsigned int notifyL
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_Notification_Signal - failed to send dbus message!!"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - failed to send msg!!"));
             }
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_Notification_Signal - C O N E C T I O N  NULL!!"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - Con NULL"));
          }
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_Notification_Signal - dbus_message_append_args"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - _append_args"));
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_Notification_Signal - invalid notification reason"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - Inval noty reason"));
    }
 }
 
@@ -186,7 +186,7 @@ void process_prepare_shutdown(int complete)
 {
    int i = 0, rval = 0;
 
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("process_prepare_shutdown - writing down all changed data and closing all handles"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("prepShtdwn - writing all changed data / closing all handles"));
 
    // block write
    pers_lock_access();
@@ -218,7 +218,7 @@ void process_prepare_shutdown(int complete)
 #endif
          if(rval == -1)
          {
-         	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown - failed to close file: "), DLT_STRING(strerror(errno)) );
+         	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - failed close file: "), DLT_STRING(strerror(errno)) );
          }
 
       }
@@ -275,7 +275,7 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
 
          if(!dbus_connection_send(conn, message, 0))
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register - Access denied"), DLT_STRING(error.message) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Access denied"), DLT_STRING(error.message) );
          }
 
          dbus_connection_flush(conn);
@@ -283,12 +283,12 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request - Invalid message") );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Inval msg") );
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_request - Invalid connection") );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Inval con") );
    }
 }
 
@@ -334,24 +334,24 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
             if(!dbus_pending_call_set_notify(pending, msg_pending_func, method, NULL))
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_send_pas_register - dbus_pending_call_set_notify: FAILED\n") );
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasReg - _call_set_notify: FAILED\n") );
             }
             dbus_pending_call_unref(pending);
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register - Invalid message") );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasReg - Invalid message") );
          }
          dbus_message_unref(message);
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register - Invalid busname") );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasReg - Invalid busname") );
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_pas_register - Invalid connection") );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasReg - Inval con") );
    }
 }
 
@@ -394,19 +394,19 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 
 		   if(!dbus_connection_send(conn, message, 0))
 		   {
-		      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register - Access denied"), DLT_STRING(error.message) );
+		      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Access denied"), DLT_STRING(error.message) );
 		   }
 		   dbus_connection_flush(conn);
          dbus_message_unref(message);
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register - Invalid message"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Invalid msg"));
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_register - connection isn NULL"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - con is NULL"));
    }
 }
 
@@ -432,7 +432,7 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
 
          if(!dbus_connection_send(conn, message, 0))
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request - Access denied"), DLT_STRING(error.message) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmRequest - Access denied"), DLT_STRING(error.message) );
           }
 
           dbus_connection_flush(conn);
@@ -440,12 +440,12 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request - Invalid message"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmRequest - Invalid msg"));
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("send_lifecycle_request - connection isn NULL"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmRequest - con is NULL"));
    }
 }
 
@@ -463,7 +463,7 @@ void msg_pending_func(DBusPendingCall *call, void *data)
 
    if (dbus_set_error_from_message(&err, message))
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msg_pending_func - Access denied") );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPendFunc - Access denied") );
    }
    else
    {

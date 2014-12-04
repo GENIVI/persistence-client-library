@@ -77,7 +77,7 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleOpen - no database context or resource is not a key "));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleOpen - no db context or res not a key "));
          }
       }
       else
@@ -219,7 +219,7 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleRegisterNotifyOnChange - Only one callback is allowed for change notifications."));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleRegNotOnChange - Only one cBack allowed for ch notiy."));
       rval = EPERS_NOTIFY_NOT_ALLOWED;
    }
    return rval;
@@ -446,7 +446,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyReadData - no database context or resource is not a key"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyReadData - no db context or res not a key"));
             }
          }
          else
@@ -511,13 +511,13 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                }
                else
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData no database context or resource is not a key"));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyWriteData no db context or res is not a key"));
                }
             }
             else
             {
                data_size = EPERS_BUFLIMIT;
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
             }
          }
          else
@@ -552,7 +552,7 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange - Only one callback is allowed for change notifications."));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyRegNotifyOnChange - Only one cBack is allowed for ch noti."));
       rval = EPERS_NOTIFY_NOT_ALLOWED;
    }
    return rval;
@@ -592,7 +592,7 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange - Not allowed! Resource is local or it is a file:"),
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regNotifyOnChange - Not allowed! Res is local or it is a file:"),
                                        DLT_STRING(resource_id), DLT_STRING("LDBID:"), DLT_UINT(ldbid));
                rval = EPERS_NOTIFY_NOT_ALLOWED;
             }

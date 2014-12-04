@@ -108,12 +108,12 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get - persComDbOpen() failed"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbGet - persComDbOpen() failed"));
             }
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get - wrong policy! Cannot extend dbPath wit database."));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbGet - wrong policy! Cannot extend dbPath wit db."));
          }
       }
       else
@@ -123,7 +123,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_get - invalid storage type"), DLT_STRING(dbPath));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbGet - inval storage type"), DLT_STRING(dbPath));
    }
    return handleDB;
 }
@@ -151,7 +151,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_get_defaults - unknown job"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("getDefaults - unknown job"));
             break;
          }
 
@@ -172,7 +172,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
             {
                 snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
             }
-            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pers_get_defaults - efault data will be used for Key"), DLT_STRING(key),
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDefaults - default data will be used for Key"), DLT_STRING(key),
                                                   DLT_STRING("from"), DLT_STRING(dltMessage));
             break;
          }
@@ -181,7 +181,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
    if (read_size < 0)
    {
-       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pers_get_defaults - default data not available for Key"), DLT_STRING(key),
+       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDefaults - default data not available for Key"), DLT_STRING(key),
                                              DLT_STRING("Path:"), DLT_STRING(dbPath));
    }
 
@@ -226,7 +226,7 @@ void database_close_all()
 				int iErrorCode = persComDbClose(gHandlesDB[i][j]);
 				if (iErrorCode < 0)
 				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close_all - failed to close db"));
+					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbCloseAll - Err close db"));
 				}
 				else
 				{
@@ -289,7 +289,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
 				}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("persistence_get_data - Plugin not available, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getData - Plugin not avail, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 read_size = EPERS_COMMON;
 				}
@@ -329,7 +329,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
 
          (void)get_db_path_and_key(info, key, NULL, dbPath);
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("persistence_get_data - Plugin data not available - get default data of key:"), DLT_STRING(key));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getData - Plugin data not available - get default data of key:"), DLT_STRING(key));
          ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, buffer_size, PersGetDefault_Data);
          if (0 < ret_defaults)
          {
@@ -366,7 +366,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
          write_size = persComDbWriteKey(handleDB, dbInput, (char*)buffer, buffer_size) ;
          if(write_size < 0)
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data - persComDbWriteKey() failure"));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - persComDbWriteKey() failure"));
          }
          else
          {
@@ -375,7 +375,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
                int rval = pers_send_Notification_Signal(resource_id, &info->context, pclNotifyStatus_changed);
                if(rval <= 0)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data - failed to send notification signal"));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - Err to send noty sig"));
                   write_size = rval;
                }
             }
@@ -384,7 +384,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data - no resource config table"), DLT_STRING(dbPath), DLT_STRING(key));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - no RCT"), DLT_STRING(dbPath), DLT_STRING(key));
          write_size = EPERS_NOPRCTABLE;
       }
    }
@@ -417,7 +417,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
 				}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("persistence_set_data - Plugin not available, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setData - Plugin not avail, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 write_size = EPERS_COMMON;
 				}
@@ -446,7 +446,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
 					int rval = pers_send_Notification_Signal(resource_id, &info->context, pclNotifyStatus_changed);
 					if(rval <= 0)
 					{
-						DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_set_data - failed to send notification signal"));
+						DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - Err send noty sig"));
 						write_size = rval;
 					}
 				}
@@ -514,7 +514,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
       		}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("persistence_get_data_size - Plugin not available, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDataSize - Plugin not avail, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 read_size = EPERS_COMMON;
 				}
@@ -552,7 +552,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
          info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
          info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
          (void)get_db_path_and_key(info, key, NULL, dbPath);
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("persistence_get_data_size - Plugin data not available,  get size of default data for key:"),
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDataSize - Plugin data not avail,  get size of default data for key:"),
                                             DLT_STRING(key));
          ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
          if (0 < ret_defaults)
@@ -577,7 +577,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
          ret = persComDbDeleteKey(handleDB, key) ;
          if(ret < 0)
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_delete_data - failed: "), DLT_STRING(key));
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deleteData - failed: "), DLT_STRING(key));
             if(PERS_COM_ERR_NOT_FOUND == ret)
             {
                 ret = EPERS_NOKEY ;
@@ -595,7 +595,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_delete_data - no resource config table"), DLT_STRING(dbPath), DLT_STRING(key));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deleteData - no RCT"), DLT_STRING(dbPath), DLT_STRING(key));
          ret = EPERS_NOPRCTABLE;
       }
    }
@@ -628,7 +628,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
 				}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("persistence_delete_data - Plugin not available, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("deleteData - Plugin not available, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 ret = EPERS_COMMON;
 				}
@@ -700,7 +700,7 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
 
       if(-1 == deliverToMainloop(&data))
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("persistence_notify_on_change - failed to write to pipe"), DLT_INT(errno));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - Err to write to pipe"), DLT_INT(errno));
          rval = -1;
       }
    }
@@ -734,7 +734,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
 
       if(-1 == deliverToMainloop(&data) )
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pers_send_Notification_Signal - failed to write to pipe"), DLT_INT(errno));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - Err write to pipe"), DLT_INT(errno));
          rval = EPERS_NOTIFY_SIG;
       }
    }
@@ -758,7 +758,7 @@ void pers_rct_close_all()
    	{
 			if(persComRctClose(get_resource_cfg_table_by_idx(i)) != 0)
 			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("process_prepare_shutdown - failed close db => index:"), DLT_INT(i));
+				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - Err close db => index:"), DLT_INT(i));
 			}
 
 			invalidate_resource_cfg_table(i);
