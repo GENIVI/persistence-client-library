@@ -577,9 +577,6 @@ char gBackupInfo[] = {
 
 	const char* backupBlacklist = "/Data/mnt-c/lt-persistence_client_library_test/BackupFileList.info";
 
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   (void)pclInitLibrary(gTheAppId, shutdownReg);
-
 	if(access(backupBlacklist, F_OK) == -1)
 	{
 		int ret = 0;
@@ -1275,6 +1272,7 @@ START_TEST(test_WriteConfDefault)
    // -- file  interface ---
    memset(readBuffer, 0, READ_SIZE);
    fd = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaData.configurable", PCL_USER_DEFAULTDATA, 99);
+   printf("The FD: %d\n", fd);
    ret = pclFileWriteData(fd, writeBuffer,  strlen((char*)writeBuffer));
    pclFileSeek(fd, 0, SEEK_SET);
    ret = pclFileReadData(fd, readBuffer, READ_SIZE);
@@ -1708,7 +1706,7 @@ static Suite * persistencyClientLib_suite()
    tcase_add_checked_fixture(tc_WriteConfDefault, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_persDataFile);
-   tcase_add_checked_fixture(tc_persDataFile, data_setupBlacklist, data_teardown);
+   tcase_add_checked_fixture(tc_persDataFile, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_persDataFileBackupCreation);
    tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
@@ -1766,6 +1764,7 @@ int main(int argc, char *argv[])
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("PCLt","tests the persistence client library");
+
 
 #if 0
    //Manual test of concurrent access
@@ -1850,6 +1849,7 @@ int main(int argc, char *argv[])
   }
  #endif
 
+  data_setupBlacklist();
 
    if(argc >= 2)
    {
