@@ -208,6 +208,8 @@ extern "C" {
 /**
  * @brief initialize client library.
  *        This function will be called by the process using the PCL during startup phase.
+ *        The function will be called within process using always the same appname!
+ *        It is not allowed call this function within a process using different appnames!
  *
  * @attention This function is currently  N O T  part of the GENIVI compliance specification
  *
