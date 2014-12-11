@@ -942,7 +942,7 @@ START_TEST(test_DataHandle)
    X_TEST_REPORT_DESCRIPTION("Test of data handle");
    X_TEST_REPORT_TYPE(GOOD); */
 
-   int handle1 = 0, handle2 = 0;
+   int handle1 = 0, handle2 = 0, i = 0;
    int handleArray[4] = {0};
    int ret = 0;
    unsigned char buffer[READ_SIZE] = {0};
@@ -1019,8 +1019,17 @@ START_TEST(test_DataHandle)
 	ret = pclFileClose(1024);
 	fail_unless(ret == EPERS_MAXHANDLE, "Could close file, but should not!!");
 
-	ret = pclFileClose(19);
-	fail_unless(ret == -1, "Could close file, but should not!!");
+	for(i = 0; i<1024; i++)
+	{
+	   if( fcntl(i, F_GETFD) == -1 ) //search for an invalid fd, and try to close it.
+	   {
+	      ret = pclFileClose(i);
+	      fail_unless(ret == -1, "Could close file, but should not!!");
+
+	      break;
+	   }
+	}
+
 #endif
 }
 END_TEST
@@ -1325,7 +1334,7 @@ START_TEST(test_InitDeinit)
    X_TEST_REPORT_DESCRIPTION("Init and deinit library");
    X_TEST_REPORT_TYPE(GOOD); */
 
-   int i = 0, rval = -1;
+   int i = 0, rval = -1, handle = 0;
 	unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    for(i=0; i<5; i++)
@@ -1362,6 +1371,16 @@ START_TEST(test_InitDeinit)
 
 
    pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NONE);
+
+   handle = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB.db", 1, 1);
+   //printf("pclFileOpen: %d\n", handle);
+   fail_unless(handle >= 0, "Could not open file ==> /media/mediaDB.db");
+   (void)pclFileClose(handle);
+
+   handle = pclKeyHandleOpen(PCL_LDBID_LOCAL, "posHandle/last_position", 0, 0);
+   //printf("pclKeyHandleOpen: %d\n", handle);
+   fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
+   (void)pclKeyHandleClose(handle);
 
    rval = pclLifecycleSet(PCL_SHUTDOWN);
    fail_unless(rval != EPERS_SHUTDOWN_NO_PERMIT, "Lifecycle set NOT allowed, but should");
