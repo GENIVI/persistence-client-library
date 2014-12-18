@@ -255,8 +255,8 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
 
       if(strstr(dbPath, WTPREFIX) != NULL)
       {
-         // if it's a write through resource, add the O_SYNC and O_DIRECT flag to prevent caching
-         handle = open(dbPath, flags);
+         // if it's a write through resource, add the O_SYNC flag to prevent caching
+         handle = open(dbPath, flags | O_SYNC );
          cacheStatus = 0;
       }
       else
