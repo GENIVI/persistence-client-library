@@ -178,7 +178,7 @@ enum _PersistenceConstantDef
    /// max application name
    MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,
    /// max number of parallel open persistence handles
-   MaxPersHandle = 128,
+   MaxPersHandle = 256,
    /// length of the config key responsible name
    MaxConfKeyLengthResp    = 32,
    /// length of the config key custom name
