@@ -29,7 +29,6 @@
  * @see
  */
 
-
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
@@ -139,10 +138,9 @@ static const char* gDefaultFileResNames[] =
 };
 
 
-pthread_cond_t  gPowerDownMtxCond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t gPowerDownMtx   = PTHREAD_MUTEX_INITIALIZER;
+// extdern declaration
 
-
+extern void pcl_test_send_shutdown_command();
 
 // forward declaration
 
@@ -171,7 +169,7 @@ int setup_test_data(const char* postfix)
    pclInitLibrary("pfs_test", shutdownReg);     // register to persistence client library
 
    // key/value data
-   for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
+   for(i=0; i < (int)sizeof(gDefaultKeyValueTestData) / (int)sizeof(char*); i++)
    {
       memset(databuffer, 0, 64);
       snprintf(databuffer, 64, gDefaultKeyValueTestData[i], postfix);
@@ -208,7 +206,7 @@ void verify_test_setup()
 
    pclInitLibrary("pfs_test", shutdownReg);     // register to persistence client library
 
-   for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultKeyValueTestData) / (int)sizeof(char*); i++)
    {
       ret = pclKeyReadData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
       if(ret < 0)
@@ -226,63 +224,16 @@ void verify_test_setup()
 
 
 
-int setup_serial_con(const char* ttyConsole)
-{
-   struct termios tty;
-   int rval = -1;
-
-   memset (&tty, 0, sizeof(tty));
-   tty.c_iflag = IGNPAR;
-   tty.c_oflag = 0;
-   tty.c_cflag = CS8 | CREAD | CLOCAL; // 8n1, see termios.h for more information
-   tty.c_lflag = 0;
-   tty.c_cc[VMIN] = 1;
-   tty.c_cc[VTIME] = 5;
-
-   printf("Opening connection to %s\n", ttyConsole);
-   rval = open(ttyConsole, O_RDWR  | O_NOCTTY | O_SYNC);
-   if(rval != -1)
-   {
-      if (cfsetospeed (&tty, B115200) == -1)    // 115200 baud
-      {
-        printf("Failed to set cfsetospeed\n");
-      }
-      if(cfsetispeed (&tty, B115200))           // 115200 baud
-      {
-        printf("Failed to set cfsetispeed\n");
-      }
-
-      tcsetattr(rval, TCSANOW, &tty);
-
-      printf("tty fd: %d\n", rval);
-   }
-   else
-   {
-      printf("Failed to open console: %s - %s\n", ttyConsole, strerror(errno));
-   }
-
-   return rval;
-}
-
-
-
 /// after this function has been called the system reboots
-void send_serial_shutdown_cmd(int fd)
+void send_snmp_shutdown_cmd()
 {
-   // command for the computer controller power supply to power off and restart after 2.5 second again
-   static const char data[] = { "USET 12.000; ISET 10.000; OUTPUT OFF; WAIT 0.500; OUTPUT ON\n" };
+   // command to power off the power supply
+   const char data[] = { "snmpset -v1 -c public 134.86.58.225 iso.3.6.1.4.1.1909.22.1.1.1.5.1 i 1" };
 
-   if(write(fd, data, sizeof(data)) != -1)
+   if(system(data) == -1)
    {
-      fdatasync(fd);
-      printf("Data: %s\n", data);
+      printf("Failed to execute command: %s\n", data);
    }
-   else
-   {
-      printf("Failed to write to tty - size: %d - error: %s\n", sizeof(data), strerror(errno));
-   }
-
-   close(fd);
 }
 
 
@@ -365,28 +316,6 @@ void update_test_data(char* buffer, int lc_counter, int write_counter)
 }
 
 
-void* power_supply_shutdown(void* dataPtr)
-{
-   int fd = (int)(dataPtr);
-   int secs = 100000;
-   printf("Shutdown thread started fd: %d\n", fd);
-
-   pthread_cond_wait(&gPowerDownMtxCond, &gPowerDownMtx);
-   pthread_mutex_unlock(&gPowerDownMtx);
-
-# if 1
-   printf("   Send pwrOff command!\n");
-#else
-   printf("   Send pwrOff command but sleep first: %d !!!!\n", secs);
-   usleep(secs);
-   printf("     ==> no more sleeping!!!!\n");
-#endif
-   send_serial_shutdown_cmd(fd);
-   printf("   Cut pwr OFF => ByBy\n");
-
-   return NULL;
-}
-
 
 int get_lifecycle_count(char* buf)
 {
@@ -398,17 +327,10 @@ int get_write_count(char* buf)
    return atoi(&buf[WR_CNT_START]);
 }
 
-
 int main(int argc, char *argv[])
 {
    int rVal = EXIT_SUCCESS;
-   int ttyfd = -1;
-   int* retval;
-   char ttydevice[24] = {0};
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-   pthread_t powerShutdownThread;
-   struct sched_param param;
-   pthread_attr_t tattr;
 
    printf("------------------\n");
    printf("P F S - Test start\n");
@@ -419,22 +341,13 @@ int main(int argc, char *argv[])
 
    //DLT_REGISTER_CONTEXT(gPFSDLTContext,"PFS","Context for PCL PFS test logging");
 
-   if (argc < 2) {
-       printf ("Please start with %s /dev/ttyS1 or /dev/ttyUSB0 (for example)\n", argv[0]);
-       return EXIT_SUCCESS;
-   }
-
-   pthread_mutex_lock(&gPowerDownMtx);    // lock power down mutex and release when powser should be cut off
-
-
-   // default serial console
-   strncpy(ttydevice, "/dev/ttyUSB0", 24);
 
 #if 0
    // mount persistence partitions
    if(-1 != mount_persistence("/dev/sdb") )
    {
 #endif
+
       int numLoops = 1000000, opt = 0;
 
       while ((opt = getopt(argc, argv, "l:s:")) != -1)
@@ -444,20 +357,10 @@ int main(int argc, char *argv[])
             case 'l':
                numLoops = atoi(optarg);
                break;
-            case 's':
-               memset(ttydevice, 0, 24);
-               strncpy(ttydevice, optarg, 24);
-               break;
            }
        }
 
-      // setup the serial connection to the power supply
-      ttyfd = setup_serial_con(ttydevice);
-      if(ttyfd == -1)
-      {
-         printf("Failed to setup serial console: \"%s\"\n", ttydevice);
-         return EXIT_SUCCESS;
-      }
+
 
       if(update_test_progress_flag(gTestInProgressFlag, &gLifecycleCounter) == 0)
       {
@@ -477,17 +380,6 @@ int main(int argc, char *argv[])
       DLT_LOG(gPFSDLTContext, DLT_LOG_INFO, DLT_STRING("PFS test - Lifecycle counter:"), DLT_INT(gLifecycleCounter),
                                             DLT_STRING("- number of write loops:"), DLT_INT(numLoops));
       */
-      pthread_attr_init(&tattr);
-      param.sched_priority = 49;
-      pthread_attr_setschedparam(&tattr, &param);
-
-       // create here the dbus connection and pass to main loop
-      if(pthread_create(&powerShutdownThread, &tattr, power_supply_shutdown, (void*)ttyfd) == -1)
-      {
-        //DLT_LOG(gPFSDLTContext, DLT_LOG_ERROR, DLT_STRING("pthread_create( DBUS run_mainloop )") );
-        return -1;
-      }
-
       pclInitLibrary("pfs_test", shutdownReg);     // register to persistence client library
 
       // verify the data form previous lifecycle
@@ -501,8 +393,6 @@ int main(int argc, char *argv[])
       //write_data_file(numLoops);
 
 
-      pthread_cond_signal(&gPowerDownMtxCond);
-      pthread_mutex_unlock(&gPowerDownMtx);
       printf("Deinit library\n");
       pclDeinitLibrary();                          // unregister from persistence client library
 
@@ -527,8 +417,6 @@ int main(int argc, char *argv[])
    //dlt_free();
 
    printf("Wait until shutdown thread has finished\n");
-   // wait until the shutdown thread has ended
-   pthread_join(powerShutdownThread, (void**)&retval);
 
    return rVal;
 }
@@ -541,7 +429,7 @@ void verify_data_key_value()
    char buffer[64] = {0};
 
    // read data from previous lifecycle - key/value
-   for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultKeyValueTestData) / (int)sizeof(char*); i++)
    {
       memset(buffer, 0, 64);
       ret = pclKeyReadData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, 64);
@@ -634,7 +522,7 @@ void write_data_key_value(int numLoops, int counter)
    {
       // write key/value data
 
-      for(i=0; i<sizeof(gDefaultKeyValueTestData) / sizeof(char*); i++)
+      for(i=0; i< (int)sizeof(gDefaultKeyValueTestData) / (int)sizeof(char*); i++)
       {
          char buffer[64] = {0};
 
@@ -646,8 +534,8 @@ void write_data_key_value(int numLoops, int counter)
          {
             // unlock mutex
             printf("Now POWER OFF => k: %d \n", k);
-            pthread_cond_signal(&gPowerDownMtxCond);
-            pthread_mutex_unlock(&gPowerDownMtx);
+            pcl_test_send_shutdown_command();
+            break;
          }
          ret = pclKeyWriteData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, strlen(buffer));
          if(ret < 0)
@@ -673,13 +561,13 @@ void verify_data_file()
    char buffer[64] = {0};
 
    // open files
-   for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultFileAPITestData) / (int)sizeof(char*); i++)
    {
       handles[i] = pclFileOpen(PCL_LDBID_LOCAL, gDefaultFileResNames[i], 1, 0);
    }
 
    // read data from previous lifecycle - file
-   for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultFileAPITestData) / (int)sizeof(char*); i++)
    {
       memset(buffer, 0, 64);
       ret = pclFileReadData(handles[i], buffer, 64);
@@ -695,7 +583,7 @@ void verify_data_file()
    }
 
    // close fd's
-   for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultFileAPITestData) / (int)sizeof(char*); i++)
    {
       ret = pclFileClose(handles[i]);
       if(ret != 0)
@@ -712,7 +600,7 @@ void write_data_file(int numLoops)
    int handles[128] = {0};
 
    // open files
-   for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultFileAPITestData) / (int)sizeof(char*); i++)
    {
       handles[i] = pclFileOpen(PCL_LDBID_LOCAL, gDefaultFileResNames[i], 1, 1);
    }
@@ -721,7 +609,7 @@ void write_data_file(int numLoops)
    {
       // write file data
 
-      for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
+      for(i=0; i< (int)sizeof(gDefaultFileAPITestData) / (int)sizeof(char*); i++)
       {
          char buffer[64] = {0};
 
@@ -743,7 +631,7 @@ void write_data_file(int numLoops)
    }  // writes per lifecycle
 
    // close fd's
-   for(i=0; i<sizeof(gDefaultFileAPITestData) / sizeof(char*); i++)
+   for(i=0; i< (int)sizeof(gDefaultFileAPITestData) / (int)sizeof(char*); i++)
    {
       ret = pclFileClose(handles[i]);
       if(ret != 0)
@@ -795,4 +683,3 @@ int mount_persistence(const char* deviceName)
 
    return rval;
 }
-

@@ -77,6 +77,7 @@ void data_teardown(void)
 int myChangeCallback(pclNotification_s * notifyStruct)
 {
    printf(" ==> * - * myChangeCallback * - *\n");
+   (void)notifyStruct;
    return 1;
 }
 
@@ -240,7 +241,7 @@ START_TEST (test_GetDataHandle)
    fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
    size = pclKeyHandleWriteData(handle2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(size == strlen(sysTimeBuffer));
+   fail_unless(size == (int)strlen(sysTimeBuffer));
    // close
    ret = pclKeyHandleClose(handle2);
    // ---------------------------------------------------------------------------------------------
@@ -344,7 +345,7 @@ START_TEST(test_SetData)
     * Resource ID: 69
     */
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "69", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Wrong write size");
 #if 1
    snprintf(write1, 128, "%s %s", "/70",  sysTimeBuffer);
    /**
@@ -353,7 +354,7 @@ START_TEST(test_SetData)
     * Resource ID: 70
     */
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "70", 1, 2, (unsigned char*)write1, strlen(write1));
-   fail_unless(ret == strlen(write1), "Wrong write size");
+   fail_unless(ret == (int)strlen(write1), "Wrong write size");
 
    snprintf(write2, 128, "%s %s", "/key_70",  sysTimeBuffer);
    /**
@@ -362,7 +363,7 @@ START_TEST(test_SetData)
     * Resource ID: key_70
     */
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "key_70", 1, 2, (unsigned char*)write2, strlen(write2));
-   fail_unless(ret == strlen(write2), "Wrong write size");
+   fail_unless(ret == (int)strlen(write2), "Wrong write size");
 
 
    /*******************************************************************************************************************************************/
@@ -376,7 +377,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
-   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
+   fail_unless(ret == (int)strlen("Test notify shared data"), "Wrong write size");
 
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
@@ -386,7 +387,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x20, "links/last_link3",  3, 2, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
-   fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
+   fail_unless(ret == (int)strlen("Test notify shared data"), "Wrong write size");
 
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
@@ -409,19 +410,19 @@ START_TEST(test_SetData)
 
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "69", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write1, strlen(write1)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(write1), "Wrong read size");
+   fail_unless(ret == (int)strlen(write1), "Wrong read size");
 
    memset(buffer, 0, READ_SIZE);
 
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(write2), "Wrong read size");
+   fail_unless(ret == (int)strlen(write2), "Wrong read size");
 #endif
 #endif
 }
@@ -461,7 +462,7 @@ START_TEST(test_SetDataNoPRCT)
     *       ==> local USER value (user 1, seat 2)
     */
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "NoPRCT", 1, 2, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong write size");
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Wrong write size");
    //printf("Write Buffer : %s\n", sysTimeBuffer);
 
    // read data again and and verify datat has been written correctly
@@ -469,7 +470,7 @@ START_TEST(test_SetDataNoPRCT)
 
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "NoPRCT", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "Buffer not correctly read");
-   fail_unless(ret == strlen(sysTimeBuffer), "Wrong read size");
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Wrong read size");
    //printf("read buffer  : %s\n", buffer);
 #endif
 }
@@ -583,7 +584,7 @@ char gBackupInfo[] = {
 		int handle = open(backupBlacklist, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 
 		ret = write(handle, gBackupInfo, strlen(gBackupInfo));
-		if(ret != strlen(gBackupInfo))
+		if(ret != (int)strlen(gBackupInfo))
 		{
 			printf("data_setupBlacklist => Wrong size written: %d", ret);
 		}
@@ -651,7 +652,7 @@ START_TEST(test_DataFile)
    size = pclFileReadData(fd, buffer, READ_SIZE);
    //printf("pclFileReadData:\n   ist : \"%s\"\n   soll: \"%s\" ==> ret: %d => fd: %d\n", buffer, refBuffer, size, fd);
    fail_unless(strncmp((char*)buffer, refBuffer, strlen(refBuffer)) == 0, "Buffer not correctly read => media/mediaDB.db");
-   fail_unless(size == (strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
+   fail_unless(size == ((int)strlen(refBuffer)+1), "Wrong size returned");      // strlen + 1 ==> inlcude cr/lf
 
    ret = pclFileClose(fd);
    fail_unless(ret == 0, "Failed to close file");
@@ -661,7 +662,7 @@ START_TEST(test_DataFile)
    fail_unless(fd != -1, "Could not open file ==> /media/mediaDBWrite.db");
 
    size = pclFileWriteData(fd, writeBuffer, strlen(writeBuffer));
-   fail_unless(size == strlen(writeBuffer), "Failed to write data");
+   fail_unless(size == (int)strlen(writeBuffer), "Failed to write data");
    ret = pclFileClose(fd);
    fail_unless(ret == 0, "Failed to close file");
 
@@ -837,7 +838,7 @@ START_TEST(test_DataFileBackupCreation)
    memset(rBuffer, 0, 1024);
 
    rval = pclFileWriteData(fd_RW, wBuffer, strlen(wBuffer));
-   fail_unless(rval == strlen(wBuffer), "Failed write data");
+   fail_unless(rval == (int)strlen(wBuffer), "Failed write data");
 
    // verify the backup creation:
    handle = open(path,  O_RDWR);
@@ -1264,15 +1265,15 @@ START_TEST(test_WriteConfDefault)
 
    // -- key-value interface ---
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01", PCL_USER_DEFAULTDATA, 0, writeBuffer, strlen((char*)writeBuffer));
-   fail_unless(ret == strlen((char*)writeBuffer), "Write Conf default data: write size does not match");
+   fail_unless(ret == (int)strlen((char*)writeBuffer), "Write Conf default data: write size does not match");
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01",  3, 2, readBuffer, READ_SIZE);
-   fail_unless(ret == strlen((char*)writeBuffer), "Write Conf default data: read size does not match");
+   fail_unless(ret == (int)strlen((char*)writeBuffer), "Write Conf default data: read size does not match");
    fail_unless(strncmp((char*)readBuffer, (char*)writeBuffer, strlen((char*)readBuffer)) == 0, "Buffer not correctly read");
    //printf(" --- test_ReadConfDefault => statusHandle/writeconfdefault01: \"%s\" => \"%s\" \n    retIst: %d retSoll: %d\n", readBuffer, writeBuffer, ret, strlen((char*)writeBuffer));
 
 
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01", PCL_USER_DEFAULTDATA, 0, writeBuffer2, strlen((char*)writeBuffer2));
-   fail_unless(ret == strlen((char*)writeBuffer2), "Write Conf default data 2: write size does not match");
+   fail_unless(ret == (int)strlen((char*)writeBuffer2), "Write Conf default data 2: write size does not match");
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01",  3, 2, readBuffer, READ_SIZE);
    fail_unless(strncmp((char*)readBuffer, (char*)writeBuffer2, strlen((char*)readBuffer)) == 0, "Buffer2 not correctly read");
    //printf(" --- test_ReadConfDefault => statusHandle/writeconfdefault01: \"%s\" => \"%s\" \n    retIst: %d retSoll: %d\n", readBuffer, writeBuffer2, ret, strlen((char*)writeBuffer2));
@@ -1455,11 +1456,11 @@ START_TEST(test_utf8_string)
    unsigned char buffer[128] = {0};
 
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "utf8String", 3, 2, buffer, READ_SIZE);
-   fail_unless(ret == strlen(utf8StringBuffer), "Wrong read size");
+   fail_unless(ret == (int)strlen(utf8StringBuffer), "Wrong read size");
    fail_unless(strncmp((char*)buffer, utf8StringBuffer, ret-1) == 0, "Buffer not correctly read => 1");
 
    size = pclKeyGetSize(PCL_LDBID_LOCAL, "utf8String", 3, 2);
-   fail_unless(size == strlen(utf8StringBuffer), "Invalid size");
+   fail_unless(size == (int)strlen(utf8StringBuffer), "Invalid size");
 }
 END_TEST
 
@@ -1775,6 +1776,8 @@ int main(int argc, char *argv[])
    //int fail = 0;
 
    TestResult** tResult;
+
+   (void)argv;
 
    // assign application name
    strncpy(gTheAppId, "lt-persistence_client_library_test", MaxAppNameLen);

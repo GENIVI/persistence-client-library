@@ -48,6 +48,8 @@ int plugin_handle_close(int handle)
 {
    int rval = 99;
 
+   (void)handle;
+
    //printf("* * * * * plugin_close- handle: %d!\n", handle);
 
    return rval;
@@ -65,6 +67,7 @@ int plugin_handle_close(int handle)
 int plugin_delete_data(const char* path)
 {
    int rval = 13579;
+   (void)path;
 
    //printf("* * * * * plugin_delete_data - path: %s!\n", path);
 
@@ -86,6 +89,7 @@ int plugin_handle_get_data(int handle, char* buffer, int size)
 {
    //int strSize = 99;
    //printf("plugin_handle_get_data: %s\n", LIBIDENT);
+   (void)handle;
 
    return snprintf(buffer, size, "Custom plugin -> plugin_get_data_handle: %s!", LIBIDENT);
 }
@@ -103,6 +107,9 @@ int plugin_get_data(const char* path, char* buffer, int size)
    //int strSize = 99;
 
    //printf("Custom plugin -> plugin_get_data: %s!\n", LIBIDENT);
+   (void)path;
+   (void)buffer;
+   (void)size;
 
    return snprintf(buffer, size, "Custom plugin -> plugin_get_data: %s!", LIBIDENT);
 }
@@ -129,6 +136,7 @@ int plugin_init_async(plugin_callback_async_t pfInitCompletedCB)
    //int rval = -1;
 
 	//printf("* * * * * plugin_init_async => %s!\n", LIBIDENT);
+   (void)pfInitCompletedCB;
 
 	return 1;
 }
@@ -167,6 +175,9 @@ int plugin_handle_open(const char* path, int flag, int mode)
    int rval = 100;
 
    //printf("* * * * * plugin_open - path: %s | flag: %d | mode: %d | plugin: %s!\n", path, flag, mode, LIBIDENT);
+   (void)path;
+   (void)flag;
+   (void)mode;
 
    return rval;
 }
@@ -187,6 +198,9 @@ int plugin_handle_set_data(int handle, char* buffer, int size)
    int rval = 123654;
 
    //printf("* * * * * plugin_handle_set_data: %s!\n", LIBIDENT);
+   (void)handle;
+   (void)buffer;
+   (void)size;
 
    return rval;
 }
@@ -204,6 +218,9 @@ int plugin_set_data(const char* path, char* buffer, int size)
    int rval = 321456;
 
    //printf("* * * * * plugin_set_data: %s!\n", LIBIDENT);
+   (void)path;
+   (void)buffer;
+   (void)size;
 
    return rval;
 }
@@ -230,6 +247,7 @@ int plugin_get_status_notification_clbk(plugin_callback_t pFunct)
    int rval = 99;
 
    //printf("* * * * * plugin_get_status_notification_clbk: %s!\n", LIBIDENT);
+   (void)pFunct;
 
    return rval;
 }
@@ -240,6 +258,7 @@ int plugin_handle_get_size(int handle)
    int rval = 11223344;
 
    //printf("* * * * * plugin_get_size_handle: %d | %s!\n", handle, LIBIDENT);
+   (void)handle;
 
    return rval;
 }
@@ -250,6 +269,7 @@ int plugin_get_size(const char* path)
    int rval = 44332211;
 
    //printf("* * * * * plugin_get_size: %s | %s!\n", path, LIBIDENT);
+   (void)path;
 
    return rval;
 }
@@ -261,6 +281,7 @@ int plugin_create_backup(const char* backup_id)
    int rval = -1;
 
    printf("* * * * * plugin_create_backup: backup_id %s | %s!\n", backup_id, LIBIDENT);
+   (void)backup_id;
 
    return rval;
 }
@@ -271,6 +292,7 @@ int plugin_restore_backup(const char* backup_id)
    int rval = -1;
 
    printf("* * * * * plugin_restore_backup: backup_id %s | %s!\n", backup_id, LIBIDENT);
+   (void)backup_id;
 
    return rval;
 
@@ -282,6 +304,8 @@ int plugin_get_backup(char* backup_id, int size)
    int rval = -1;
 
    printf("* * * * * plugin_get_backup: backup_id %s\n", backup_id);
+   (void)backup_id;
+   (void)size;
 
    return rval;
 }
