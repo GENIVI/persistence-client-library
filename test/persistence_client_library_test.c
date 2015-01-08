@@ -210,7 +210,7 @@ START_TEST (test_GetDataHandle)
 
    locTime = localtime(&t);
 
-   snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
+   snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon+1, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
 
@@ -336,7 +336,7 @@ START_TEST(test_SetData)
    locTime = localtime(&t);
 
    // write data
-   snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
+   snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon+1, (locTime->tm_year+1900),
                                                                  locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
    /**
@@ -454,7 +454,7 @@ START_TEST(test_SetDataNoPRCT)
 
    locTime = localtime(&t);
 
-   snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon, (locTime->tm_year+1900),
+   snprintf(sysTimeBuffer, 128, "TimeAndData: \"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon+1, (locTime->tm_year+1900),
                                                                   locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
    /**
@@ -1585,6 +1585,47 @@ START_TEST(test_DbusInterface)
 END_TEST
 
 
+START_TEST(test_SharedAccess)
+{
+   int ret = 0;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   unsigned char buffer[256] = {0};
+   char sysTimeBuffer[256];
+   struct tm *locTime;
+   time_t t = time(0);
+
+   locTime = localtime(&t);
+
+   // write data
+   snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon+1, (locTime->tm_year+1900),
+                                                                      locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   ret = pclKeyWriteData(PCL_LDBID_PUBLIC, "aSharedResource", 1, 1, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Failed to write shared data ");
+
+   ret = pclKeyReadData(PCL_LDBID_PUBLIC, "aSharedResource", 1, 1, buffer, 256);
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Failed to read shared data ");
+
+   pclDeinitLibrary();
+
+   // ----------------------------------------------
+
+   (void)pclInitLibrary("node-health-monitor", shutdownReg);   // now use a different app id, which is not able to write this resource
+
+   ret = pclKeyWriteData(PCL_LDBID_PUBLIC, "aSharedResource", 1, 1, (unsigned char*)"This is a test Buffer", strlen("This is a test Buffer"));
+   fail_unless(ret == EPERS_NOT_RESP_APP, "Able to write shared data, but should not!!");
+
+   ret = pclKeyReadData(PCL_LDBID_PUBLIC, "aSharedResource", 1, 1, buffer, 256);
+   fail_unless(ret == (int)strlen(sysTimeBuffer), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen((char*)sysTimeBuffer)) == 0, "Buffer not correctly read");
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
 static Suite * persistencyClientLib_suite()
 {
    const char* testSuiteName = "Persistency_client_library";
@@ -1689,6 +1730,9 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_VerifyROnly = tcase_create("VerifyROnly");
    tcase_add_test(tc_VerifyROnly, test_VerifyROnly);
 
+   TCase * tc_SharedAccess = tcase_create("SharedAccess");
+   tcase_add_test(tc_SharedAccess, test_SharedAccess);
+   tcase_set_timeout(tc_SharedAccess, 2);
 
 
    suite_add_tcase(s, tc_persSetData);
@@ -1752,6 +1796,9 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_DataFileConfDefault);
    tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
+
+
+   suite_add_tcase(s, tc_SharedAccess);
 
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);

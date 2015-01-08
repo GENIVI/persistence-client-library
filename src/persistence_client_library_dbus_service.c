@@ -352,7 +352,7 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
    dbus_bool_t result = FALSE;
    (void)data;
 
-   if (ARRAY_SIZE(gPollInfo.fds)>gPollInfo.nfds)
+   if (ARRAY_SIZE(gPollInfo.fds) > (unsigned int)(gPollInfo.nfds))
    {
       int flags = dbus_watch_get_flags(watch);
 
@@ -418,7 +418,7 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
    (void)data;
    dbus_bool_t ret = FALSE;
 
-   if (ARRAY_SIZE(gPollInfo.fds)>gPollInfo.nfds)
+   if(ARRAY_SIZE(gPollInfo.fds) > (unsigned int)(gPollInfo.nfds))
    {
       const int interval = dbus_timeout_get_interval(timeout);
       if ((0<interval)&&(TRUE==dbus_timeout_get_enabled(timeout)))
@@ -516,6 +516,10 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
 
    DBusConnection* conn = (DBusConnection*)userData;
    dbus_error_init(&err);
+
+#if USE_PASINTERFACE != 1
+   (void)vtable;
+#endif
 
    if (dbus_error_is_set(&err))
    {

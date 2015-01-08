@@ -298,7 +298,7 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
  * @return positive value (0 or greater): the bytes written;
  * On error a negative value will be returned with the following error codes:
  * ::EPERS_LOCKFS ::EPERS_BADPOL ::EPERS_BUFLIMIT ::EPERS_DB_VALUE_SIZE ::EPERS_DB_KEY_SIZE
- * ::EPERS_NOTIFY_SIG ::EPERS_RESOURCE_READ_ONLY
+ * ::EPERS_NOTIFY_SIG ::EPERS_RESOURCE_READ_ONLY ::EPERS_NOT_RESP_APP
  */
 int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, unsigned char* buffer, int buffer_size);
 

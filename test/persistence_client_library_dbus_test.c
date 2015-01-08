@@ -55,18 +55,18 @@ int main(int argc, char *argv[])
    printf("pclInitLibrary: %d\n", ret);
 
    printf("Press a key to end application\n");
-   ret = pclKeyHandleOpen(0xFF, "posHandle/last_position", 0, 0);
+   ret = pclKeyHandleOpen(PCL_LDBID_LOCAL, "posHandle/last_position", 0, 0);
 
    printf("Register for change notification\n");
    ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
    ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
-   ret = pclKeyRegisterNotifyOnChange(0xFF, "69",     1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(PCL_LDBID_LOCAL, "69",     1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    printf("Reg => 69: %d\n", ret);
-   ret = pclKeyRegisterNotifyOnChange(0xFF, "70",     1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(PCL_LDBID_LOCAL, "70",     1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    printf("Reg => 70: %d\n", ret);
-   ret = pclKeyRegisterNotifyOnChange(0xFF, "key_70", 1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   ret = pclKeyRegisterNotifyOnChange(PCL_LDBID_LOCAL, "key_70", 1/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    printf("Reg => key_70: %d\n", ret);
 
 

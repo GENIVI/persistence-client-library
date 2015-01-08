@@ -47,7 +47,7 @@ typedef struct _PersistenceDbContext_s
 	/// lofical database id
    unsigned int ldbid;
    /// user number
-   unsigned int user_no;
+   int user_no;
    /// seat number
    unsigned int seat_no;
 } PersistenceDbContext_s;

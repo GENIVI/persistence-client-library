@@ -255,7 +255,7 @@ int jsw_rbinsert ( jsw_rbtree_t *tree, void *data )
 	  }
 	  else {
 
-		jsw_rbnode_t head = {0}; /* False tree root */
+		jsw_rbnode_t head = {0, NULL, {NULL, NULL} }; /* False tree root */
 		jsw_rbnode_t *g, *t;     /* Grandparent & parent */
 		jsw_rbnode_t *p, *q;     /* Iterator & parent */
 		int dir = 0, last = 0;

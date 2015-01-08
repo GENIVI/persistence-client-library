@@ -173,6 +173,10 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
    void* ptr = 0;
 
 #if USE_FILECACHE
+   (void)addr;
+   (void)size;
+   (void)offset;
+   (void)fd;
    DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileMapData not supported when using file cache"));
 #else
    //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
@@ -409,7 +413,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       //
       if(dbContext.configKey.type == PersistenceResourceType_file)
       {
-         if(user_no == PCL_USER_DEFAULTDATA)
+         if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
          {
             handle = pclFileOpenDefaultData(&dbContext, resource_id);
             set_file_user_id(handle, PCL_USER_DEFAULTDATA);

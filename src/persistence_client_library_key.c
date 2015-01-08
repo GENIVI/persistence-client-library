@@ -495,9 +495,17 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                   if(dbContext.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
                   {
                      // store data
-                     if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+                     if(dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
                      {
-                        data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+                        if(   (dbContext.configKey.storage == PersistenceStorage_shared)
+                           && (0 != strncmp(dbContext.configKey.reponsible, gAppId, MaxAppNameLen) ) )
+                        {
+                           data_size = EPERS_NOT_RESP_APP;
+                        }
+                        else
+                        {
+                           data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+                        }
                      }
                      else
                      {

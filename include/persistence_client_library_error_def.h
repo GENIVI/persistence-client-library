@@ -119,6 +119,8 @@ extern "C" {
 #define EPERS_SHUTDOWN_NO_PERMIT  (-42)
 /// not a trusted application,no access to persistence data
 #define EPERS_SHUTDOWN_NO_TRUSTED (-43)
+/// not the responsible application to modify shared data
+#define EPERS_NOT_RESP_APP        (-44)
 /// requested handle is not valid. \since PCL v7.0.3
 #define EPERS_INVALID_HANDLE     (-1000)
 
