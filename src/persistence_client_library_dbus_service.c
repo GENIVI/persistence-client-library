@@ -97,8 +97,6 @@ typedef struct SPollInfo
 /// polling information
 static tPollInfo gPollInfo;	/// polling information
 
-int bContinue = 0;				/// indicator if dbus mainloop shall continue
-
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 
@@ -260,15 +258,15 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 void* run_mainloop(void* dataPtr)
 {
    // persistence admin message
-   static const struct DBusObjectPathVTable vtablePersAdmin
+   const struct DBusObjectPathVTable vtablePersAdmin
       = {unregisterMessageHandler, checkPersAdminMsg, NULL, NULL, NULL, NULL};
 
    // lifecycle message
-   static const struct DBusObjectPathVTable vtableLifecycle
+   const struct DBusObjectPathVTable vtableLifecycle
       = {unregisterMessageHandler, checkLifecycleMsg, NULL, NULL, NULL, NULL};
 
    // fallback
-   static const struct DBusObjectPathVTable vtableFallback
+   const struct DBusObjectPathVTable vtableFallback
       = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, NULL, NULL, NULL};
 
    // setup the dbus
@@ -537,6 +535,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
       else
       {
          int ret;
+         int bContinue = 0;   /// indicator if dbus mainloop shall continue
          memset(&gPollInfo, 0 , sizeof(gPollInfo));
 
          gPollInfo.nfds = 1;

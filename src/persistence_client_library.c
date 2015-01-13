@@ -279,7 +279,7 @@ int pclDeinitLibrary(void)
 
 static int private_pclDeinitLibrary(void)
 {
-   int i = 0, rval = 1;
+   int rval = 1;
 
 #if USE_XSTRACE_PERS
    xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
@@ -305,20 +305,6 @@ static int private_pclDeinitLibrary(void)
      DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Succ de-initialized IPC protocol for PCL."));
    }
 #endif
-
-   // unload custom client libraries
-   for(i=0; i<PersCustomLib_LastEntry; i++)
-   {
-      if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
-      {
-         // deinitialize plugin
-         gPersCustomFuncs[i].custom_plugin_deinit();
-         // close library handle
-         dlclose(gPersCustomFuncs[i].handle);
-
-         invalidate_custom_plugin(i);
-      }
-   }
 
    process_prepare_shutdown(Shutdown_Full);  // close all db's and fd's and block access
 

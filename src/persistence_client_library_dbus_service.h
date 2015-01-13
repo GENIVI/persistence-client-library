@@ -53,29 +53,29 @@ typedef enum ECmd
 typedef union MainLoopData_u_{
 
 	/// message structure
-	struct {
+	struct message_ {
 		/// dbus mainloop command
 		uint32_t cmd;
 		/// unsigned int parameters
 		uint32_t params[4];
 		/// string parameter
 		char string[DbKeyMaxLen];
-	} message;
+	}message;
 
 	/// the message payload
-	char payload[128];
+	char payload[sizeof(struct message_)];
 } MainLoopData_u;
 
 
-/// mutex to make sure main loop is running
-extern pthread_mutex_t gDbusInitializedMtx;
-/// dbus init conditional variable
-extern pthread_cond_t  gDbusInitializedCond;
-/// dbus pending mutex
-extern pthread_mutex_t gDbusPendingRegMtx;
-/// dbus mainloop conditional variable
-extern pthread_mutex_t gMainCondMtx;
-/// dbus mainloop mutex
+/// mutex to make sure main loop is running => visibility "hidden" to prevent the use outside the library
+extern pthread_mutex_t gDbusInitializedMtx __attribute__ ((visibility ("hidden")));
+/// dbus init conditional variable => visibility "hidden" to prevent the use outside the library
+extern pthread_cond_t  gDbusInitializedCond __attribute__ ((visibility ("hidden")));
+/// dbus pending mutex => visibility "hidden" to prevent the use outside the library
+extern pthread_mutex_t gDbusPendingRegMtx __attribute__ ((visibility ("hidden")));
+/// dbus mainloop conditional variable => visibility "hidden" to prevent the use outside the library
+extern pthread_mutex_t gMainCondMtx __attribute__ ((visibility ("hidden")));
+/// dbus mainloop mutex => visibility "hidden" to prevent the use outside the library
 extern pthread_t gMainLoopThread;
 
 /// lifecycle consumer interface dbus name
