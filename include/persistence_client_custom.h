@@ -19,6 +19,7 @@
  *                 Library provides an plugin API to extend persistence client library
  * @par change history
  *    Date       Author    Version  Description
+ *  - 2015.01.14 ihuerner  1.6.0.0  Extended header documentation for function plugin_init_async.
  *  - 2014.01.20 iieremie  1.6.0.0  multiple extensions:
  *                                  - error codes
  *                                  - asynchronous init/deinit
@@ -124,8 +125,10 @@ int plugin_init();
  *
  * @note
  *       - This (or \ref plugin_init) is the first function to call from this interface
- *       - The call returns immediatelly.
+ *       - The call returns immediately.
  *       - Later, pfInitCompletedCB will be called when the initialization is complete.
+ *       - If a plugin function will be called and the plugin initialization is not
+ *         finished jet, the plugin function must return PCCL_FAILURE_NOT_INITIALIZED error code.
  */
 int plugin_init_async(plugin_callback_async_t pfInitCompletedCB);
 
