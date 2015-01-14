@@ -44,6 +44,8 @@ pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;
 
 pthread_t gMainLoopThread;
 
+volatile int gMainLoopCondValue = 0;
+volatile int gInitCondValue     = 0;
 
 const char* gDbusLcConsDest    = "org.genivi.NodeStateManager";
 
@@ -334,8 +336,10 @@ int setup_dbus_mainloop(void)
    (void)pthread_setname_np(gMainLoopThread, "pclDbusLoop");
 
    // wait for condition variable
-   pthread_cond_wait(&gDbusInitializedCond, &gDbusInitializedMtx);
+   while(0 == gInitCondValue)
+      pthread_cond_wait(&gDbusInitializedCond, &gDbusInitializedMtx);
 
+   gInitCondValue = 0;
    pthread_mutex_unlock(&gDbusInitializedMtx);
 
    return rval;
@@ -527,7 +531,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
    else if (NULL != conn)
    {
       dbus_connection_set_exit_on_disconnect(conn, FALSE);
-      //if (-1 == (gEfds = eventfd(0, 0)))
+
       if (-1 == (pipe(gPipeFd)))
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - eventfd() failed w/ errno:"), DLT_INT(errno) );
@@ -558,6 +562,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
             }
             else
             {
+               gInitCondValue = 1;
                pthread_cond_signal(&gDbusInitializedCond);
                pthread_mutex_unlock(&gDbusInitializedMtx);
                do
@@ -655,6 +660,8 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
                                           DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_INT(readData.message.cmd) );
                                           break;
                                     }
+
+                                    gMainLoopCondValue = 1;
                                     pthread_cond_signal(&gMainLoopCond);
                                     pthread_mutex_unlock(&gMainCondMtx);
                                  }
@@ -703,6 +710,7 @@ int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
       dbus_shutdown();
    }
 
+   //gInitCondValue = 0;
    pthread_cond_signal(&gDbusInitializedCond);
    pthread_mutex_unlock(&gDbusInitializedMtx);
    return 0;
@@ -720,9 +728,11 @@ int deliverToMainloop(MainLoopData_u* payload)
 
    deliverToMainloop_NM(payload);
 
-   pthread_cond_wait(&gMainLoopCond, &gMainCondMtx);
-   pthread_mutex_unlock(&gMainCondMtx);
+   while(0 == gMainLoopCondValue)
+      pthread_cond_wait(&gMainLoopCond, &gMainCondMtx);
 
+   gMainLoopCondValue = 0;
+   pthread_mutex_unlock(&gMainCondMtx);
 
    pthread_mutex_unlock(&gDeliverpMtx);
 

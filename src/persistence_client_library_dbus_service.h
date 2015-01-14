@@ -78,6 +78,10 @@ extern pthread_mutex_t gMainCondMtx __attribute__ ((visibility ("hidden")));
 /// dbus mainloop mutex => visibility "hidden" to prevent the use outside the library
 extern pthread_t gMainLoopThread;
 
+extern volatile int gMainLoopCondValue __attribute__ ((visibility ("hidden")));
+
+extern volatile int gInitCondValue __attribute__ ((visibility ("hidden")));
+
 /// lifecycle consumer interface dbus name
 extern const char* gDbusLcConsterface;
 /// lifecycle consumer dbus interface
