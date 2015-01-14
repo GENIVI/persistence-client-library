@@ -66,11 +66,6 @@ typedef union MainLoopData_u_{
 	char payload[sizeof(struct message_)];
 } MainLoopData_u;
 
-
-/// mutex to make sure main loop is running => visibility "hidden" to prevent the use outside the library
-extern pthread_mutex_t gDbusInitializedMtx __attribute__ ((visibility ("hidden")));
-/// dbus init conditional variable => visibility "hidden" to prevent the use outside the library
-extern pthread_cond_t  gDbusInitializedCond __attribute__ ((visibility ("hidden")));
 /// dbus pending mutex => visibility "hidden" to prevent the use outside the library
 extern pthread_mutex_t gDbusPendingRegMtx __attribute__ ((visibility ("hidden")));
 /// dbus mainloop conditional variable => visibility "hidden" to prevent the use outside the library
@@ -78,9 +73,8 @@ extern pthread_mutex_t gMainCondMtx __attribute__ ((visibility ("hidden")));
 /// dbus mainloop mutex => visibility "hidden" to prevent the use outside the library
 extern pthread_t gMainLoopThread;
 
-extern volatile int gMainLoopCondValue __attribute__ ((visibility ("hidden")));
+extern int gMainLoopCondValue __attribute__ ((visibility ("hidden")));
 
-extern volatile int gInitCondValue __attribute__ ((visibility ("hidden")));
 
 /// lifecycle consumer interface dbus name
 extern const char* gDbusLcConsterface;
@@ -110,15 +104,11 @@ extern const char* gPersAdminConsumerPath;
 /**
  * @brief DBus main loop to dispatch events and dbus messages
  *
- * @param vtable the function pointer tables for '/org/genivi/persistence/adminconsumer' messages
- * @param vtable2 the function pointer tables for '/com/contiautomotive/NodeStateManager/LifecycleConsumer' messages
- * @param vtableFallback the fallback function pointer tables
  * @param userData data to pass to the main loop
  *
- * @return 0
+ * @return void*
  */
-int mainLoop(DBusObjectPathVTable vtable, DBusObjectPathVTable vtable2,
-             DBusObjectPathVTable vtableFallback, void* userData);
+void* mainLoop(void* userData);
 
 
 /**

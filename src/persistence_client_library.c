@@ -158,7 +158,6 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
 #endif
 
-
    gShutdownMode = shutdownMode;
 
    char blacklistPath[DbPathMaxLen] = {0};
@@ -315,8 +314,6 @@ static int private_pclDeinitLibrary(void)
    pthread_join(gMainLoopThread, (void**)&retval);
 
    pthread_mutex_unlock(&gDbusPendingRegMtx);
-   pthread_mutex_unlock(&gDbusInitializedMtx);
-
 
 #if USE_FILECACHE
    pfcDeinitCache();
