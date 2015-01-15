@@ -19,8 +19,8 @@
  *                 Library provides an API to access persistent data
  * \par change history
  * Date     Author          Version
- * 25/06/13 Ingo Hürner     1.0.0 - Rework of Init functions
- * 04/11/13 Ingo Hürner     1.3.0 - Added define for shutdown type none
+ * 25/06/13 Ingo Huerner    1.0.0 - Rework of Init functions
+ * 04/11/13 Ingo Huerner    1.3.0 - Added define for shutdown type none
  * 12/11/14 Guy Sagnes      1.4.0 - Add defines for accessing:
  *                                   - node data, configurable default
  *                                   - specific logical database (local, shared public)

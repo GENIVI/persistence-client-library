@@ -177,7 +177,10 @@ void clear_key_handle_array(int idx)
 {
 	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
 	{
-		memset(&gKeyHandleArray[idx], 0, sizeof(gKeyHandleArray[idx]));
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         memset(&gKeyHandleArray[idx], 0, sizeof(gKeyHandleArray[idx]));
+      }
 		pthread_mutex_unlock(&gKeyHandleAccessMtx);
 	}
 }
@@ -228,12 +231,30 @@ int get_file_permission(int idx)
 
 char* get_file_backup_path(int idx)
 {
-	return gFileHandleArray[idx].backupPath;
+   char* charPtr = NULL;
+   if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+   {
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         charPtr = gFileHandleArray[idx].backupPath;
+      }
+      pthread_mutex_unlock(&gFileHandleAccessMtx);
+   }
+	return charPtr;
 }
 
 char* get_file_checksum_path(int idx)
 {
-	return gFileHandleArray[idx].csumPath;
+   char* charPtr = NULL;
+   if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+   {
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         charPtr = gFileHandleArray[idx].csumPath;
+      }
+      pthread_mutex_unlock(&gFileHandleAccessMtx);
+   }
+	return charPtr;
 }
 
 
@@ -241,15 +262,26 @@ void set_file_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-		gFileHandleArray[idx].backupCreated = status;
-
+      if(MaxPersHandle >= idx && idx > 0 )
+      {
+         gFileHandleArray[idx].backupCreated = status;
+      }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 }
 
 int get_file_backup_status(int idx)
 {
-	return gFileHandleArray[idx].backupCreated;
+   int backup = -1;
+   if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+   {
+      if(MaxPersHandle >= idx && idx > 0 )
+      {
+         backup= gFileHandleArray[idx].backupCreated;
+      }
+      pthread_mutex_unlock(&gFileHandleAccessMtx);
+   }
+	return backup;
 }
 
 void set_file_cache_status(int idx, int status)
@@ -349,21 +381,43 @@ int get_ossfile_permission(int idx)
 
 char* get_ossfile_backup_path(int idx)
 {
-	return gOssHandleArray[idx].backupPath;
+   char* charPtr = NULL;
+   if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+   {
+
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         charPtr = gOssHandleArray[idx].backupPath;
+      }
+      pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+   }
+	return charPtr;
 }
 
 
 char* get_ossfile_file_path(int idx)
 {
-	return gOssHandleArray[idx].filePath;
+   char* charPtr = NULL;
+   if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+   {
+
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         charPtr = gOssHandleArray[idx].filePath;
+      }
+      pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+   }
+	return charPtr;
 }
 
 void set_ossfile_file_path(int idx, char* file)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-		gOssHandleArray[idx].filePath = file;
-
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         gOssHandleArray[idx].filePath = file;
+      }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
 }
@@ -371,7 +425,16 @@ void set_ossfile_file_path(int idx, char* file)
 
 char* get_ossfile_checksum_path(int idx)
 {
-	return gOssHandleArray[idx].csumPath;
+   char* charPtr = NULL;
+   if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+   {
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         charPtr = gOssHandleArray[idx].csumPath;
+      }
+      pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+   }
+	return charPtr;
 }
 
 
@@ -379,13 +442,25 @@ void set_ossfile_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-		gOssHandleArray[idx].backupCreated = status;
-
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         gOssHandleArray[idx].backupCreated = status;
+      }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
 }
 
 int get_ossfile_backup_status(int idx)
 {
-	return gOssHandleArray[idx].backupCreated;
+   int rval = -1;
+
+   if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+   {
+      if(idx < MaxPersHandle && idx > 0 )
+      {
+         rval = gOssHandleArray[idx].backupCreated;
+      }
+      pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+   }
+	return rval;
 }

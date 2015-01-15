@@ -49,6 +49,7 @@ int isAccessLocked(void)
 int check_pas_request(unsigned int request, unsigned int requestID)
 {
    int rval = 0;
+
    switch(request)
    {
       case (PasMsg_Block|PasMsg_WriteBack):
@@ -244,7 +245,7 @@ int register_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(&data))
    {
-    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pegPas - failed write pipe"), DLT_INT(errno));
+    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regPas - failed write pipe"), DLT_INT(errno));
     rval = -1;
    }
    else

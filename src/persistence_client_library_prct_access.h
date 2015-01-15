@@ -53,9 +53,9 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
 
 /**
- * @brief get the resource configuration table gvbd database by id
+ * @brief get the resource configuration table database by id
  *
- * @return i Handle to the gvdb database table or negative value if no valid database has been found
+ * @return i Handle to the database table or negative value if no valid database has been found
  */
 int get_resource_cfg_table_by_idx(int i);
 

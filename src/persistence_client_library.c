@@ -32,10 +32,6 @@
    #include <persistence_file_cache.h>
 #endif
 
-#if USE_XSTRACE_PERS
-   #include <xsm_user.h>
-#endif
-
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -154,10 +150,6 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
 
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
-
    gShutdownMode = shutdownMode;
 
    char blacklistPath[DbPathMaxLen] = {0};
@@ -172,31 +164,23 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
 
    // Assemble backup blacklist path
-   sprintf(blacklistPath, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
+   snprintf(blacklistPath, DbPathMaxLen, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
 
    if(readBlacklistConfigFile(blacklistPath) == -1)
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("initLibrary - Err access blacklist:"), DLT_STRING(blacklistPath));
    }
 
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
    if(setup_dbus_mainloop() == -1)
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed to setup main loop"));
      pthread_mutex_unlock(&gDbusPendingRegMtx);
      return EPERS_DBUS_MAINLOOP;
    }
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
-
 
    if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
    {
-     // register for lifecycle dbus messages
-     if(register_lifecycle(shutdownMode) == -1)
+     if(register_lifecycle(shutdownMode) == -1) // register for lifecycle dbus messages
      {
        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary => Failed reg to LC dbus interface"));
        pthread_mutex_unlock(&gDbusPendingRegMtx);
@@ -219,25 +203,17 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 
-   // load custom plugins
-   if(load_custom_plugins(customAsyncInitClbk) < 0)
+   if(load_custom_plugins(customAsyncInitClbk) < 0)      // load custom plugins
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
    }
 
-   // initialize keyHandle array
    init_key_handle_array();
 
    pers_unlock_access();
 
-   // assign application name
-   strncpy(gAppId, appName, MaxAppNameLen);
+   strncpy(gAppId, appName, MaxAppNameLen);  // assign application name
    gAppId[MaxAppNameLen-1] = '\0';
-
-
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
 
    return rval;
 }
@@ -280,18 +256,14 @@ static int private_pclDeinitLibrary(void)
 {
    int rval = 1;
 
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
-#endif
-
-   int* retval;
    MainLoopData_u data;
    data.message.cmd = (uint32_t)CMD_QUIT;
    data.message.string[0] = '\0';  // no string parameter, set to 0
 
-   // unregister for lifecycle dbus messages
-   if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
+   if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)  // unregister for lifecycle dbus messages
+   {
       rval = unregister_lifecycle(gShutdownMode);
+   }
 
 #if USE_PASINTERFACE == 1
    rval = unregister_pers_admin_service();
@@ -305,23 +277,16 @@ static int private_pclDeinitLibrary(void)
    }
 #endif
 
-   process_prepare_shutdown(Shutdown_Full);  // close all db's and fd's and block access
+   process_prepare_shutdown(Shutdown_Full);           // close all db's and fd's and block access
 
-   // send quit command to dbus mainloop
-   deliverToMainloop_NM(&data);
+   deliverToMainloop_NM(&data);                       // send quit command to dbus mainloop
 
-   // wait until the dbus mainloop has ended
-   pthread_join(gMainLoopThread, (void**)&retval);
+   pthread_join(gMainLoopThread, (void**)&retval);    // wait until the dbus mainloop has ended
 
    pthread_mutex_unlock(&gDbusPendingRegMtx);
 
 #if USE_FILECACHE
    pfcDeinitCache();
-#endif
-
-
-#if USE_XSTRACE_PERS
-   xsm_send_user_event("%s - %d\n", __FUNCTION__, __LINE__);
 #endif
 
    return rval;
@@ -338,7 +303,8 @@ int pclLifecycleSet(int shutdown)
       if(shutdown == PCL_SHUTDOWN)
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("lifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
-         process_prepare_shutdown(Shutdown_Partial); // close all db's and fd's and block access
+         process_prepare_shutdown(Shutdown_Partial);
+         gCancelCounter++;
       }
       else if(shutdown == PCL_SHUTDOWN_CANCEL)
       {

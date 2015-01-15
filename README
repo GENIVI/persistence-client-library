@@ -47,6 +47,7 @@ Execute the following steps in order to build the component
 ** --enable-tests to enable the build of the tests
 ** --enable-pasinterface enable the PAS interface (disabled by default)
 ** -- with_database decide which storage backend to use
+** --enable-appcheck, performs an application check if the using application is a valid/trusted one.
 *** Itzam/C is currently default backend
 *** It is recommended to use the key-value-store backend ("-- with_database=key-value-store")
 * make 
@@ -98,6 +99,18 @@ Precondition:
    The test data is provided by the PCL (../test/data/PAS_data.tar.gz)
 * Make sure dlt-daemon is running
 * Make sure D-Bus system bus is available 
+
+
+
+Data location and partitions
+--------------
+Persistence expects its data under the two folders /Data/mnt-c and /Data/mnt-wt.
+It is requested to have one persistence partition which will be mounted to the two folders stated above (one partition will be mounted to two different mointpoints).
+
+Example:
+sudo mount -t fsType /dev/sdx /Data/mnt-wt
+sudo mount -t fsType /dev/sdx /Data/mnt-c
+
 
 
 Run tests:
@@ -163,5 +176,5 @@ How to create doxygen documentation
 ----------------------------
 
 The doxygen package must be installed.
-run "doxygen doc/pcl_doxyfile" and the html documentation will be generated in the doc folder. 
+Run "doxygen doc/pcl_doxyfile" and the html documentation will be generated in the doc folder. 
 

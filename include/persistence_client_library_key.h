@@ -19,10 +19,10 @@
  *                 Library provides an API to access persistent data
  * @par change history
  * Date     Author          Version
- * 27/03/13 Ingo Hürner     4.0.0 - Add registration for callback notification
- * 28/05/13 Ingo Hürner     5.0.0 - Add pclInitLibrary(), pcl DeInitLibrary() incl. shutdown notification
+ * 27/03/13 Ingo Huerner    4.0.0 - Add registration for callback notification
+ * 28/05/13 Ingo Huerner    5.0.0 - Add pclInitLibrary(), pcl DeInitLibrary() incl. shutdown notification
  * 05/06/13 Oliver Bach     6.0.0 - Rework of Init functions
- * 04/11/13 Ingo Hürner     6.1.0 - Added functions to unregister notifications
+ * 04/11/13 Ingo Huerner    6.1.0 - Added functions to unregister notifications
  */
 /** \ingroup GEN_PERS */
 /** \defgroup PERS_KEYVALUE Client: Key-value access
