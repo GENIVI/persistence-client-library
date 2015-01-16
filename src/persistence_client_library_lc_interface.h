@@ -54,5 +54,4 @@ int register_lifecycle(int shutdownMode);
 int unregister_lifecycle(int shutdownMode);
 
 
-
 #endif /* PERSISTENCE_CLIENT_LIBRARY_LC_INTERFACE_H */

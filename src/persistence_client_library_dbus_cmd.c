@@ -140,13 +140,11 @@ void process_send_notification_signal(DBusConnection* conn, unsigned int notifyL
                                               DBUS_TYPE_INVALID);
       if(ret == TRUE)
       {
-         // Send the signal
-         if(conn != NULL)
+         if(conn != NULL)  // Send the signal
          {
             if(dbus_connection_send(conn, message, 0) == TRUE)
             {
-               // Free the signal now we have finished with it
-               dbus_message_unref(message);
+               dbus_message_unref(message);  // Free the signal now we have finished with it
             }
             else
             {
@@ -224,29 +222,24 @@ void process_prepare_shutdown(int complete)
       }
    }
 
-   // close all opend rct
-   pers_rct_close_all();
+   pers_rct_close_all();      // close all opened resource configuration table
 
-   // close opend database
-   database_close_all();
+   database_close_all();      // close opened database
 
    if(complete > 0)
    {
    	close_all_persistence_handle();
    }
 
-
    if(complete > 0)
    {
-		// unload custom client libraries
-		for(i=0; i<PersCustomLib_LastEntry; i++)
+		for(i=0; i<PersCustomLib_LastEntry; i++)  // unload custom client libraries
 		{
 			if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)
 			{
-				// deinitialize plugin
-				gPersCustomFuncs[i].custom_plugin_deinit();
-				// close library handle
-				dlclose(gPersCustomFuncs[i].handle);
+				gPersCustomFuncs[i].custom_plugin_deinit();     // deinitialize plugin
+
+				dlclose(gPersCustomFuncs[i].handle);            // close library handle
 
 				invalidate_custom_plugin(i);
 			}
@@ -261,9 +254,9 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
    DBusError error;
    dbus_error_init (&error);
 
-   DBusMessage* message = dbus_message_new_method_call(gDbusPersAdminInterface,  			// destination
-   		                                              gDbusPersAdminPath,            	// path
-   		                                              gDbusPersAdminInterface,       	// interface
+   DBusMessage* message = dbus_message_new_method_call(gDbusPersAdminInterface,  			   // destination
+   		                                              gDbusPersAdminPath,            	      // path
+   		                                              gDbusPersAdminInterface,       	      // interface
                                                        "PersistenceAdminRequestCompleted");  // method
    if(conn != NULL)
    {
@@ -293,6 +286,7 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
 }
 
 
+
 void process_send_pas_register(DBusConnection* conn, int regType, int notificationFlag)
 {
    DBusError error;
@@ -312,10 +306,10 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
       if(busName != NULL)
       {
-         DBusMessage* message = dbus_message_new_method_call(gDbusPersAdminInterface,   // destination
+         DBusMessage* message = dbus_message_new_method_call(gDbusPersAdminInterface,     // destination
          		                                              gDbusPersAdminPath,    		// path
-         		                                              gDbusPersAdminInterface,   // interface
-                                                             method);               // method
+         		                                              gDbusPersAdminInterface,     // interface
+                                                             method);                     // method
 
          if(message != NULL)
          {
@@ -325,7 +319,7 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
                                               DBUS_TYPE_UINT32, &gTimeoutMs,
                                               DBUS_TYPE_INVALID);
 
-            dbus_connection_send_with_reply(conn,           //    the connection
+            dbus_connection_send_with_reply(conn,           // the connection
                                             message,        // the message to write
                                             &pending,       // pending
                                             gTimeoutMs);    // timeout in milliseconds or -1 for default
@@ -356,6 +350,7 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 }
 
 
+
 void process_send_lifecycle_register(DBusConnection* conn, int regType, int shutdownMode)
 {
    DBusError error;
@@ -372,10 +367,10 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
    {
       const char* busName = dbus_bus_get_unique_name(conn);
 
-      DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,           // destination
-      		                                              gDbusLcCons, // path
-      		                                              gDbusLcInterface,  // interface
-                                                          method);                                 // method
+      DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,       // destination
+      		                                              gDbusLcCons,           // path
+      		                                              gDbusLcInterface,      // interface
+                                                          method);               // method
       if(message != NULL)
       {
          if(regType == 1)   // register
@@ -419,10 +414,10 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
 
    if(conn != NULL)
    {
-      DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,           // destination
-      		                                              gDbusLcCons,  // path
-      		                                              gDbusLcInterface,  // interface
-                                                          "LifecycleRequestComplete");             // method
+      DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,             // destination
+      		                                              gDbusLcCons,                 // path
+      		                                              gDbusLcInterface,            // interface
+                                                          "LifecycleRequestComplete"); // method
       if(message != NULL)
       {
          dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
@@ -477,7 +472,3 @@ void msg_pending_func(DBusPendingCall *call, void *data)
    // unlock the mutex because we have received the reply to the dbus message
    pthread_mutex_unlock(&gDbusPendingRegMtx);
 }
-
-
-
-

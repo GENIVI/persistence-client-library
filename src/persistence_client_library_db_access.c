@@ -67,7 +67,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
    int arrayIdx = 0;
    int handleDB = -1;
 
-   // create array index: index is a combination of resource config table type and group
+   // create array index: index is a combination of resource configuration table type and group
    arrayIdx = info->configKey.storage + info->context.ldbid ;
 
    if(arrayIdx < DbTableSize)
@@ -84,7 +84,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
          {
             snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalCached);
          }
-         else if(PersistenceDB_confdefault == dbType)		// configurable default database
+         else if(PersistenceDB_confdefault == dbType)	// configurable default database
 			{
 			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
 			}
@@ -259,7 +259,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
       int idx =  custom_client_name_to_id(dbPath, 1);
-      char workaroundPath[128];  								// workaround, because /sys/ can not be accessed on host!!!!
+      char workaroundPath[128];  								         // workaround, because /sys/ can not be accessed on host!!!!
       snprintf(workaroundPath, 128, "%s%s", "/Data", dbPath  );
 
       if(idx < PersCustomLib_LastEntry)
@@ -321,10 +321,10 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
          read_size = EPERS_NOPLUGINFUNCT;
       }
 
-      if (1 > read_size) /* Try to get default values */
+      if (1 > read_size) // Try to get default values
       {
-         info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
-         info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
+         info->configKey.policy = PersistencePolicy_wc;			 // Set the policy
+         info->configKey.type   = PersistenceResourceType_key;  // Set the type
 
          (void)get_db_path_and_key(info, key, NULL, dbPath);
 
@@ -350,7 +350,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
    {
       int handleDB = -1 ;
       int dbType = info->configKey.policy;      // assign default policy
-      const char* dbInput = key;                      // assign default key
+      const char* dbInput = key;                // assign default key
 
       if(info->context.user_no ==  PCL_USER_DEFAULTDATA)
       {
@@ -669,6 +669,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
 }
 
 
+
 int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                  pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy)
 {
@@ -688,13 +689,11 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
 
       if(regPolicy == Notify_register)
       {
-         // assign callback
-         gChangeNotifyCallback = callback;
+         gChangeNotifyCallback = callback;      // assign callback
       }
       else if(regPolicy == Notify_unregister)
       {
-         // remove callback
-         gChangeNotifyCallback = NULL;
+         gChangeNotifyCallback = NULL;          // remove callback
       }
 
       if(-1 == deliverToMainloop(&data))
@@ -750,8 +749,7 @@ void pers_rct_close_all()
 {
    int i = 0;
 
-   // close all open persistence resource configuration tables
-   for(i=0; i< PrctDbTableSize; i++)
+   for(i=0; i< PrctDbTableSize; i++)      // close all open persistence resource configuration tables
    {
    	if(get_resource_cfg_table_by_idx(i) != -1)
    	{

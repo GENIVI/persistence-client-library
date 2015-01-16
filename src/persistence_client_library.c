@@ -17,7 +17,6 @@
  * @see            
  */
 
-
 #include "persistence_client_library_lc_interface.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_service.h"
@@ -38,8 +37,6 @@
 #include <dlfcn.h>
 #include <dbus/dbus.h>
 #include <pthread.h>
-
-
 
 
 /// debug log and trace (DLT) setup
@@ -144,8 +141,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    return rval;
 }
 
-
-
 static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
@@ -219,6 +214,7 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 }
 
 
+
 int pclDeinitLibrary(void)
 {
    int rval = 1;
@@ -255,6 +251,7 @@ int pclDeinitLibrary(void)
 static int private_pclDeinitLibrary(void)
 {
    int rval = 1;
+   int* retval;
 
    MainLoopData_u data;
    data.message.cmd = (uint32_t)CMD_QUIT;

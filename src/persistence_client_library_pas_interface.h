@@ -79,5 +79,4 @@ int register_pers_admin_service(void);
 int unregister_pers_admin_service(void);
 
 
-
 #endif /* PERSISTENCE_CLIENT_LIBRARY_PAS_INTERFACE_H */

@@ -23,7 +23,6 @@
 #include "persistence_client_library_dbus_cmd.h"
 #include "persistence_client_library_data_organization.h"
 
-
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -31,7 +30,6 @@
 #include <stdlib.h>
 
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
-
 
 pthread_mutex_t gDeliverpMtx         = PTHREAD_MUTEX_INITIALIZER;
 
@@ -104,6 +102,7 @@ static void unregisterMessageHandler(DBusConnection *connection, void *user_data
    (void)user_data;
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPath\n"));
 }
+
 
 /* catches messages not directed to any registered object path ("garbage collector") */
 static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connection, DBusMessage * message, void * user_data)
@@ -187,8 +186,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
                notifyStruct.user_no     = atoi(user_no);
                notifyStruct.seat_no     = atoi(seat_no);
 
-               // call the registered callback function
-               if(gChangeNotifyCallback != NULL )
+               if(gChangeNotifyCallback != NULL )  // call the registered callback function
                {
                   gChangeNotifyCallback(&notifyStruct);
                }
@@ -391,7 +389,7 @@ static void removeTimeout(DBusTimeout *timeout, void *data)
 
 
 
-/** callback for libdbus' when timeout changed */
+// callback for libdbus' when timeout changed
 static void timeoutToggled(DBusTimeout *timeout, void *data)
 {
    int i = gPollInfo.nfds;
@@ -411,18 +409,17 @@ static void timeoutToggled(DBusTimeout *timeout, void *data)
 }
 
 
+
 int setup_dbus_mainloop(void)
 {
    int rval = 0, doCleanup = 0;
    DBusError err;
    DBusConnection* conn = NULL;
-
    const char *pAddress = getenv("PERS_CLIENT_DBUS_ADDRESS");
 
    dbus_error_init(&err);
 
-   // Connect to the bus and check for errors
-   if(pAddress != NULL)
+   if(pAddress != NULL)    // Connect to the bus and check for errors
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
 
@@ -447,27 +444,22 @@ int setup_dbus_mainloop(void)
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
-
       conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
 
-   // create communication pipe with the dbus mainloop
-   if (-1 == (pipe(gPipeFd)))
+   if (-1 == (pipe(gPipeFd)))    // create communication pipe with the dbus mainloop
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - eventfd() failed w/ errno:"), DLT_INT(errno) );
       rval = EPERS_COMMON;
    }
    else
    {
-      // persistence admin message
-      const struct DBusObjectPathVTable vtablePersAdmin
-         = {unregisterMessageHandler, checkPersAdminMsg, NULL, NULL, NULL, NULL};
+      // persistence administrator message
+      const struct DBusObjectPathVTable vtablePersAdmin = {unregisterMessageHandler, checkPersAdminMsg, NULL, NULL, NULL, NULL};
       // lifecycle message
-      const struct DBusObjectPathVTable vtableLifecycle
-         = {unregisterMessageHandler, checkLifecycleMsg, NULL, NULL, NULL, NULL};
+      const struct DBusObjectPathVTable vtableLifecycle = {unregisterMessageHandler, checkLifecycleMsg, NULL, NULL, NULL, NULL};
       // fallback
-      const struct DBusObjectPathVTable vtableFallback
-         = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, NULL, NULL, NULL};
+      const struct DBusObjectPathVTable vtableFallback  = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, NULL, NULL, NULL};
 
 #if USE_PASINTERFACE != 1
       (void)vtablePersAdmin;
@@ -516,8 +508,7 @@ int setup_dbus_mainloop(void)
       }
    }
 
-   // close pipe and close dbus connection if anything goes wrong setting up
-   if(doCleanup)
+   if(doCleanup)     // close pipe and close dbus connection if anything goes wrong setting up
    {
       if(gPipeFd[0] != -1)
       {
@@ -543,6 +534,51 @@ int setup_dbus_mainloop(void)
 
 
 
+int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int* quit)
+{
+   int rval = 1;
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
+   switch (readData->message.cmd)
+   {
+      case CMD_PAS_BLOCK_AND_WRITE_BACK:
+         process_block_and_write_data_back(readData->message.params[1] /*requestID*/, readData->message.params[0] /*status*/);
+         process_send_pas_request(conn,    readData->message.params[1] /*request*/,   readData->message.params[0] /*status*/);
+         break;
+      case CMD_LC_PREPARE_SHUTDOWN:
+         process_prepare_shutdown(Shutdown_Full);
+         process_send_lifecycle_request(conn, readData->message.params[1] /*requestID*/, readData->message.params[0] /*status*/);
+         break;
+      case CMD_SEND_NOTIFY_SIGNAL:
+         process_send_notification_signal(conn, readData->message.params[0] /*ldbid*/, readData->message.params[1], /*user*/
+                                                readData->message.params[2] /*seat*/,  readData->message.params[3], /*reason*/
+                                                readData->message.string);
+         break;
+      case CMD_REG_NOTIFY_SIGNAL:
+         process_reg_notification_signal(conn, readData->message.params[0] /*ldbid*/, readData->message.params[1], /*user*/
+                                               readData->message.params[2] /*seat*/,  readData->message.params[3], /*,policy*/
+                                               readData->message.string);
+         break;
+      case CMD_SEND_PAS_REGISTER:
+         process_send_pas_register(conn, readData->message.params[0] /*regType*/, readData->message.params[1] /*notifyFlag*/);
+         break;
+      case CMD_SEND_LC_REGISTER:
+         process_send_lifecycle_register(conn, readData->message.params[0] /*regType*/, readData->message.params[1] /*mode*/);
+         break;
+      case CMD_QUIT:
+         rval = 0;
+         *quit = TRUE;
+         break;
+      default:
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_INT(readData->message.cmd) );
+         break;
+   }
+
+   return rval;
+}
+
+
+
 void* mainLoop(void* userData)
 {
    int ret;
@@ -552,8 +588,6 @@ void* mainLoop(void* userData)
 
    do
    {
-      bContinue = 0; /* assume error */
-
       while(DBUS_DISPATCH_DATA_REMAINS==dbus_connection_dispatch(conn));
 
       while ((-1==(ret=poll(gPollInfo.fds, gPollInfo.nfds, -1)))&&(EINTR==errno));
@@ -573,13 +607,11 @@ void* mainLoop(void* userData)
 
          for (i=0; gPollInfo.nfds>i && !bQuit; ++i)
          {
-            /* anything to do */
-            if (0!=gPollInfo.fds[i].revents)
+            if (0!=gPollInfo.fds[i].revents)    // anything to do
             {
                if (OT_TIMEOUT==gPollInfo.objects[i].objtype)
                {
-                  /* time-out occured */
-                  unsigned long long nExpCount = 0;
+                  unsigned long long nExpCount = 0;   // time-out occured
 
                   if ((ssize_t)sizeof(nExpCount)!=read(gPollInfo.fds[i].fd, &nExpCount, sizeof(nExpCount)))
                   {
@@ -595,8 +627,7 @@ void* mainLoop(void* userData)
                }
                else if (gPollInfo.fds[i].fd == gPipeFd[0])
                {
-                  /* internal command */
-                  if (0!=(gPollInfo.fds[i].revents & POLLIN))
+                  if (0!=(gPollInfo.fds[i].revents & POLLIN))  // dispatch internal command
                   {
                      MainLoopData_u readData;
                      bContinue = TRUE;
@@ -608,42 +639,8 @@ void* mainLoop(void* userData)
                      else
                      {
                         pthread_mutex_lock(&gMainCondMtx);
-                        //printf("--- *** --- Receive => mainloop => cmd: %d | string: %s | size: %d\n\n", readData.message.cmd, readData.message.string, ret);
-                        DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
-                        switch (readData.message.cmd)
-                        {
-                           case CMD_PAS_BLOCK_AND_WRITE_BACK:
-                              process_block_and_write_data_back(readData.message.params[1] /*requestID*/, readData.message.params[0] /*status*/);
-                              process_send_pas_request(conn,    readData.message.params[1] /*request*/,   readData.message.params[0] /*status*/);
-                              break;
-                           case CMD_LC_PREPARE_SHUTDOWN:
-                              process_prepare_shutdown(Shutdown_Full);
-                              process_send_lifecycle_request(conn, readData.message.params[1] /*requestID*/, readData.message.params[0] /*status*/);
-                              break;
-                           case CMD_SEND_NOTIFY_SIGNAL:
-                              process_send_notification_signal(conn, readData.message.params[0] /*ldbid*/, readData.message.params[1], /*user*/
-                                                                     readData.message.params[2] /*seat*/,  readData.message.params[3], /*reason*/
-                                                                     readData.message.string);
-                              break;
-                           case CMD_REG_NOTIFY_SIGNAL:
-                              process_reg_notification_signal(conn, readData.message.params[0] /*ldbid*/, readData.message.params[1], /*user*/
-                                                                    readData.message.params[2] /*seat*/,  readData.message.params[3], /*,policy*/
-                                                                    readData.message.string);
-                              break;
-                           case CMD_SEND_PAS_REGISTER:
-                              process_send_pas_register(conn, readData.message.params[0] /*regType*/, readData.message.params[1] /*notifyFlag*/);
-                              break;
-                           case CMD_SEND_LC_REGISTER:
-                              process_send_lifecycle_register(conn, readData.message.params[0] /*regType*/, readData.message.params[1] /*mode*/);
-                              break;
-                           case CMD_QUIT:
-                              bContinue = 0;
-                              bQuit = TRUE;
-                              break;
-                           default:
-                              DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_INT(readData.message.cmd) );
-                              break;
-                        }
+
+                        bContinue = dispatchInternalCommand(conn, &readData, &bQuit);
 
                         gMainLoopCondValue = 1;
                         pthread_cond_signal(&gMainLoopCond);
@@ -677,10 +674,9 @@ void* mainLoop(void* userData)
          }
       }
    }
-   while (0!=bContinue);
+   while (0 != bContinue);
 
    // do some cleanup
-
    close(gPipeFd[0]);
    close(gPipeFd[1]);
 
@@ -703,30 +699,27 @@ int deliverToMainloop(MainLoopData_u* payload)
 {
    int rval = 0;
 
-   pthread_mutex_lock(&gDeliverpMtx);
-
-   pthread_mutex_lock(&gMainCondMtx);
-
+   pthread_mutex_lock(&gDeliverpMtx);     // make sure  deliverToMainloop will be used exclusively
    deliverToMainloop_NM(payload);
 
+
+   pthread_mutex_lock(&gMainCondMtx);     // mutex needed for pthread condition used to wait on other thread (mainloop)
    while(0 == gMainLoopCondValue)
       pthread_cond_wait(&gMainLoopCond, &gMainCondMtx);
-
-   gMainLoopCondValue = 0;
    pthread_mutex_unlock(&gMainCondMtx);
 
+
+   gMainLoopCondValue = 0;
    pthread_mutex_unlock(&gDeliverpMtx);
 
    return rval;
 }
 
+
+
 int deliverToMainloop_NM(MainLoopData_u* payload)
 {
    int rval = 0, length = 128;
-
-   //length = sizeof(payload->message) + strlen(payload->message.string) + 1; // TODO calculate the correct length of the message
-
-   //printf("--- *** --- Send => deliverToMainloop_NM => %d: | String: %s | size: %d\n", payload->message.cmd, payload->message.string, length);
 
    if(-1 == write(gPipeFd[1], payload->payload, length))
    {

@@ -322,8 +322,8 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
          {
             PersistenceInfo_s dbContext;
 
-           char dbKey[DbKeyMaxLen]   = {0};      // database key
-           char dbPath[DbPathMaxLen] = {0};    // database location
+           char dbKey[DbKeyMaxLen]   = {0};     // database key
+           char dbPath[DbPathMaxLen] = {0};     // database location
 
            dbContext.context.ldbid   = ldbid;
            dbContext.context.seat_no = seat_no;
@@ -332,9 +332,9 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
            // get database context: database path and database key
            rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
            if(   (rval >= 0)
-              && (dbContext.configKey.type == PersistenceResourceType_key) )  // check if type is matching
+              && (dbContext.configKey.type == PersistenceResourceType_key) )     // check if type is matching
            {
-              if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+              if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)  // check if store policy is valid
               {
                  rval = persistence_delete_data(dbPath, dbKey, resource_id, &dbContext);
               }
@@ -360,7 +360,6 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 
 
 
-// status: OK
 int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
    int data_size = EPERS_NOT_INITIALIZED;
@@ -371,8 +370,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
       {
          PersistenceInfo_s dbContext;
 
-         char dbKey[DbKeyMaxLen]   = {0};      // database key
-         char dbPath[DbPathMaxLen] = {0};    // database location
+         char dbKey[DbKeyMaxLen]   = {0};       // database key
+         char dbPath[DbPathMaxLen] = {0};       // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;
@@ -381,9 +380,9 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
          // get database context: database path and database key
          data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
          if(   (data_size >= 0)
-            && (dbContext.configKey.type == PersistenceResourceType_key) )    // check if type matches
+            && (dbContext.configKey.type == PersistenceResourceType_key) )       // check if type matches
          {
-            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
             {
                data_size = persistence_get_data_size(dbPath, dbKey, resource_id, &dbContext);
             }
@@ -408,7 +407,6 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 
 
 
-// status: OK
 int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                   unsigned char* buffer, int buffer_size)
 {
@@ -422,8 +420,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          {
             PersistenceInfo_s dbContext;
 
-            char dbKey[DbKeyMaxLen]   = {0};      // database key
-            char dbPath[DbPathMaxLen] = {0};    // database location
+            char dbKey[DbKeyMaxLen]   = {0};       // database key
+            char dbPath[DbPathMaxLen] = {0};       // database location
 
             dbContext.context.ldbid   = ldbid;
             dbContext.context.seat_no = seat_no;
@@ -480,8 +478,8 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             {
                PersistenceInfo_s dbContext;
 
-               char dbKey[DbKeyMaxLen]   = {0};      // database key
-               char dbPath[DbPathMaxLen] = {0};    // database location
+               char dbKey[DbKeyMaxLen]   = {0};       // database key
+               char dbPath[DbPathMaxLen] = {0};       // database location
 
                dbContext.context.ldbid   = ldbid;
                dbContext.context.seat_no = seat_no;
@@ -492,10 +490,10 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                if(   (data_size >= 0)
                   && (dbContext.configKey.type == PersistenceResourceType_key))
                {
-                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)  // don't write to a read only resource
+                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)    // don't write to a read only resource
                   {
                      // store data
-                     if(dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+                     if(dbContext.configKey.storage < PersistenceStorage_LastEntry)       // check if store policy is valid
                      {
                         if(   (dbContext.configKey.storage == PersistenceStorage_shared)
                            && (0 != strncmp(dbContext.configKey.reponsible, gAppId, MaxAppNameLen) ) )
@@ -549,6 +547,7 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
 }
 
 
+
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
 {
    int rval = EPERS_COMMON;
@@ -565,7 +564,6 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
    }
    return rval;
 }
-
 
 
 
@@ -620,10 +618,3 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
 
    return rval;
 }
-
-
-
-
-
-
-

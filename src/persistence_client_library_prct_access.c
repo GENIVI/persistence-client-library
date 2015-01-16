@@ -17,8 +17,6 @@
  * @see
  */
 
-
-
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_db_access.h"
 #include "persistence_client_library_custom_loader.h"
@@ -140,7 +138,7 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 }
 
 
-// status: OK
+
 int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
    int rval = 0, resourceFound = 0, groupId = 0;
@@ -149,8 +147,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
    rct = get_table_id(dbContext->context.ldbid, &groupId);
 
-   // get resource configuration table
-   int handleRCT = get_resource_cfg_table(rct, groupId);
+   int handleRCT = get_resource_cfg_table(rct, groupId);    // get resource configuration table
 
    if(handleRCT >= 0)
    {
@@ -171,8 +168,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
             // if customer storage, we use the custom name as dbPath
             strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
 
-            // and resource_id as dbKey
-            strncpy(dbKey, resource_id, strlen(resource_id));
+            strncpy(dbKey, resource_id, strlen(resource_id));     // and resource_id as dbKey
          }
          resourceFound = 1;
       }
@@ -190,9 +186,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
    if((resourceFound == 0) && (dbContext->context.ldbid == PCL_LDBID_LOCAL) ) // create only when the resource is local data
    {
-      //
       // resource NOT found in resource table ==> default is local cached key
-      //
       dbContext->configKey.policy      = PersistencePolicy_wc;
       dbContext->configKey.storage     = PersistenceStorage_local;
       dbContext->configKey.permission  = PersistencePermission_ReadWrite;
@@ -230,24 +224,18 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
 {
    int storePolicy = PersistenceStorage_LastEntry;
 
-   //
    // create resource database key
-   //
    if(((dbContext->context.ldbid < 0x80) || (dbContext->context.ldbid == PCL_LDBID_LOCAL)) &&  (NULL != dbKey))
    {
       // The LDBID is used to find the DBID in the resource table.
       if((dbContext->context.user_no == 0) && (dbContext->context.seat_no == 0))
       {
-         //
          // Node is added in front of the resource ID as the key string.
-         //
          snprintf(dbKey, DbKeyMaxLen, "%s/%s", plugin_gNode, resource_id);
       }
       else
       {
-         //
          // Node is added in front of the resource ID as the key string.
-         //
          if(dbContext->context.seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
@@ -269,7 +257,6 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       //  Rational: Creates a namespace within one data base.
       //  Rational: Reduction of number of databases -> reduction of maintenance costs
       // /User/<user_no_parameter> and /Seat/<seat_no_parameter> are add after /<LDBID parameter> if there are different than 0.
-
       if(dbContext->context.seat_no != 0)
       {
          snprintf(dbKey, DbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
@@ -281,9 +268,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       storePolicy = PersistenceStorage_local;
    }
 
-   //
    // create resource database path
-   //
    if(dbContext->context.ldbid < 0x80)
    {
       // S H A R E D  database
@@ -293,7 +278,6 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          // Additionally /GROUP/<LDBID_parameter> shall be added inside of the database path listed in the resource table. (Off target)
          //
          // shared  G R O U P  database * * * * * * * * * * * * *  * * * * * *
-         //
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
@@ -314,7 +298,6 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          // Additionally /Shared/Public shall be added inside of the database path listed in the resource table. (Off target)
          //
          // shared  P U B L I C  database * * * * * * * * * * * * *  * * * * *
-         //
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
@@ -330,7 +313,6 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
                snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, dbKey);
          }
       }
-
       storePolicy = PersistenceStorage_shared;   // we have a shared database
    }
    else
@@ -359,9 +341,3 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
 
    return storePolicy;
 }
-
-
-
-
-
-

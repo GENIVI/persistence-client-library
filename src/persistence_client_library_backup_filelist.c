@@ -65,8 +65,7 @@ static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char
    int blankCount=0;
    char* tmpPointer = fileMap;
 
-   // set the first pointer to the start of the file
-   gpTokenArray[blankCount] = tmpPointer;
+   gpTokenArray[blankCount] = tmpPointer;    // set the first pointer to the start of the file
    blankCount++;
 
    while(i < customConfigFileSize)
@@ -78,8 +77,7 @@ static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char
 		   {
 			   *tmpPointer = 0;
 
-			   // check if we are at the end of the token array
-			   if(blankCount >= TOKENARRAYSIZE)
+			   if(blankCount >= TOKENARRAYSIZE)    // check if we are at the end of the token array
 			   {
 				   break;
 			   }
@@ -100,7 +98,7 @@ static void createAndStoreFileNames()
    char path[128] = {0};
    key_value_s* item;
 
-   // creat new tree
+   // create new tree
    gRb_tree_bl = jsw_rbnew(key_val_cmp, key_val_dup, key_val_rel);
 
    if(gRb_tree_bl != NULL)
@@ -112,8 +110,7 @@ static void createAndStoreFileNames()
 				memset(path, 0, sizeof(path));
 				snprintf(path, 128, "%s", gpTokenArray[i]);    // storage type
 
-				// asign key and value to the rbtree item
-				item = malloc(sizeof(key_value_s));
+				item = malloc(sizeof(key_value_s));    // asign key and value to the rbtree item
 				if(item != NULL)
 				{
 					//printf("createAndStoreFileNames => path: %s\n", path);
@@ -146,7 +143,7 @@ int readBlacklistConfigFile(const char* filename)
 	   memset(&buffer, 0, sizeof(buffer));
 	   if(stat(filename, &buffer) != -1)
 	   {
-			if(buffer.st_size > 0)	// check for empty file
+			if(buffer.st_size > 0)	   // check for empty file
 			{
 				char* configFileMap = 0;
 				int fd = open(filename, O_RDONLY);
@@ -157,8 +154,7 @@ int readBlacklistConfigFile(const char* filename)
 				  return EPERS_COMMON;
 				}
 
-				// map the config file into memory
-				configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+				configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);  // map the configuration file into memory
 
 				if(configFileMap == MAP_FAILED)
 				{
@@ -170,8 +166,7 @@ int readBlacklistConfigFile(const char* filename)
 
 				fillFileBackupCharTokenArray(buffer.st_size, configFileMap);
 
-				// create filenames and store them in the tree
-				createAndStoreFileNames();
+				createAndStoreFileNames();    // create filenames and store them in the tree
 
 				munmap(configFileMap, buffer.st_size);
 
@@ -269,11 +264,9 @@ void* key_val_dup(void *p)
    dst = malloc(sizeof(key_value_s));
    if(dst != NULL)
    {
-      // duplicate hash key
-     dst->key = src->key;
+     dst->key = src->key;               // duplicate hash key
 
-     // duplicate value
-     dst->value = malloc(value_size);
+     dst->value = malloc(value_size);  // duplicate value
      if(dst->value != NULL)
         strncpy(dst->value, src->value, value_size);
    }
@@ -356,8 +349,6 @@ int pclCreateFile(const char* path, int chached)
       strncat(createPath, "/", DbPathMaxLen-1);
       strncat(createPath, tokenArray[i], DbPathMaxLen-1);
 
-
-
 #if USE_FILECACHE
       if(chached == 0)
 		{
@@ -380,6 +371,7 @@ int pclCreateFile(const char* path, int chached)
 }
 
 
+
 int pclVerifyConsistency(const char* origPath, const char* backupPath, const char* csumPath, int openFlags)
 {
    int handle = 0, readSize = 0;
@@ -400,8 +392,8 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    if((backupAvail == 0) && (csumAvail == 0) )
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- there is a backup file AND csum"));
-      // calculate checksum form backup file
-      fdBackup = open(backupPath,  O_RDONLY);
+
+      fdBackup = open(backupPath,  O_RDONLY);      // calculate checksum form backup file
       if(fdBackup != -1)
       {
          pclCalcCrc32Csum(fdBackup, backCsumBuf);
@@ -414,13 +406,11 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
             {
                if(strcmp(csumBuf, backCsumBuf)  == 0)
                {
-                  // checksum matches ==> replace with original file
-                  handle = pclRecoverFromBackup(fdBackup, origPath);
+                  handle = pclRecoverFromBackup(fdBackup, origPath);    // checksum matches ==> replace with original file
                }
                else
                {
-                  // checksum does not match, check checksum with original file
-                  handle = open(origPath, openFlags);
+                  handle = open(origPath, openFlags);    // checksum does not match, check checksum with original file
                   if(handle != -1)
                   {
                      pclCalcCrc32Csum(handle, origCsumBuf);
@@ -430,7 +420,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
                         handle = -1;  // error: file corrupt
                      }
                      // else case: checksum matches ==> keep original file ==> nothing to do
-
                   }
                   else
                   {
@@ -470,8 +459,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
          }
          close(fdCsum);
 
-         // calculate the checksum form the original file to see if it matches
-         handle = open(origPath, openFlags);
+         handle = open(origPath, openFlags);    // calculate the checksum form the original file to see if it matches
          if(handle != -1)
          {
             pclCalcCrc32Csum(handle, origCsumBuf);
@@ -502,15 +490,13 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a backup file"));
 
-      // calculate checksum form backup file
-      fdBackup = open(backupPath,  O_RDONLY);
+      fdBackup = open(backupPath,  O_RDONLY);      // calculate checksum form backup file
       if(fdBackup != -1)
       {
          pclCalcCrc32Csum(fdBackup, backCsumBuf);
          close(fdBackup);
 
-         // calculate the checksum form the original file to see if it matches
-         handle = open(origPath, openFlags);
+         handle = open(origPath, openFlags);       // calculate the checksum form the original file to see if it matches
          if(handle != -1)
          {
             pclCalcCrc32Csum(handle, origCsumBuf);
@@ -521,7 +507,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
                handle = -1;   // checksum does NOT match ==> error: file corrupt
             }
             // else case: checksum matches ==> keep original file ==> nothing to do
-
          }
          else
          {
@@ -537,9 +522,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    }
    // for else case: nothing to do
 
-
-   // if we are in an inconsistent state: delete file, backup and checksum
-   if(handle == -1)
+   if(handle == -1)     // if we are in an inconsistent state: delete file, backup and checksum
    {
       remove(origPath);
       remove(backupPath);
@@ -558,8 +541,7 @@ int pclRecoverFromBackup(int backupFd, const char* original)
    handle = open(original, O_TRUNC | O_RDWR);
    if(handle != -1)
    {
-      // copy data from one file to another
-      if(pclBackupDoFileCopy(backupFd, handle) == -1)
+      if(pclBackupDoFileCopy(backupFd, handle) == -1)    // copy data from one file to another
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("rBackup - couldn't write whole buffer"));
       }
@@ -582,7 +564,7 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       strncpy(pathToCreate, dstPath, DbPathMaxLen);
 
       handle = pclCreateFile(pathToCreate, 0);
-      close(handle); // don't need the open file
+      close(handle);       // don't need the open file
    }
 
    // create checksum file and and write checksum
@@ -621,8 +603,7 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("cBackup - err closing fd"));
       }
 
-      // set back to the position
-      lseek(srcfd, curPos, SEEK_SET);
+      lseek(srcfd, curPos, SEEK_SET);     // set back to the position
    }
    else
    {
@@ -650,13 +631,11 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
       if(buf != 0)
       {
          off_t curPos = 0;
-         // remember the current position
-         curPos = lseek(fd, 0, SEEK_CUR);
+         curPos = lseek(fd, 0, SEEK_CUR);    // remember the current position
 
          if(curPos != 0)
          {
-            // set to beginning of the file
-            lseek(fd, 0, SEEK_SET);
+            lseek(fd, 0, SEEK_SET);          // set to beginning of the file
          }
 
          while((rval = read(fd, buf, statBuf.st_size)) > 0)
@@ -666,8 +645,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
             snprintf(crc32sum, ChecksumBufSize-1, "%x", crc);
          }
 
-         // set back to the position
-         lseek(fd, curPos, SEEK_SET);
+         lseek(fd, curPos, SEEK_SET);        // set back to the position
 
          free(buf);
       }

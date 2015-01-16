@@ -87,7 +87,7 @@ int pclFileClose(int fd)
       {
          int  permission = get_file_permission(fd);
 
-         if(permission != -1)	// permission is here also used for range check
+         if(permission != -1)	   // permission is here also used for range check
          {
             // check if a backup and checksum file needs to be deleted
             if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
@@ -183,7 +183,7 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(AccessNoLock != isAccessLocked() )  // check if access to persistent data is locked
       {
          ptr = mmap(addr,size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, offset);
       }
@@ -284,9 +284,8 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
          }
       }
 #endif
-      //
+
       // file does not exist, create it and get default data
-      //
       if(handle == -1 && errno == ENOENT)
       {
          if((handle = pclCreateFile(dbPath, cacheStatus)) == -1)
@@ -326,9 +325,8 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
          }
       }
    }
-   //
+
    // requested resource is not in the RCT, so create resource as local/cached.
-   //
    else
    {
       // assemble file string for local cached location
@@ -368,8 +366,7 @@ int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id
    char pathPrefix[DbPathMaxLen]  = { [0 ... DbPathMaxLen-1] = 0};
    char defaultPath[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
 
-   // create path to default data
-   if(dbContext->configKey.policy == PersistencePolicy_wc)
+   if(dbContext->configKey.policy == PersistencePolicy_wc)           // create path to default data
    {
       snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
    }
@@ -408,9 +405,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       // get database context: database path and database key
       shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
 
-      //
       // check if the resource is marked as a file resource
-      //
       if(dbContext.configKey.type == PersistenceResourceType_file)
       {
          if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
@@ -585,11 +580,9 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                {
                   char csumBuf[ChecksumBufSize] = {0};
 
-                  // calculate checksum
-                  pclCalcCrc32Csum(fd, csumBuf);
+                  pclCalcCrc32Csum(fd, csumBuf);      // calculate checksum
 
-                  // create checksum and backup file
-                  pclCreateBackup(get_file_backup_path(fd), fd, get_file_checksum_path(fd), csumBuf);
+                  pclCreateBackup(get_file_backup_path(fd), fd, get_file_checksum_path(fd), csumBuf); // create checksum and backup file
 
                   set_file_backup_status(fd, 1);
                }
@@ -694,10 +687,9 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                if(handle < MaxPersHandle)
                {
                   *size = strlen(dbPath);
-                  *path = malloc((*size)+1);       // allocate 1 byte for the string termination
+                  *path = malloc((*size)+1);    // allocate 1 byte for the string termination
 
-                  /* Check if malloc was successful */
-                  if(NULL != (*path))
+                  if(NULL != (*path))           // Check if malloc was successful
                   {
 							memcpy(*path, dbPath, (*size));
 							(*path)[(*size)] = '\0';         // terminate string
@@ -730,7 +722,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 									close(handle);    // don't need the open file
 								}
                      }
-                     __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
+                     __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);        // set open flag
 
                      set_ossfile_handle_data(handle, dbContext.configKey.permission, 0/*backupCreated*/, backupPath, csumPath, *path);
                   }
@@ -748,9 +740,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 					}
             }
          }
-         //
+
          // requested resource is not in the RCT, so create resource as local/cached.
-         //
          else
          {
             // assemble file string for local cached location
@@ -764,7 +755,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, gBackupPostfix);
                   snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, gBackupCsPostfix);
 
-                  __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen); // set open flag
+                  __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);  // set open flag
 
                   set_ossfile_handle_data(handle, PersistencePermission_ReadWrite, 0/*backupCreated*/, backupPath, csumPath, NULL);
                }
@@ -798,7 +789,7 @@ int pclFileReleasePath(int pathHandle)
    	int  permission = get_ossfile_permission(pathHandle);
       if(permission != -1)		// permission is here also used for range check
       {
-         // check if a backup and checksum file needs to bel deleted
+         // check if a backup and checksum file needs to be deleted
          if(permission != PersistencePermission_ReadOnly)
          {
             // remove backup file
@@ -812,7 +803,7 @@ int pclFileReleasePath(int pathHandle)
 
          __sync_fetch_and_sub(&gOpenHandleArray[pathHandle], FileClosed);   // set closed flag
 
-         set_persistence_handle_close_idx(pathHandle);			// TODO
+         set_persistence_handle_close_idx(pathHandle);
 
          set_ossfile_file_path(pathHandle, NULL);
          rval = 1;
@@ -856,7 +847,7 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 	}
 
 	defaultHandle = open(defaultPath, O_RDONLY);
-	if(defaultHandle != -1)	// check if default data is available
+	if(defaultHandle != -1)	            // check if default data is available
 	{
 		// copy default data
 		struct stat buf;
@@ -866,7 +857,7 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 		rval = sendfile(handle, defaultHandle, 0, buf.st_size);
 		if(rval != -1)
 		{
-			rval = lseek(handle, 0, SEEK_SET); // set fd back to beginning of the file
+			rval = lseek(handle, 0, SEEK_SET);  // set fd back to beginning of the file
 		}
 		else
 		{

@@ -29,21 +29,25 @@
 /// flag if access is locked
 static int gLockAccess = 0;
 
+
 void pers_lock_access(void)
 {
    gLockAccess = 0;
    __sync_fetch_and_add(&gLockAccess,1);
 }
 
+
 void pers_unlock_access(void)
 {
    __sync_fetch_and_sub(&gLockAccess,1);
 }
 
+
 int isAccessLocked(void)
 {
    return gLockAccess;
 }
+
 
 
 int check_pas_request(unsigned int request, unsigned int requestID)
@@ -91,8 +95,6 @@ int check_pas_request(unsigned int request, unsigned int requestID)
 
 
 
-
-
 DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *message)
 {
    int request = 0, requestID = 0;
@@ -101,7 +103,6 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
    DBusMessage *reply;
    DBusError error;
    dbus_error_init (&error);
-
 
    if (!dbus_message_get_args(message, &error, DBUS_TYPE_INT32 , &request,
                                                DBUS_TYPE_INT32 , &requestID,
@@ -125,7 +126,6 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
    }
    errorReturn = check_pas_request(request, requestID);
 
-
    reply = dbus_message_new_method_return(message);
 
    if (reply == 0)
@@ -148,6 +148,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
    return DBUS_HANDLER_RESULT_HANDLED;
 }
+
 
 
 int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
@@ -203,6 +204,7 @@ int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 }
 
 
+
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -228,7 +230,6 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
    }
    return result;
 }
-
 
 
 
@@ -280,5 +281,3 @@ int unregister_pers_admin_service(void)
    }
    return rval;
 }
-
-
