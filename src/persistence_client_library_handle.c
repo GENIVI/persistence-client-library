@@ -288,8 +288,10 @@ void set_file_cache_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-		gFileHandleArray[idx].cacheStatus = status;
-
+      if(MaxPersHandle >= idx && idx > 0 )
+      {
+         gFileHandleArray[idx].cacheStatus = status;
+      }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 }
@@ -299,7 +301,7 @@ int get_file_cache_status(int idx)
 	int status = -1;
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-		if(MaxPersHandle >= idx)
+		if(MaxPersHandle >= idx && idx > 0 )
 		{
 			status = gFileHandleArray[idx].cacheStatus;
 		}
@@ -313,7 +315,10 @@ void set_file_user_id(int idx, int userID)
 {
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      gFileHandleArray[idx].userId = userID;
+      if(MaxPersHandle >= idx && idx > 0 )
+      {
+         gFileHandleArray[idx].userId = userID;
+      }
 
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
@@ -324,7 +329,7 @@ int get_file_user_id(int idx)
    int id = -1;
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(MaxPersHandle >= idx)
+      if(MaxPersHandle >= idx && idx > 0 )
       {
          id = gFileHandleArray[idx].userId;
       }

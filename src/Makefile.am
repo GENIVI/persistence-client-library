@@ -17,7 +17,7 @@ include_HEADERS = ../include/persistence_client_library_key.h \
 
 lib_LTLIBRARIES = libpersistence_client_library.la 
 
-libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) $(PFC_LIBS) -ldl -lpers_common
+libpersistence_client_library_la_LIBADD = $(DEPS_LIBS) $(PFC_LIBS) -ldl
 
 #if USE_XSTRACE_PERS
 #libpersistence_client_library_la_LIBADD += -lxsm_user

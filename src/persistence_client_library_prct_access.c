@@ -21,6 +21,7 @@
 
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_db_access.h"
+#include "persistence_client_library_custom_loader.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -109,20 +110,19 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
          switch(rct)    // create db name
          {
          case PersistenceRCT_local:
-            snprintf(filename, DbPathMaxLen, gLocalWtPathKey, gAppId, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gLocalWtPathKey, gAppId, plugin_gResTableCfg);
             break;
          case PersistenceRCT_shared_public:
-            snprintf(filename, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, plugin_gResTableCfg);
             break;
          case PersistenceRCT_shared_group:
-            snprintf(filename, DbPathMaxLen, gSharedWtPathKey, gAppId, group, gResTableCfg);
+            snprintf(filename, DbPathMaxLen, gSharedWtPathKey, gAppId, group, plugin_gResTableCfg);
             break;
          default:
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - no valid PersistenceRCT_e"));
             break;
          }
-
-         gResource_table[arrayIdx] = persComRctOpen(filename, 0x00);
+         gResource_table[arrayIdx] = plugin_persComRctOpen(filename, 0x00);
 
          if(gResource_table[arrayIdx] < 0)
          {
@@ -157,7 +157,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       PersistenceConfigurationKey_s sRctEntry ;
 
       // check if resouce id is in write through table
-      int iErrCode = persComRctRead(handleRCT, resource_id, &sRctEntry) ;
+      int iErrCode = plugin_persComRctRead(handleRCT, resource_id, &sRctEntry) ;
       
       if(sizeof(PersistenceConfigurationKey_s) == iErrCode)
       {
@@ -241,7 +241,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          //
          // Node is added in front of the resource ID as the key string.
          //
-         snprintf(dbKey, DbKeyMaxLen, "%s/%s", gNode, resource_id);
+         snprintf(dbKey, DbKeyMaxLen, "%s/%s", plugin_gNode, resource_id);
       }
       else
       {
@@ -251,12 +251,12 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(dbContext->context.seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, DbKeyMaxLen, "%s%d/%s", gUser, dbContext->context.user_no, resource_id);
+            snprintf(dbKey, DbKeyMaxLen, "%s%d/%s", plugin_gUser, dbContext->context.user_no, resource_id);
          }
          else
          {
             // /User/<user_no_parameter>/Seat/<seat_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, DbKeyMaxLen, "%s%d%s%d/%s", gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
+            snprintf(dbKey, DbKeyMaxLen, "%s%d%s%d/%s", plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
          }
       }
       storePolicy = PersistenceStorage_local;
@@ -272,11 +272,11 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
 
       if(dbContext->context.seat_no != 0)
       {
-         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, gSeat, dbContext->context.seat_no, resource_id);
+         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
       }
       else
       {
-         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d/%s", dbContext->context.ldbid, gUser, dbContext->context.user_no, resource_id);
+         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, resource_id);
       }
       storePolicy = PersistenceStorage_local;
    }

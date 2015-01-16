@@ -24,7 +24,6 @@
 
 #include <persComErrors.h>
 #include <persComDataOrg.h>
-#include <persComDbAccess.h>
 
 #include <dbus/dbus.h>
 #include <string.h>
@@ -79,19 +78,19 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 
          if(PersistencePolicy_wt == dbType)				/// write through database
          {
-            snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalWt);
+            snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalWt);
          }
          else if(PersistencePolicy_wc == dbType)		// cached database
          {
-            snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalCached);
+            snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalCached);
          }
          else if(PersistenceDB_confdefault == dbType)		// configurable default database
 			{
-			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalConfigurableDefault);
+			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
 			}
 			else if(PersistenceDB_default == dbType)		// default database
 			{
-			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
+			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalFactoryDefault);
 			}
          else
          {
@@ -100,7 +99,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 
          if (handleDB == -1)
          {
-            handleDB = persComDbOpen(path, 0x01);
+            handleDB = plugin_persComDbOpen(path, 0x01);
             if(handleDB >= 0)
             {
                gHandlesDB[arrayIdx][dbType] = handleDB ;
@@ -143,11 +142,11 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
       {
          if (PersGetDefault_Data == job)
          {
-         	read_size = persComDbReadKey(handleDefaultDB, key, (char*)buffer, buffer_size);
+         	read_size = plugin_persComDbReadKey(handleDefaultDB, key, (char*)buffer, buffer_size);
          }
          else if (PersGetDefault_Size == job)
          {
-            read_size = persComDbGetKeySize(handleDefaultDB, key);
+            read_size = plugin_persComDbGetKeySize(handleDefaultDB, key);
          }
          else
          {
@@ -166,11 +165,11 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
          {
             if (PersDefaultType_Configurable == i)
             {
-               snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, gLocalConfigurableDefault);
+               snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
             }
             if (PersDefaultType_Factory == i)
             {
-                snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, gLocalFactoryDefault);
+                snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalFactoryDefault);
             }
             DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDefaults - default data will be used for Key"), DLT_STRING(key),
                                                   DLT_STRING("from"), DLT_STRING(dltMessage));
@@ -197,7 +196,7 @@ void database_close(PersistenceInfo_s* info)
 
    if(info->configKey.storage <= PersistenceStorage_shared )
    {
-      int iErrorCode = persComDbClose(gHandlesDB[arrayIdx][info->configKey.policy]) ;
+      int iErrorCode = plugin_persComDbClose(gHandlesDB[arrayIdx][info->configKey.policy]) ;
       if (iErrorCode < 0)
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close ==> persComDbClose() failed"));
@@ -223,7 +222,7 @@ void database_close_all()
    	{
 			if(gHandlesDBCreated[i][j] == 1)
 			{
-				int iErrorCode = persComDbClose(gHandlesDB[i][j]);
+				int iErrorCode = plugin_persComDbClose(gHandlesDB[i][j]);
 				if (iErrorCode < 0)
 				{
 					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbCloseAll - Err close db"));
@@ -250,7 +249,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
       int handleDB = database_get(info, dbPath, info->configKey.policy);
       if(handleDB >= 0)
       {
-         read_size = persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
+         read_size = plugin_persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
          if(read_size < 0)
          {
             read_size = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
@@ -363,7 +362,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
 
       if(handleDB >= 0)
       {
-         write_size = persComDbWriteKey(handleDB, dbInput, (char*)buffer, buffer_size) ;
+         write_size = plugin_persComDbWriteKey(handleDB, dbInput, (char*)buffer, buffer_size) ;
          if(write_size < 0)
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - persComDbWriteKey() failure"));
@@ -478,7 +477,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
       if(handleDB >= 0)
       {
 
-         read_size = persComDbGetKeySize(handleDB, key);
+         read_size = plugin_persComDbGetKeySize(handleDB, key);
          if(read_size < 0)
          {
             read_size = pers_get_defaults( dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
@@ -574,7 +573,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
       int handleDB = database_get(info, dbPath, info->configKey.policy);
       if(handleDB >= 0)
       {
-         ret = persComDbDeleteKey(handleDB, key) ;
+         ret = plugin_persComDbDeleteKey(handleDB, key) ;
          if(ret < 0)
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deleteData - failed: "), DLT_STRING(key));
@@ -756,7 +755,7 @@ void pers_rct_close_all()
    {
    	if(get_resource_cfg_table_by_idx(i) != -1)
    	{
-			if(persComRctClose(get_resource_cfg_table_by_idx(i)) != 0)
+			if(plugin_persComRctClose(get_resource_cfg_table_by_idx(i)) != 0)
 			{
 				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - Err close db => index:"), DLT_INT(i));
 			}

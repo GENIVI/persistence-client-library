@@ -78,7 +78,7 @@ void doInitAppcheck(const char* appName)
 {
 #if USE_APPCHECK
    char rctFilename[DbPathMaxLen] = {0};
-   snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, appName, gResTableCfg);
+   snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, appName, plugin_gResTableCfg);
 
    if(access(rctFilename, F_OK) == 0)
    {
@@ -102,7 +102,7 @@ int doAppcheck(void)
    if(gAppCheckFlag != 1)
    {
       char rctFilename[DbPathMaxLen] = {0};
-      snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, gAppId, gResTableCfg);
+      snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, gAppId, plugin_gResTableCfg);
       if(access(rctFilename, F_OK) == 0)
       {
          gAppCheckFlag = 1;   // "trusted" application

@@ -12,7 +12,7 @@
  * @file           persistence_client_library_custom_loader.c
  * @ingroup        Persistence client library
  * @author         Ingo Huerner
- * @brief          Implementation of persistence custom loadedr
+ * @brief          Implementation of persistence custom loader
  * @see
  */
 
@@ -33,10 +33,10 @@
 /// type definition of persistence custom library information
 typedef struct sPersCustomLibInfo
 {
-   char 						libname[CustLibMaxLen];
-   int 						valid;
-   PersInitType_e  		initFunction;
-   PersLoadingType_e 	loadingType;
+   char                 libname[CustLibMaxLen];
+   int                  valid;
+   PersInitType_e       initFunction;
+   PersLoadingType_e    loadingType;
 } PersCustomLibInfo;
 
 
@@ -81,15 +81,15 @@ static void fillCustomCharTokenArray(unsigned int customConfigFileSize, char* fi
 
 static PersLoadingType_e getLoadingType(const char* type)
 {
-	PersLoadingType_e persLoadingType = LoadType_Undefined;
+   PersLoadingType_e persLoadingType = LoadType_Undefined;
 
    if(0 == strcmp(type, "init") )
    {
-   	persLoadingType = LoadType_PclInit;
+      persLoadingType = LoadType_PclInit;
    }
    else if(0 == strcmp(type, "od") )
    {
-   	persLoadingType = LoadType_OnDemand;
+      persLoadingType = LoadType_OnDemand;
    }
 
    return persLoadingType;
@@ -98,15 +98,15 @@ static PersLoadingType_e getLoadingType(const char* type)
 
 static PersInitType_e getInitType(const char* policy)
 {
-	PersInitType_e persInitType = Init_Undefined;
+   PersInitType_e persInitType = Init_Undefined;
 
    if(0 == strcmp(policy, "sync"))
    {
-   	persInitType = Init_Synchronous;
+      persInitType = Init_Synchronous;
    }
    else if (0 == strcmp(policy, "async"))
    {
-   	persInitType = Init_Asynchronous;
+      persInitType = Init_Asynchronous;
    }
 
    return persInitType;
@@ -115,13 +115,13 @@ static PersInitType_e getInitType(const char* policy)
 
 PersLoadingType_e getCustomLoadingType(int i)
 {
-	return gCustomLibArray[i].loadingType;
+   return gCustomLibArray[i].loadingType;
 }
 
 
 PersInitType_e getCustomInitType(int i)
 {
-	return gCustomLibArray[i].initFunction;
+   return gCustomLibArray[i].initFunction;
 }
 
 
@@ -131,7 +131,11 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
 
    if(substring == 0)
    {
-      if(0 == strncmp(lib_name, "early", PersCustomPathSize) )
+      if (0 == strncmp(lib_name, "default", PersCustomPathSize) )
+      {
+         libId = PersCustomLib_default;
+      }
+      else if(0 == strncmp(lib_name, "early", PersCustomPathSize) )
       {
          libId = PersCustomLib_early;
       }
@@ -161,12 +165,16 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("customNameToId - id not found lib:"), DLT_STRING(lib_name));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_libname_to_id - error - id not found for lib:"), DLT_STRING(lib_name));
       }
    }
    else
    {
-      if(NULL != strstr(lib_name, "early") )
+      if(NULL != strstr(lib_name, "default") )
+      {
+         libId = PersCustomLib_default;
+      }
+      else if(NULL != strstr(lib_name, "early") )
       {
          libId = PersCustomLib_early;
       }
@@ -196,7 +204,7 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("customNameToId - id not found lib:"), DLT_STRING(lib_name));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("custom_libname_to_id - error - id not found for lib:"), DLT_STRING(lib_name));
       }
 
    }
@@ -211,90 +219,215 @@ int get_custom_libraries()
    struct stat buffer;
    const char *filename = getenv("PERS_CLIENT_LIB_CUSTOM_LOAD");
 
-	if(filename == NULL)
-	{
-		filename = "/etc/pclCustomLibConfigFile.cfg";  // use default filename
-	}
+   if(filename == NULL)
+   {
+      filename = "/etc/pclCustomLibConfigFile.cfg";  // use default filename
+   }
 
    for(j=0; j<PersCustomLib_LastEntry; j++)
    {
-      gCustomLibArray[j].valid = -1;	// init pos to -1
+      gCustomLibArray[j].valid = -1;   // init pos to -1
    }
 
    memset(&buffer, 0, sizeof(buffer));
    if(stat(filename, &buffer) != -1)
    {
-		if(buffer.st_size > 0)	// check for empty file
-		{
-			char* customConfFileMap = NULL;
-			int i = 0;
-			int fd = open(filename, O_RDONLY);
+      if(buffer.st_size > 0)  // check for empty file
+      {
+         char* customConfFileMap = NULL;
+         int i = 0;
+         int fd = open(filename, O_RDONLY);
 
-			DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("gCusLib - load config - "), DLT_STRING(filename));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
 
-			if (fd == -1)
-			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gCusLib - Err file open: "),
-						                                 DLT_STRING(filename), DLT_STRING("err msg: "), DLT_STRING(strerror(errno)) );
-				return EPERS_COMMON;
-			}
+         if (fd == -1)
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error file open: "),
+                                                   DLT_STRING(filename), DLT_STRING("err msg: "), DLT_STRING(strerror(errno)) );
+            return EPERS_COMMON;
+         }
 
-			// map the config file into memory
-			customConfFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+         // map the config file into memory
+         customConfFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-			if (customConfFileMap == MAP_FAILED)
-			{
-				close(fd);
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gCusLib - Err mapping file"));
-				return EPERS_COMMON;
-			}
+         if (customConfFileMap == MAP_FAILED)
+         {
+            close(fd);
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error mapping the file"));
+            return EPERS_COMMON;
+         }
 
-			fillCustomCharTokenArray(buffer.st_size, customConfFileMap);
+         fillCustomCharTokenArray(buffer.st_size, customConfFileMap);
 
-			while( i < TOKENARRAYSIZE )
-			{
-				if(gpCustomTokenArray[i] != 0 && gpCustomTokenArray[i+1] != 0 && gpCustomTokenArray[i+2] != 0 &&gpCustomTokenArray[i+3] != 0 )
-				{
-					int libId = custom_client_name_to_id(gpCustomTokenArray[i], 0);	// get the custom libID
+         while( i < TOKENARRAYSIZE )
+         {
+            if(gpCustomTokenArray[i] != 0 && gpCustomTokenArray[i+1] != 0 && gpCustomTokenArray[i+2] != 0 &&gpCustomTokenArray[i+3] != 0 )
+            {
+               int libId = custom_client_name_to_id(gpCustomTokenArray[i], 0);   // get the custom libID
 
-					// assign the libraryname
-					strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], CustLibMaxLen);
-					gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+               // assign the libraryname
+               strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], CustLibMaxLen);
+               gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
 
-					gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
-					gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);
-					gCustomLibArray[libId].valid        = 1;	// marks as valid;
-	#if 0
-					// debug
-					printf("     1. => %s => %d \n",   gpCustomTokenArray[i],   libId);
-					printf("     2. => %s => %s \n",   gpCustomTokenArray[i+1], gCustomLibArray[libId].libname);
-					printf("     3. => %s => %d \n",   gpCustomTokenArray[i+2], (int)gCustomLibArray[libId].initFunction);
-					printf("     4. => %s => %d \n\n", gpCustomTokenArray[i+3], (int)gCustomLibArray[libId].loadingType);
-	#endif
-				}
-				else
-				{
-					break;
-				}
-				i+=4;       // move to the next configuration file entry
-			}
-
-			if(munmap(customConfFileMap, buffer.st_size) == -1)
-			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gCusLib - Err unmap - "), DLT_STRING(strerror(errno)));
-			}
-			close(fd);
-		}
-		else
-		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gCusLib - Err file size is 0"));
-			rval = EPERS_COMMON;
-		}
+               gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
+               gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);
+               gCustomLibArray[libId].valid        = 1;  // marks as valid;
+   #if 0
+               // debug
+               printf("     1. => %s => %d \n",   gpCustomTokenArray[i],   libId);
+               printf("     2. => %s => %s \n",   gpCustomTokenArray[i+1], gCustomLibArray[libId].libname);
+               printf("     3. => %s => %d \n",   gpCustomTokenArray[i+2], (int)gCustomLibArray[libId].initFunction);
+               printf("     4. => %s => %d \n\n", gpCustomTokenArray[i+3], (int)gCustomLibArray[libId].loadingType);
+   #endif
+            }
+            else
+            {
+               break;
+            }
+            i+=4;       // move to the next configuration file entry
+         }
+         close(fd);
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> Error file size is 0"));
+         rval = EPERS_COMMON;
+      }
    }
    else
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("customLib - failed stat() file"));
-   	rval = EPERS_COMMON;
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> failed to stat() file"));
+      rval = EPERS_COMMON;
+   }
+   return rval;
+}
+
+
+
+int load_default_library(void* handle)
+{
+   int rval = 0;
+   char *error = NULL;
+
+   if(handle != NULL)
+   {
+      ///
+      *(void **) (&plugin_persComDbOpen) = dlsym(handle, "persComDbOpen");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+      *(void **) (&plugin_persComDbClose) = dlsym(handle, "persComDbClose");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+      *(void **) (&plugin_persComDbWriteKey) = dlsym(handle, "persComDbWriteKey");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      *(void **) (&plugin_persComDbReadKey) = dlsym(handle, "persComDbReadKey");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+      *(void **) (&plugin_persComDbGetKeySize) = dlsym(handle, "persComDbGetKeySize");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+      *(void **) (&plugin_persComDbDeleteKey) = dlsym(handle, "persComDbDeleteKey");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+      *(void **) (&plugin_persComDbGetSizeKeysList) = dlsym(handle, "persComDbGetSizeKeysList");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+      *(void **) (&plugin_persComDbGetKeysList) = dlsym(handle, "persComDbGetKeysList");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+
+      /// R C T  F U N C T I O N S
+      *(void **) (&plugin_persComRctOpen) = dlsym(handle, "persComRctOpen");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      *(void **) (&plugin_persComRctClose) = dlsym(handle, "persComRctClose");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      *(void **) (&plugin_persComRctRead) = dlsym(handle, "persComRctRead");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      /// V A R I A B L E S
+      plugin_gUser  = *(char**)dlsym(handle, "gUser");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gLocalWt  = *(char**)dlsym(handle, "gLocalWt");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gSeat = *(char**)dlsym(handle, "gSeat");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gLocalFactoryDefault = *(char**)dlsym(handle, "gLocalFactoryDefault");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gLocalCached = *(char**) dlsym(handle, "gLocalCached");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gNode = *(char**)dlsym(handle, "gNode");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gLocalConfigurableDefault = *(char**)dlsym(handle, "gLocalConfigurableDefault");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+
+      plugin_gResTableCfg = *(char**)dlsym(handle, "gResTableCfg");
+      if ((error = dlerror()) != NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+      }
+   }
+   else
+   {
+      error = dlerror();
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+      rval = EPERS_DLOPENERROR;
    }
    return rval;
 }
@@ -308,177 +441,188 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
 
    if(customLib < PersCustomLib_LastEntry)
    {
-   	PersInitType_e initType = getCustomInitType(customLib);
+      PersInitType_e initType = getCustomInitType(customLib);
       void* handle = dlopen(gCustomLibArray[customLib].libname, RTLD_LAZY);
       customFuncts->handle = handle;
 
-      if(handle != NULL)
+      if(customLib == PersCustomLib_default)
       {
-         dlerror();    // reset error
-
-         // plugin_close
-         *(void **) (&customFuncts->custom_plugin_handle_close) = dlsym(handle, "plugin_handle_close");
-         if ((error = dlerror()) != NULL)
+         if(load_default_library(handle ) < 0)
          {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
+            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load default plugin"));
+            rval = EPERS_DLOPENERROR;
          }
-         // custom_plugin_delete_data
-         *(void **) (&customFuncts->custom_plugin_delete_data) = dlsym(handle, "plugin_delete_data");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_get_data
-         *(void **) (&customFuncts->custom_plugin_handle_get_data) = dlsym(handle, "plugin_handle_get_data");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_get_data
-         *(void **) (&customFuncts->custom_plugin_get_data) = dlsym(handle, "plugin_get_data");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_init
-         *(void **) (&customFuncts->custom_plugin_init) = dlsym(handle, "plugin_init");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_deinit
-         *(void **) (&customFuncts->custom_plugin_deinit) = dlsym(handle, "plugin_deinit");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_open
-         *(void **) (&customFuncts->custom_plugin_handle_open) = dlsym(handle, "plugin_handle_open");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_set_data
-         *(void **) (&customFuncts->custom_plugin_handle_set_data) = dlsym(handle, "plugin_handle_set_data");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-         // custom_plugin_set_data
-         *(void **) (&customFuncts->custom_plugin_set_data) = dlsym(handle, "plugin_set_data");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-         // custom_plugin_get_size_handle
-         *(void **) (&customFuncts->custom_plugin_handle_get_size) = dlsym(handle, "plugin_handle_get_size");
-         if ((error = dlerror()) != NULL)
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-         // custom_plugin_get_size
-         *(void **) (&customFuncts->custom_plugin_get_size) = dlsym(handle, "plugin_get_size");
-         if ((error = dlerror()) != NULL)
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-          // create backup
-         *(void **) (&customFuncts->custom_plugin_create_backup) = dlsym(handle, "plugin_create_backup");
-         if ((error = dlerror()) != NULL)
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-         // restore backup
-         *(void **) (&customFuncts->custom_plugin_restore_backup) = dlsym(handle, "plugin_restore_backup");
-         if ((error = dlerror()) != NULL)
-         {
-             DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-         // restore backup
-         *(void **) (&customFuncts->custom_plugin_get_backup) = dlsym(handle, "plugin_get_backup");
-         if ((error = dlerror()) != NULL)
-         {
-             DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-
-         // custom_plugin_get_status_notification_clbk
-         *(void **) (&customFuncts->custom_plugin_get_status_notification_clbk) = dlsym(handle, "plugin_get_status_notification_clbk");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-          }
-
-         // initialize plugin (non blocking)
-         *(void **) (&customFuncts->custom_plugin_init_async) = dlsym(handle, "plugin_init_async");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-
-         // clear all data
-         *(void **) (&customFuncts->custom_plugin_clear_all_data) = dlsym(handle, "plugin_clear_all_data");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - error:"), DLT_STRING(error));
-         }
-
-         // sync data
-         *(void **) (&customFuncts->custom_plugin_sync) = dlsym(handle, "plugin_sync");
-         if ((error = dlerror()) != NULL)
-         {
-              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusLib - err:"), DLT_STRING(error));
-         }
-
-         //
-         // initialize the library
-         //
-			if(initType == Init_Synchronous)
-			{
-				if( (gPersCustomFuncs[customLib].custom_plugin_init) != NULL)
-				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("lCusLib => (sync)  : "), DLT_STRING(get_custom_client_lib_name(customLib)));
-					gPersCustomFuncs[customLib].custom_plugin_init();
-				}
-				else
-				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lCusLib - Err load plug funct: "),
-																      DLT_STRING(get_custom_client_lib_name(customLib)));
-					rval = EPERS_COMMON;
-				}
-			}
-			else if(initType == Init_Asynchronous)
-			{
-				if( (gPersCustomFuncs[customLib].custom_plugin_init_async) != NULL)
-				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("lCusLib => (async) : "),
-							                  DLT_STRING(get_custom_client_lib_name(customLib)));
-
-					gPersCustomFuncs[customLib].custom_plugin_init_async(gPlugin_callback_async_t);
-				}
-				else
-				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lCusLib - Err load plug funct: "),
-																	DLT_STRING(get_custom_client_lib_name(customLib)));
-					rval = EPERS_COMMON;
-				}
-			}
-			else
-			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lCusLib - unknown init type "),
-						                                 DLT_STRING(get_custom_client_lib_name(customLib)));
-				rval = EPERS_COMMON;
-			}
       }
       else
       {
-         error = dlerror();
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lCusLib - "), DLT_STRING(error));
-         rval = EPERS_DLOPENERROR;
+         if(handle != NULL)
+         {
+            dlerror();    // reset error
+
+            // plugin_close
+            *(void **) (&customFuncts->custom_plugin_handle_close) = dlsym(handle, "plugin_handle_close");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+            // custom_plugin_delete_data
+            *(void **) (&customFuncts->custom_plugin_delete_data) = dlsym(handle, "plugin_delete_data");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_get_data
+            *(void **) (&customFuncts->custom_plugin_handle_get_data) = dlsym(handle, "plugin_handle_get_data");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_get_data
+            *(void **) (&customFuncts->custom_plugin_get_data) = dlsym(handle, "plugin_get_data");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_init
+            *(void **) (&customFuncts->custom_plugin_init) = dlsym(handle, "plugin_init");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_deinit
+            *(void **) (&customFuncts->custom_plugin_deinit) = dlsym(handle, "plugin_deinit");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_open
+            *(void **) (&customFuncts->custom_plugin_handle_open) = dlsym(handle, "plugin_handle_open");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_set_data
+            *(void **) (&customFuncts->custom_plugin_handle_set_data) = dlsym(handle, "plugin_handle_set_data");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+            // custom_plugin_set_data
+            *(void **) (&customFuncts->custom_plugin_set_data) = dlsym(handle, "plugin_set_data");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+            // custom_plugin_get_size_handle
+            *(void **) (&customFuncts->custom_plugin_handle_get_size) = dlsym(handle, "plugin_handle_get_size");
+            if ((error = dlerror()) != NULL)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+            // custom_plugin_get_size
+            *(void **) (&customFuncts->custom_plugin_get_size) = dlsym(handle, "plugin_get_size");
+            if ((error = dlerror()) != NULL)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+             // create backup
+            *(void **) (&customFuncts->custom_plugin_create_backup) = dlsym(handle, "plugin_create_backup");
+            if ((error = dlerror()) != NULL)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+            // restore backup
+            *(void **) (&customFuncts->custom_plugin_restore_backup) = dlsym(handle, "plugin_restore_backup");
+            if ((error = dlerror()) != NULL)
+            {
+                DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+            // restore backup
+            *(void **) (&customFuncts->custom_plugin_get_backup) = dlsym(handle, "plugin_get_backup");
+            if ((error = dlerror()) != NULL)
+            {
+                DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+
+            // custom_plugin_get_status_notification_clbk
+            *(void **) (&customFuncts->custom_plugin_get_status_notification_clbk) = dlsym(handle, "plugin_get_status_notification_clbk");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+             }
+
+            // initialize plugin (non blocking)
+            *(void **) (&customFuncts->custom_plugin_init_async) = dlsym(handle, "plugin_init_async");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+
+            // clear all data
+            *(void **) (&customFuncts->custom_plugin_clear_all_data) = dlsym(handle, "plugin_clear_all_data");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+
+            // sync data
+            *(void **) (&customFuncts->custom_plugin_sync) = dlsym(handle, "plugin_sync");
+            if ((error = dlerror()) != NULL)
+            {
+                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            }
+
+            //
+            // initialize the library
+            //
+            if(initType == Init_Synchronous)
+            {
+               if( (gPersCustomFuncs[customLib].custom_plugin_init) != NULL)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load_custom_library => (sync)  : "), DLT_STRING(get_custom_client_lib_name(customLib)));
+                  gPersCustomFuncs[customLib].custom_plugin_init();
+               }
+               else
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: could not load plugin functions: "),
+                                                         DLT_STRING(get_custom_client_lib_name(customLib)));
+                  rval = EPERS_COMMON;
+               }
+            }
+            else if(initType == Init_Asynchronous)
+            {
+               if( (gPersCustomFuncs[customLib].custom_plugin_init_async) != NULL)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load_custom_library => (async) : "),
+                                          DLT_STRING(get_custom_client_lib_name(customLib)));
+
+                  gPersCustomFuncs[customLib].custom_plugin_init_async(gPlugin_callback_async_t);
+               }
+               else
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library => error: could not load plugin functions: "),
+                                                      DLT_STRING(get_custom_client_lib_name(customLib)));
+                  rval = EPERS_COMMON;
+               }
+            }
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: unknown init type "),
+                                                      DLT_STRING(get_custom_client_lib_name(customLib)));
+               rval = EPERS_COMMON;
+            }
+         }
+         else
+         {
+            error = dlerror();
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error:"), DLT_STRING(error));
+            rval = EPERS_DLOPENERROR;
+         }
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lCusLib - customLib out of bounds"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_library - error: - customLib out of bounds"));
       rval = EPERS_DLOPENERROR;
    }
 
@@ -514,46 +658,46 @@ int check_valid_idx(int idx)
 
 int load_custom_plugins(plugin_callback_async_t pfInitCompletedCB)
 {
-	int rval = 0, i = 0;
+   int rval = 0, i = 0;
 
-	/// get custom library names to load
-	if(get_custom_libraries() >= 0)
-	{
-		gPlugin_callback_async_t = pfInitCompletedCB;		// assign init callback
+   /// get custom library names to load
+   if(get_custom_libraries() >= 0)
+   {
+      gPlugin_callback_async_t = pfInitCompletedCB;      // assign init callback
 
-		// initialize custom library structure
-		for(i = 0; i < PersCustomLib_LastEntry; i++)
-		{
-			invalidate_custom_plugin(i);
-		}
+      // initialize custom library structure
+      for(i=0; i < PersCustomLib_LastEntry; i++)
+      {
+         invalidate_custom_plugin(i);
+      }
 
-		for(i=0; i < PersCustomLib_LastEntry; i++ )
-		{
-			if(check_valid_idx(i) != -1)
-			{
-				if(getCustomLoadingType(i) == LoadType_PclInit)	// check if the plugin must be loaded on plc init
-				{
-					if(load_custom_library(i, &gPersCustomFuncs[i] ) <= 0)
-					{
-						DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lCusPlug - could not load plugin: "),
-													DLT_STRING(get_custom_client_lib_name(i)));
-						rval = EPERS_COMMON;
-					}
-				}
-			}
-			else
-			{
-				continue;
-			}
-		}
-	}
-	else
-	{
-		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lCusPlug - Failed load cus lib conf table"));
-		rval = EPERS_COMMON;
-	}
+      for(i=0; i < PersCustomLib_LastEntry; i++ )
+      {
+         if(check_valid_idx(i) != -1)
+         {
+            if(getCustomLoadingType(i) == LoadType_PclInit) // check if the plugin must be loaded on pclInitLibrary
+            {
+               if(load_custom_library(i, &gPersCustomFuncs[i] ) <= 0)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_plugins => E r r o r could not load plugin: "),
+                                       DLT_STRING(get_custom_client_lib_name(i)));
+                  rval = EPERS_COMMON;
+               }
+            }
+         }
+         else
+         {
+            continue;
+         }
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInit => Failed to load custom library config table"));
+      rval = EPERS_COMMON;
+   }
 
-	return rval;
+   return rval;
 }
 
 

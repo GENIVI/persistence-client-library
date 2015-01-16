@@ -20,25 +20,26 @@
  */
 
 #include "../include/persistence_client_custom.h"
-
+#include <persComRct.h>
 
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersistenceCustomLibs_e
 {
-	/// predefined custom library for early persistence
-   PersCustomLib_early       = 0,
+   PersCustomLib_default     = 0,
+   /// predefined custom library for early persistence
+   PersCustomLib_early       = 1,
    /// predefined custom library for secure persistence
-   PersCustomLib_secure      = 1,
+   PersCustomLib_secure      = 2,
    /// predefined custom library for emengency persistence
-   PersCustomLib_emergency   = 2,
+   PersCustomLib_emergency   = 4,
    /// predefined custom library for hw information
-   PersCustomLib_HWinfo      = 3,
+   PersCustomLib_HWinfo      = 5,
    /// custom library 1
-   PersCustomLib_Custom1     = 4,
+   PersCustomLib_Custom1     = 6,
    /// custom library 2
-   PersCustomLib_Custom2     = 5,
+   PersCustomLib_Custom2     = 7,
    /// custom library 3
-   PersCustomLib_Custom3     = 6,
+   PersCustomLib_Custom3     = 8,
 
    // insert new entries here ...
 
@@ -51,7 +52,7 @@ typedef enum _PersistenceCustomLibs_e
 /// enumerator fo custom library defines
 enum _PersCustomLibDefines_e
 {
-	/// the custom library path size
+   /// the custom library path size
    PersCustomPathSize = 12
 
 } PersCustomLibDefines_e;
@@ -60,25 +61,81 @@ enum _PersCustomLibDefines_e
 /// indicates the init method type
 typedef enum PersInitType_e_
 {
-	/// initialize the plugin with the synchronous init function
-	Init_Synchronous  = 0,
-	/// initialize the plugin with the asynchronous init function
-	Init_Asynchronous = 1,
-	/// undefined
-	Init_Undefined
+   /// initialize the plugin with the synchronous init function
+   Init_Synchronous  = 0,
+   /// initialize the plugin with the asynchronous init function
+   Init_Asynchronous = 1,
+   /// undefined
+   Init_Undefined
 } PersInitType_e;
 
 
 /// indicates the plugin loading type
 typedef enum PersLoadingType_e_
 {
-	/// load plugin during pclInitLibrary function
-	LoadType_PclInit  = 0,
-	/// load the pluing on demand, when a plugin function will be requested the first time.
-	LoadType_OnDemand = 1,
-	/// undefined
-	LoadType_Undefined
+   /// load plugin during pclInitLibrary function
+   LoadType_PclInit  = 0,
+   /// load the pluing on demand, when a plugin function will be requested the first time.
+   LoadType_OnDemand = 1,
+   /// undefined
+   LoadType_Undefined
 } PersLoadingType_e;
+
+
+/// directory structure seat name definition
+char* plugin_gSeat;
+/// path prefix for local write through database /Data/mnt-wt/\<appId\>/\<database_name\>
+char* plugin_gLocalWt;
+///directory structure user name definition
+char* plugin_gUser;
+/// local factory-default database
+char* plugin_gLocalFactoryDefault;
+/// local cached default database
+char* plugin_gLocalCached;
+/// directory structure node name definition
+char* plugin_gNode;
+/// local configurable-default database
+char* plugin_gLocalConfigurableDefault;
+/// resource configuration table name
+char* plugin_gResTableCfg;
+
+
+/// Obtain a handler to DB indicated by dbPathname
+signed int (*plugin_persComDbOpen)(char const * dbPathname, unsigned char bForceCreationIfNotPresent) ;
+
+/// Close handler to DB
+signed int (*plugin_persComDbClose)(signed int handlerDB) ;
+
+/// write a key-value pair into local/shared database
+signed int (*plugin_persComDbWriteKey)(signed int handlerDB, char const * key, char const * data, signed int dataSize) ;
+
+/// read a key's value from local/shared database
+signed int (*plugin_persComDbReadKey)(signed int handlerDB, char const * key, char* dataBuffer_out, signed int dataBufferSize) ;
+
+/// read a key's value from local/shared database
+signed int (*plugin_persComDbGetKeySize)(signed int handlerDB, char const * key) ;
+
+/// delete key from local/shared database
+signed int (*plugin_persComDbDeleteKey)(signed int handlerDB, char const * key) ;
+
+/// Find the buffer's size needed to accomodate the list of keys' names in local/shared database
+signed int (*plugin_persComDbGetSizeKeysList)(signed int handlerDB) ;
+
+/// Obtain the list of the keys' names in local/shared database
+signed int (*plugin_persComDbGetKeysList)(signed int handlerDB, char* listBuffer_out, signed int listBufferSize) ;
+
+
+/**
+ * \brief Obtain a handler to RCT indicated by rctPathname
+ * \note : RCT is created if it does not exist and (bForceCreationIfNotPresent != 0)
+ */
+signed int (*plugin_persComRctOpen)(char const * rctPathname, unsigned char bForceCreationIfNotPresent) ;
+
+/// Close handler to RCT
+signed int (*plugin_persComRctClose)(signed int handlerRCT) ;
+
+/// read a resourceID's configuration from RCT
+signed int (*plugin_persComRctRead)(signed int handlerRCT, char const * resourceID, PersistenceConfigurationKey_s const * psConfig_out) ;
 
 
 /**
@@ -89,6 +146,7 @@ typedef enum PersLoadingType_e_
  * @param error the error code occured while calling init
  */
 extern int(* gPlugin_callback_async_t)(int errcode);
+
 
 /// structure definition for custom library functions
 typedef struct _Pers_custom_functs_s
@@ -177,6 +235,14 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
 int get_custom_libraries();
 
 
+/**
+ * @brief load default plugin
+ *
+ * handle the library handle
+ *
+ * @return default library
+ */
+int load_default_library(void* handle);
 
 /**
  * @brief get the names of the custom libraries to load

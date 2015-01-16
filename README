@@ -70,6 +70,19 @@ details about DLT, please refer to the GENIVI DLT p roject page
 (http://projects.genivi.org/diagnostic-log-trace/). 
 
 
+Persistence Common Object
+-------------------------------
+The Persistence Common Object (libpers_common.so) is the default plugin to read/write 
+persistent data managed by the key-value API.
+
+Attention:
+The Persistence Common Object must be added to the plugin configuration file with the 
+appropriate path to the library
+
+Example: “default /usr/local/lib/libpers_common.so init sync”
+
+
+
 Running tests:
 --------------
 There are unit tests available for the persistency client library component available.
@@ -99,6 +112,16 @@ Precondition:
    The test data is provided by the PCL (../test/data/PAS_data.tar.gz)
 * Make sure dlt-daemon is running
 * Make sure D-Bus system bus is available 
+
+
+Application verification
+--------------
+To check if an application is valid/trusted and allowed to access persistent data an application check 
+functionality can be enabled (configure step --enable-appcheck, see section 6 “How to build”).
+If an application is not valid/trusted every API call to the key-value or file API returns the 
+error EPERS_SHUTDOWN_NO_TRUSTED will be returned.
+A trusted/valid application has a corresponding resource configuration table installed by the 
+Persistence Administration Service under /Data/mnt-c or /Data/mnt-wt.
 
 
 

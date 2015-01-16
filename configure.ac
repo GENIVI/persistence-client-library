@@ -69,8 +69,7 @@ AC_CHECK_FUNCS([fdatasync ftruncate mkdir munmap rmdir strerror utime dlopen])
 
 PKG_CHECK_MODULES(DEPS,
                   automotive-dlt
-                  dbus-1
-                  libperscommon)
+                  dbus-1)
 
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
