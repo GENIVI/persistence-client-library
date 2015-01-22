@@ -21,12 +21,8 @@
 #include "persistence_client_library_lc_interface.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_dbus_cmd.h"
-#include "persistence_client_library_data_organization.h"
 
-#include <stdio.h>
 #include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
 
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;

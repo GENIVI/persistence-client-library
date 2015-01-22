@@ -17,15 +17,10 @@
  */
 
 #include "persistence_client_library_custom_loader.h"
-#include "persistence_client_library_data_organization.h"
 
-#include <stdio.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
 

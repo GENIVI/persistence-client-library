@@ -33,11 +33,8 @@ extern "C" {
 #include <persComDbAccess.h>
 #include <persComDataOrg.h>
 
-#include <dlt/dlt.h>
-#include <dlt/dlt_common.h>
-
+#include <dlt.h>
 #include <string.h>
-#include <stdio.h>
 
 
 
@@ -178,7 +175,7 @@ enum _PersistenceConstantDef
    /// max application name
    MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,
    /// max number of parallel open persistence handles
-   MaxPersHandle = 256,
+   MaxPersHandle = 255,
    /// length of the config key responsible name
    MaxConfKeyLengthResp    = 32,
    /// length of the config key custom name

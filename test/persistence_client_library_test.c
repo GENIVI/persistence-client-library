@@ -943,7 +943,7 @@ START_TEST(test_DataHandle)
    X_TEST_REPORT_DESCRIPTION("Test of data handle");
    X_TEST_REPORT_TYPE(GOOD); */
 
-   int handle1 = 0, handle2 = 0, i = 0;
+   int handle1 = 0, handle2 = 0;
    int handleArray[4] = {0};
    int ret = 0;
    unsigned char buffer[READ_SIZE] = {0};
@@ -1018,19 +1018,7 @@ START_TEST(test_DataHandle)
 	fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
 
 	ret = pclFileClose(1024);
-	fail_unless(ret == EPERS_MAXHANDLE, "Could close file, but should not!!");
-
-	for(i = 0; i<1024; i++)
-	{
-	   if( fcntl(i, F_GETFD) == -1 ) //search for an invalid fd, and try to close it.
-	   {
-	      ret = pclFileClose(i);
-	      fail_unless(ret == -1, "Could close file, but should not!!");
-
-	      break;
-	   }
-	}
-
+	fail_unless(ret == EPERS_MAXHANDLE, "1. Could close file, but should not!!");
 #endif
 }
 END_TEST

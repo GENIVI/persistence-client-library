@@ -16,12 +16,11 @@
  * @see
  */
 
+
 #include "persistence_client_library_backup_filelist.h"
-#include "persistence_client_library_handle.h"
+#include "crc32.h"
 #include "rbtree.h"
 
-#include "crc32.h"
-#include "persistence_client_library_data_organization.h"
 
 
 #if USE_FILECACHE
@@ -70,24 +69,24 @@ static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char
 
    while(i < customConfigFileSize)
    {
-      if(   ((unsigned int)*tmpPointer < 127)
+      if(   ((unsigned int)(*tmpPointer) < 127)
          && ((unsigned int)*tmpPointer >= 0))
-	   {
-		   if(1 != gCharLookup[(unsigned int)*tmpPointer])
-		   {
-			   *tmpPointer = 0;
+      {
+         if(1 != gCharLookup[(unsigned int)*tmpPointer])
+         {
+            *tmpPointer = 0;
 
-			   if(blankCount >= TOKENARRAYSIZE)    // check if we are at the end of the token array
-			   {
-				   break;
-			   }
-			   gpTokenArray[blankCount] = tmpPointer+1;
-			   blankCount++;
-			   tokenCounter++;
-		   }
-	   }
+            if(blankCount >= TOKENARRAYSIZE)    // check if we are at the end of the token array
+            {
+               break;
+            }
+            gpTokenArray[blankCount] = tmpPointer+1;
+            blankCount++;
+            tokenCounter++;
+         }
+      }
       tmpPointer++;
-	   i++;
+      i++;
    }
 }
 
@@ -103,32 +102,31 @@ static void createAndStoreFileNames()
 
    if(gRb_tree_bl != NULL)
    {
-		while( i < TOKENARRAYSIZE )
-		{
-			if(gpTokenArray[i+1]  != 0 )
-			{
-				memset(path, 0, sizeof(path));
-				snprintf(path, 128, "%s", gpTokenArray[i]);    // storage type
+      while( i < TOKENARRAYSIZE )
+      {
+         if(gpTokenArray[i+1]  != 0 )
+         {
+            memset(path, 0, sizeof(path));
+            snprintf(path, 128, "%s", gpTokenArray[i]);    // storage type
 
-				item = malloc(sizeof(key_value_s));    // asign key and value to the rbtree item
-				if(item != NULL)
-				{
-					//printf("createAndStoreFileNames => path: %s\n", path);
-					item->key = pclCrc32(0, (unsigned char*)path, strlen(path));
-					// we don't need the path name here, we just need to know that this key is available in the tree
-					item->value = "";
-					jsw_rbinsert(gRb_tree_bl, item);
-					free(item);
-				}
-				i+=1;
-			}
-			else
-			{
-				break;
-			}
+            item = malloc(sizeof(key_value_s));    // asign key and value to the rbtree item
+            if(item != NULL)
+            {
+               //printf("createAndStoreFileNames => path: %s\n", path);
+               item->key = pclCrc32(0, (unsigned char*)path, strlen(path));
+               // we don't need the path name here, we just need to know that this key is available in the tree
+               item->value = "";
+               jsw_rbinsert(gRb_tree_bl, item);
+               free(item);
+            }
+            i+=1;
+         }
+         else
+         {
+            break;
+         }
       }
    }
-
 }
 
 
@@ -138,56 +136,56 @@ int readBlacklistConfigFile(const char* filename)
 
    if(filename != NULL)
    {
-		struct stat buffer;
+      struct stat buffer;
 
-	   memset(&buffer, 0, sizeof(buffer));
-	   if(stat(filename, &buffer) != -1)
-	   {
-			if(buffer.st_size > 0)	   // check for empty file
-			{
-				char* configFileMap = 0;
-				int fd = open(filename, O_RDONLY);
+      memset(&buffer, 0, sizeof(buffer));
+      if(stat(filename, &buffer) != -1)
+      {
+         if(buffer.st_size > 0)     // check for empty file
+         {
+            char* configFileMap = 0;
+            int fd = open(filename, O_RDONLY);
 
-				if(fd == -1)
-				{
-				  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("blacklist - Err file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
-				  return EPERS_COMMON;
-				}
+            if(fd == -1)
+            {
+              DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("blacklist - Err file open"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+              return EPERS_COMMON;
+            }
 
-				configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);  // map the configuration file into memory
+            configFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);  // map the configuration file into memory
 
-				if(configFileMap == MAP_FAILED)
-				{
-				  close(fd);
-				  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("blacklist - Err mapping file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
+            if(configFileMap == MAP_FAILED)
+            {
+              close(fd);
+              DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("blacklist - Err mapping file:"), DLT_STRING(filename), DLT_STRING(strerror(errno)) );
 
-				  return EPERS_COMMON;
-				}
+              return EPERS_COMMON;
+            }
 
-				fillFileBackupCharTokenArray(buffer.st_size, configFileMap);
+            fillFileBackupCharTokenArray(buffer.st_size, configFileMap);
 
-				createAndStoreFileNames();    // create filenames and store them in the tree
+            createAndStoreFileNames();    // create filenames and store them in the tree
 
-				munmap(configFileMap, buffer.st_size);
+            munmap(configFileMap, buffer.st_size);
 
-				close(fd);
-			}
-			else
-			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("blacklist - Err config file size is 0:"), DLT_STRING(filename));
-				return EPERS_COMMON;
-			}
-	   }
-	   else
-	   {
-	   	DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("blacklist - failed to stat() conf file:"), DLT_STRING(filename));
-	   	return EPERS_COMMON;
-	   }
-	}
+            close(fd);
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("blacklist - Err config file size is 0:"), DLT_STRING(filename));
+            return EPERS_COMMON;
+         }
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("blacklist - failed to stat() conf file:"), DLT_STRING(filename));
+         return EPERS_COMMON;
+      }
+   }
    else
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("blacklist - config file name is NULL:"));
-	   rval = EPERS_COMMON;
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("blacklist - config file name is NULL:"));
+      rval = EPERS_COMMON;
    }
 
    return rval;
@@ -203,7 +201,7 @@ int need_backup_key(unsigned int key)
    item = malloc(sizeof(key_value_s));
    if(item != NULL && gRb_tree_bl != NULL)
    {
-   	key_value_s* foundItem = NULL;
+      key_value_s* foundItem = NULL;
       item->key = key;
       foundItem = (key_value_s*)jsw_rbfind(gRb_tree_bl, item);
       if(foundItem != NULL)
@@ -215,7 +213,7 @@ int need_backup_key(unsigned int key)
    else
    {
       if(item!=NULL)
-	     free(item);
+        free(item);
 
       rval = CREATE_BACKUP;
    }
@@ -270,7 +268,6 @@ void* key_val_dup(void *p)
      if(dst->value != NULL)
         strncpy(dst->value, src->value, value_size);
    }
-
 
    return dst;
 }
@@ -351,14 +348,15 @@ int pclCreateFile(const char* path, int chached)
 
 #if USE_FILECACHE
       if(chached == 0)
-		{
-      	handle = open(createPath, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-		}
+      {
+         handle = open(createPath, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      }
       else
       {
-      	handle = pfcOpenFile(createPath, CreateFile);
+         handle = pfcOpenFile(createPath, CreateFile);
       }
 #else
+      (void)chached;
       handle = open(createPath, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 #endif
    }
@@ -589,8 +587,8 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    {
       off_t curPos = 0;
 
-      curPos = lseek(srcfd, 0, SEEK_CUR);		// remember the current position
-      lseek(srcfd, 0, SEEK_SET);					// set to beginning of file
+      curPos = lseek(srcfd, 0, SEEK_CUR);    // remember the current position
+      lseek(srcfd, 0, SEEK_SET);             // set to beginning of file
 
       // copy data from one file to another
       if((readSize = pclBackupDoFileCopy(srcfd, dstFd)) == -1)
@@ -625,7 +623,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
       char* buf;
       struct stat statBuf;
 
-      fstat(fd, &statBuf);
+      (void)fstat(fd, &statBuf);
       buf = malloc((unsigned int)statBuf.st_size);
 
       if(buf != 0)
@@ -642,7 +640,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
          {
             unsigned int crc = 0;
             crc = pclCrc32(crc, (unsigned char*)buf, statBuf.st_size);
-            snprintf(crc32sum, ChecksumBufSize-1, "%x", crc);
+            (void)snprintf(crc32sum, ChecksumBufSize-1, "%x", crc);
          }
 
          lseek(fd, curPos, SEEK_SET);        // set back to the position
@@ -651,7 +649,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
       }
       else
       {
-      	rval = -1;
+         rval = -1;
       }
    }
    return rval;

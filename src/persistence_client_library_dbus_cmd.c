@@ -15,17 +15,14 @@
  * @brief          Implementation of the persistence client library dbus commands.
  * @see
  */
-
-#include <errno.h>
-#include <dlfcn.h>																/* For dlclose() */
+															/* For dlclose() */
 #include "persistence_client_library_dbus_cmd.h"
 
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_custom_loader.h"
-#include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_pas_interface.h"
-#include "persistence_client_library_data_organization.h"
 #include "persistence_client_library_db_access.h"
+
 
 #if USE_FILECACHE
    #include <persistence_file_cache.h>
@@ -40,6 +37,8 @@
 	 extern int pfcWriteBackAndSync(int handle);
 #endif
 
+#include <errno.h>
+#include <dlfcn.h>
 
 // function prototype
 void msg_pending_func(DBusPendingCall *call, void *data);

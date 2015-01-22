@@ -19,22 +19,7 @@
 
 #include "persistence_client_library_lc_interface.h"
 
-#include "persistence_client_library_data_organization.h"
-#include "persistence_client_library_db_access.h"
-
-#include "persistence_client_library_handle.h"
-#include "persistence_client_library_pas_interface.h"
-#include "persistence_client_library_dbus_service.h"
-#include "persistence_client_library_custom_loader.h"
-#include "persistence_client_library_prct_access.h"
-
-
 #include <errno.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <dlfcn.h>
-
 
 
 int check_lc_request(unsigned int request, unsigned int requestID)
@@ -179,4 +164,3 @@ int unregister_lifecycle(int shutdownMode)
 
    return deliverToMainloop(&data);
 }
-

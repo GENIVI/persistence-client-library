@@ -23,12 +23,7 @@
 #include "persistence_client_library_prct_access.h"
 
 #include <persComErrors.h>
-#include <persComDataOrg.h>
 
-#include <dbus/dbus.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
 
 

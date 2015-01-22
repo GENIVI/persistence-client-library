@@ -210,10 +210,11 @@ void *jsw_rbfind ( jsw_rbtree_t *tree, void *data )
 {
    jsw_rbnode_t *it = tree->root;
 
-    while ( it != NULL ) {
-      int cmp = tree->cmp( it->data, data );
+    while ( it != NULL )
+    {
+      int cmp = tree->cmp( it->data, data);
 
-      if ( cmp == 0 )
+      if( cmp == 0 )
         break;
 
       /*
@@ -266,22 +267,26 @@ int jsw_rbinsert ( jsw_rbtree_t *tree, void *data )
 		q = t->link[1] = tree->root;
 
 		/* Search down the tree for a place to insert */
-		for ( ; ; ) {
-		  if ( q == NULL ) {
+		for ( ; ; )
+		{
+		  if ( q == NULL )
+		  {
 			/* Insert a new node at the first null link */
 			p->link[dir] = q = new_node ( tree, data );
 
 			if ( q == NULL )
 			  return 0;
 		  }
-		  else if ( is_red ( q->link[0] ) && is_red ( q->link[1] ) ) {
+		  else if ( is_red ( q->link[0] ) && is_red ( q->link[1] ) )
+		  {
 			/* Simple red violation: color flip */
 			q->red = 1;
 			q->link[0]->red = 0;
 			q->link[1]->red = 0;
 		  }
 
-		  if ( is_red ( q ) && is_red ( p ) ) {
+		  if ( is_red ( q ) && is_red ( p ) )
+		  {
 			/* Hard red violation: rotations necessary */
 			int dir2 = t->link[1] == g;
 
@@ -325,7 +330,7 @@ int jsw_rbinsert ( jsw_rbtree_t *tree, void *data )
   return 1;
 }
 
-#if 0
+
 /**
   <summary>
   Releases a valid red black tree
@@ -366,6 +371,7 @@ void jsw_rbdelete ( jsw_rbtree_t *tree )
 }
 
 
+
 /**
   <summary>
   Remove a node from a red black tree
@@ -384,8 +390,9 @@ void jsw_rbdelete ( jsw_rbtree_t *tree )
 */
 int jsw_rberase ( jsw_rbtree_t *tree, void *data )
 {
-  if ( tree->root != NULL ) {
-    jsw_rbnode_t head = {0}; /* False tree root */
+  if ( tree->root != NULL )
+  {
+    jsw_rbnode_t head = {0, NULL, {NULL, NULL} }; /* False tree root */
     jsw_rbnode_t *q, *p, *g; /* Helpers */
     jsw_rbnode_t *f = NULL;  /* Found item */
     int dir = 1;
@@ -399,7 +406,8 @@ int jsw_rberase ( jsw_rbtree_t *tree, void *data )
       Search and push a red node down
       to fix red violations as we go
     */
-    while ( q->link[dir] != NULL ) {
+    while ( q->link[dir] != NULL )
+    {
       int last = dir;
 
       /* Move the helpers down */
@@ -415,20 +423,25 @@ int jsw_rberase ( jsw_rbtree_t *tree, void *data )
         f = q;
 
       /* Push the red node down with rotations and color flips */
-      if ( !is_red ( q ) && !is_red ( q->link[dir] ) ) {
+      if ( !is_red ( q ) && !is_red ( q->link[dir] ) )
+      {
         if ( is_red ( q->link[!dir] ) )
           p = p->link[last] = jsw_single ( q, dir );
-        else if ( !is_red ( q->link[!dir] ) ) {
+        else if ( !is_red ( q->link[!dir] ) )
+        {
           jsw_rbnode_t *s = p->link[!last];
 
-          if ( s != NULL ) {
-            if ( !is_red ( s->link[!last] ) && !is_red ( s->link[last] ) ) {
+          if ( s != NULL )
+          {
+            if ( !is_red ( s->link[!last] ) && !is_red ( s->link[last] ) )
+            {
               /* Color flip */
               p->red = 0;
               s->red = 1;
               q->red = 1;
             }
-            else {
+            else
+            {
               int dir2 = g->link[1] == p;
 
               if ( is_red ( s->link[last] ) )
@@ -447,11 +460,11 @@ int jsw_rberase ( jsw_rbtree_t *tree, void *data )
     }
 
     /* Replace and remove the saved node */
-    if ( f != NULL ) {
-      tree->rel ( f->data );
+    if ( f != NULL )
+    {
+      tree->rel( f->data );
       f->data = q->data;
-      p->link[p->link[1] == q] =
-        q->link[q->link[0] == NULL];
+      p->link[p->link[1] == q] = q->link[q->link[0] == NULL];
       free ( q );
     }
 
@@ -467,7 +480,7 @@ int jsw_rberase ( jsw_rbtree_t *tree, void *data )
 
   return 1;
 }
-
+#if 0
 /**
   <summary>
   Gets the number of nodes in a red black tree

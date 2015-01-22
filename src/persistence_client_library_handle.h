@@ -22,19 +22,17 @@
 
 #include "persistence_client_library_data_organization.h"
 
-#include <persComRct.h>
-
 /// key handle structure definition
 typedef struct _PersistenceKeyHandle_s
 {
-	/// Resource ID
-   char resource_id[DbResIDMaxLen];
    /// logical database id
    unsigned int ldbid;
    /// User No
    unsigned int user_no;
    /// Seat No
    unsigned int seat_no;
+   /// Resource ID
+   char resource_id[DbResIDMaxLen];
 } PersistenceKeyHandle_s;
 
 

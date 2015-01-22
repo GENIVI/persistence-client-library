@@ -20,7 +20,7 @@
  * @see
  */
 
-#include <dbus/dbus.h>
+#include "persistence_client_library_dbus_service.h"
 
 
 /**

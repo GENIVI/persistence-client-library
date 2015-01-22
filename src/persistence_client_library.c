@@ -87,6 +87,8 @@ void doInitAppcheck(const char* appName)
       gAppCheckFlag = 0;   // currently not a "trusted" application
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("NOT trusted app"));
    }
+#else
+   (void)appName;
 #endif
 }
 

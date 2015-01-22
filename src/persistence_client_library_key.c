@@ -20,13 +20,8 @@
 #include "persistence_client_library_key.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_pas_interface.h"
-#include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_db_access.h"
-#include "crc32.h"
-
-#include <persComRct.h>
-
 
 
 // function declaration

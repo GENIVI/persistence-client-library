@@ -18,14 +18,7 @@
  */
 
 #include "persistence_client_library_prct_access.h"
-#include "persistence_client_library_db_access.h"
 #include "persistence_client_library_custom_loader.h"
-#include <stdlib.h>
-#include <string.h>
-
-#include <persComRct.h>
-#include <persComDbAccess.h>
-#include <persComErrors.h>
 
 
 /// pointer to resource table database

@@ -28,6 +28,7 @@ The client library has the following dependencies
 ** automotive-dlt (http://projects.genivi.org/diagnostic-log-trace/)
 ** Persistence Common Object (http://git.projects.genivi.org/?p=persistence/persistence-common-object.git;a=summary)
    Add "-- with_database=key-value-store" to the configure step
+   The default backend if Itzam/C and will not supported anymore.
 ** dbus-1
 ** check unit test framework for C used when configured with "--enable-tests"
    Ubuntu: use Synaptic package manager
@@ -37,7 +38,7 @@ The client library has the following dependencies
 
 
 ----------------------------
-Dependencies
+Build the component
 ----------------------------
 The Persistence Client Lib component uses automake
 to build the library.
@@ -46,10 +47,7 @@ Execute the following steps in order to build the component
 * configure, with the following options
 ** --enable-tests to enable the build of the tests
 ** --enable-pasinterface enable the PAS interface (disabled by default)
-** -- with_database decide which storage backend to use
 ** --enable-appcheck, performs an application check if the using application is a valid/trusted one.
-*** Itzam/C is currently default backend
-*** It is recommended to use the key-value-store backend ("-- with_database=key-value-store")
 * make 
 
 

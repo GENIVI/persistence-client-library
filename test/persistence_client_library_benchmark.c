@@ -24,8 +24,8 @@
 #include <string.h>
 #include <stdlib.h>     /* atoi */
 
-#include <dlt/dlt.h>
-#include <dlt/dlt_common.h>
+#include <dlt.h>
+#include <dlt_common.h>
 
 #include <sys/time.h>
 #include <sys/resource.h>

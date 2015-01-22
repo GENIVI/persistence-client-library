@@ -19,9 +19,7 @@
  * @see
  */
 
-
-//#include "../include_protected/persistence_client_library_rc_table.h"
-#include <persComRct.h>
+#include "persistence_client_library_handle.h"
 
 
 /**

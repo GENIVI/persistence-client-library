@@ -22,8 +22,6 @@
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_handle.h"
 #include "persistence_client_library_prct_access.h"
-#include "persistence_client_library_data_organization.h"
-#include "persistence_client_library_db_access.h"
 #include "crc32.h"
 
 
@@ -32,14 +30,10 @@
 #endif
 
 
-#include <fcntl.h>   // for open flags
 #include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/sendfile.h>
 
 // local function prototype
@@ -86,6 +80,7 @@ int pclFileClose(int fd)
       if(doAppcheck() == 1)
       {
          int  permission = get_file_permission(fd);
+
 
          if(permission != -1)	   // permission is here also used for range check
          {
@@ -338,6 +333,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       {
          if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
          {
+            printf("%s - %d ==> set_file_backup_status\n", __FUNCTION__ , __LINE__);
             set_file_backup_status(handle, 1);
             __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
          }
@@ -575,8 +571,10 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
          {
             if(permission != PersistencePermission_ReadOnly )
             {
+
+
                // check if a backup file has to be created
-               if(get_file_backup_status(fd) == 0 && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
+               if( (get_file_backup_status(fd) == 0) && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
                {
                   char csumBuf[ChecksumBufSize] = {0};
 

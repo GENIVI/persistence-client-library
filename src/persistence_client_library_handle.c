@@ -18,10 +18,9 @@
  */
 
 #include "persistence_client_library_handle.h"
+#include "persistence_client_library_tree_helper.h"
 
 #include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 pthread_mutex_t gKeyHandleAccessMtx      = PTHREAD_MUTEX_INITIALIZER;
@@ -41,14 +40,6 @@ static int gHandleIdx = 1;
 static int gFreeHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 /// free handle array head index
 static int gFreeHandleIdxHead = 0;
-
-// persistence key handle array
-static PersistenceKeyHandle_s gKeyHandleArray[MaxPersHandle];
-// persistence file handle array
-static PersistenceFileHandle_s gFileHandleArray[MaxPersHandle];
-// persistence handle array for OSS and third party handles
-static PersistenceFileHandle_s gOssHandleArray[MaxPersHandle];
-
 
 
 int get_persistence_handle_idx()
@@ -116,20 +107,30 @@ int set_key_handle_data(int idx, const char* id, unsigned int ldbid,  unsigned i
 
 	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
 	{
-		if((idx < MaxPersHandle) && (0 < idx))
-		{
-			strncpy(gKeyHandleArray[idx].resource_id, id, DbResIDMaxLen);
-			gKeyHandleArray[idx].resource_id[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
-			gKeyHandleArray[idx].ldbid   = ldbid;
-			gKeyHandleArray[idx].user_no = user_no;
-			gKeyHandleArray[idx].seat_no = seat_no;
+	   KeyHandleTreeItem_s* item = NULL;
 
-			handle = idx;
-		}
-		else
-		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sKeyHdata - idx out of bounds:"), DLT_INT(idx));
-		}
+	   if(gKeyHandleTree == NULL)
+	   {
+	      gKeyHandleTree = jsw_rbnew(kh_key_val_cmp, kh_key_val_dup, kh_key_val_rel);
+	   }
+
+	   item = malloc(sizeof(KeyHandleTreeItem_s));    // assign key and value to the rbtree item
+      if(item != NULL)
+      {
+         item->key = idx;
+
+         item->value.keyHandle.ldbid   = ldbid;
+         item->value.keyHandle.user_no = user_no;
+         item->value.keyHandle.seat_no = seat_no;
+         strncpy(item->value.keyHandle.resource_id, id, DbResIDMaxLen);
+         item->value.keyHandle.resource_id[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+         jsw_rbinsert(gKeyHandleTree, item);
+
+         free(item);
+
+         handle = idx;
+      }
 
 		pthread_mutex_unlock(&gKeyHandleAccessMtx);
    }
@@ -144,16 +145,26 @@ int get_key_handle_data(int idx, PersistenceKeyHandle_s* handleStruct)
 
 	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
 	{
-		if((idx < MaxPersHandle) && (idx > 0))
-		{
-			strncpy(handleStruct->resource_id, gKeyHandleArray[idx].resource_id, DbResIDMaxLen);
-
-			handleStruct->ldbid   = gKeyHandleArray[idx].ldbid;
-			handleStruct->user_no = gKeyHandleArray[idx].user_no;
-			handleStruct->seat_no = gKeyHandleArray[idx].seat_no;
-
-			rval = 0;
-		}
+      if(gKeyHandleTree != NULL)
+      {
+         KeyHandleTreeItem_s* item = malloc(sizeof(KeyHandleTreeItem_s));
+         if(item != NULL)
+         {
+            KeyHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (KeyHandleTreeItem_s*)jsw_rbfind(gKeyHandleTree, item);
+            if(foundItem != NULL)
+            {
+               handleStruct->ldbid   = foundItem->value.keyHandle.ldbid;
+               handleStruct->user_no = foundItem->value.keyHandle.user_no;
+               handleStruct->seat_no = foundItem->value.keyHandle.seat_no;
+               strncpy(handleStruct->resource_id, foundItem->value.keyHandle.resource_id, DbResIDMaxLen);
+               handleStruct->resource_id[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               rval = 0;
+            }
+            free(item);
+         }
+      }
 
 		pthread_mutex_unlock(&gKeyHandleAccessMtx);
 	}
@@ -166,7 +177,12 @@ void init_key_handle_array()
 {
 	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
 	{
-		memset(gKeyHandleArray, 0, MaxPersHandle * sizeof(PersistenceKeyHandle_s));
+      if(gKeyHandleTree != NULL)
+      {
+         jsw_rbdelete (gKeyHandleTree);
+      }
+
+      gKeyHandleTree = jsw_rbnew(kh_key_val_cmp, kh_key_val_dup, kh_key_val_rel);
 
 		pthread_mutex_unlock(&gKeyHandleAccessMtx);
 	}
@@ -175,33 +191,65 @@ void init_key_handle_array()
 
 void clear_key_handle_array(int idx)
 {
-	if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
-	{
-      if(idx < MaxPersHandle && idx > 0 )
+   if(pthread_mutex_lock(&gKeyHandleAccessMtx) == 0)
+   {
+      if(gKeyHandleTree != NULL)
       {
-         memset(&gKeyHandleArray[idx], 0, sizeof(gKeyHandleArray[idx]));
+         KeyHandleTreeItem_s* item = malloc(sizeof(KeyHandleTreeItem_s));
+         if(item != NULL)
+         {
+            item->key = idx;
+
+            if(jsw_rberase(gKeyHandleTree, item) == 0)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("clear_key_handle_array - failed remove idx: "), DLT_INT(idx));
+            }
+            free(item);
+         }
       }
-		pthread_mutex_unlock(&gKeyHandleAccessMtx);
-	}
+
+      pthread_mutex_unlock(&gKeyHandleAccessMtx);
+   }
 }
 
 
 int set_file_handle_data(int idx, PersistencePermission_e permission, const char* backup, const char* csumPath, char* filePath)
 {
-	int rval = 0;
+	int rval = -1;
 
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-		if(idx < MaxPersHandle && idx > 0 )
-		{
-			strcpy(gFileHandleArray[idx].backupPath, backup);
-			strcpy(gFileHandleArray[idx].csumPath,   csumPath);
-			gFileHandleArray[idx].backupCreated = 0;			// set to 0 by default
-			gFileHandleArray[idx].permission = permission;
-			gFileHandleArray[idx].filePath = filePath; 		// check to do if this works
-			gFileHandleArray[idx].cacheStatus = -1; 			// set to -1 by default
-			gFileHandleArray[idx].userId = 0;               // default value
-		}
+		FileHandleTreeItem_s* item = NULL;
+
+      if(gFileHandleTree == NULL)
+      {
+         gFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
+      }
+
+      item = malloc(sizeof(FileHandleTreeItem_s));    // assign key and value to the rbtree item
+      if(item != NULL)
+      {
+         item->key = idx;
+
+         item->value.fileHandle.permission    = permission;
+         item->value.fileHandle.backupCreated = 0;             // set to 0 by default
+         item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+         item->value.fileHandle.userId        = 0;             // default value
+         item->value.fileHandle.filePath      = filePath;
+
+         strncpy(item->value.fileHandle.backupPath, backup, DbPathMaxLen);
+         item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+         strncpy(item->value.fileHandle.csumPath, csumPath, DbPathMaxLen);
+         item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+         jsw_rbinsert(gFileHandleTree, item);
+
+         free(item);
+
+         rval = 0;
+      }
+
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 
@@ -215,14 +263,25 @@ int get_file_permission(int idx)
 
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-		if(idx < MaxPersHandle && idx > 0 )
-		{
-			permission =  gFileHandleArray[idx].permission;
-		}
-		else
-		{
-			permission = -1;
-		}
+      if(gFileHandleTree != NULL)
+      {
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               permission = foundItem->value.fileHandle.permission;
+            }
+            else
+            {
+               permission = -1;
+            }
+            free(item);
+         }
+      }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 	return permission;
@@ -234,10 +293,22 @@ char* get_file_backup_path(int idx)
    char* charPtr = NULL;
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(idx < MaxPersHandle && idx > 0 )
+      if(gFileHandleTree != NULL)
       {
-         charPtr = gFileHandleArray[idx].backupPath;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               charPtr = foundItem->value.fileHandle.backupPath;
+            }
+            free(item);
+         }
       }
+
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 	return charPtr;
@@ -248,10 +319,22 @@ char* get_file_checksum_path(int idx)
    char* charPtr = NULL;
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(idx < MaxPersHandle && idx > 0 )
+      if(gFileHandleTree != NULL)
       {
-         charPtr = gFileHandleArray[idx].csumPath;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               charPtr = foundItem->value.fileHandle.csumPath;
+            }
+            free(item);
+         }
       }
+
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 	return charPtr;
@@ -262,10 +345,48 @@ void set_file_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-      if(MaxPersHandle >= idx && idx > 0 )
+      if(gFileHandleTree != NULL)
       {
-         gFileHandleArray[idx].backupCreated = status;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem == NULL)
+            {
+               item->value.fileHandle.backupCreated = status;
+
+               item->value.fileHandle.permission    = PersistencePermission_LastEntry;
+               item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+               item->value.fileHandle.userId        = 0;             // default value
+               item->value.fileHandle.filePath      = NULL;
+
+               jsw_rbinsert(gFileHandleTree, item);
+            }
+            else
+            {
+               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+               if(newItem != NULL)
+               {
+                  if(newItem->value.payload != NULL)
+                  {
+                     memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+                     newItem->key = idx;
+                     newItem->value.fileHandle.backupCreated = status;
+
+                     jsw_rberase(gFileHandleTree, foundItem);
+
+                     jsw_rbinsert(gFileHandleTree, newItem);
+                  }
+                  free(newItem);
+               }
+            }
+            free(item);
+         }
       }
+
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 }
@@ -275,10 +396,22 @@ int get_file_backup_status(int idx)
    int backup = -1;
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(MaxPersHandle >= idx && idx > 0 )
+      if(gFileHandleTree != NULL)
       {
-         backup= gFileHandleArray[idx].backupCreated;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               backup = foundItem->value.fileHandle.backupCreated;
+            }
+            free(item);
+         }
       }
+
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 	return backup;
@@ -288,9 +421,50 @@ void set_file_cache_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-      if(MaxPersHandle >= idx && idx > 0 )
+	   if(gFileHandleTree != NULL)
       {
-         gFileHandleArray[idx].cacheStatus = status;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem == NULL)
+            {
+               item->value.fileHandle.cacheStatus   = status;
+
+               item->value.fileHandle.backupCreated = 0;            // set to 0 by default
+               item->value.fileHandle.permission    = PersistencePermission_LastEntry;
+               item->value.fileHandle.userId        = 0;             // default value
+               item->value.fileHandle.filePath      = NULL;
+
+               memset(item->value.fileHandle.csumPath  , 0, DbResIDMaxLen);
+               item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.backupPath, 0, DbResIDMaxLen);
+               item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+               jsw_rbinsert(gFileHandleTree, item);
+            }
+            else
+            {
+               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+               if(newItem != NULL)
+               {
+                  if(newItem->value.payload != NULL)
+                  {
+                     memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+                     jsw_rberase(gFileHandleTree, foundItem);
+
+                     newItem->key = idx;
+                     newItem->value.fileHandle.cacheStatus = status;
+                     jsw_rbinsert(gFileHandleTree, newItem);
+                  }
+                  free(newItem);
+               }
+            }
+            free(item);
+         }
       }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
@@ -301,10 +475,21 @@ int get_file_cache_status(int idx)
 	int status = -1;
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-		if(MaxPersHandle >= idx && idx > 0 )
-		{
-			status = gFileHandleArray[idx].cacheStatus;
-		}
+      if(gFileHandleTree != NULL)
+      {
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               status = foundItem->value.fileHandle.cacheStatus;
+            }
+            free(item);
+         }
+      }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 	return status;
@@ -315,11 +500,51 @@ void set_file_user_id(int idx, int userID)
 {
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(MaxPersHandle >= idx && idx > 0 )
+      if(gFileHandleTree != NULL)
       {
-         gFileHandleArray[idx].userId = userID;
-      }
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem == NULL)
+            {
+               item->value.fileHandle.userId        = userID;              // default value
 
+               item->value.fileHandle.backupCreated = 0;                   // set to 0 by default
+               item->value.fileHandle.permission    = -1;
+               item->value.fileHandle.cacheStatus   = -1;                  // set to -1 by default
+               item->value.fileHandle.filePath      = NULL;
+
+               memset(item->value.fileHandle.csumPath  , 0, DbResIDMaxLen);
+               item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.backupPath, 0, DbResIDMaxLen);
+               item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+               jsw_rbinsert(gFileHandleTree, item);
+            }
+            else
+            {
+               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+               if(newItem != NULL)
+               {
+                  if(newItem->value.payload != NULL)
+                  {
+                     memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+                     jsw_rberase(gFileHandleTree, foundItem);
+
+                     newItem->key = idx;
+                     newItem->value.fileHandle.userId = userID;
+                     jsw_rbinsert(gFileHandleTree, newItem);
+                  }
+                  free(newItem);
+               }
+            }
+            free(item);
+         }
+      }
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 }
@@ -329,9 +554,20 @@ int get_file_user_id(int idx)
    int id = -1;
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(MaxPersHandle >= idx && idx > 0 )
+      if(gFileHandleTree != NULL)
       {
-         id = gFileHandleArray[idx].userId;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               id = foundItem->value.fileHandle.userId;
+            }
+            free(item);
+         }
       }
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
@@ -342,20 +578,41 @@ int get_file_user_id(int idx)
 //----------------------------------------------------------
 
 int set_ossfile_handle_data(int idx, PersistencePermission_e permission, int backupCreated,
-		                   const char* backup, const char* csumPath, char* filePath)
+		                     const char* backup, const char* csumPath, char* filePath)
 {
 	int rval = 0;
 
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-		if(idx < MaxPersHandle && idx > 0 )
-		{
-			strcpy(gOssHandleArray[idx].backupPath, backup);
-			strcpy(gOssHandleArray[idx].csumPath,   csumPath);
-			gOssHandleArray[idx].backupCreated = backupCreated;
-			gOssHandleArray[idx].permission = permission;
-			gOssHandleArray[idx].filePath = filePath; // check to do if this works
-		}
+	   FileHandleTreeItem_s* item = NULL;
+
+      if(gOssFileHandleTree == NULL)
+      {
+         gOssFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
+      }
+
+      item = malloc(sizeof(FileHandleTreeItem_s));    // assign key and value to the rbtree item
+      if(item != NULL)
+      {
+         item->key = idx;
+
+         item->value.fileHandle.permission    = permission;
+         item->value.fileHandle.backupCreated = backupCreated;
+         item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+         item->value.fileHandle.userId        = 0;             // default value
+         item->value.fileHandle.filePath      = filePath;
+
+         strncpy(item->value.fileHandle.backupPath, backup, DbPathMaxLen);
+         item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+         strncpy(item->value.fileHandle.csumPath, csumPath, DbPathMaxLen);
+         item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+         jsw_rbinsert(gOssFileHandleTree, item);
+
+         free(item);
+         rval = 0;
+      }
+
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
 
@@ -369,14 +626,25 @@ int get_ossfile_permission(int idx)
 
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-		if(idx < MaxPersHandle && idx > 0 )
-		{
-			permission =  gOssHandleArray[idx].permission;
-		}
-		else
-		{
-			permission = -1;
-		}
+	   if(gOssFileHandleTree != NULL)
+      {
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               permission = foundItem->value.fileHandle.permission;
+            }
+            else
+            {
+               permission = -1;
+            }
+            free(item);
+         }
+      }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
 
@@ -389,10 +657,20 @@ char* get_ossfile_backup_path(int idx)
    char* charPtr = NULL;
    if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
    {
-
-      if(idx < MaxPersHandle && idx > 0 )
+      if(gOssFileHandleTree != NULL)
       {
-         charPtr = gOssHandleArray[idx].backupPath;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               charPtr = foundItem->value.fileHandle.backupPath;
+            }
+            free(item);
+         }
       }
       pthread_mutex_unlock(&gOssFileHandleAccessMtx);
    }
@@ -406,9 +684,20 @@ char* get_ossfile_file_path(int idx)
    if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
    {
 
-      if(idx < MaxPersHandle && idx > 0 )
+      if(gOssFileHandleTree != NULL)
       {
-         charPtr = gOssHandleArray[idx].filePath;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               charPtr = foundItem->value.fileHandle.filePath;
+            }
+            free(item);
+         }
       }
       pthread_mutex_unlock(&gOssFileHandleAccessMtx);
    }
@@ -419,9 +708,51 @@ void set_ossfile_file_path(int idx, char* file)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-      if(idx < MaxPersHandle && idx > 0 )
+	   if(gFileHandleTree != NULL)
       {
-         gOssHandleArray[idx].filePath = file;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+            if(foundItem == NULL)
+            {
+               item->value.fileHandle.filePath      = file;
+
+
+               item->value.fileHandle.backupCreated = 0;             // set to 0 by default
+               item->value.fileHandle.permission    = -1;
+               item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+               item->value.fileHandle.userId        = 0;             // default value
+               memset(item->value.fileHandle.csumPath  , 0, DbResIDMaxLen);
+               item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+               memset(item->value.fileHandle.backupPath, 0, DbResIDMaxLen);
+               item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+
+               jsw_rbinsert(gFileHandleTree, item);
+            }
+            else
+            {
+               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+               if(newItem != NULL)
+               {
+                  if(newItem->value.payload != NULL)
+                  {
+                     memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+                     jsw_rberase(gFileHandleTree, foundItem);
+
+                     newItem->key = idx;
+                     newItem->value.fileHandle.filePath = file;
+                     jsw_rbinsert(gFileHandleTree, newItem);
+                  }
+                  free(newItem);
+               }
+            }
+            free(item);
+         }
       }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
@@ -433,9 +764,20 @@ char* get_ossfile_checksum_path(int idx)
    char* charPtr = NULL;
    if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
    {
-      if(idx < MaxPersHandle && idx > 0 )
+      if(gOssFileHandleTree != NULL)
       {
-         charPtr = gOssHandleArray[idx].csumPath;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               charPtr = foundItem->value.fileHandle.csumPath;
+            }
+            free(item);
+         }
       }
       pthread_mutex_unlock(&gOssFileHandleAccessMtx);
    }
@@ -447,9 +789,46 @@ void set_ossfile_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-      if(idx < MaxPersHandle && idx > 0 )
+	   if(gOssFileHandleTree != NULL)
       {
-         gOssHandleArray[idx].backupCreated = status;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+            if(foundItem == NULL)
+            {
+               item->value.fileHandle.backupCreated = status;
+
+               item->value.fileHandle.permission    = PersistencePermission_LastEntry;
+               item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+               item->value.fileHandle.userId        = 0;             // default value
+               item->value.fileHandle.filePath      = NULL;
+
+               jsw_rbinsert(gOssFileHandleTree, item);
+            }
+            else
+            {
+               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+               if(newItem != NULL)
+               {
+                  if(newItem->value.payload != NULL)
+                  {
+                     memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+                     newItem->key = idx;
+                     newItem->value.fileHandle.backupCreated = status;
+
+                     jsw_rberase(gFileHandleTree, foundItem);
+
+                     jsw_rbinsert(gFileHandleTree, newItem);
+                  }
+                  free(newItem);
+               }
+            }
+            free(item);
+         }
       }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
@@ -461,9 +840,20 @@ int get_ossfile_backup_status(int idx)
 
    if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
    {
-      if(idx < MaxPersHandle && idx > 0 )
+      if(gOssFileHandleTree != NULL)
       {
-         rval = gOssHandleArray[idx].backupCreated;
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+         if(item != NULL)
+         {
+            FileHandleTreeItem_s* foundItem = NULL;
+            item->key = idx;
+            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+            if(foundItem != NULL)
+            {
+               rval = foundItem->value.fileHandle.backupCreated;
+            }
+            free(item);
+         }
       }
       pthread_mutex_unlock(&gOssFileHandleAccessMtx);
    }

@@ -37,8 +37,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include <dlt/dlt.h>
-#include <dlt/dlt_common.h>
+#include <dlt.h>
+#include <dlt_common.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -18,11 +18,6 @@
 
 #include "persistence_client_library_data_organization.h"
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-
 /// path for the backup location
 const char* gBackupPrefix  	= PERS_ORG_ROOT_PATH "/mnt-backup/";
 

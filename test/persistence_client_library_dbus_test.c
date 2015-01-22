@@ -22,8 +22,8 @@
 
 #include <stdio.h>
 
-#include <dlt/dlt.h>
-#include <dlt/dlt_common.h>
+#include <dlt.h>
+#include <dlt_common.h>
 
 
 int myChangeCallback(pclNotification_s * notifyStruct)

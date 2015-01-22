@@ -110,5 +110,4 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
 void process_send_pas_register(DBusConnection* conn, int regType, int notificationFlag);
 
 
-
 #endif /* PERSISTENCE_CLIENT_LIBRARY_DBUS_CMD_H_ */

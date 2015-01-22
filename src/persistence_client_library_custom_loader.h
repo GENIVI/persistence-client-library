@@ -20,7 +20,8 @@
  */
 
 #include "../include/persistence_client_custom.h"
-#include <persComRct.h>
+
+#include "persistence_client_library_data_organization.h"
 
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersistenceCustomLibs_e
@@ -50,7 +51,7 @@ typedef enum _PersistenceCustomLibs_e
 
 
 /// enumerator fo custom library defines
-enum _PersCustomLibDefines_e
+typedef enum _PersCustomLibDefines_e
 {
    /// the custom library path size
    PersCustomPathSize = 12
