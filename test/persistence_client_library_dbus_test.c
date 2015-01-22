@@ -47,6 +47,9 @@ int main(int argc, char *argv[])
    int ret = 0;
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
+   (void)argc;
+   (void)argv;
+
    printf("Dbus interface test application\n");
 
    /// debug log and trace (DLT) setup

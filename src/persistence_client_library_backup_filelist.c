@@ -69,10 +69,10 @@ static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char
 
    while(i < customConfigFileSize)
    {
-      if(   ((unsigned int)(*tmpPointer) < 127)
-         && ((unsigned int)*tmpPointer >= 0))
+      if(   ((int)(*tmpPointer) < 127)
+         && ((int)*tmpPointer >= 0))
       {
-         if(1 != gCharLookup[(unsigned int)*tmpPointer])
+         if(1 != gCharLookup[(int)*tmpPointer])
          {
             *tmpPointer = 0;
 
@@ -116,7 +116,7 @@ static void createAndStoreFileNames()
                item->key = pclCrc32(0, (unsigned char*)path, strlen(path));
                // we don't need the path name here, we just need to know that this key is available in the tree
                item->value = "";
-               jsw_rbinsert(gRb_tree_bl, item);
+               (void)jsw_rbinsert(gRb_tree_bl, item);
                free(item);
             }
             i+=1;
@@ -166,7 +166,7 @@ int readBlacklistConfigFile(const char* filename)
 
             createAndStoreFileNames();    // create filenames and store them in the tree
 
-            munmap(configFileMap, buffer.st_size);
+            (void)munmap(configFileMap, buffer.st_size);
 
             close(fd);
          }
@@ -278,11 +278,13 @@ void  key_val_rel(void *p )
    key_value_s* rel = NULL;
    rel = (key_value_s*)p;
 
-   if(rel->value != NULL)
-      free(rel->value);
-
    if(rel != NULL)
+   {
+      if(rel->value != NULL)
+         free(rel->value);
+
       free(rel);
+   }
 }
 
 
@@ -292,7 +294,7 @@ static int pclBackupDoFileCopy(int srcFd, int dstFd)
    int rval = 0;
    memset(&buf, 0, sizeof(buf));
 
-   fstat(srcFd, &buf);
+   (void)fstat(srcFd, &buf);
    rval = (int)sendfile(dstFd, srcFd, 0, buf.st_size);
 
    // Reset file position pointer of destination file 'dstFd'
@@ -310,6 +312,7 @@ int pclCreateFile(const char* path, int chached)
    int numTokens = 0, i = 0, validPath = 1;
    int handle = -1;
 
+   thePath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
    strncpy(thePath, path, DbPathMaxLen);
 
    tokenArray[numTokens++] = strtok(thePath, delimiters);
@@ -340,7 +343,7 @@ int pclCreateFile(const char* path, int chached)
          // create folders
          strncat(createPath, "/", DbPathMaxLen-1);
          strncat(createPath, tokenArray[i], DbPathMaxLen-1);
-         mkdir(createPath, 0744);
+         (void)mkdir(createPath, 0744);
       }
       // finally create the file
       strncat(createPath, "/", DbPathMaxLen-1);
@@ -522,9 +525,9 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
 
    if(handle == -1)     // if we are in an inconsistent state: delete file, backup and checksum
    {
-      remove(origPath);
-      remove(backupPath);
-      remove(csumPath);
+      (void)remove(origPath);
+      (void)remove(backupPath);
+      (void)remove(csumPath);
    }
 
    return handle;
@@ -559,6 +562,7 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    {
       int handle = -1;
       char pathToCreate[DbPathMaxLen] = {0};
+      pathToCreate[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
       strncpy(pathToCreate, dstPath, DbPathMaxLen);
 
       handle = pclCreateFile(pathToCreate, 0);

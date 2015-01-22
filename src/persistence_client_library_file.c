@@ -216,6 +216,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       length = gWTPathPrefixSize;
    }
 
+   fileSubPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
    strncpy(fileSubPath, dbPath+length, DbPathMaxLen);
    snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
    snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
@@ -851,7 +852,7 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 		struct stat buf;
 		memset(&buf, 0, sizeof(buf));
 
-		fstat(defaultHandle, &buf);
+		(void)fstat(defaultHandle, &buf);
 		rval = sendfile(handle, defaultHandle, 0, buf.st_size);
 		if(rval != -1)
 		{

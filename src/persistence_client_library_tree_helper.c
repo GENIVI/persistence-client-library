@@ -73,10 +73,7 @@ void* fh_key_val_dup(void *p)
    {
      dst->key = src->key;               // duplicate hash key
 
-     if(dst->value.payload != NULL)
-     {
-        memcpy(dst->value.payload , src->value.payload, sizeof(FileHandleData_u) ); // duplicate value
-     }
+     memcpy(dst->value.payload , src->value.payload, sizeof(FileHandleData_u) ); // duplicate value
    }
 
    return dst;
@@ -139,10 +136,7 @@ void* kh_key_val_dup(void *p)
    {
      dst->key = src->key;               // duplicate hash key
 
-     if(dst->value.payload != NULL)
-     {
-        memcpy(dst->value.payload , src->value.payload, sizeof(KeyHandleData_u) ); // duplicate value
-     }
+     memcpy(dst->value.payload , src->value.payload, sizeof(KeyHandleData_u) ); // duplicate value
    }
    return dst;
 }

@@ -74,7 +74,13 @@ PersistenceRCT_e get_table_id(int ldbid, int* groupId)
 
 int get_resource_cfg_table_by_idx(int i)
 {
-   return gResource_table[i];
+   int idx = -1;
+
+   if(i > 0 && i < PrctDbTableSize)
+   {
+      idx = gResource_table[i];
+   }
+   return idx;
 }
 
 
@@ -87,7 +93,7 @@ void invalidate_resource_cfg_table(int i)
 
 int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
-   int arrayIdx = 0;
+   int arrayIdx = 0, rval = -1;
 
    // create array index: index is a combination of resource config table type and group
    arrayIdx = rct + group;
@@ -125,9 +131,11 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
              gResourceOpen[arrayIdx] = 1 ;
          }
       }
+
+      rval = gResource_table[arrayIdx];
    }
 
-   return gResource_table[arrayIdx];
+   return rval;
 }
 
 
