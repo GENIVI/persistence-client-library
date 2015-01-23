@@ -499,10 +499,9 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    dstFd = open(dstPath, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
    if(dstFd != -1)
    {
-      off_t curPos = 0;
-
-      curPos = lseek(srcfd, 0, SEEK_CUR);    // remember the current position
-      lseek(srcfd, 0, SEEK_SET);             // set to beginning of file
+      off_t curPos = lseek(srcfd, 0, SEEK_CUR);    // remember the current position
+      if(curPos != 0)
+         lseek(srcfd, 0, SEEK_SET);                   // set to beginning of file
 
       // copy data from one file to another
       if((readSize = pclBackupDoFileCopy(srcfd, dstFd)) == -1)
@@ -543,13 +542,10 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 
          if(buf != 0)
          {
-            off_t curPos = 0;
-            curPos = lseek(fd, 0, SEEK_CUR);    // remember the current position
+            off_t curPos = lseek(fd, 0, SEEK_CUR);    // remember the current position
 
             if(curPos != 0)
-            {
-               lseek(fd, 0, SEEK_SET);          // set to beginning of the file
-            }
+               lseek(fd, 0, SEEK_SET);                // set to beginning of the file
 
             while((rval = read(fd, buf, statBuf.st_size)) > 0)
             {

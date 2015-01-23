@@ -87,10 +87,16 @@ int pclFileClose(int fd)
             if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
             {
                // remove backup file
-               remove(get_file_backup_path(fd));  // we don't care about return value
+               if(remove(get_file_backup_path(fd)) == -1)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"), DLT_STRING(strerror(errno)));
+               }
 
                // remove checksum file
-               remove(get_file_checksum_path(fd));    // we don't care about return value
+               if(remove(get_file_checksum_path(fd)) == -1)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - csum remove failed!"), DLT_STRING(strerror(errno)) );
+               }
 
             }
             __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
@@ -471,7 +477,7 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
             rval = remove(dbPath);
             if(rval == -1)
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileRemove - remove()"), DLT_STRING(strerror(errno)) );
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileRemove - remove()"), DLT_STRING(resource_id), DLT_STRING(strerror(errno)) );
             }
          }
          else
@@ -777,10 +783,16 @@ int pclFileReleasePath(int pathHandle)
          if(permission != PersistencePermission_ReadOnly)
          {
             // remove backup file
-            remove(get_ossfile_backup_path(pathHandle));  // we don't care about return value
+            if(remove(get_ossfile_backup_path(pathHandle)) == -1)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"));
+            }
 
             // remove checksum file
-            remove(get_ossfile_checksum_path(pathHandle));    // we don't care about return value
+            if(remove(get_ossfile_checksum_path(pathHandle)) == -1)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"), DLT_STRING(strerror(errno)) );
+            }
          }
          free(get_ossfile_file_path(pathHandle));
 
