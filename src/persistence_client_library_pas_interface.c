@@ -100,8 +100,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
    dbus_error_init (&error);
 
    if (!dbus_message_get_args(message, &error, DBUS_TYPE_INT32 , &request,
-                                               DBUS_TYPE_INT32 , &requestID,
-                                               DBUS_TYPE_INVALID))
+                                               DBUS_TYPE_INT32 , &requestID, DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
 
@@ -148,8 +147,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
 int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
 {
-   int persistenceMode = 0;
-   int errorCode = 0;
+   int persistenceMode = 0, errorCode = 0;
 
    DBusMessage *reply;
    DBusError error;

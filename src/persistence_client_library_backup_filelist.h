@@ -20,6 +20,7 @@
  */
 
 #include "persistence_client_library_handle.h"
+#include "persistence_client_library_tree_helper.h"
 
 
 /**
@@ -33,7 +34,8 @@ int readBlacklistConfigFile(const char* filename);
 
 
 /**
- * @brief create the file
+ * @brief Create the file under the given path.
+ *        If the path does not exist, the folders will be created
  *
  * @param path of the file to be created
  * @param cached 1 if file should be cached,
@@ -45,7 +47,8 @@ int pclCreateFile(const char* path, int chached);
 
 
 /**
- * @brief create a backup copy of a file
+ * @brief Create a backup copy of a file under the given path.
+ *        If the path does not exist, the folders will be created.
  *
  * @param srcPath the path of the file
  * @param srcfd the file descriptor of the file
@@ -56,16 +59,6 @@ int pclCreateFile(const char* path, int chached);
  */
 int pclCreateBackup(const char* srcPath, int srcfd, const char* csumPath, const char* csumBuf);
 
-
-/**
- * @brief recover file form backup
- *
- * @param backupFd the file descriptor of the backup file
- * @param original the path of the file to be recovered
- *
- * @return 0 on success -1 on error
- */
-int pclRecoverFromBackup(int backupFd, const char* original);
 
 
 /**

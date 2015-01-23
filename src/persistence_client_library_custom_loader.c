@@ -44,12 +44,11 @@ int(* gPlugin_callback_async_t)(int errcode);
 
 static void fillCustomCharTokenArray(unsigned int customConfigFileSize, char* fileMap)
 {
-   unsigned int i=0;
-   int   customTokenCounter = 0;
-   int blankCount=0;
+   unsigned int i = 0;
+   int   customTokenCounter = 0, blankCount=0;
    char* tmpPointer = fileMap;
 
-   gpCustomTokenArray[blankCount] = tmpPointer;     // set the first pointer to the start of the file
+   gpCustomTokenArray[0] = tmpPointer;     // set the first pointer to the start of the file
    blankCount++;
 
    while(i < customConfigFileSize)
@@ -257,7 +256,7 @@ int get_custom_libraries()
 
          fillCustomCharTokenArray(buffer.st_size, customConfFileMap);
 
-         while( i < TOKENARRAYSIZE )
+         while( i < (TOKENARRAYSIZE-3) )
          {
             if(gpCustomTokenArray[i] != 0 && gpCustomTokenArray[i+1] != 0 && gpCustomTokenArray[i+2] != 0 &&gpCustomTokenArray[i+3] != 0 )
             {
@@ -270,13 +269,6 @@ int get_custom_libraries()
                gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
                gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);
                gCustomLibArray[libId].valid        = 1;  // marks as valid;
-   #if 0
-               // debug
-               printf("     1. => %s => %d \n",   gpCustomTokenArray[i],   libId);
-               printf("     2. => %s => %s \n",   gpCustomTokenArray[i+1], gCustomLibArray[libId].libname);
-               printf("     3. => %s => %d \n",   gpCustomTokenArray[i+2], (int)gCustomLibArray[libId].initFunction);
-               printf("     4. => %s => %d \n\n", gpCustomTokenArray[i+3], (int)gCustomLibArray[libId].loadingType);
-   #endif
             }
             else
             {

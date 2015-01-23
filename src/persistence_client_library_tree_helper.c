@@ -26,6 +26,8 @@ jsw_rbtree_t *gFileHandleTree = NULL;
 
 jsw_rbtree_t *gOssFileHandleTree = NULL;
 
+jsw_rbtree_t *gRb_tree_bl = NULL;
+
 /**
  * File handle helper functions
  */
@@ -151,4 +153,72 @@ void  kh_key_val_rel(void *p)
    if(rel != NULL)
       free(rel);
 }
+
+
+/// compare function for tree key_value_s item
+int key_val_cmp(const void *p1, const void *p2 )
+{
+   int rval = -1;
+   key_value_s* first;
+   key_value_s* second;
+
+   first  = (key_value_s*)p1;
+   second = (key_value_s*)p2;
+
+   if(second->key == first->key)
+   {
+      rval = 0;
+   }
+   else if(second->key < first->key)
+   {
+      rval = -1;
+   }
+   else
+   {
+      rval = 1;
+   }
+
+   return rval;
+ }
+
+/// duplicate function for key_value_s item
+void* key_val_dup(void *p)
+{
+   int value_size = 0;
+   key_value_s* src = NULL;
+   key_value_s* dst = NULL;
+
+   src = (key_value_s*)p;
+   value_size = strlen(src->value)+1;
+
+   // allocate memory for node
+   dst = malloc(sizeof(key_value_s));
+   if(dst != NULL)
+   {
+     dst->key = src->key;               // duplicate hash key
+
+     dst->value = malloc(value_size);  // duplicate value
+     if(dst->value != NULL)
+        strncpy(dst->value, src->value, value_size);
+   }
+
+   return dst;
+}
+
+/// release function for key_value_s item
+void  key_val_rel(void *p )
+{
+   key_value_s* rel = NULL;
+   rel = (key_value_s*)p;
+
+   if(rel != NULL)
+   {
+      if(rel->value != NULL)
+         free(rel->value);
+
+      free(rel);
+   }
+}
+
+
 

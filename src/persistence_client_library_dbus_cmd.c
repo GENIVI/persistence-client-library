@@ -15,7 +15,7 @@
  * @brief          Implementation of the persistence client library dbus commands.
  * @see
  */
-															/* For dlclose() */
+
 #include "persistence_client_library_dbus_cmd.h"
 
 #include "persistence_client_library_handle.h"
@@ -128,15 +128,12 @@ void process_send_notification_signal(DBusConnection* conn, unsigned int notifyL
       snprintf(seatArray,  DbusSubMatchSize, "%u", notifySeatNo);
 
       //printf("process_send_Notification_Signal => key: %s | lbid: %d | gUserNo: %d | gSeatNo: %d | gReason: %d \n", notifyKey, notifyLdbid, notifyUserNo, notifySeatNo, notifyReason);
-      message = dbus_message_new_signal(gPersAdminConsumerPath,
-      		                            gDbusPersAdminConsInterface,
-                                        notifyReasonString);
+      message = dbus_message_new_signal(gPersAdminConsumerPath, gDbusPersAdminConsInterface, notifyReasonString);
 
       ret = dbus_message_append_args(message, DBUS_TYPE_STRING, &pnotifyKey,
                                               DBUS_TYPE_STRING, &pldbidArra,
                                               DBUS_TYPE_STRING, &puserArray,
-                                              DBUS_TYPE_STRING, &pseatArray,
-                                              DBUS_TYPE_INVALID);
+                                              DBUS_TYPE_STRING, &pseatArray, DBUS_TYPE_INVALID);
       if(ret == TRUE)
       {
          if(conn != NULL)  // Send the signal
@@ -262,8 +259,7 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
       if(message != NULL)
       {
          dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
-                                           DBUS_TYPE_INT32,  &status,
-                                           DBUS_TYPE_INVALID);
+                                           DBUS_TYPE_INT32,  &status, DBUS_TYPE_INVALID);
 
          if(!dbus_connection_send(conn, message, 0))
          {
@@ -315,8 +311,7 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
             dbus_message_append_args(message, DBUS_TYPE_STRING, &busName,  // bus name
                                               DBUS_TYPE_STRING, &gPersAdminConsumerPath,
                                               DBUS_TYPE_INT32,  &notificationFlag,
-                                              DBUS_TYPE_UINT32, &gTimeoutMs,
-                                              DBUS_TYPE_INVALID);
+                                              DBUS_TYPE_UINT32, &gTimeoutMs, DBUS_TYPE_INVALID);
 
             dbus_connection_send_with_reply(conn,           // the connection
                                             message,        // the message to write
@@ -420,9 +415,7 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
       if(message != NULL)
       {
          dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
-                                           DBUS_TYPE_INT32, &status,
-                                           DBUS_TYPE_INVALID);
-
+                                           DBUS_TYPE_INT32, &status, DBUS_TYPE_INVALID);
 
          if(!dbus_connection_send(conn, message, 0))
          {

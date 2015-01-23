@@ -334,7 +334,6 @@ char* get_file_checksum_path(int idx)
             free(item);
          }
       }
-
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 	return charPtr;
@@ -384,7 +383,6 @@ void set_file_backup_status(int idx, int status)
             free(item);
          }
       }
-
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
 }
@@ -409,7 +407,6 @@ int get_file_backup_status(int idx)
             free(item);
          }
       }
-
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 	return backup;
@@ -605,7 +602,6 @@ int set_ossfile_handle_data(int idx, PersistencePermission_e permission, int bac
          free(item);
          rval = 0;
       }
-
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
 
@@ -712,7 +708,6 @@ void set_ossfile_file_path(int idx, char* file)
             if(foundItem == NULL)
             {
                item->value.fileHandle.filePath      = file;
-
 
                item->value.fileHandle.backupCreated = 0;             // set to 0 by default
                item->value.fileHandle.permission    = -1;

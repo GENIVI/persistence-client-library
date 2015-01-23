@@ -36,6 +36,9 @@ extern jsw_rbtree_t *gFileHandleTree;
 /// tree to store OSS file handle information
 extern jsw_rbtree_t *gOssFileHandleTree;
 
+/// the rb tree
+extern jsw_rbtree_t *gRb_tree_bl;
+
 
 /// key handle data union definition
 typedef union KeyHandleData_u_
@@ -82,6 +85,14 @@ typedef struct _FileHandleTreeItem_s
    FileHandleData_u value;
 
 } FileHandleTreeItem_s;
+
+
+/// structure definition for a key value item
+typedef struct _key_value_s
+{
+   unsigned int key;
+   char*        value;
+}key_value_s;
 
 
 
@@ -139,6 +150,35 @@ void* kh_key_val_dup(void *p);
  * @param p pointer tp the item to release
  */
 void  kh_key_val_rel(void *p );
+
+
+/**
+ * @brief Compare function for key tree item
+ *
+ * @param p1 pointer to the first item to compare
+ * @param p2 pointer to the second item to compare
+ *
+ * @return 0 if key is equal; -1 if p1 < p2; 1 if p1 > p2
+ */
+int key_val_cmp(const void *p1, const void *p2 );
+
+
+/**
+ * @brief Duplicate function for key tree item
+ *
+ * @param p the pointer of the item to duplicate
+ *
+ * @return pointer to the duplicated item, on failure NULL
+ */
+void* key_val_dup(void *p);
+
+
+/**
+ * @brief Release function for key tree item
+ *
+ * @param p pointer tp the item to release
+ */
+void  key_val_rel(void *p);
 
 
 

@@ -40,8 +40,7 @@ extern int doAppcheck(void);
 
 int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no)
 {
-   int rval   = 0;
-   int handle = EPERS_NOT_INITIALIZED;
+   int rval   = 0, handle = EPERS_NOT_INITIALIZED;
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -273,8 +272,7 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
             if ('\0' != persHandle.resource_id[0])
             {
              size = pclKeyWriteData(persHandle.ldbid,   persHandle.resource_id,
-                                    persHandle.user_no, persHandle.seat_no,
-                                       buffer, buffer_size);
+                                    persHandle.user_no, persHandle.seat_no, buffer, buffer_size);
             }
             else
             {
@@ -428,7 +426,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
                && (dbContext.configKey.type == PersistenceResourceType_key) )
             {
 
-               if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+               if(dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
                {
                      data_size = persistence_get_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
                }

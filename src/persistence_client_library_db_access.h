@@ -28,11 +28,9 @@ extern "C" {
 
 
 #include "persistence_client_library_data_organization.h"
-
-//#include "persistence_client_library_rc_table.h"
-#include <persComRct.h>
-
 #include "../include/persistence_client_library_key.h"
+
+#include <persComRct.h>
 
 
 
@@ -156,15 +154,6 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
 
 
 /**
- * @brief close the database for the given storage type
- *
- * @param info persistence information
- */
-//void database_close(PersistenceInfo_s* info);
-
-
-
-/**
  * @brief close all databases
  */
 void database_close_all();
@@ -204,6 +193,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
  * @brief close all open persistence resource configuration tables
  */
 void pers_rct_close_all();
+
 
 #ifdef __cplusplus
 }

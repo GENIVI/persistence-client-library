@@ -26,6 +26,7 @@
 /// enumerator used to identify the policy to manage the data
 typedef enum _PersistenceCustomLibs_e
 {
+   /// used for the default library
    PersCustomLib_default     = 0,
    /// predefined custom library for early persistence
    PersCustomLib_early       = 1,
@@ -50,11 +51,11 @@ typedef enum _PersistenceCustomLibs_e
 } PersistenceCustomLibs_e;
 
 
-/// enumerator fo custom library defines
+/// enumerator for custom library defines
 typedef enum _PersCustomLibDefines_e
 {
    /// the custom library path size
-   PersCustomPathSize = 12
+   PersCustomPathSize = 24
 
 } PersCustomLibDefines_e;
 

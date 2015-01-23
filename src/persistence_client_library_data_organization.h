@@ -99,7 +99,7 @@ typedef enum _PersNotifyRegPolicy_e
    Notify_unregister = 1,
 
    /// last entry
-   Notify_lastEntry,
+   Notify_lastEntry
 } PersNotifyRegPolicy_e;
 
 

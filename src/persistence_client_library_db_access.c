@@ -37,30 +37,9 @@ static int gHandlesDBCreated[DbTableSize][PersistenceDB_LastEntry] = { {0} };
 int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* context, unsigned int reason);
 
 
-#if 0
-char* pers_get_raw_key(char *key)
-{
-   char *temp = NULL;
-   char *rawKey = key;
-
-   temp = strrchr(key, (int)'/');
-   
-   if (NULL != temp)
-   {
-   	  rawKey = temp + 1;
-   }
-
-   return rawKey;
-}
-#endif
-
-
-
-
 static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 {
-   int arrayIdx = 0;
-   int handleDB = -1;
+   int arrayIdx = 0, handleDB = -1;
 
    // create array index: index is a combination of resource configuration table type and group
    arrayIdx = info->configKey.storage + info->context.ldbid ;
@@ -126,8 +105,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job)
 {
    PersDefaultType_e i = PersDefaultType_Configurable;
-   int handleDefaultDB = -1;
-   int read_size = EPERS_NOKEY;
+   int handleDefaultDB = -1, read_size = EPERS_NOKEY;
    char dltMessage[DbPathMaxLen] = {0};
 
    for(i=(int)PersistenceDB_confdefault; i<(int)PersistenceDB_LastEntry; i++)
@@ -184,29 +162,6 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
 
 
-#if 0
-void database_close(PersistenceInfo_s* info)
-{
-   int arrayIdx = info->configKey.storage + info->context.ldbid;
-
-   if(info->configKey.storage <= PersistenceStorage_shared )
-   {
-      int iErrorCode = plugin_persComDbClose(gHandlesDB[arrayIdx][info->configKey.policy]) ;
-      if (iErrorCode < 0)
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close ==> persComDbClose() failed"));
-      }
-      else
-      {
-        gHandlesDBCreated[arrayIdx][info->configKey.policy] = 0;
-      }
-   }
-   else
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("database_close ==> invalid storage type"), DLT_INT(info->context.ldbid ));
-   }
-}
-#endif
 void database_close_all()
 {
    int i = 0, j = 0;
@@ -235,8 +190,7 @@ void database_close_all()
 
 int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
 {
-   int read_size = -1;
-   int ret_defaults = -1;
+   int read_size = -1, ret_defaults = -1;
 
    if(   PersistenceStorage_shared == info->configKey.storage
       || PersistenceStorage_local == info->configKey.storage)
@@ -374,7 +328,6 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
                }
             }
          }
-
       }
       else
       {
@@ -384,8 +337,8 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
-   	int available = 0;
-      int idx = custom_client_name_to_id(dbPath, 1);
+   	int available = 0, idx = custom_client_name_to_id(dbPath, 1);
+
       if(idx < PersCustomLib_LastEntry )
       {
       	if(gPersCustomFuncs[idx].custom_plugin_set_data == NULL)
@@ -462,8 +415,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
 
 int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info)
 {
-   int read_size = -1;
-   int ret_defaults = -1;
+   int read_size = -1, ret_defaults = -1;
 
    if(   PersistenceStorage_shared == info->configKey.storage
       || PersistenceStorage_local == info->configKey.storage)
@@ -481,8 +433,8 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
    }
    else if(PersistenceStorage_custom == info->configKey.storage)   // custom storage implementation via custom library
    {
-   	int available = 0;
-      int idx = custom_client_name_to_id(dbPath, 1);
+   	int available = 0, idx = custom_client_name_to_id(dbPath, 1);
+
       if(idx < PersCustomLib_LastEntry )
       {
       	if(gPersCustomFuncs[idx].custom_plugin_get_size == NULL )
@@ -595,8 +547,8 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
    }
    else   // custom storage implementation via custom library
    {
-   	int available = 0;
-      int idx = custom_client_name_to_id(dbPath, 1);
+   	int available = 0, idx = custom_client_name_to_id(dbPath, 1);
+
       if(idx < PersCustomLib_LastEntry)
       {
       	if(gPersCustomFuncs[idx].custom_plugin_delete_data == NULL )
@@ -752,7 +704,6 @@ void pers_rct_close_all()
 			{
 				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - Err close db => index:"), DLT_INT(i));
 			}
-
 			invalidate_resource_cfg_table(i);
    	}
    }

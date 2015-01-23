@@ -40,7 +40,7 @@
 
 
 /// debug log and trace (DLT) setup
-DLT_DECLARE_CONTEXT(gPclDLTContext);
+DLT_DECLARE_CONTEXT(gPclDLTContext)
 
 
 /// global variable to store lifecycle shutdown mode
@@ -146,10 +146,9 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
+   char blacklistPath[DbPathMaxLen] = {0};
 
    gShutdownMode = shutdownMode;
-
-   char blacklistPath[DbPathMaxLen] = {0};
 
    doInitAppcheck(appName);      // check if we have a trusted application
 

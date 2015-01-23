@@ -22,11 +22,9 @@
 #include "rbtree.h"
 
 
-
 #if USE_FILECACHE
    #include <persistence_file_cache.h>
 #endif
-
 
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -35,55 +33,36 @@
 #include <sys/sendfile.h>
 
 
-/// structure definition for a key value item
-typedef struct _key_value_s
-{
-   unsigned int key;
-   char*        value;
-}key_value_s;
-
-
-static void  key_val_rel(void *p);
-
-static void* key_val_dup(void *p);
-
 static char* gpTokenArray[TOKENARRAYSIZE] = {0};
-
-/// the rb tree
-static jsw_rbtree_t *gRb_tree_bl = NULL;
 
 
 // local function prototypes
 static int need_backup_key(unsigned int key);
-static int key_val_cmp(const void *p1, const void *p2 );
+int pclRecoverFromBackup(int backupFd, const char* original);
+
 
 static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char* fileMap)
 {
    unsigned int i=0;
-   int tokenCounter = 0;
-   int blankCount=0;
+   int tokenCounter = 0, blankCount = 0;
    char* tmpPointer = fileMap;
 
-   gpTokenArray[blankCount] = tmpPointer;    // set the first pointer to the start of the file
+   gpTokenArray[0] = tmpPointer;    // set the first pointer to the start of the file
    blankCount++;
 
    while(i < customConfigFileSize)
    {
-      if(   ((int)(*tmpPointer) < 127)
-         && ((int)*tmpPointer >= 0))
+      if(1 != gCharLookup[(int)*tmpPointer])
       {
-         if(1 != gCharLookup[(int)*tmpPointer])
-         {
-            *tmpPointer = 0;
+         *tmpPointer = 0;
 
-            if(blankCount >= TOKENARRAYSIZE)    // check if we are at the end of the token array
-            {
-               break;
-            }
-            gpTokenArray[blankCount] = tmpPointer+1;
-            blankCount++;
-            tokenCounter++;
+         if(blankCount >= TOKENARRAYSIZE)    // check if we are at the end of the token array
+         {
+            break;
          }
+         gpTokenArray[blankCount] = tmpPointer+1;
+         blankCount++;
+         tokenCounter++;
       }
       tmpPointer++;
       i++;
@@ -102,7 +81,7 @@ static void createAndStoreFileNames()
 
    if(gRb_tree_bl != NULL)
    {
-      while( i < TOKENARRAYSIZE )
+      while( i < (TOKENARRAYSIZE-1) )
       {
          if(gpTokenArray[i+1]  != 0 )
          {
@@ -222,83 +201,18 @@ int need_backup_key(unsigned int key)
 }
 
 
-/// compare function for tree key_value_s item
-int key_val_cmp(const void *p1, const void *p2 )
-{
-   int rval = -1;
-   key_value_s* first;
-   key_value_s* second;
-
-   first  = (key_value_s*)p1;
-   second = (key_value_s*)p2;
-
-   if(second->key == first->key)
-   {
-      rval = 0;
-   }
-   else if(second->key < first->key)
-   {
-      rval = -1;
-   }
-   else
-   {
-      rval = 1;
-   }
-
-   return rval;
- }
-
-/// duplicate function for key_value_s item
-void* key_val_dup(void *p)
-{
-   int value_size = 0;
-   key_value_s* src = NULL;
-   key_value_s* dst = NULL;
-
-   src = (key_value_s*)p;
-   value_size = strlen(src->value)+1;
-
-   // allocate memory for node
-   dst = malloc(sizeof(key_value_s));
-   if(dst != NULL)
-   {
-     dst->key = src->key;               // duplicate hash key
-
-     dst->value = malloc(value_size);  // duplicate value
-     if(dst->value != NULL)
-        strncpy(dst->value, src->value, value_size);
-   }
-
-   return dst;
-}
-
-/// release function for key_value_s item
-void  key_val_rel(void *p )
-{
-   key_value_s* rel = NULL;
-   rel = (key_value_s*)p;
-
-   if(rel != NULL)
-   {
-      if(rel->value != NULL)
-         free(rel->value);
-
-      free(rel);
-   }
-}
-
-
 static int pclBackupDoFileCopy(int srcFd, int dstFd)
 {
    struct stat buf;
-   int rval = 0;
+   int rval = -1;
    memset(&buf, 0, sizeof(buf));
 
-   (void)fstat(srcFd, &buf);
-   rval = (int)sendfile(dstFd, srcFd, 0, buf.st_size);
-
-   // Reset file position pointer of destination file 'dstFd'
-   lseek(dstFd, 0, SEEK_SET);
+   if(fstat(srcFd, &buf) != -1)
+   {
+      rval = (int)sendfile(dstFd, srcFd, 0, buf.st_size);
+      // Reset file position pointer of destination file 'dstFd'
+      lseek(dstFd, 0, SEEK_SET);
+   }
 
    return rval;
 }
@@ -307,13 +221,12 @@ static int pclBackupDoFileCopy(int srcFd, int dstFd)
 int pclCreateFile(const char* path, int chached)
 {
    const char* delimiters = "/\n";   // search for blank and end of line
-   char* tokenArray[24];
+   char* tokenArray[24] = {0};
    char thePath[DbPathMaxLen] = {0};
-   int numTokens = 0, i = 0, validPath = 1;
-   int handle = -1;
+   int numTokens = 0, i = 0, validPath = 1, handle = -1;
 
-   thePath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
    strncpy(thePath, path, DbPathMaxLen);
+   thePath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
 
    tokenArray[numTokens++] = strtok(thePath, delimiters);
    while(tokenArray[numTokens-1] != NULL )
@@ -375,8 +288,7 @@ int pclCreateFile(const char* path, int chached)
 
 int pclVerifyConsistency(const char* origPath, const char* backupPath, const char* csumPath, int openFlags)
 {
-   int handle = 0, readSize = 0;
-   int backupAvail = 0, csumAvail = 0;
+   int handle = 0, readSize = 0, backupAvail = 0, csumAvail = 0;
    int fdCsum = 0, fdBackup = 0;
 
    char origCsumBuf[ChecksumBufSize] = {0};
@@ -537,9 +449,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
 
 int pclRecoverFromBackup(int backupFd, const char* original)
 {
-   int handle = 0;
-
-   handle = open(original, O_TRUNC | O_RDWR);
+   int handle = open(original, O_TRUNC | O_RDWR);
    if(handle != -1)
    {
       if(pclBackupDoFileCopy(backupFd, handle) == -1)    // copy data from one file to another
@@ -555,15 +465,15 @@ int pclRecoverFromBackup(int backupFd, const char* original)
 
 int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const char* csumBuf)
 {
-   int dstFd = 0, csfd = 0;
-   int readSize = -1;
+   int dstFd = 0, csfd = 0, readSize = -1;
 
    if(access(dstPath, F_OK) != 0)
    {
       int handle = -1;
       char pathToCreate[DbPathMaxLen] = {0};
-      pathToCreate[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+
       strncpy(pathToCreate, dstPath, DbPathMaxLen);
+      pathToCreate[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
 
       handle = pclCreateFile(pathToCreate, 0);
       close(handle);       // don't need the open file
@@ -627,29 +537,34 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
       char* buf;
       struct stat statBuf;
 
-      (void)fstat(fd, &statBuf);
-      buf = malloc((unsigned int)statBuf.st_size);
-
-      if(buf != 0)
+      if(fstat(fd, &statBuf) != -1)
       {
-         off_t curPos = 0;
-         curPos = lseek(fd, 0, SEEK_CUR);    // remember the current position
+         buf = malloc((unsigned int)statBuf.st_size);
 
-         if(curPos != 0)
+         if(buf != 0)
          {
-            lseek(fd, 0, SEEK_SET);          // set to beginning of the file
-         }
+            off_t curPos = 0;
+            curPos = lseek(fd, 0, SEEK_CUR);    // remember the current position
 
-         while((rval = read(fd, buf, statBuf.st_size)) > 0)
+            if(curPos != 0)
+            {
+               lseek(fd, 0, SEEK_SET);          // set to beginning of the file
+            }
+
+            while((rval = read(fd, buf, statBuf.st_size)) > 0)
+            {
+               unsigned int crc = 0;
+               crc = pclCrc32(crc, (unsigned char*)buf, statBuf.st_size);
+               (void)snprintf(crc32sum, ChecksumBufSize-1, "%x", crc);
+            }
+
+            lseek(fd, curPos, SEEK_SET);        // set back to the position
+            free(buf);
+         }
+         else
          {
-            unsigned int crc = 0;
-            crc = pclCrc32(crc, (unsigned char*)buf, statBuf.st_size);
-            (void)snprintf(crc32sum, ChecksumBufSize-1, "%x", crc);
+            rval = -1;
          }
-
-         lseek(fd, curPos, SEEK_SET);        // set back to the position
-
-         free(buf);
       }
       else
       {

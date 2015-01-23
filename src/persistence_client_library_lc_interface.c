@@ -60,17 +60,15 @@ int check_lc_request(unsigned int request, unsigned int requestID)
 
 int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 {
-   unsigned int request   = 0,
-                requestID = 0;
    int msgReturn = 0;
+   unsigned int request = 0, requestID = 0;
 
    DBusMessage *reply;
    DBusError error;
    dbus_error_init (&error);
 
    if (!dbus_message_get_args (message, &error, DBUS_TYPE_UINT32, &request,
-                                                DBUS_TYPE_UINT32, &requestID,
-                                                DBUS_TYPE_INVALID))
+                                                DBUS_TYPE_UINT32, &requestID, DBUS_TYPE_INVALID))
    {
       reply = dbus_message_new_error(message, error.name, error.message);
 

@@ -42,7 +42,6 @@ static int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* reso
 static int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id,
                        char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no);
 
-
 extern int doAppcheck(void);
 
 
@@ -149,7 +148,6 @@ int pclFileGetSize(int fd)
 			}
       }
 #else
-
       size = fstat(fd, &buf);
 
       if(size != -1)
@@ -196,14 +194,9 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 
 int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no)
 {
-   int handle = -1;
-   int length = 0;
-
-   int wantBackup = 1;
-   int cacheStatus = -1;
+   int handle = -1, length = 0, wantBackup = 1, cacheStatus = -1;
 
    char fileSubPath[DbPathMaxLen] = {0};
-
    char backupPath[DbPathMaxLen] = {0};    // backup file
    char csumPath[DbPathMaxLen]   = {0};    // checksum file
 
@@ -216,8 +209,8 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       length = gWTPathPrefixSize;
    }
 
-   fileSubPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
    strncpy(fileSubPath, dbPath+length, DbPathMaxLen);
+   fileSubPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
    snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
    snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
 
@@ -295,7 +288,6 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
                DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileOpen - no def data avail: "), DLT_STRING(resource_id));
             }
          }
-
          set_file_cache_status(handle, cacheStatus);
       }
 
@@ -389,7 +381,6 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       PersistenceInfo_s dbContext;
 
       int shared_DB = 0;
-
       char dbKey[DbKeyMaxLen]       = {0};    // database key
       char dbPath[DbPathMaxLen]     = {0};    // database location
 
@@ -494,7 +485,6 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
          rval = EPERS_LOCKFS;
       }
    }
-
    return rval;
 }
 
@@ -528,7 +518,6 @@ int pclFileSeek(int fd, long int offset, int whence)
          rval = EPERS_LOCKFS;
       }
    }
-
    return rval;
 }
 
@@ -551,7 +540,6 @@ int pclFileUnmapData(void* address, long size)
          rval = EPERS_LOCKFS;
       }
    }
-
    return rval;
 }
 
@@ -572,8 +560,6 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
          {
             if(permission != PersistencePermission_ReadOnly )
             {
-
-
                // check if a backup file has to be created
                if( (get_file_backup_status(fd) == 0) && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
                {
@@ -771,7 +757,6 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
          handle = EPERS_RESOURCE_NO_FILE;
       }
    }
-
    return handle;
 }
 
@@ -796,7 +781,6 @@ int pclFileReleasePath(int pathHandle)
 
             // remove checksum file
             remove(get_ossfile_checksum_path(pathHandle));    // we don't care about return value
-
          }
          free(get_ossfile_file_path(pathHandle));
 
@@ -821,11 +805,11 @@ int pclFileReleasePath(int pathHandle)
 
 int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 {
+   int defaultHandle = -1, rval = 0;
+
 	// check if there is default data available
 	char pathPrefix[DbPathMaxLen]  = { [0 ... DbPathMaxLen-1] = 0};
 	char defaultPath[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
-	int defaultHandle = -1;
-	int rval = 0;
 
 	// create path to default data
 	if(policy == PersistencePolicy_wc)
@@ -852,17 +836,18 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 		struct stat buf;
 		memset(&buf, 0, sizeof(buf));
 
-		(void)fstat(defaultHandle, &buf);
-		rval = sendfile(handle, defaultHandle, 0, buf.st_size);
-		if(rval != -1)
+		if(fstat(defaultHandle, &buf) != -1)
 		{
-			rval = lseek(handle, 0, SEEK_SET);  // set fd back to beginning of the file
+         rval = sendfile(handle, defaultHandle, 0, buf.st_size);
+         if(rval != -1)
+         {
+            rval = lseek(handle, 0, SEEK_SET);  // set fd back to beginning of the file
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileGetDefaultData - Err copy file "), DLT_STRING(strerror(errno)));
+         }
 		}
-		else
-		{
-			DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileGetDefaultData - Err copy file "), DLT_STRING(strerror(errno)));
-		}
-
 		close(defaultHandle);
 	}
 	else

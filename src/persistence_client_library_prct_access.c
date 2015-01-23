@@ -86,8 +86,11 @@ int get_resource_cfg_table_by_idx(int i)
 
 void invalidate_resource_cfg_table(int i)
 {
-   gResource_table[i] = -1;
-   gResourceOpen[i] = 0;
+   if(i >= 0 && i < PrctDbTableSize)
+   {
+      gResource_table[i] = -1;
+      gResourceOpen[i] = 0;
+   }
 }
 
 
@@ -142,13 +145,12 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 
 int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[])
 {
-   int rval = 0, resourceFound = 0, groupId = 0;
-
+   int rval = 0, resourceFound = 0, groupId = 0, handleRCT = 0;
    PersistenceRCT_e rct = PersistenceRCT_LastEntry;
 
    rct = get_table_id(dbContext->context.ldbid, &groupId);
 
-   int handleRCT = get_resource_cfg_table(rct, groupId);    // get resource configuration table
+   handleRCT = get_resource_cfg_table(rct, groupId);    // get resource configuration table
 
    if(handleRCT >= 0)
    {

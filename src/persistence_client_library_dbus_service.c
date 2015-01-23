@@ -86,7 +86,7 @@ typedef struct SPollInfo
 
 
 /// polling information
-static tPollInfo gPollInfo;	/// polling information
+static tPollInfo gPollInfo;
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
@@ -151,9 +151,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
             DBusError error;
             DBusMessage *reply;
             dbus_error_init (&error);
-            char* ldbid;
-            char* user_no;
-            char* seat_no;
+            char *ldbid, *user_no, *seat_no;
 
             if (!dbus_message_get_args(message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,
                                                          DBUS_TYPE_STRING, &ldbid,
@@ -274,7 +272,6 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 
          ++gPollInfo.nfds;
       }
-
       result = TRUE;
    }
 
@@ -577,8 +574,7 @@ int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int*
 
 void* mainLoop(void* userData)
 {
-   int ret;
-   int bContinue = 0;   /// indicator if dbus mainloop shall continue
+   int ret, bContinue = 0;   /// indicator if dbus mainloop shall continue
 
    DBusConnection* conn = (DBusConnection*)userData;
 
@@ -598,8 +594,7 @@ void* mainLoop(void* userData)
       }
       else
       {
-         int i;
-         int bQuit = FALSE;
+         int i, bQuit = FALSE;
 
          for (i=0; gPollInfo.nfds>i && !bQuit; ++i)
          {
@@ -627,7 +622,7 @@ void* mainLoop(void* userData)
                   {
                      MainLoopData_u readData;
                      bContinue = TRUE;
-                     while ((-1==(ret = read(gPollInfo.fds[i].fd, readData.payload, 128)))&&(EINTR == errno));
+                     while ((-1==(ret = read(gPollInfo.fds[i].fd, readData.payload, sizeof(struct message_))))&&(EINTR == errno));
                      if(ret < 0)
                      {
                         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - read() failed"), DLT_STRING(strerror(errno)) );
@@ -696,7 +691,7 @@ int deliverToMainloop(MainLoopData_u* payload)
    int rval = 0;
 
    pthread_mutex_lock(&gDeliverpMtx);     // make sure  deliverToMainloop will be used exclusively
-   deliverToMainloop_NM(payload);
+   rval = deliverToMainloop_NM(payload);
 
 
    pthread_mutex_lock(&gMainCondMtx);     // mutex needed for pthread condition used to wait on other thread (mainloop)
@@ -715,9 +710,9 @@ int deliverToMainloop(MainLoopData_u* payload)
 
 int deliverToMainloop_NM(MainLoopData_u* payload)
 {
-   int rval = 0, length = 128;
+   int rval = 0;
 
-   if(-1 == write(gPipeFd[1], payload->payload, length))
+   if(-1 == write(gPipeFd[1], payload->payload, sizeof(struct message_)))
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("toMainloop => failed write pipe"), DLT_INT(errno));
      rval = -1;
