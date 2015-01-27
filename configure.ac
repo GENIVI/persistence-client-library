@@ -9,7 +9,7 @@ m4_define([pers_client_library_tag_version_micro], [0])
 m4_define([pers_client_library_tag_version], [pers_client_library_tag_version_major().pers_client_library_tag_version_minor().pers_client_library_tag_version_micro()])
 
 
-AC_INIT([Persistence Client Library], [pers_client_library_tag_version], [not-valid@xse.de])
+AC_INIT([Persistence Client Library], [pers_client_library_tag_version], [genivi-persistence@lists.genivi.org])
 AC_COPYRIGHT([Copyright (c) 2014 XS Embedded GmbH])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([dist-bzip2])
@@ -30,7 +30,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 
 # Overwrite the build in defaults
-CFLAGS="-Wall -O2 -Wextra -Werror"
+CFLAGS="-Wall -Os -Wextra -Werror -fPIC -ffunction-sections"
 
 # Checks for programs.
 AC_PROG_CC

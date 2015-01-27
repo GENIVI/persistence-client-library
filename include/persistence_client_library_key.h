@@ -247,7 +247,7 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
 
 /**
- * @brief register a change notification for persistent data
+ * @brief register for a change notification for persistent data
  *
  * @warning It is only possible to register one callback at the time, not multiple ones.
  *          If you need to change the callback, call ::pclKeyUnRegisterNotifyOnChange
@@ -257,7 +257,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
  * @param resource_id the resource ID
  * @param user_no  the user ID; user_no=0 can not be used as user-ID because ‘0’ is defined as System/node
  * @param seat_no  the seat number
- * @param callback notification callback
+ * @param callback notification callback: after the content of the given resource_id has been changed,
+ *        the passed function callback will be called.
  *
  * @return positive value (0 or greater): registration OK;
  * On error a negative value will be returned with the following error codes:

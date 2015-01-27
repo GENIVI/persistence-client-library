@@ -40,7 +40,7 @@
 static int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
 static int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id);
 static int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id,
-                       char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no);
+                              char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no);
 
 extern int doAppcheck(void);
 
@@ -72,7 +72,7 @@ int pclFileClose(int fd)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -178,7 +178,7 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
    (void)fd;
    DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileMapData not supported when using file cache"));
 #else
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -241,9 +241,9 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       else
       {
          if(dbContext->configKey.permission == PersistencePermission_ReadOnly)
-            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileOpen: NoBackup - file RONLY!"), DLT_STRING(dbKey));
+            DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileOpen: NoBackup - file RONLY!"), DLT_STRING(dbKey));
          else
-            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileOpen: NoBackup - file in blacklist!"), DLT_STRING(dbKey));
+            DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileOpen: NoBackup - file in blacklist!"), DLT_STRING(dbKey));
       }
 
 #if USE_FILECACHE
@@ -390,7 +390,7 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       char dbKey[DbKeyMaxLen]       = {0};    // database key
       char dbPath[DbPathMaxLen]     = {0};    // database location
 
-      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+      //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
       dbContext.context.ldbid   = ldbid;
       dbContext.context.seat_no = seat_no;
@@ -427,7 +427,7 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
 {
    int readSize = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
 #if USE_FILECACHE
@@ -452,7 +452,7 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -500,7 +500,7 @@ int pclFileSeek(int fd, long int offset, int whence)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileSeek fd:"), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileSeek fd:"), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -533,7 +533,7 @@ int pclFileUnmapData(void* address, long size)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileUnmapData"));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -555,7 +555,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -601,7 +601,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
             }
             else
             {
-            	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileWriteData - Failed write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
+            	DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileWriteData - Failed write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
                size = EPERS_RESOURCE_READ_ONLY;
             }
          }
@@ -634,7 +634,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
       char backupPath[DbPathMaxLen] = {0};    // backup file
       char csumPath[DbPathMaxLen]  = {0};    // checksum file
 
-      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+      //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
       dbContext.context.ldbid   = ldbid;
       dbContext.context.seat_no = seat_no;
@@ -668,7 +668,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             }
             else
 				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileCreatePath - No Backup, read only OR in blacklist!"), DLT_STRING(dbKey));
+					DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileCreatePath - No Backup, read only OR in blacklist!"), DLT_STRING(dbKey));
 				}
 
             handle = get_persistence_handle_idx();
@@ -772,7 +772,7 @@ int pclFileReleasePath(int pathHandle)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
+   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {

@@ -263,8 +263,25 @@ extern const char* gCreateSignal;
 // dbus timeout (5 seconds)
 extern int gTimeoutMs;
 
-// dbus pending return value
+/// dbus pending return value
 extern int gDbusPendingRvalue;
+
+/// string to identify default plugin
+extern const char* gPluginTypeDefault;
+/// string to identify early plugin
+extern const char* gPluginTypeEarly;
+/// string to identify secure plugin
+extern const char* gPluginTypeSecure;
+/// string to identify emergency plugin
+extern const char* gPluginTypeEmergency;
+/// string to identify hwinfo plugin
+extern const char* gPluginTypeHwInfo;
+/// string to identify custom2 plugin
+extern const char* gPluginTypeCustom1;
+/// string to identify custom2 plugin
+extern const char* gPluginTypeCustom2;
+/// string to identify custom3 plugin
+extern const char* gPluginTypeCustom3;
 
 
 /**

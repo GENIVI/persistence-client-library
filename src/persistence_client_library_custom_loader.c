@@ -128,35 +128,35 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
 
    if(substring == 0)
    {
-      if (0 == strncmp(lib_name, "default", PersCustomPathSize) )
+      if (0 == strncmp(lib_name, gPluginTypeDefault, PersCustomPathSize) )
       {
          libId = PersCustomLib_default;
       }
-      else if(0 == strncmp(lib_name, "early", PersCustomPathSize) )
+      else if(0 == strncmp(lib_name, gPluginTypeEarly, PersCustomPathSize) )
       {
          libId = PersCustomLib_early;
       }
-      else if (0 == strncmp(lib_name, "secure", PersCustomPathSize) )
+      else if (0 == strncmp(lib_name, gPluginTypeSecure, PersCustomPathSize) )
       {
          libId = PersCustomLib_secure;
       }
-      else if (0 == strncmp(lib_name, "emergency", PersCustomPathSize) )
+      else if (0 == strncmp(lib_name, gPluginTypeEmergency, PersCustomPathSize) )
       {
          libId = PersCustomLib_emergency;
       }
-      else if (0 == strncmp(lib_name, "hwinfo", PersCustomPathSize) )
+      else if (0 == strncmp(lib_name, gPluginTypeHwInfo, PersCustomPathSize) )
       {
          libId = PersCustomLib_HWinfo;
       }
-      else if (0 == strncmp(lib_name, "custom1", PersCustomPathSize) )
+      else if (0 == strncmp(lib_name, gPluginTypeCustom1, PersCustomPathSize) )
       {
          libId = PersCustomLib_Custom1;
       }
-      else if (0 == strncmp(lib_name, "custom2", PersCustomPathSize) )
+      else if (0 == strncmp(lib_name, gPluginTypeCustom2, PersCustomPathSize) )
       {
          libId = PersCustomLib_Custom2;
       }
-      else if (0 == strncmp(lib_name, "custom3", PersCustomPathSize) )
+      else if (0 == strncmp(lib_name, gPluginTypeCustom3, PersCustomPathSize) )
       {
          libId = PersCustomLib_Custom3;
       }
@@ -167,35 +167,35 @@ PersistenceCustomLibs_e custom_client_name_to_id(const char* lib_name, int subst
    }
    else
    {
-      if(NULL != strstr(lib_name, "default") )
+      if(NULL != strstr(lib_name, gPluginTypeDefault) )
       {
          libId = PersCustomLib_default;
       }
-      else if(NULL != strstr(lib_name, "early") )
+      else if(NULL != strstr(lib_name, gPluginTypeEarly) )
       {
          libId = PersCustomLib_early;
       }
-      else if (NULL != strstr(lib_name, "secure") )
+      else if (NULL != strstr(lib_name, gPluginTypeSecure) )
       {
          libId = PersCustomLib_secure;
       }
-      else if (NULL != strstr(lib_name, "emergency") )
+      else if (NULL != strstr(lib_name, gPluginTypeEmergency) )
       {
          libId = PersCustomLib_emergency;
       }
-      else if (NULL != strstr(lib_name, "hwinfo") )
+      else if (NULL != strstr(lib_name, gPluginTypeHwInfo) )
       {
          libId = PersCustomLib_HWinfo;
       }
-      else if (NULL != strstr(lib_name, "custom1") )
+      else if (NULL != strstr(lib_name, gPluginTypeCustom1) )
       {
          libId = PersCustomLib_Custom1;
       }
-      else if (NULL != strstr(lib_name, "custom2") )
+      else if (NULL != strstr(lib_name, gPluginTypeCustom2) )
       {
          libId = PersCustomLib_Custom2;
       }
-      else if (NULL != strstr(lib_name, "custom3") )
+      else if (NULL != strstr(lib_name, gPluginTypeCustom3) )
       {
          libId = PersCustomLib_Custom3;
       }
@@ -235,7 +235,7 @@ int get_custom_libraries()
          int i = 0;
          int fd = open(filename, O_RDONLY);
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
+         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
 
          if (fd == -1)
          {
@@ -536,7 +536,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
             {
                if( (gPersCustomFuncs[customLib].custom_plugin_init) != NULL)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load_custom_library => (sync)  : "), DLT_STRING(get_custom_client_lib_name(customLib)));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("load_custom_library => (sync)  : "), DLT_STRING(get_custom_client_lib_name(customLib)));
                   gPersCustomFuncs[customLib].custom_plugin_init();
                }
                else
@@ -550,7 +550,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
             {
                if( (gPersCustomFuncs[customLib].custom_plugin_init_async) != NULL)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load_custom_library => (async) : "),
+                  DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("load_custom_library => (async) : "),
                                           DLT_STRING(get_custom_client_lib_name(customLib)));
 
                   gPersCustomFuncs[customLib].custom_plugin_init_async(gPlugin_callback_async_t);

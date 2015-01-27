@@ -196,10 +196,15 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size);
  *
  * @note the allocated memory for the path string will be freed in pclFileReleasePath
  *
- * @return positive value (0 or greater) on success, which must be used when pclFileReleasePath will be called
- * On error a negative value will be returned with th following error codes:
- * ::EPERS_LOCKFS or ::EPERS_COMMON
- * If ::EPERS_COMMON will be returned errno will be set.
+ * @return positive value (0 or greater) on success a path to a file corresponding to the storage resource addressed
+ *         by the given ldbid/resource_id/user_no/seat_no.
+ *         This function can be used to a legacy program or other program that needs direct file storage (e.g. sqlite)
+ *         while still giving that program the benefit from the persistence layer and cause the program to use the
+ *         storage settings that have been configured for the given resource_id.
+ *         This way of access should only be used as a last resort if using the given key-value or file API is not feasible.
+ *         On error a negative value will be returned with th following error codes:
+ *         ::EPERS_LOCKFS or ::EPERS_COMMON
+ *         If ::EPERS_COMMON will be returned errno will be set.
  */
 int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, char** path, unsigned int* size);
 

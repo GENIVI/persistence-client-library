@@ -207,7 +207,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
 
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("gDBCtx - create res not in PRCT => key:"), DLT_STRING(resource_id) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("gDBCtx - create res not in PRCT => key:"), DLT_STRING(resource_id) );
 
       rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
    }

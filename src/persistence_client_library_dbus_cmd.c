@@ -41,7 +41,7 @@
 #include <dlfcn.h>
 
 // function prototype
-void msg_pending_func(DBusPendingCall *call, void *data);
+static void msg_pending_func(DBusPendingCall *call, void *data);
 
 
 
@@ -180,7 +180,7 @@ void process_prepare_shutdown(int complete)
 {
    int i = 0, rval = 0;
 
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("prepShtdwn - writing all changed data / closing all handles"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("prepShtdwn - writing all changed data / closing all handles"));
 
    // block write
    pers_lock_access();
@@ -454,7 +454,7 @@ void msg_pending_func(DBusPendingCall *call, void *data)
    }
    else
    {
-      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("msg_pending_func ==> UNlock mutex") );
+      //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("msg_pending_func ==> UNlock mutex") );
       dbus_message_get_args(message, &err, DBUS_TYPE_INT32, &replyArg, DBUS_TYPE_INVALID);
    }
 

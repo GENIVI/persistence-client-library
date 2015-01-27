@@ -38,7 +38,7 @@ static char* gpTokenArray[TOKENARRAYSIZE] = {0};
 
 // local function prototypes
 static int need_backup_key(unsigned int key);
-int pclRecoverFromBackup(int backupFd, const char* original);
+static int pclRecoverFromBackup(int backupFd, const char* original);
 
 
 static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char* fileMap)
@@ -304,7 +304,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    if((backupAvail == 0) && (csumAvail == 0) )
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- there is a backup file AND csum"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("verifyConsist- there is a backup file AND csum"));
 
       fdBackup = open(backupPath,  O_RDONLY);      // calculate checksum form backup file
       if(fdBackup != -1)
@@ -360,7 +360,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(csumAvail == 0)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a csum file"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("verifyConsist - there is ONLY a csum file"));
 
       fdCsum = open(csumPath,  O_RDONLY);
       if(fdCsum != -1)
@@ -401,7 +401,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
    // *************************************************
    else if(backupAvail == 0)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a backup file"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("verifyConsist - there is ONLY a backup file"));
 
       fdBackup = open(backupPath,  O_RDONLY);      // calculate checksum form backup file
       if(fdBackup != -1)

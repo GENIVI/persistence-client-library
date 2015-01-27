@@ -122,7 +122,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
    if((0==strncmp(gDbusLcConsterface, dbus_message_get_interface(message), 46)))
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chLcMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
+   	DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("chLcMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
       if((0==strncmp(gDbusLcConsMsg, dbus_message_get_member(message), 16)))
       {
          result = msg_lifecycleRequest(connection, message);

@@ -1,4 +1,5 @@
-SUBDIRS=src persclient_tool
+SUBDIRS=src
+#SUBDIRS=src persclient_tool
 
 if WANT_TESTS
 SUBDIRS+=test

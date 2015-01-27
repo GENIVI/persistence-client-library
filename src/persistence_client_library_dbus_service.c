@@ -96,7 +96,7 @@ static void unregisterMessageHandler(DBusConnection *connection, void *user_data
 {
    (void)connection;
    (void)user_data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPath\n"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("unregisterObjectPath\n"));
 }
 
 
@@ -239,7 +239,7 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 {
    (void)connection;
    (void)user_data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregObjPathFback"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("unregObjPathFback"));
 }
 
 
@@ -286,7 +286,7 @@ static void removeWatch(DBusWatch *watch, void *data)
 
    (void)data;
 
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT( (int)watch) );
+   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("removeWatch called "), DLT_INT( (int)watch) );
 
    if(w_data)
       free(w_data);
@@ -299,7 +299,7 @@ static void removeWatch(DBusWatch *watch, void *data)
 static void watchToggled(DBusWatch *watch, void *data)
 {
    (void)data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT( (int)watch) );
+   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("watchToggled called "), DLT_INT( (int)watch) );
 
    if(dbus_watch_get_enabled(watch))
       addWatch(watch, data);
@@ -389,7 +389,7 @@ static void timeoutToggled(DBusTimeout *timeout, void *data)
    (void)data;
 
    while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("timeoutToggled") );
+   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("timeoutToggled") );
    if (0<i)
    {
       const int interval = (TRUE==dbus_timeout_get_enabled(timeout))?dbus_timeout_get_interval(timeout):0;
@@ -414,7 +414,7 @@ int setup_dbus_mainloop(void)
 
    if(pAddress != NULL)    // Connect to the bus and check for errors
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
 
       conn = dbus_connection_open_private(pAddress, &err);
 
@@ -436,7 +436,7 @@ int setup_dbus_mainloop(void)
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
       conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
    }
 
@@ -531,7 +531,7 @@ int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int*
 {
    int rval = 1;
 
-   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
+   //DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
    switch (readData->message.cmd)
    {
       case CMD_PAS_BLOCK_AND_WRITE_BACK:

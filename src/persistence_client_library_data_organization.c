@@ -98,3 +98,13 @@ const char gCharLookup[] =
 };
 
 
+const char* gPluginTypeDefault   = "default";
+const char* gPluginTypeEarly     = "early";
+const char* gPluginTypeSecure    = "secure";
+const char* gPluginTypeEmergency = "emergency";
+const char* gPluginTypeHwInfo    = "hwinfo";
+const char* gPluginTypeCustom1   = "custom1";
+const char* gPluginTypeCustom2   = "custom2";
+const char* gPluginTypeCustom3   = "custom3";
+
+
