@@ -126,7 +126,6 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    if(gPclInitCounter == 0)
    {
       DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
-      DLT_SET_APPLICATION_LL_TS_LIMIT(DLT_LOG_DEBUG, DLT_TRACE_STATUS_OFF);
       DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclInitLibrary => INIT  PCL - "), DLT_STRING(appName),
                               DLT_STRING("- init counter: "), DLT_INT(gPclInitCounter) );
 

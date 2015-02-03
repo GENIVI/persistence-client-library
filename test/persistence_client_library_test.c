@@ -31,21 +31,16 @@
 //#include "persCheck.h"
 #include <check.h>
 
-
 #include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_key.h"
 #include "../include/persistence_client_library.h"
 #include "../include/persistence_client_library_error_def.h"
 
-
-
 #define BUF_SIZE     64
 #define NUM_OF_FILES 3
 #define READ_SIZE    1024
 #define MaxAppNameLen 256
-
 #define SOURCE_PATH "/Data/mnt-c/lt-persistence_client_library_test/"
-
 
 static const char* gPathSegemnts[] = {"user/", "1/", "seat/", "1/", "media", NULL };
 
@@ -60,7 +55,6 @@ char* gRecovChecksum = "608a3b5d";	// generated with http://www.tools4noobs.com/
 
 // function prototype
 void run_concurrency_test();
-
 
 void data_setup(void)
 {
@@ -332,12 +326,11 @@ START_TEST(test_SetData)
 
 #if 1
    time_t t = time(0);
-
    locTime = localtime(&t);
 
    // write data
    snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon+1, (locTime->tm_year+1900),
-                                                                 locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
+                                                                      locTime->tm_hour, locTime->tm_min, locTime->tm_sec);
 
    /**
     * Logical DB ID: PCL_LDBID_LOCAL with user 1 and seat 2
@@ -1614,6 +1607,101 @@ START_TEST(test_SharedAccess)
 END_TEST
 
 
+
+START_TEST(test_VO722)
+{
+   int ret = 0;
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   unsigned char buffer[256] = {0};
+   char* writeBuffer[] = {"VO722 - TestString One",
+                          "VO722 - TestString Two -",
+                          "VO722 - TestString Three -",};
+
+   char* writeBuffer2[] = {"2 - VO722 - Test - String One",
+                           "2 - VO722 - Test - String Two -",
+                           "2 - VO722 - Test - String Three -", };
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)writeBuffer[0], strlen(writeBuffer[0]));
+   fail_unless(ret == (int)strlen(writeBuffer[0]), "Wrong write size");
+
+   memset(buffer, 0, 256);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)buffer, 256);
+   //printf("****** 1.1. read AEVOO722 => buffer: \"%s\"\n", buffer);
+   fail_unless(ret == (int)strlen(writeBuffer[0]), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, writeBuffer[0], strlen((char*)writeBuffer[0])) == 0, "Buffer not correctly read - 1.1");
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)writeBuffer[1], strlen(writeBuffer[1]));
+   fail_unless(ret == (int)strlen(writeBuffer[1]), "Wrong write size");
+
+   memset(buffer, 0, 256);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)buffer, 256);
+   //printf("****** 1.2. read AEVOO722 => buffer: \"%s\"\n", buffer);
+   fail_unless(ret == (int)strlen(writeBuffer[1]), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, writeBuffer[1], strlen((char*)writeBuffer[1])) == 0, "Buffer not correctly read - 1.2");
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)writeBuffer[2], strlen(writeBuffer[2]));
+   fail_unless(ret == (int)strlen(writeBuffer[2]), "Wrong write size");
+
+   pclDeinitLibrary();
+   sleep(1);
+
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   memset(buffer, 0, 256);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)buffer, 256);
+   //printf("****** 1.3. read AEVOO722 => buffer: \"%s\"\n\n", buffer);
+   fail_unless(ret == (int)strlen(writeBuffer[2]), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, writeBuffer[2], strlen((char*)writeBuffer[2])) == 0, "Buffer not correctly read - 1.3");
+
+   pclDeinitLibrary();
+
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 0, 0, (unsigned char*)writeBuffer2[0], strlen(writeBuffer2[0]));
+   fail_unless(ret == (int)strlen(writeBuffer2[0]), "Wrong write size");
+
+   memset(buffer, 0, 256);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 0, 0, (unsigned char*)buffer, 256);
+   //printf("****** 2.1. read AEVOO722 => buffer: \"%s\"\n", buffer);
+   fail_unless(ret == (int)strlen(writeBuffer2[0]), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, writeBuffer2[0], strlen((char*)writeBuffer2[0])) == 0, "Buffer not correctly read - 2.1");
+
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 0, 0, (unsigned char*)writeBuffer2[1], strlen(writeBuffer2[1]));
+   fail_unless(ret == (int)strlen(writeBuffer2[1]), "Wrong write size");
+
+   memset(buffer, 0, 256);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 0, 0, (unsigned char*)buffer, 256);
+   //printf("****** 2.2. read AEVOO722 => buffer: \"%s\"\n", buffer);
+   fail_unless(ret == (int)strlen(writeBuffer2[1]), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, writeBuffer2[1], strlen((char*)writeBuffer2[1])) == 0, "Buffer not correctly read - 2.2");
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 0, 0, (unsigned char*)writeBuffer2[2], strlen(writeBuffer2[2]));
+   fail_unless(ret == (int)strlen(writeBuffer2[2]), "Wrong write size");
+
+   pclDeinitLibrary();
+
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   memset(buffer, 0, 256);
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 0, 0, (unsigned char*)buffer, 256);
+   //printf("****** 2.3. read AEVOO722 => buffer: \"%s\"\n\n", buffer);
+   fail_unless(ret == (int)strlen(writeBuffer2[2]), "Failed to read shared data ");
+   fail_unless(strncmp((char*)buffer, writeBuffer2[2], strlen((char*)writeBuffer2[2])) == 0, "Buffer not correctly read - 2.3");
+
+   pclDeinitLibrary();
+}
+END_TEST
+
+
+
 static Suite * persistencyClientLib_suite()
 {
    const char* testSuiteName = "Persistency_client_library";
@@ -1722,6 +1810,10 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_SharedAccess, test_SharedAccess);
    tcase_set_timeout(tc_SharedAccess, 2);
 
+   TCase * tc_VO722 = tcase_create("VO722");
+   tcase_add_test(tc_VO722, test_VO722);
+   tcase_set_timeout(tc_VO722, 5);
+
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1785,8 +1877,9 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_DataFileConfDefault);
    tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
 
-
    suite_add_tcase(s, tc_SharedAccess);
+
+   suite_add_tcase(s, tc_VO722);
 
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);
