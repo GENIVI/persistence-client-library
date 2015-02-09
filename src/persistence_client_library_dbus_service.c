@@ -412,6 +412,13 @@ int setup_dbus_mainloop(void)
 
    dbus_error_init(&err);
 
+   if(!dbus_threads_init_default())
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setupMainLoop - initDefaultFailed() :"), DLT_STRING(err.message) );
+      dbus_error_free (&err);
+      return EPERS_COMMON;
+   }
+
    if(pAddress != NULL)    // Connect to the bus and check for errors
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
