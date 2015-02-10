@@ -81,7 +81,7 @@ void          jsw_rbdelete ( jsw_rbtree_t *tree );
 void         *jsw_rbfind ( jsw_rbtree_t *tree, void *data );
 int           jsw_rbinsert ( jsw_rbtree_t *tree, void *data );
 int           jsw_rberase ( jsw_rbtree_t *tree, void *data );
-//size_t        jsw_rbsize ( jsw_rbtree_t *tree );
+size_t        jsw_rbsize ( jsw_rbtree_t *tree );
 
 /* Traversal functions */
 //jsw_rbtrav_t *jsw_rbtnew ( void );

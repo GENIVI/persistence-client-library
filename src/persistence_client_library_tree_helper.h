@@ -27,18 +27,6 @@
 #include "rbtree.h"
 
 
-/// tree to store key handle information
-extern jsw_rbtree_t *gKeyHandleTree;
-
-/// tree to store file handle information
-extern jsw_rbtree_t *gFileHandleTree;
-
-/// tree to store OSS file handle information
-extern jsw_rbtree_t *gOssFileHandleTree;
-
-/// the rb tree
-extern jsw_rbtree_t *gRb_tree_bl;
-
 
 /// key handle data union definition
 typedef union KeyHandleData_u_

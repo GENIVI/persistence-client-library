@@ -36,6 +36,9 @@
 static char* gpTokenArray[TOKENARRAYSIZE] = {0};
 
 
+/// the rb tree
+static jsw_rbtree_t *gRb_tree_bl = NULL;
+
 // local function prototypes
 static int need_backup_key(unsigned int key);
 static int pclRecoverFromBackup(int backupFd, const char* original);
@@ -538,7 +541,7 @@ int pclCalcCrc32Csum(int fd, char crc32sum[])
 
       if(fstat(fd, &statBuf) != -1)
       {
-         buf = malloc((unsigned int)statBuf.st_size);
+         buf = malloc(statBuf.st_size);
 
          if(buf != 0)
          {
@@ -583,7 +586,7 @@ int pclGetPosixPermission(PersistencePermission_e permission)
 {
    int posixPerm = -1;
 
-   switch( (int)permission)
+   switch(permission)
    {
    case PersistencePermission_ReadWrite:
       posixPerm = O_RDWR;

@@ -28,6 +28,17 @@ pthread_mutex_t gFileHandleAccessMtx     = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gOssFileHandleAccessMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
 
+/// tree to store key handle information
+static jsw_rbtree_t *gKeyHandleTree = NULL;
+
+/// tree to store file handle information
+static jsw_rbtree_t *gFileHandleTree = NULL;
+
+
+static jsw_rbtree_t *gOssFileHandleTree = NULL;
+
+
+
 
 // open file descriptor handle array
 int gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };

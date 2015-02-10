@@ -20,18 +20,9 @@
 
 
 
-jsw_rbtree_t *gKeyHandleTree = NULL;
-
-jsw_rbtree_t *gFileHandleTree = NULL;
-
-jsw_rbtree_t *gOssFileHandleTree = NULL;
-
-jsw_rbtree_t *gRb_tree_bl = NULL;
-
 /**
  * File handle helper functions
  */
-
 
 // compare function for tree item
 int fh_key_val_cmp(const void *p1, const void *p2)

@@ -77,8 +77,17 @@ int main(int argc, char *argv[])
    getchar();
 
    ret = pclKeyUnRegisterNotifyOnChange(0x20, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   printf("UnReg => last_link2: %d\n", ret);
+   printf("Press enter to proceed\n");
+   getchar();
+
    ret = pclKeyUnRegisterNotifyOnChange(0x20, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
+   printf("UnReg => last_link3: %d\n", ret);
+   printf("Press enter to proceed\n");
+   getchar();
+
    ret = pclKeyUnRegisterNotifyOnChange(0x20, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
+   printf("UnReg => last_link4: %d\n", ret);
 
    printf("Press enter to register to notifications\n");
    getchar();

@@ -211,8 +211,6 @@ extern "C" {
  *        The function will be called within process using always the same appname!
  *        It is not allowed call this function within a process using different appnames!
  *
- * @attention This function is currently  N O T  part of the GENIVI compliance specification
- *
  * @param appname application name, the name must be a unique name in the system
  * @param shutdownMode shutdown mode ::PCL_SHUTDOWN_TYPE_FAST or ::PCL_SHUTDOWN_TYPE_NORMAL ::PCL_SHUTDOWN_TYPE_NONE
  *
@@ -235,8 +233,6 @@ int pclInitLibrary(const char* appname, int shutdownMode);
  *            if it's needed your should know what you do and why exactly you need to do this in
  *            this way.
  *
- * @attention This function is currently  N O T  part of the GENIVI compliance specification
- *
  * @return positive value: success;
  *   On error a negative value will be returned.
  */
@@ -250,7 +246,6 @@ int pclDeinitLibrary(void);
  *        This function can be called if to flush and write back the data form cache to memory device.
  *        The function is only available if PCL_SHUTDOWN_TYPE_NONE has been used in pclInitLibrary.
  *
- * @attention This function is currently  N O T  part of the GENIVI compliance specification
  * @attention In order to prevent misuse of this function the cancel shutdown request
  *            can only be called 3 times per lifecycle.
  *            The function called by an application with the parameter ::PCL_SHUTDOWN_CANCEL

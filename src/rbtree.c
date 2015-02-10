@@ -480,7 +480,7 @@ int jsw_rberase ( jsw_rbtree_t *tree, void *data )
 
   return 1;
 }
-#if 0
+
 /**
   <summary>
   Gets the number of nodes in a red black tree
@@ -492,7 +492,7 @@ size_t jsw_rbsize ( jsw_rbtree_t *tree )
 {
   return tree->size;
 }
-
+#if 0
 /**
   <summary>
   Create a new traversal object

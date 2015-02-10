@@ -21,6 +21,8 @@
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_dbus_service.h"
 #include "persistence_client_library_prct_access.h"
+#include "persistence_client_library_tree_helper.h"
+#include "crc32.h"
 
 #include <persComErrors.h>
 
@@ -28,10 +30,13 @@
 
 
 
+
 /// btree array
 static int gHandlesDB[DbTableSize][PersistenceDB_LastEntry];
 static int gHandlesDBCreated[DbTableSize][PersistenceDB_LastEntry] = { {0} };
 
+/// tree to store notification information
+static jsw_rbtree_t *gNotificationTree = NULL;
 
 static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 {
@@ -612,7 +617,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
 
 
 
-int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+int persistence_notify_on_change(const char* resource_id, const char* dbKey, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                  pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy)
 {
    int rval = 0;
@@ -620,6 +625,9 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
    if(regPolicy < Notify_lastEntry)
    {
    	MainLoopData_u data;
+      key_value_s* foundItem = NULL;
+      key_value_s* searchItem = NULL;
+      unsigned int hashKey = pclCrc32(0, (unsigned char*)dbKey, strlen(dbKey));
 
    	data.message.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
    	data.message.params[0] = ldbid;
@@ -627,15 +635,57 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
    	data.message.params[2] = seat_no;
    	data.message.params[3] = regPolicy;
 
-   	snprintf(data.message.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", key);
+   	snprintf(data.message.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", resource_id);
+
+      // check if the tree has already been created
+   	if(gNotificationTree == NULL)
+   	{
+   	   gNotificationTree = jsw_rbnew(key_val_cmp, key_val_dup, key_val_rel);
+   	}
+
+   	// search if item is already stored in the tree
+   	searchItem = malloc(sizeof(key_value_s));
+      searchItem->key = hashKey;
+      foundItem = (key_value_s*)jsw_rbfind(gNotificationTree, searchItem);
 
       if(regPolicy == Notify_register)
       {
-         gChangeNotifyCallback = callback;      // assign callback
+         if(foundItem == NULL)   // item not found add it, else already added so nothing to do
+         {
+            key_value_s* item = malloc(sizeof(key_value_s));    // assign key and value to the rbtree item
+            if(item != NULL)
+            {
+               item->key = hashKey;
+               // we don't need the path name here, we just need to know that this key is available in the tree
+               item->value = "";
+               (void)jsw_rbinsert(gNotificationTree, item);
+               free(item);
+
+               gChangeNotifyCallback = callback;      // assign callback
+            }
+            else
+            {
+               rval = -1;
+            }
+         }
+         free(foundItem);
       }
       else if(regPolicy == Notify_unregister)
       {
-         gChangeNotifyCallback = NULL;          // remove callback
+         if(foundItem != NULL)   // item already in the tree remove it, if not found nothing to do
+         {
+            // remove from tree
+            jsw_rberase(gNotificationTree, foundItem);
+
+            if(jsw_rbsize(gNotificationTree) == 0)  // if no other notification is stored in the tree, remove callback
+            {
+               gChangeNotifyCallback = NULL;          // remove callback
+            }
+         }
+         else
+         {
+            free(foundItem);
+         }
       }
 
       if(-1 == deliverToMainloop(&data))
@@ -643,6 +693,8 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - Err to write to pipe"), DLT_INT(errno));
          rval = -1;
       }
+
+      free(searchItem);
    }
    else
    {

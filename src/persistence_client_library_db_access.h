@@ -163,7 +163,7 @@ void database_close_all();
 /**
  * @brief register or unregister for change notifications of a key
  *
- * @param key the database key to register on
+ * @param resource_id the database resource_id to register on
  * @param ldbid logical database ID of the resource to monitor
  * @param user_no  the user ID; user_no=0 can not be used as user-ID beacause '0' is defined as System/node
  * @param seat_no  the seat number
@@ -172,7 +172,7 @@ void database_close_all();
  *
  * @return 0 of registration was successful; -1 if registration fails
  */
-int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
+int persistence_notify_on_change(const char* resource_id, const char* dbKey, unsigned int ldbid, unsigned int user_no, unsigned int seat_no,
                                      pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
 
