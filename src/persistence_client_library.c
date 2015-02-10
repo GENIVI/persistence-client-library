@@ -50,6 +50,9 @@ static int gCancelCounter = 0;
 
 static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 
+/// name of the backup blacklist file (contains all the files which are excluded from backup creation)
+const char* gBackupFilename = "BackupFileList.info";
+
 #if USE_APPCHECK
 /// global flag
 static int gAppCheckFlag = -1;
@@ -71,11 +74,11 @@ static int private_pclDeinitLibrary(void);
 /* security check for valid application:
    if the RCT table exists, the application is proven to be valid (trusted),
    otherwise return EPERS_NOPRCTABLE  */
-void doInitAppcheck(const char* appName)
+static void doInitAppcheck(const char* appName)
 {
 #if USE_APPCHECK
-   char rctFilename[DbPathMaxLen] = {0};
-   snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, appName, plugin_gResTableCfg);
+   char rctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+   snprintf(rctFilename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), appName, plugin_gResTableCfg);
 
    if(access(rctFilename, F_OK) == 0)
    {
@@ -100,8 +103,8 @@ int doAppcheck(void)
 #if USE_APPCHECK
    if(gAppCheckFlag != 1)
    {
-      char rctFilename[DbPathMaxLen] = {0};
-      snprintf(rctFilename, DbPathMaxLen, gLocalWtPathKey, gAppId, plugin_gResTableCfg);
+      char rctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+      snprintf(rctFilename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), gAppId, plugin_gResTableCfg);
       if(access(rctFilename, F_OK) == 0)
       {
          gAppCheckFlag = 1;   // "trusted" application
@@ -146,7 +149,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
-   char blacklistPath[DbPathMaxLen] = {0};
+   char blacklistPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
    gShutdownMode = shutdownMode;
 
@@ -160,7 +163,7 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
 
    // Assemble backup blacklist path
-   snprintf(blacklistPath, DbPathMaxLen, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
+   snprintf(blacklistPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
 
    if(readBlacklistConfigFile(blacklistPath) == -1)
    {
@@ -208,8 +211,8 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 
    pers_unlock_access();
 
-   strncpy(gAppId, appName, MaxAppNameLen);  // assign application name
-   gAppId[MaxAppNameLen-1] = '\0';
+   strncpy(gAppId, appName, PERS_RCT_MAX_LENGTH_RESPONSIBLE);  // assign application name
+   gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = '\0';
 
    return rval;
 }

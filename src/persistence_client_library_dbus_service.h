@@ -60,7 +60,7 @@ typedef union MainLoopData_u_{
 		/// unsigned int parameters
 		uint32_t params[4];
 		/// string parameter
-		char string[DbKeyMaxLen];
+		char string[PERS_DB_MAX_LENGTH_KEY_NAME];
 	}message;
 
 	/// the message payload

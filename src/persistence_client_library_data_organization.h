@@ -37,6 +37,13 @@ extern "C" {
 #include <string.h>
 
 
+// define PERS_ORG_ROOT_PATH has been defined in persistence common object
+
+/// cached path location
+#define CACHEPREFIX         PERS_ORG_ROOT_PATH "/mnt-c/"
+/// write through path location
+#define WTPREFIX            PERS_ORG_ROOT_PATH "/mnt-wt/"
+
 
 /// structure used to manage database context
 typedef struct _PersistenceDbContext_s
@@ -138,18 +145,12 @@ enum _PersistenceConstantDef
    DbusSubMatchSize        = 12,
    /// max character size of the dbus match rule size
    DbusMatchRuleSize       = 300,
-   /// persistence resource config table max key size
-   PrctKeySize             = PERS_RCT_MAX_LENGTH_RESOURCE_ID,
    /// persistence resource config table max value size
    PrctValueSize           = sizeof(PersistenceConfigurationKey_s),
    /// number of persistence resource config tables to store
    PrctDbTableSize         = 1024,
    /// write buffer size
    RDRWBufferSize          = 1024,
-   /// database max key size
-   DbKeySize               = PERS_DB_MAX_LENGTH_KEY_NAME,
-   /// database max value size
-   DbValueSize             = PERS_DB_MAX_SIZE_KEY_DATA,
    /// database table size
    DbTableSize             = 1024,
    /// persistence administration service block access
@@ -164,16 +165,6 @@ enum _PersistenceConstantDef
    PasErrorStatus_OK       = 0x0002,
    /// persistence administration service msg return status
    PasErrorStatus_FAIL     = 0x8000,
-   /// max length of the custom library name and path
-   CustLibMaxLen = PERS_RCT_MAX_LENGTH_CUSTOM_NAME,
-   /// max database key length
-   DbKeyMaxLen   = PERS_DB_MAX_LENGTH_KEY_NAME,
-   /// max database key length
-   DbResIDMaxLen = PERS_DB_MAX_LENGTH_KEY_NAME,
-   /// max database path length
-   DbPathMaxLen  = PERS_ORG_MAX_LENGTH_PATH_FILENAME,
-   /// max application name
-   MaxAppNameLen = PERS_RCT_MAX_LENGTH_RESPONSIBLE,
    /// max number of parallel open persistence handles
    MaxPersHandle = 255,
    /// length of the config key responsible name
@@ -184,104 +175,112 @@ enum _PersistenceConstantDef
    MaxRctLengthCustom_ID   = 64,
    /// token array size
    TOKENARRAYSIZE = 255,
-   /// default limit the key-value data size to 16kB
-   defaultMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA
 };
 
+/**
+ * @brief get the local cache path
+ *
+ * @ return the path
+ */
+const char* getLocalCachePath(void);
 
-// define PERS_ORG_ROOT_PATH comes form persistence common object
+/**
+ * @brief get the local wt path
+ *
+ * @ return the path
+ */
+const char* getLocalWtPath(void);
 
-/// cached path location
-#define CACHEPREFIX         PERS_ORG_ROOT_PATH "/mnt-c/"
-/// write through path location
-#define WTPREFIX            PERS_ORG_ROOT_PATH "/mnt-wt/"
+/**
+ * @brief get the shared cache path
+ *
+ * @ return the path
+ */
+const char* getSharedCachePath(void);
 
-/// path for the backup location
-extern const char* gBackupPrefix;
-/// backup filename postfix
-extern const char* gBackupPostfix;
-/// backup checksum filename postfix
-extern const char* gBackupCsPostfix;
+/**
+ * @brief get the shared wt path
+ *
+ * @ return the path
+ */
+const char* getSharedWtPath(void);
 
-/// size of cached prefix string
-extern const int gCPathPrefixSize;
-/// size of write through prefix string
-extern const int gWTPathPrefixSize;
+/**
+ * @brief get the shared public cache path
+ *
+ * @ return the path
+ */
+const char* getSharedPublicCachePath(void);
 
-/// path prefix for local cached database: /Data/mnt_c/&lt;appId&gt;/&lt;database_name&gt;
-extern const char* gLocalCachePath;
-/// path prefix for local write through database /Data/mnt_wt/&lt;appId&gt;/&lt;database_name&gt;
-extern const char* gLocalWtPath;
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
-extern const char* gSharedCachePath;
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
-extern const char* gSharedWtPath;
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//&lt;database_name&gt;
-extern const char* gSharedPublicCachePath;
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/&lt;database_name&gt;
-extern const char* gSharedPublicWtPath;
+/**
+ * @brief get shared public wt path
+ *
+ * @ return the path
+ */
+const char* getSharedPublicWtPath(void);
 
-/// path prefix for local cached database: /Data/mnt_c/&lt;appId&gt;/&lt;database_name&gt;
-extern const char* gLocalCachePathKey;
-/// path prefix for local write through database /Data/mnt_wt/&lt;appId&gt;/&lt;database_name&gt;
-extern const char* gLocalWtPathKey;
-/// path prefix for shared cached database: /Data/mnt_c/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
-extern const char* gSharedCachePathKey;
-/// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/&lt;group_no&gt;/&lt;database_name&gt;
-extern const char* gSharedWtPathKey;
-/// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//&lt;database_name&gt;
-extern const char* gSharedPublicCachePathKey;
-/// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/&lt;database_name&gt;
-extern const char* gSharedPublicWtPathKey;
+/**
+ * @brief get the local cache path key
+ *
+ * @ return the key
+ */
+const char* getLocalCachePathKey(void);
 
-/// path prefix for local cached files: /Data/mnt_c/&lt;appId&gt;/&lt;user&gt;/&gt;userno&gt;/&lt;seat&gt;/&gt;seatno&gt;/&lt;resource&gt;
-extern const char* gLocalCacheFilePath;
+/**
+ * @brief get local wt path key
+ *
+ * @ return the key
+ */
+const char* getLocalWtPathKey(void);
 
-// backup blacklist filename
-extern const char* gBackupFilename;
+/**
+ * @brief get the shared cache path key
+ *
+ * @ return the key
+ */
+const char* getSharedCachePathKey(void);
+
+/**
+ * @brief get the shared wt path key
+ *
+ * @ return the key
+ */
+const char* getSharedWtPathKey(void);
+
+/**
+ * @brief get the shared public cache path key
+ *
+ * @ return the key
+ */
+const char* getSharedPublicCachePathKey(void);
+
+/**
+ * @brief get the shared public write through path
+ *
+ * @ return the key
+ */
+const char* getSharedPublicWtPathKey(void);
+
+/**
+ * @brief get local cache file path
+ *
+ * @ return the path
+ */
+const char* getLocalCacheFilePath(void);
+
+
 
 /// application id
-extern char gAppId[MaxAppNameLen];
-
-/// max key value data size
-extern int gMaxKeyValDataSize;
+extern char gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE] __attribute__ ((visibility ("hidden")));
 
 /// the DLT context
-extern DltContext gPclDLTContext;
+extern DltContext gPclDLTContext __attribute__ ((visibility ("hidden")));
 
 /// flag to indicate if client library has been initialized
-extern unsigned int gPclInitCounter;
-
-
-/// change signal string
-extern const char* gChangeSignal;
-/// delete signal string
-extern const char* gDeleteSignal;
-/// create signal string
-extern const char* gCreateSignal;
-
-// dbus timeout (5 seconds)
-extern int gTimeoutMs;
+extern unsigned int gPclInitCounter __attribute__ ((visibility ("hidden")));
 
 /// dbus pending return value
-extern int gDbusPendingRvalue;
-
-/// string to identify default plugin
-extern const char* gPluginTypeDefault;
-/// string to identify early plugin
-extern const char* gPluginTypeEarly;
-/// string to identify secure plugin
-extern const char* gPluginTypeSecure;
-/// string to identify emergency plugin
-extern const char* gPluginTypeEmergency;
-/// string to identify hwinfo plugin
-extern const char* gPluginTypeHwInfo;
-/// string to identify custom2 plugin
-extern const char* gPluginTypeCustom1;
-/// string to identify custom2 plugin
-extern const char* gPluginTypeCustom2;
-/// string to identify custom3 plugin
-extern const char* gPluginTypeCustom3;
+extern int gDbusPendingRvalue __attribute__ ((visibility ("hidden")));
 
 
 /**
@@ -291,8 +290,8 @@ extern const char* gPluginTypeCustom3;
  */
 extern int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
-/// character lookup table
-extern const char gCharLookup[];
+/// character lookup table used for parsing configuration files
+extern const char gCharLookup[] __attribute__ ((visibility ("hidden")));
 
 
 #ifdef __cplusplus

@@ -32,7 +32,7 @@ typedef struct _PersistenceKeyHandle_s
    /// Seat No
    unsigned int seat_no;
    /// Resource ID
-   char resource_id[DbResIDMaxLen];
+   char resource_id[PERS_DB_MAX_LENGTH_KEY_NAME];
 } PersistenceKeyHandle_s;
 
 
@@ -48,9 +48,9 @@ typedef struct _PersistenceFileHandle_s
    /// the user id
    int userId;
    /// path to the backup file
-   char backupPath[DbPathMaxLen];
+   char backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME];
    /// path to the checksum file
-   char csumPath[DbPathMaxLen];
+   char csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME];
    /// the file path
    char* filePath;
 } PersistenceFileHandle_s;

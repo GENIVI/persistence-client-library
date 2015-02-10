@@ -18,76 +18,21 @@
 
 #include "persistence_client_library_data_organization.h"
 
-/// path for the backup location
-const char* gBackupPrefix  	= PERS_ORG_ROOT_PATH "/mnt-backup/";
-
-// size of cached path string
-const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
-// size of write through string
-const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
-
-
-// backup filename postfix
-const char* gBackupPostfix 	= "~";
-// backup checksum filename postfix
-const char* gBackupCsPostfix 	= "~.crc";
-
-// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
-const char* gLocalCachePath        = CACHEPREFIX "%s";
-// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
-const char* gLocalWtPath           = WTPREFIX "%s";
-// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-const char* gSharedCachePath       = CACHEPREFIX "%s/shared_group_%x";
-// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-const char* gSharedWtPath          = WTPREFIX "%s/shared_group_%x";
-// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-const char* gSharedPublicCachePath = CACHEPREFIX "%s/shared_public";
-// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-const char* gSharedPublicWtPath    = WTPREFIX "%s/shared_public";
-
-// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
-const char* gLocalCachePathKey        = CACHEPREFIX "%s%s";
-// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
-const char* gLocalWtPathKey           = WTPREFIX "%s%s";
-// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
-const char* gSharedCachePathKey       = CACHEPREFIX "%s/shared_group_%x%s";
-// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
-const char* gSharedWtPathKey          = WTPREFIX "%s/shared_group_%x%s";
-// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
-const char* gSharedPublicCachePathKey = CACHEPREFIX "%s/shared_public%s";
-// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
-const char* gSharedPublicWtPathKey    = WTPREFIX "%s/shared_public%s";
-
-// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
-const char* gLocalCacheFilePath        = CACHEPREFIX "%s"PERS_ORG_USER_FOLDER_NAME_"%d"PERS_ORG_SEAT_FOLDER_NAME_"%d/%s";
-
-const char* gBackupFilename = "BackupFileList.info";
-
-const char* gChangeSignal = "PersistenceResChange";
-const char* gDeleteSignal = "PersistenceResDelete";
-const char* gCreateSignal = "PersistenceResCreate";
-
-int gTimeoutMs = 5000;
 
 int gDbusPendingRvalue = 0;
 
-
 /// application id
-char gAppId[MaxAppNameLen] = { [0 ... MaxAppNameLen-1] = 0};
+char gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE] = { [0 ... PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = 0};
 
-
-/// max key value data size [default 16kB]
-int gMaxKeyValDataSize = defaultMaxKeyValDataSize;
-
-
+/// flag to indicate if client library has been initialized
 unsigned int gPclInitCounter = 0;
 
-
+/// the DLT context
 DltContext gPclDLTContext;
 
 int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
-
+/// character lookup table used for parsing configuration files
 const char gCharLookup[] =
 {
    0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,  // from 0x0 (NULL)  to 0x1F (unit seperator)
@@ -98,13 +43,87 @@ const char gCharLookup[] =
 };
 
 
-const char* gPluginTypeDefault   = "default";
-const char* gPluginTypeEarly     = "early";
-const char* gPluginTypeSecure    = "secure";
-const char* gPluginTypeEmergency = "emergency";
-const char* gPluginTypeHwInfo    = "hwinfo";
-const char* gPluginTypeCustom1   = "custom1";
-const char* gPluginTypeCustom2   = "custom2";
-const char* gPluginTypeCustom3   = "custom3";
+// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+static const char* gLocalCachePath_        = CACHEPREFIX "%s";
+// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+static const char* gLocalWtPath_           = WTPREFIX "%s";
+// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+static const char* gSharedCachePath_       = CACHEPREFIX "%s/shared_group_%x";
+// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+static const char* gSharedWtPath_          = WTPREFIX "%s/shared_group_%x";
+// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+static const char* gSharedPublicCachePath_ = CACHEPREFIX "%s/shared_public";
+// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+static const char* gSharedPublicWtPath_    = WTPREFIX "%s/shared_public";
 
+// path prefix for local cached database: /Data/mnt_c/<appId>/ (<database_name>
+static const char* gLocalCachePathKey        = CACHEPREFIX "%s%s";
+// path prefix for local write through database /Data/mnt_wt/<appId>/<database_name>
+static const char* gLocalWtPathKey           = WTPREFIX "%s%s";
+// path prefix for shared cached database: /Data/mnt_c/Shared/Group/<group_no>/<database_name>
+static const char* gSharedCachePathKey       = CACHEPREFIX "%s/shared_group_%x%s";
+// path prefix for shared write through database: /Data/mnt_wt/Shared/Group/<group_no>/<database_name>
+static const char* gSharedWtPathKey          = WTPREFIX "%s/shared_group_%x%s";
+// path prefix for shared public cached database: /Data/mnt_c/Shared/Public//<database_name>
+static const char* gSharedPublicCachePathKey = CACHEPREFIX "%s/shared_public%s";
+// path prefix for shared public write through database: /Data/mnt_wt/Shared/Public/<database_name>
+static const char* gSharedPublicWtPathKey    = WTPREFIX "%s/shared_public%s";
+
+// path prefix for local cached files: /Data/mnt_c/<appId>/<user>/<seat>/<resource>
+const char* gLocalCacheFilePath        = CACHEPREFIX "%s"PERS_ORG_USER_FOLDER_NAME_"%d"PERS_ORG_SEAT_FOLDER_NAME_"%d/%s";
+
+
+const char* getLocalCachePath(void)
+{
+   return gLocalCachePath_;
+}
+const char* getLocalWtPath(void)
+{
+   return gLocalWtPath_;
+}
+const char* getSharedCachePath(void)
+{
+   return gSharedCachePath_;
+}
+const char* getSharedWtPath(void)
+{
+   return gSharedWtPath_;
+}
+const char* getSharedPublicCachePath(void)
+{
+   return gSharedPublicCachePath_;
+}
+const char* getSharedPublicWtPath(void)
+{
+   return gSharedPublicWtPath_;
+}
+const char* getLocalCachePathKey(void)
+{
+   return gLocalCachePathKey;
+}
+const char* getLocalWtPathKey(void)
+{
+   return gLocalWtPathKey;
+}
+const char* getSharedCachePathKey(void)
+{
+   return gSharedCachePathKey;
+}
+const char* getSharedWtPathKey(void)
+{
+   return gSharedWtPathKey;
+}
+const char* getSharedPublicCachePathKey(void)
+{
+   return gSharedPublicCachePathKey;
+}
+const char* getSharedPublicWtPathKey(void)
+{
+   return gSharedPublicWtPathKey;
+}
+
+const char* getLocalCacheFilePath(void)
+{
+   return gLocalCacheFilePath;
+}
 

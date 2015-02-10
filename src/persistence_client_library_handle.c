@@ -122,8 +122,8 @@ int set_key_handle_data(int idx, const char* id, unsigned int ldbid,  unsigned i
          item->value.keyHandle.ldbid   = ldbid;
          item->value.keyHandle.user_no = user_no;
          item->value.keyHandle.seat_no = seat_no;
-         strncpy(item->value.keyHandle.resource_id, id, DbResIDMaxLen);
-         item->value.keyHandle.resource_id[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+         strncpy(item->value.keyHandle.resource_id, id, PERS_DB_MAX_LENGTH_KEY_NAME);
+         item->value.keyHandle.resource_id[PERS_DB_MAX_LENGTH_KEY_NAME-1] = '\0'; // Ensures 0-Termination
 
          jsw_rbinsert(gKeyHandleTree, item);
 
@@ -158,8 +158,8 @@ int get_key_handle_data(int idx, PersistenceKeyHandle_s* handleStruct)
                handleStruct->ldbid   = foundItem->value.keyHandle.ldbid;
                handleStruct->user_no = foundItem->value.keyHandle.user_no;
                handleStruct->seat_no = foundItem->value.keyHandle.seat_no;
-               strncpy(handleStruct->resource_id, foundItem->value.keyHandle.resource_id, DbResIDMaxLen);
-               handleStruct->resource_id[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               strncpy(handleStruct->resource_id, foundItem->value.keyHandle.resource_id, PERS_DB_MAX_LENGTH_KEY_NAME);
+               handleStruct->resource_id[PERS_DB_MAX_LENGTH_KEY_NAME-1] = '\0'; // Ensures 0-Termination
                rval = 0;
             }
             free(item);
@@ -237,11 +237,11 @@ int set_file_handle_data(int idx, PersistencePermission_e permission, const char
          item->value.fileHandle.userId        = 0;             // default value
          item->value.fileHandle.filePath      = filePath;
 
-         strncpy(item->value.fileHandle.backupPath, backup, DbPathMaxLen);
-         item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+         strncpy(item->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+         item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-         strncpy(item->value.fileHandle.csumPath, csumPath, DbPathMaxLen);
-         item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+         strncpy(item->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+         item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
          jsw_rbinsert(gFileHandleTree, item);
 
@@ -433,10 +433,10 @@ void set_file_cache_status(int idx, int status)
                item->value.fileHandle.userId        = 0;             // default value
                item->value.fileHandle.filePath      = NULL;
 
-               memset(item->value.fileHandle.csumPath  , 0, DbResIDMaxLen);
-               item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
-               memset(item->value.fileHandle.backupPath, 0, DbResIDMaxLen);
-               item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
                jsw_rbinsert(gFileHandleTree, item);
             }
@@ -509,10 +509,10 @@ void set_file_user_id(int idx, int userID)
                item->value.fileHandle.cacheStatus   = -1;                  // set to -1 by default
                item->value.fileHandle.filePath      = NULL;
 
-               memset(item->value.fileHandle.csumPath  , 0, DbResIDMaxLen);
-               item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
-               memset(item->value.fileHandle.backupPath, 0, DbResIDMaxLen);
-               item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
                jsw_rbinsert(gFileHandleTree, item);
             }
@@ -592,10 +592,10 @@ int set_ossfile_handle_data(int idx, PersistencePermission_e permission, int bac
          item->value.fileHandle.userId        = 0;             // default value
          item->value.fileHandle.filePath      = filePath;
 
-         strncpy(item->value.fileHandle.backupPath, backup, DbPathMaxLen);
-         item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
-         strncpy(item->value.fileHandle.csumPath, csumPath, DbPathMaxLen);
-         item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+         strncpy(item->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+         item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+         strncpy(item->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+         item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
          jsw_rbinsert(gOssFileHandleTree, item);
 
@@ -713,11 +713,11 @@ void set_ossfile_file_path(int idx, char* file)
                item->value.fileHandle.permission    = -1;
                item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
                item->value.fileHandle.userId        = 0;             // default value
-               memset(item->value.fileHandle.csumPath  , 0, DbResIDMaxLen);
-               item->value.fileHandle.csumPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-               memset(item->value.fileHandle.backupPath, 0, DbResIDMaxLen);
-               item->value.fileHandle.backupPath[DbResIDMaxLen-1] = '\0'; // Ensures 0-Termination
+               memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
                jsw_rbinsert(gFileHandleTree, item);
             }

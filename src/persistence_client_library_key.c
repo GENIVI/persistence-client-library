@@ -24,6 +24,10 @@
 #include "persistence_client_library_db_access.h"
 
 
+/// max key value data size [default 16kB]
+static int gMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA;
+
+
 // function declaration
 static int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 static int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
@@ -48,8 +52,8 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
       {
          PersistenceInfo_s dbContext;
 
-         char dbKey[DbKeyMaxLen]   = {0};    // database key
-         char dbPath[DbPathMaxLen] = {0};    // database location
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};    // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;
@@ -315,8 +319,8 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
          {
             PersistenceInfo_s dbContext;
 
-           char dbKey[DbKeyMaxLen]   = {0};     // database key
-           char dbPath[DbPathMaxLen] = {0};     // database location
+           char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};     // database key
+           char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};     // database location
 
            dbContext.context.ldbid   = ldbid;
            dbContext.context.seat_no = seat_no;
@@ -363,8 +367,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
       {
          PersistenceInfo_s dbContext;
 
-         char dbKey[DbKeyMaxLen]   = {0};       // database key
-         char dbPath[DbPathMaxLen] = {0};       // database location
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};       // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;
@@ -413,8 +417,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          {
             PersistenceInfo_s dbContext;
 
-            char dbKey[DbKeyMaxLen]   = {0};       // database key
-            char dbPath[DbPathMaxLen] = {0};       // database location
+            char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
+            char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};       // database location
 
             dbContext.context.ldbid   = ldbid;
             dbContext.context.seat_no = seat_no;
@@ -471,8 +475,8 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
             {
                PersistenceInfo_s dbContext;
 
-               char dbKey[DbKeyMaxLen]   = {0};       // database key
-               char dbPath[DbPathMaxLen] = {0};       // database location
+               char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
+               char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};       // database location
 
                dbContext.context.ldbid   = ldbid;
                dbContext.context.seat_no = seat_no;
@@ -489,7 +493,7 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                      if(dbContext.configKey.storage < PersistenceStorage_LastEntry)       // check if store policy is valid
                      {
                         if(   (dbContext.configKey.storage == PersistenceStorage_shared)
-                           && (0 != strncmp(dbContext.configKey.reponsible, gAppId, MaxAppNameLen) ) )
+                           && (0 != strncmp(dbContext.configKey.reponsible, gAppId, PERS_RCT_MAX_LENGTH_RESPONSIBLE) ) )
                         {
                            data_size = EPERS_NOT_RESP_APP;
                         }
@@ -571,8 +575,8 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
          PersistenceInfo_s dbContext;
 
          //   unsigned int hash_val_data = 0;
-         char dbKey[DbKeyMaxLen]   = {0};      // database key
-         char dbPath[DbPathMaxLen] = {0};    // database location
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};      // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;

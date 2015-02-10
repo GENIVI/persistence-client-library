@@ -44,23 +44,23 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
    {
       if(gHandlesDBCreated[arrayIdx][dbType] == 0)
       {
-         char path[DbPathMaxLen] = {0};
+         char path[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
          if(PersistencePolicy_wt == dbType)				/// write through database
          {
-            snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalWt);
+            snprintf(path, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalWt);
          }
          else if(PersistencePolicy_wc == dbType)		// cached database
          {
-            snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalCached);
+            snprintf(path, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalCached);
          }
          else if(PersistenceDB_confdefault == dbType)	// configurable default database
 			{
-			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
+			  snprintf(path, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
 			}
 			else if(PersistenceDB_default == dbType)		// default database
 			{
-			  snprintf(path, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalFactoryDefault);
+			  snprintf(path, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalFactoryDefault);
 			}
          else
          {
@@ -102,7 +102,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 {
    PersDefaultType_e i = PersDefaultType_Configurable;
    int handleDefaultDB = -1, read_size = EPERS_NOKEY;
-   char dltMessage[DbPathMaxLen] = {0};
+   char dltMessage[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
    for(i=(int)PersistenceDB_confdefault; i<(int)PersistenceDB_LastEntry; i++)
    {
@@ -134,11 +134,11 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
          {
             if (PersDefaultType_Configurable == i)
             {
-               snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
+               snprintf(dltMessage, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalConfigurableDefault);
             }
             if (PersDefaultType_Factory == i)
             {
-                snprintf(dltMessage, DbPathMaxLen, "%s%s", dbPath, plugin_gLocalFactoryDefault);
+                snprintf(dltMessage, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalFactoryDefault);
             }
             DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getDefaults - default data will be used for Key"), DLT_STRING(key),
                                                   DLT_STRING("from"), DLT_STRING(dltMessage));
@@ -627,7 +627,7 @@ int persistence_notify_on_change(const char* key, unsigned int ldbid, unsigned i
    	data.message.params[2] = seat_no;
    	data.message.params[3] = regPolicy;
 
-   	snprintf(data.message.string, DbKeyMaxLen, "%s", key);
+   	snprintf(data.message.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", key);
 
       if(regPolicy == Notify_register)
       {
@@ -667,7 +667,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    	data.message.params[2] = context->seat_no;
    	data.message.params[3] = reason;
 
-   	snprintf(data.message.string, DbKeyMaxLen, "%s", key);
+   	snprintf(data.message.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", key);
 
       if(-1 == deliverToMainloop(&data) )
       {

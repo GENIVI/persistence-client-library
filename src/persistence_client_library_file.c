@@ -36,6 +36,17 @@
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 
+// path for the backup location
+static const char* gBackupPrefix     = PERS_ORG_ROOT_PATH "/mnt-backup/";
+// backup filename postfix
+static const char* gBackupPostfix    = "~";
+// backup checksum filename postfix
+static const char* gBackupCsPostfix  = "~.crc";
+// size of cached path string
+static const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
+// size of write through string
+static const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
+
 // local function prototype
 static int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
 static int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id);
@@ -50,7 +61,7 @@ char* get_raw_string(char* dbKey)
 	char* keyPtr = NULL;
 	int cnt = 0, i = 0;
 
-	for(i=0; i<DbKeyMaxLen; i++)
+	for(i=0; i<PERS_DB_MAX_LENGTH_KEY_NAME; i++)
 	{
 		if(dbKey[i] == '/')
 		{
@@ -202,9 +213,9 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
 {
    int handle = -1, length = 0, wantBackup = 1, cacheStatus = -1;
 
-   char fileSubPath[DbPathMaxLen] = {0};
-   char backupPath[DbPathMaxLen] = {0};    // backup file
-   char csumPath[DbPathMaxLen]   = {0};    // checksum file
+   char fileSubPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+   char backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // backup file
+   char csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]   = {0};    // checksum file
 
    if(dbContext->configKey.policy ==  PersistencePolicy_wc)
    {
@@ -215,10 +226,10 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       length = gWTPathPrefixSize;
    }
 
-   strncpy(fileSubPath, dbPath+length, DbPathMaxLen);
-   fileSubPath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
-   snprintf(backupPath, DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
-   snprintf(csumPath,   DbPathMaxLen-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
+   strncpy(fileSubPath, dbPath+length, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+   fileSubPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+   snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupPostfix);
+   snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s%s", gBackupPrefix, fileSubPath, gBackupCsPostfix);
 
    //
    // check valid database context
@@ -324,7 +335,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
    else
    {
       // assemble file string for local cached location
-      snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+      snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);
       handle = pclCreateFile(dbPath, 1);
       set_file_cache_status(handle, 1);
 
@@ -358,20 +369,20 @@ int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id
    int flags = pclGetPosixPermission(dbContext->configKey.permission);
 
    // check if there is default data available
-   char pathPrefix[DbPathMaxLen]  = { [0 ... DbPathMaxLen-1] = 0};
-   char defaultPath[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
+   char pathPrefix[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
+   char defaultPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
 
    if(dbContext->configKey.policy == PersistencePolicy_wc)           // create path to default data
    {
-      snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
+      snprintf(pathPrefix, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCachePath(), gAppId);
    }
    else if(dbContext->configKey.policy == PersistencePolicy_wt)
    {
-      snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
+      snprintf(pathPrefix, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPath(), gAppId);
    }
 
    // first check for  c o n f i g u r a b l e  default data
-   snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_CONFIG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+   snprintf(defaultPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", pathPrefix, PERS_ORG_CONFIG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
 
    return open(defaultPath, flags);
 }
@@ -387,8 +398,8 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
       PersistenceInfo_s dbContext;
 
       int shared_DB = 0;
-      char dbKey[DbKeyMaxLen]       = {0};    // database key
-      char dbPath[DbPathMaxLen]     = {0};    // database location
+      char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]       = {0};    // database key
+      char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]     = {0};    // database location
 
       //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
@@ -461,8 +472,8 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
          int shared_DB = 0;
          PersistenceInfo_s dbContext;
 
-         char dbKey[DbKeyMaxLen]   = {0};      // database key
-         char dbPath[DbPathMaxLen] = {0};    // database location
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};      // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
 
          dbContext.context.ldbid   = ldbid;
          dbContext.context.seat_no = seat_no;
@@ -629,10 +640,10 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
       int shared_DB = 0;
       PersistenceInfo_s dbContext;
 
-      char dbKey[DbKeyMaxLen]      = {0};    // database key
-      char dbPath[DbPathMaxLen]    = {0};    // database location
-      char backupPath[DbPathMaxLen] = {0};    // backup file
-      char csumPath[DbPathMaxLen]  = {0};    // checksum file
+      char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]      = {0};    // database key
+      char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]    = {0};    // database location
+      char backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // backup file
+      char csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = {0};    // checksum file
 
       //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
@@ -653,8 +664,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
             if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
                && pclBackupNeeded(get_raw_string(dbPath)) == CREATE_BACKUP)
             {
-               snprintf(backupPath, DbPathMaxLen-1, "%s%s", dbPath, gBackupPostfix);
-               snprintf(csumPath,   DbPathMaxLen-1, "%s%s", dbPath, gBackupCsPostfix);
+               snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s", dbPath, gBackupPostfix);
+               snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s", dbPath, gBackupCsPostfix);
 
                if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                {
@@ -736,15 +747,15 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
          else
          {
             // assemble file string for local cached location
-            snprintf(dbPath, DbPathMaxLen, gLocalCacheFilePath, gAppId, user_no, seat_no, resource_id);
+            snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);
             handle = get_persistence_handle_idx();
 
             if(handle != -1)
             {
                if(handle < MaxPersHandle)
                {
-                  snprintf(backupPath, DbPathMaxLen, "%s%s", dbPath, gBackupPostfix);
-                  snprintf(csumPath,   DbPathMaxLen, "%s%s", dbPath, gBackupCsPostfix);
+                  snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupPostfix);
+                  snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupCsPostfix);
 
                   __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);  // set open flag
 
@@ -820,25 +831,25 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
    int defaultHandle = -1, rval = 0;
 
 	// check if there is default data available
-	char pathPrefix[DbPathMaxLen]  = { [0 ... DbPathMaxLen-1] = 0};
-	char defaultPath[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
+	char pathPrefix[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
+	char defaultPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
 
 	// create path to default data
 	if(policy == PersistencePolicy_wc)
 	{
-		snprintf(pathPrefix, DbPathMaxLen, gLocalCachePath, gAppId);
+		snprintf(pathPrefix, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCachePath(), gAppId);
 	}
 	else if(policy == PersistencePolicy_wt)
 	{
-		snprintf(pathPrefix, DbPathMaxLen, gLocalWtPath, gAppId);
+		snprintf(pathPrefix, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPath(), gAppId);
 	}
 
 	// first check for  c o n f i g u r a b l e  default data
-	snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_CONFIG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+	snprintf(defaultPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", pathPrefix, PERS_ORG_CONFIG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
 	if(access(defaultPath, F_OK) )
 	{
       // if no  c o n f i g u r  a b l e  default data available, check for  d e f a u l t  data
-      snprintf(defaultPath, DbPathMaxLen, "%s%s/%s", pathPrefix, PERS_ORG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
+      snprintf(defaultPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", pathPrefix, PERS_ORG_DEFAULT_DATA_FOLDER_NAME_, resource_id);
 	}
 
 	defaultHandle = open(defaultPath, O_RDONLY);

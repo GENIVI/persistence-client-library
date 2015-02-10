@@ -76,7 +76,7 @@ int get_resource_cfg_table_by_idx(int i)
 {
    int idx = -1;
 
-   if(i > 0 && i < PrctDbTableSize)
+   if(i >= 0 && i < PrctDbTableSize)
    {
       idx = gResource_table[i];
    }
@@ -105,18 +105,18 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
    {
       if(gResourceOpen[arrayIdx] == 0)   // check if database is already open
       {
-         char filename[DbPathMaxLen] = { [0 ... DbPathMaxLen-1] = 0};
+         char filename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
 
          switch(rct)    // create db name
          {
          case PersistenceRCT_local:
-            snprintf(filename, DbPathMaxLen, gLocalWtPathKey, gAppId, plugin_gResTableCfg);
+            snprintf(filename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), gAppId, plugin_gResTableCfg);
             break;
          case PersistenceRCT_shared_public:
-            snprintf(filename, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, plugin_gResTableCfg);
+            snprintf(filename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedPublicWtPathKey(), gAppId, plugin_gResTableCfg);
             break;
          case PersistenceRCT_shared_group:
-            snprintf(filename, DbPathMaxLen, gSharedWtPathKey, gAppId, group, plugin_gResTableCfg);
+            snprintf(filename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedWtPathKey(), gAppId, group, plugin_gResTableCfg);
             break;
          default:
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - no valid PersistenceRCT_e"));
@@ -193,7 +193,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       dbContext->configKey.policy      = PersistencePolicy_wc;
       dbContext->configKey.storage     = PersistenceStorage_local;
       dbContext->configKey.permission  = PersistencePermission_ReadWrite;
-      dbContext->configKey.max_size    = defaultMaxKeyValDataSize;
+      dbContext->configKey.max_size    = PERS_DB_MAX_SIZE_KEY_DATA;
       if(isFile == PersistenceResourceType_file)
       {
          dbContext->configKey.type = PersistenceResourceType_file;
@@ -234,7 +234,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       if((dbContext->context.user_no == 0) && (dbContext->context.seat_no == 0))
       {
          // Node is added in front of the resource ID as the key string.
-         snprintf(dbKey, DbKeyMaxLen, "%s/%s", plugin_gNode, resource_id);
+         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s/%s", plugin_gNode, resource_id);
       }
       else
       {
@@ -242,12 +242,12 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(dbContext->context.seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, DbKeyMaxLen, "%s%d/%s", plugin_gUser, dbContext->context.user_no, resource_id);
+            snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s%d/%s", plugin_gUser, dbContext->context.user_no, resource_id);
          }
          else
          {
             // /User/<user_no_parameter>/Seat/<seat_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, DbKeyMaxLen, "%s%d%s%d/%s", plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
+            snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s%d%s%d/%s", plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
          }
       }
       storePolicy = PersistenceStorage_local;
@@ -262,11 +262,11 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       // /User/<user_no_parameter> and /Seat/<seat_no_parameter> are add after /<LDBID parameter> if there are different than 0.
       if(dbContext->context.seat_no != 0)
       {
-         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
+         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "/%x%s%d%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
       }
       else
       {
-         snprintf(dbKey, DbKeyMaxLen, "/%x%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, resource_id);
+         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "/%x%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, resource_id);
       }
       storePolicy = PersistenceStorage_local;
    }
@@ -284,16 +284,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePath, gAppId, dbContext->context.ldbid, "");
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedCachePath(), gAppId, dbContext->context.ldbid, "");
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedCachePathKey, gAppId, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedCachePathKey(), gAppId, dbContext->context.ldbid, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedWtPath, gAppId, dbContext->context.ldbid);
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedWtPath(), gAppId, dbContext->context.ldbid);
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedWtPathKey, gAppId, dbContext->context.ldbid, dbKey);
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedWtPathKey(), gAppId, dbContext->context.ldbid, dbKey);
          }
       }
       else
@@ -304,16 +304,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(PersistencePolicy_wc == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePath, gAppId, "");
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedPublicCachePath(), gAppId, "");
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicCachePathKey, gAppId, dbKey);
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedPublicCachePathKey(), gAppId, dbKey);
          }
          else if(PersistencePolicy_wt == dbContext->configKey.policy)
          {
             if(dbContext->configKey.type == PersistenceResourceType_key)
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPath, gAppId, "");
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedPublicWtPath(), gAppId, "");
             else
-               snprintf(dbPath, DbPathMaxLen, gSharedPublicWtPathKey, gAppId, dbKey);
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getSharedPublicWtPathKey(), gAppId, dbKey);
          }
       }
       storePolicy = PersistenceStorage_shared;   // we have a shared database
@@ -324,16 +324,16 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       if(PersistencePolicy_wc == dbContext->configKey.policy)
       {
          if(dbContext->configKey.type == PersistenceResourceType_key)
-            snprintf(dbPath, DbPathMaxLen, gLocalCachePath, gAppId, "");
+            snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCachePath(), gAppId, "");
          else
-            snprintf(dbPath, DbPathMaxLen, gLocalCachePathKey, gAppId, dbKey);
+            snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCachePathKey(), gAppId, dbKey);
       }
       else if(PersistencePolicy_wt == dbContext->configKey.policy)
       {
          if(dbContext->configKey.type == PersistenceResourceType_key)
-            snprintf(dbPath, DbPathMaxLen-1, gLocalWtPath, gAppId, "");
+            snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, getLocalWtPath(), gAppId, "");
          else
-            snprintf(dbPath, DbPathMaxLen-1, gLocalWtPathKey, gAppId, dbKey);
+            snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, getLocalWtPathKey(), gAppId, dbKey);
       }
 
       storePolicy = PersistenceStorage_local;   // we have a local database

@@ -222,11 +222,11 @@ int pclCreateFile(const char* path, int chached)
 {
    const char* delimiters = "/\n";   // search for blank and end of line
    char* tokenArray[24] = {0};
-   char thePath[DbPathMaxLen] = {0};
+   char thePath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
    int numTokens = 0, i = 0, validPath = 1, handle = -1;
 
-   strncpy(thePath, path, DbPathMaxLen);
-   thePath[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+   strncpy(thePath, path, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+   thePath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
    tokenArray[numTokens++] = strtok(thePath, delimiters);
    while(tokenArray[numTokens-1] != NULL )
@@ -249,18 +249,18 @@ int pclCreateFile(const char* path, int chached)
 
    if(validPath == 1)
    {
-      char createPath[DbPathMaxLen] = {0};
-      snprintf(createPath, DbPathMaxLen, "/%s",tokenArray[0] );
+      char createPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+      snprintf(createPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "/%s",tokenArray[0] );
       for(i=1; i<numTokens-1; i++)
       {
          // create folders
-         strncat(createPath, "/", DbPathMaxLen-1);
-         strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+         strncat(createPath, "/", PERS_ORG_MAX_LENGTH_PATH_FILENAME-1);
+         strncat(createPath, tokenArray[i], PERS_ORG_MAX_LENGTH_PATH_FILENAME-1);
          (void)mkdir(createPath, 0744);
       }
       // finally create the file
-      strncat(createPath, "/", DbPathMaxLen-1);
-      strncat(createPath, tokenArray[i], DbPathMaxLen-1);
+      strncat(createPath, "/", PERS_ORG_MAX_LENGTH_PATH_FILENAME-1);
+      strncat(createPath, tokenArray[i], PERS_ORG_MAX_LENGTH_PATH_FILENAME-1);
 
 #if USE_FILECACHE
       if(chached == 0)
@@ -470,10 +470,10 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
    if(access(dstPath, F_OK) != 0)
    {
       int handle = -1;
-      char pathToCreate[DbPathMaxLen] = {0};
+      char pathToCreate[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
-      strncpy(pathToCreate, dstPath, DbPathMaxLen);
-      pathToCreate[DbPathMaxLen-1] = '\0'; // Ensures 0-Termination
+      strncpy(pathToCreate, dstPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+      pathToCreate[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
       handle = pclCreateFile(pathToCreate, 0);
       close(handle);       // don't need the open file

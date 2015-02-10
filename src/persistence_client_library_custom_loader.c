@@ -28,12 +28,29 @@
 /// type definition of persistence custom library information
 typedef struct sPersCustomLibInfo
 {
-   char                 libname[CustLibMaxLen];
+   char                 libname[PERS_RCT_MAX_LENGTH_CUSTOM_NAME];
    int                  valid;
    PersInitType_e       initFunction;
    PersLoadingType_e    loadingType;
 } PersCustomLibInfo;
 
+
+/// plugin name definition for default plugin
+static const char* gPluginTypeDefault   = "default";
+/// plugin name definition for early plugin
+static const char* gPluginTypeEarly     = "early";
+/// plugin name definition for secure plugin
+static const char* gPluginTypeSecure    = "secure";
+/// plugin name definition for emergency plugin
+static const char* gPluginTypeEmergency = "emergency";
+/// plugin name definition for hardwarte info plugin
+static const char* gPluginTypeHwInfo    = "hwinfo";
+/// plugin name definition for custom 1 plugin
+static const char* gPluginTypeCustom1   = "custom1";
+/// plugin name definition for custom 2 plugin
+static const char* gPluginTypeCustom2   = "custom2";
+/// plugin name definition for custom 3 plugin
+static const char* gPluginTypeCustom3   = "custom3";
 
 /// array with custom client library names
 static PersCustomLibInfo gCustomLibArray[PersCustomLib_LastEntry];
@@ -263,8 +280,8 @@ int get_custom_libraries()
                int libId = custom_client_name_to_id(gpCustomTokenArray[i], 0);   // get the custom libID
 
                // assign the library name
-               strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], CustLibMaxLen);
-               gCustomLibArray[libId].libname[CustLibMaxLen-1] = '\0'; // Ensures 0-Termination
+               strncpy(gCustomLibArray[libId].libname, gpCustomTokenArray[i+1], PERS_RCT_MAX_LENGTH_CUSTOM_NAME);
+               gCustomLibArray[libId].libname[PERS_RCT_MAX_LENGTH_CUSTOM_NAME-1] = '\0'; // Ensures 0-Termination
 
                gCustomLibArray[libId].loadingType  = getLoadingType(gpCustomTokenArray[i+2]);
                gCustomLibArray[libId].initFunction = getInitType(gpCustomTokenArray[i+3]);

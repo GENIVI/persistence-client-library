@@ -40,6 +40,16 @@
 #include <errno.h>
 #include <dlfcn.h>
 
+/// change signal string
+static const char* gChangeSignal = "PersistenceResChange";
+/// delete signal string
+static const char* gDeleteSignal = "PersistenceResDelete";
+/// create signal string
+static const char* gCreateSignal = "PersistenceResCreate";
+
+/// dbus timeout
+static int gTimeoutMs = 5000;
+
 // function prototype
 static void msg_pending_func(DBusPendingCall *call, void *data);
 
