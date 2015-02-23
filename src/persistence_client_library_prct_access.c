@@ -122,7 +122,7 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - no valid PersistenceRCT_e"));
             break;
          }
-         gResource_table[arrayIdx] = plugin_persComRctOpen(filename, 0x00);
+         gResource_table[arrayIdx] = plugin_persComRctOpen(filename, 0x04);   // 0x04 ==> open in read only mode
 
          if(gResource_table[arrayIdx] < 0)
          {

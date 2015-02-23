@@ -47,12 +47,16 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 
    if(arrayIdx < DbTableSize)
    {
+      int openFlags = 0x01;   // by default create file if not existing
+
       if(gHandlesDBCreated[arrayIdx][dbType] == 0)
       {
          char path[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
          if(PersistencePolicy_wt == dbType)				/// write through database
          {
+            /// 0x02 ==> open database in write through mode,keep bit 1 set in order to create db if not existing
+            openFlags |= 0x02;
             snprintf(path, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalWt);
          }
          else if(PersistencePolicy_wc == dbType)		// cached database
@@ -74,7 +78,7 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 
          if (handleDB == -1)
          {
-            handleDB = plugin_persComDbOpen(path, 0x01);
+            handleDB = plugin_persComDbOpen(path, openFlags);
             if(handleDB >= 0)
             {
                gHandlesDB[arrayIdx][dbType] = handleDB ;
