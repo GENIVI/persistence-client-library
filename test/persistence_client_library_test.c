@@ -62,6 +62,14 @@ void data_setup(void)
    (void)pclInitLibrary(gTheAppId, shutdownReg);
 }
 
+
+void data_setup_browser(void)
+{
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   (void)pclInitLibrary("browser", shutdownReg);
+}
+
+
 void data_teardown(void)
 {
    pclDeinitLibrary();
@@ -1702,6 +1710,107 @@ END_TEST
 
 
 
+
+void runTestSequence(const char* resourceID)
+{
+   int fd1 = 0, fd2 = 0, rval = 0;
+      unsigned char buffer[READ_SIZE] = {0};
+      unsigned char writebuffer[]  = {" _Updates file_ "};
+      unsigned char writebuffer2[] = {" _New Data_ "};
+
+      // part one: write to file
+      // ------------------------------------------
+      fd1 = pclFileOpen(PCL_LDBID_LOCAL, resourceID, 1, 1);
+      fail_unless(fd1 != -1, "Could not open file ==> dataLoc/file.txt");
+
+      (void)pclFileReadData(fd1, buffer, READ_SIZE);
+      (void)pclFileWriteData(fd1, writebuffer, strlen((char*)writebuffer));
+
+   #if 1
+      rval = pclFileClose(fd1);
+      fail_unless(rval == 0, "Could not close file ==> dataLoc/file.txt");
+   #else
+      printf("\nN O  C L O S E\n\n");
+   #endif
+
+      // part two: remove file
+      // ------------------------------------------
+      rval = pclFileRemove(PCL_LDBID_LOCAL, resourceID, 1, 1);
+      fail_unless(rval == 0, "Could not remove file ==> dataLoc/file.txt");
+
+
+      // part three: open file again, and write to it
+      // ------------------------------------------
+      fd2 = pclFileOpen(PCL_LDBID_LOCAL, resourceID, 1, 1);
+      fail_unless(fd1 != -1, "Could not open file ==> dataLoc/file.txt");
+
+      (void)pclFileWriteData(fd2, writebuffer2, strlen((char*)writebuffer2));
+
+      rval = pclFileClose(fd2);
+      fail_unless(rval == 0, "Could not close file ==> dataLoc/file.txt");
+}
+START_TEST(test_FileTest)
+{
+   int i = 0;
+   const char* resourceID_01 = "dataLoc/fileB.txt";
+   const char* resourceID_02 = "dataLoc/fileA.txt";
+   int fdArray[10] = {0};
+
+   const char* resourceIDArray[] = {"dataLoc/fileC.txt",
+                                    "dataLoc/fileD.txt",
+                                    "dataLoc/fileE.txt",
+                                    "dataLoc/fileF.txt",
+                                    "dataLoc/fileG.txt"};
+#if 1
+   const char* testStringsFirst[] = {"FIRST - - Test Data START - dataLoc/fileC.txt - Test Data END  ",
+                                     "FIRST - - Test Data START - dataLoc/fileD.txt - Test Data END  ",
+                                     "FIRST - - Test Data START - dataLoc/fileE.txt - Test Data END  ",
+                                     "FIRST - - Test Data START - dataLoc/fileF.txt - Test Data END  ",
+                                     "FIRST - - Test Data START - dataLoc/fileG.txt - Test Data END  "};
+
+   const char* testStringsSecond[] = {"Second - - Test Data START - dataLoc/fileC.txt - Test Data END  ",
+                                      "Second - - Test Data START - dataLoc/fileD.txt - Test Data END  ",
+                                      "Second - - Test Data START - dataLoc/fileE.txt - Test Data END  ",
+                                      "Second - - Test Data START - dataLoc/fileF.txt - Test Data END  ",
+                                      "Second - - Test Data START - dataLoc/fileG.txt - Test Data END  "};
+#endif
+   // open files
+
+   for(i=0; i<(int)sizeof(resourceIDArray) / (int)sizeof(char*); i++)
+   {
+      fdArray[i] = pclFileOpen(PCL_LDBID_LOCAL, resourceIDArray[i], 1, 1);
+      //printf("********  test_FileTest => pclFileOpen: %s -- %d\n", resourceIDArray[i], fdArray[i] );
+      fail_unless(fdArray[i] != -1, "Could not open file ==> file: %s", resourceIDArray[i]);
+   }
+
+   // write to files
+   for(i=0; i<(int)sizeof(resourceIDArray) / (int)sizeof(char*); i++)
+   {
+      (void)pclFileWriteData(fdArray[i], testStringsFirst[i], strlen((char*)testStringsFirst[i]));
+   }
+
+   runTestSequence(resourceID_01);
+   runTestSequence(resourceID_02);
+
+
+   // write to files again
+   for(i=0; i<(int)sizeof(resourceIDArray) / (int)sizeof(char*); i++)
+   {
+      (void)pclFileWriteData(fdArray[i], testStringsSecond[i], strlen((char*)testStringsSecond[i]));
+   }
+
+
+   // close files
+   for(i=0; i<(int)sizeof(resourceIDArray) / (int)sizeof(char*); i++)
+   {
+      fdArray[i] = pclFileClose(fdArray[i]);
+      fail_unless(fdArray[i] == 0, "Could not close file ==> file: %s - %d", resourceIDArray[i], fdArray[i]);
+   }
+}
+END_TEST
+
+
+
 static Suite * persistencyClientLib_suite()
 {
    const char* testSuiteName = "Persistency_client_library";
@@ -1814,6 +1923,10 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_VO722, test_VO722);
    tcase_set_timeout(tc_VO722, 5);
 
+   TCase * tc_FileTest = tcase_create("FileTest");
+   tcase_add_test(tc_FileTest, test_FileTest);
+   tcase_set_timeout(tc_FileTest, 2);
+
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1880,6 +1993,10 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_SharedAccess);
 
    suite_add_tcase(s, tc_VO722);
+
+   suite_add_tcase(s, tc_FileTest);
+   tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
+
 
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);

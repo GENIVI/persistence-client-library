@@ -53,6 +53,28 @@ static int gFreeHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 static int gFreeHandleIdxHead = 0;
 
 
+void deleteHandleTrees(void)
+{
+   if(gKeyHandleTree != NULL)
+   {
+      jsw_rbdelete(gKeyHandleTree);
+      gKeyHandleTree = NULL;
+   }
+
+   if(gFileHandleTree != NULL)
+   {
+      jsw_rbdelete(gFileHandleTree);
+      gFileHandleTree = NULL;
+   }
+
+   if(gOssFileHandleTree != NULL)
+   {
+      jsw_rbdelete(gOssFileHandleTree);
+      gOssFileHandleTree = NULL;
+   }
+}
+
+
 int get_persistence_handle_idx()
 {
    int handle = 0;
@@ -224,6 +246,28 @@ void clear_key_handle_array(int idx)
 }
 
 
+int remove_file_handle_data(int idx)
+{
+   int rval = -1;
+
+   if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
+   {
+      if(gFileHandleTree != NULL)
+      {
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));    // assign key and value to the rbtree item
+         if(item != NULL)
+         {
+            item->key = idx;
+            rval = jsw_rberase(gFileHandleTree, item);
+         }
+      }
+
+      pthread_mutex_unlock(&gFileHandleAccessMtx);
+   }
+
+   return rval;
+}
+
 int set_file_handle_data(int idx, PersistencePermission_e permission, const char* backup, const char* csumPath, char* filePath)
 {
 	int rval = -1;
@@ -240,24 +284,58 @@ int set_file_handle_data(int idx, PersistencePermission_e permission, const char
       item = malloc(sizeof(FileHandleTreeItem_s));    // assign key and value to the rbtree item
       if(item != NULL)
       {
+         FileHandleTreeItem_s* foundItem = NULL;
          item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+         if(foundItem == NULL)
+         {
+            item->key = idx;
 
-         item->value.fileHandle.permission    = permission;
-         item->value.fileHandle.backupCreated = 0;             // set to 0 by default
-         item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
-         item->value.fileHandle.userId        = 0;             // default value
-         item->value.fileHandle.filePath      = filePath;
+            item->value.fileHandle.permission    = permission;
+            item->value.fileHandle.backupCreated = 0;             // set to 0 by default
+            item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+            item->value.fileHandle.userId        = 0;             // default value
+            item->value.fileHandle.filePath      = filePath;
 
-         strncpy(item->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-         item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            strncpy(item->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-         strncpy(item->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-         item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            strncpy(item->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-         jsw_rbinsert(gFileHandleTree, item);
+            //debugFileItem("set_file_handle_data => insert", item);
+            jsw_rbinsert(gFileHandleTree, item);
 
+
+         }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               newItem->key = idx;
+
+               newItem->value.fileHandle.permission    = permission;
+               newItem->value.fileHandle.filePath      = filePath;
+
+               strncpy(newItem->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               newItem->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+
+               strncpy(newItem->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               newItem->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+
+               //debugFileItem("set_file_backup_status => erase => foundItem", foundItem);
+               jsw_rberase(gFileHandleTree, foundItem);
+
+               //debugFileItem("set_file_backup_status => insert => newItem", newItem);
+               jsw_rbinsert(gFileHandleTree, newItem);
+
+               free(newItem);
+            }
+         }
          free(item);
-
          rval = 0;
       }
 
@@ -285,6 +363,7 @@ int get_file_permission(int idx)
             if(foundItem != NULL)
             {
                permission = foundItem->value.fileHandle.permission;
+               //debugFileItem("get_file_permission => foundItem", foundItem);
             }
             else
             {
@@ -315,6 +394,7 @@ char* get_file_backup_path(int idx)
             if(foundItem != NULL)
             {
                charPtr = foundItem->value.fileHandle.backupPath;
+               //debugFileItem("get_file_backup_path => foundItem", foundItem);
             }
             free(item);
          }
@@ -341,6 +421,7 @@ char* get_file_checksum_path(int idx)
             if(foundItem != NULL)
             {
                charPtr = foundItem->value.fileHandle.csumPath;
+               //debugFileItem("get_file_checksum_path => foundItem", foundItem);
             }
             free(item);
          }
@@ -355,44 +436,50 @@ void set_file_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-      if(gFileHandleTree != NULL)
+	   FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+
+      if(gFileHandleTree == NULL)
       {
-         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
-         if(item != NULL)
+         gFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
+      }
+
+      if(item != NULL)
+      {
+         FileHandleTreeItem_s* foundItem = NULL;
+         item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+         if(foundItem == NULL)
          {
-            FileHandleTreeItem_s* foundItem = NULL;
-            item->key = idx;
-            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
-            if(foundItem == NULL)
-            {
-               item->value.fileHandle.backupCreated = status;
+            item->value.fileHandle.backupCreated = status;
 
-               item->value.fileHandle.permission    = PersistencePermission_LastEntry;
-               item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
-               item->value.fileHandle.userId        = 0;             // default value
-               item->value.fileHandle.filePath      = NULL;
+            item->value.fileHandle.permission    = PersistencePermission_LastEntry;
+            item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+            item->value.fileHandle.userId        = 0;             // default value
+            item->value.fileHandle.filePath      = NULL;
 
-               jsw_rbinsert(gFileHandleTree, item);
-            }
-            else
-            {
-               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
-               if(newItem != NULL)
-               {
-                  memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
-
-                  newItem->key = idx;
-                  newItem->value.fileHandle.backupCreated = status;
-
-                  jsw_rberase(gFileHandleTree, foundItem);
-
-                  jsw_rbinsert(gFileHandleTree, newItem);
-
-                  free(newItem);
-               }
-            }
-            free(item);
+            //debugFileItem("set_file_backup_status => insert => item", item);
+            jsw_rbinsert(gFileHandleTree, item);
          }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               newItem->key = idx;
+               newItem->value.fileHandle.backupCreated = status;
+
+               //debugFileItem("set_file_backup_status => erase => foundItem", foundItem);
+               jsw_rberase(gFileHandleTree, foundItem);
+
+               //debugFileItem("set_file_backup_status => insert => newItem", newItem);
+               jsw_rbinsert(gFileHandleTree, newItem);
+
+               free(newItem);
+            }
+         }
+         free(item);
       }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
@@ -414,6 +501,7 @@ int get_file_backup_status(int idx)
             if(foundItem != NULL)
             {
                backup = foundItem->value.fileHandle.backupCreated;
+               //debugFileItem("get_file_backup_status => foundItem", foundItem);
             }
             free(item);
          }
@@ -427,47 +515,53 @@ void set_file_cache_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
 	{
-	   if(gFileHandleTree != NULL)
+	   FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+
+	   if(gFileHandleTree == NULL)
       {
-         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
-         if(item != NULL)
+	      gFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
+      }
+
+      if(item != NULL)
+      {
+         FileHandleTreeItem_s* foundItem = NULL;
+         item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+         if(foundItem == NULL)
          {
-            FileHandleTreeItem_s* foundItem = NULL;
-            item->key = idx;
-            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
-            if(foundItem == NULL)
-            {
-               item->value.fileHandle.cacheStatus   = status;
+            item->value.fileHandle.cacheStatus   = status;
 
-               item->value.fileHandle.backupCreated = 0;            // set to 0 by default
-               item->value.fileHandle.permission    = PersistencePermission_LastEntry;
-               item->value.fileHandle.userId        = 0;             // default value
-               item->value.fileHandle.filePath      = NULL;
+            item->value.fileHandle.backupCreated = 0;            // set to 0 by default
+            item->value.fileHandle.permission    = PersistencePermission_LastEntry;
+            item->value.fileHandle.userId        = 0;             // default value
+            item->value.fileHandle.filePath      = NULL;
 
-               memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-               item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
-               memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-               item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-               jsw_rbinsert(gFileHandleTree, item);
-            }
-            else
-            {
-               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
-               if(newItem != NULL)
-               {
-                  memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
-
-                  jsw_rberase(gFileHandleTree, foundItem);
-
-                  newItem->key = idx;
-                  newItem->value.fileHandle.cacheStatus = status;
-                  jsw_rbinsert(gFileHandleTree, newItem);
-                  free(newItem);
-               }
-            }
-            free(item);
+            //debugFileItem("set_file_cache_status => insert => item", item);
+            jsw_rbinsert(gFileHandleTree, item);
          }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               //debugFileItem("set_file_cache_status => erase => foundItem", foundItem);
+               jsw_rberase(gFileHandleTree, foundItem);
+
+               newItem->key = idx;
+               newItem->value.fileHandle.cacheStatus = status;
+               //debugFileItem("set_file_cache_status => insert => newItem", newItem);
+               jsw_rbinsert(gFileHandleTree, newItem);
+               free(newItem);
+            }
+         }
+         free(item);
       }
 		pthread_mutex_unlock(&gFileHandleAccessMtx);
 	}
@@ -503,49 +597,56 @@ void set_file_user_id(int idx, int userID)
 {
    if(pthread_mutex_lock(&gFileHandleAccessMtx) == 0)
    {
-      if(gFileHandleTree != NULL)
+      FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+      if(gFileHandleTree == NULL)
       {
-         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
-         if(item != NULL)
-         {
-            FileHandleTreeItem_s* foundItem = NULL;
-            item->key = idx;
-            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
-            if(foundItem == NULL)
-            {
-               item->value.fileHandle.userId        = userID;              // default value
-
-               item->value.fileHandle.backupCreated = 0;                   // set to 0 by default
-               item->value.fileHandle.permission    = -1;
-               item->value.fileHandle.cacheStatus   = -1;                  // set to -1 by default
-               item->value.fileHandle.filePath      = NULL;
-
-               memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-               item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
-               memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-               item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
-
-               jsw_rbinsert(gFileHandleTree, item);
-            }
-            else
-            {
-               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
-               if(newItem != NULL)
-               {
-                  memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
-
-                  jsw_rberase(gFileHandleTree, foundItem);
-
-                  newItem->key = idx;
-                  newItem->value.fileHandle.userId = userID;
-                  jsw_rbinsert(gFileHandleTree, newItem);
-
-                  free(newItem);
-               }
-            }
-            free(item);
-         }
+         gFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
       }
+
+      if(item != NULL)
+      {
+         FileHandleTreeItem_s* foundItem = NULL;
+         item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
+         if(foundItem == NULL)
+         {
+            item->value.fileHandle.userId        = userID;              // default value
+
+            item->value.fileHandle.backupCreated = 0;                   // set to 0 by default
+            item->value.fileHandle.permission    = -1;
+            item->value.fileHandle.cacheStatus   = -1;                  // set to -1 by default
+            item->value.fileHandle.filePath      = NULL;
+
+            memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+
+            //debugFileItem("set_file_user_id => insert", item);
+            jsw_rbinsert(gFileHandleTree, item);
+         }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               //debugFileItem("set_file_user_id => erase", foundItem);
+               jsw_rberase(gFileHandleTree, foundItem);
+
+               newItem->key = idx;
+               newItem->value.fileHandle.userId = userID;
+               //debugFileItem("set_file_user_id => insert", newItem);
+               jsw_rbinsert(gFileHandleTree, newItem);
+
+               free(newItem);
+            }
+         }
+         free(item);
+         free(foundItem);
+      }
+
       pthread_mutex_unlock(&gFileHandleAccessMtx);
    }
 }
@@ -595,23 +696,62 @@ int set_ossfile_handle_data(int idx, PersistencePermission_e permission, int bac
       item = malloc(sizeof(FileHandleTreeItem_s));    // assign key and value to the rbtree item
       if(item != NULL)
       {
+         FileHandleTreeItem_s* foundItem = NULL;
          item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+         if(foundItem == NULL)
+         {
 
-         item->value.fileHandle.permission    = permission;
-         item->value.fileHandle.backupCreated = backupCreated;
-         item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
-         item->value.fileHandle.userId        = 0;             // default value
-         item->value.fileHandle.filePath      = filePath;
+            item->key = idx;
 
-         strncpy(item->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-         item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
-         strncpy(item->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-         item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            item->value.fileHandle.permission    = permission;
+            item->value.fileHandle.backupCreated = backupCreated;
+            item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+            item->value.fileHandle.userId        = 0;             // default value
+            item->value.fileHandle.filePath      = filePath;
 
-         jsw_rbinsert(gOssFileHandleTree, item);
+            strncpy(item->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            strncpy(item->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-         free(item);
-         rval = 0;
+            jsw_rbinsert(gOssFileHandleTree, item);
+
+            free(item);
+            rval = 0;
+         }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               newItem->key = idx;
+
+               newItem->value.fileHandle.permission    = permission;
+               newItem->value.fileHandle.filePath      = filePath;
+
+               strncpy(newItem->value.fileHandle.backupPath, backup, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               newItem->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+
+               strncpy(newItem->value.fileHandle.csumPath, csumPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+               newItem->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+
+               //debugFileItem("set_file_backup_status => erase => foundItem", foundItem);
+               jsw_rberase(gOssFileHandleTree, foundItem);
+
+               //debugFileItem("set_file_backup_status => insert => newItem", newItem);
+               jsw_rbinsert(gOssFileHandleTree, newItem);
+
+               free(newItem);
+            }
+
+         }
+      }
+      else
+      {
+
       }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
@@ -683,7 +823,6 @@ char* get_ossfile_file_path(int idx)
    char* charPtr = NULL;
    if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
    {
-
       if(gOssFileHandleTree != NULL)
       {
          FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
@@ -708,48 +847,51 @@ void set_ossfile_file_path(int idx, char* file)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-	   if(gFileHandleTree != NULL)
+	   FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+
+      if(gOssFileHandleTree == NULL)
       {
-         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
-         if(item != NULL)
+         gOssFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
+      }
+
+      if(item != NULL)
+      {
+         FileHandleTreeItem_s* foundItem = NULL;
+         item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+         if(foundItem == NULL)
          {
-            FileHandleTreeItem_s* foundItem = NULL;
-            item->key = idx;
-            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gFileHandleTree, item);
-            if(foundItem == NULL)
-            {
-               item->value.fileHandle.filePath      = file;
+            item->value.fileHandle.filePath      = file;
 
-               item->value.fileHandle.backupCreated = 0;             // set to 0 by default
-               item->value.fileHandle.permission    = -1;
-               item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
-               item->value.fileHandle.userId        = 0;             // default value
-               memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-               item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            item->value.fileHandle.backupCreated = 0;             // set to 0 by default
+            item->value.fileHandle.permission    = -1;
+            item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+            item->value.fileHandle.userId        = 0;             // default value
+            memset(item->value.fileHandle.csumPath  , 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-               memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
-               item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
+            memset(item->value.fileHandle.backupPath, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
+            item->value.fileHandle.backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
-               jsw_rbinsert(gFileHandleTree, item);
-            }
-            else
-            {
-               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
-               if(newItem != NULL)
-               {
-                  memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
-
-                  jsw_rberase(gFileHandleTree, foundItem);
-
-                  newItem->key = idx;
-                  newItem->value.fileHandle.filePath = file;
-                  jsw_rbinsert(gFileHandleTree, newItem);
-
-                  free(newItem);
-               }
-            }
-            free(item);
+            jsw_rbinsert(gOssFileHandleTree, item);
          }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               jsw_rberase(gOssFileHandleTree, foundItem);
+
+               newItem->key = idx;
+               newItem->value.fileHandle.filePath = file;
+               jsw_rbinsert(gOssFileHandleTree, newItem);
+
+               free(newItem);
+            }
+         }
+         free(item);
       }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
@@ -786,43 +928,46 @@ void set_ossfile_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
 	{
-	   if(gOssFileHandleTree != NULL)
+	   FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
+
+      if(gOssFileHandleTree == NULL)
       {
-         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));
-         if(item != NULL)
+         gOssFileHandleTree = jsw_rbnew(fh_key_val_cmp, fh_key_val_dup, fh_key_val_rel);
+      }
+
+      if(item != NULL)
+      {
+         FileHandleTreeItem_s* foundItem = NULL;
+         item->key = idx;
+         foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
+         if(foundItem == NULL)
          {
-            FileHandleTreeItem_s* foundItem = NULL;
-            item->key = idx;
-            foundItem = (FileHandleTreeItem_s*)jsw_rbfind(gOssFileHandleTree, item);
-            if(foundItem == NULL)
-            {
-               item->value.fileHandle.backupCreated = status;
+            item->value.fileHandle.backupCreated = status;
 
-               item->value.fileHandle.permission    = PersistencePermission_LastEntry;
-               item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
-               item->value.fileHandle.userId        = 0;             // default value
-               item->value.fileHandle.filePath      = NULL;
+            item->value.fileHandle.permission    = PersistencePermission_LastEntry;
+            item->value.fileHandle.cacheStatus   = -1;            // set to -1 by default
+            item->value.fileHandle.userId        = 0;             // default value
+            item->value.fileHandle.filePath      = NULL;
 
-               jsw_rbinsert(gOssFileHandleTree, item);
-            }
-            else
-            {
-               FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
-               if(newItem != NULL)
-               {
-                  memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
-
-                  newItem->key = idx;
-                  newItem->value.fileHandle.backupCreated = status;
-
-                  jsw_rberase(gFileHandleTree, foundItem);
-
-                  jsw_rbinsert(gFileHandleTree, newItem);
-                  free(newItem);
-               }
-            }
-            free(item);
+            jsw_rbinsert(gOssFileHandleTree, item);
          }
+         else
+         {
+            FileHandleTreeItem_s* newItem = malloc(sizeof(FileHandleTreeItem_s));
+            if(newItem != NULL)
+            {
+               memcpy(newItem->value.payload , foundItem->value.payload, sizeof(FileHandleData_u) ); // duplicate value
+
+               newItem->key = idx;
+               newItem->value.fileHandle.backupCreated = status;
+
+               jsw_rberase(gOssFileHandleTree, foundItem);
+
+               jsw_rbinsert(gOssFileHandleTree, newItem);
+               free(newItem);
+            }
+         }
+         free(item);
       }
 		pthread_mutex_unlock(&gOssFileHandleAccessMtx);
 	}
@@ -852,4 +997,27 @@ int get_ossfile_backup_status(int idx)
       pthread_mutex_unlock(&gOssFileHandleAccessMtx);
    }
 	return rval;
+}
+
+
+int remove_ossfile_handle_data(int idx)
+{
+   int rval = -1;
+
+   if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
+   {
+      if(gOssFileHandleTree != NULL)
+      {
+         FileHandleTreeItem_s* item = malloc(sizeof(FileHandleTreeItem_s));    // assign key and value to the rbtree item
+         if(item != NULL)
+         {
+            item->key = idx;
+            rval = jsw_rberase(gOssFileHandleTree, item);
+         }
+      }
+
+      pthread_mutex_unlock(&gOssFileHandleAccessMtx);
+   }
+
+   return rval;
 }

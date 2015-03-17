@@ -111,6 +111,13 @@ int pclFileClose(int fd)
 
             }
             __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
+
+            // remove form file tree;
+            if(remove_file_handle_data(fd) != 1)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - Failed to remove from tree!"), DLT_INT(fd) );
+            }
+
    #if USE_FILECACHE
             if(get_file_cache_status(fd) == 1)
             {
@@ -343,7 +350,6 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       {
          if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
          {
-            printf("%s - %d ==> set_file_backup_status\n", __FUNCTION__ , __LINE__);
             set_file_backup_status(handle, 1);
             __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
          }
@@ -417,6 +423,8 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          {
             handle = pclFileOpenDefaultData(&dbContext, resource_id);
             set_file_user_id(handle, PCL_USER_DEFAULTDATA);
+            // as default data will be opened, use read/write permission and we don't need backup and csum path so use an empty string.
+            set_file_handle_data(handle, PersistencePermission_ReadWrite, "", "", NULL);
          }
          else
          {
@@ -812,6 +820,12 @@ int pclFileReleasePath(int pathHandle)
          set_persistence_handle_close_idx(pathHandle);
 
          set_ossfile_file_path(pathHandle, NULL);
+
+         if(remove_ossfile_handle_data(pathHandle) != 1)
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReleasePath - Failed to remove from tree!"), DLT_INT(pathHandle) );
+         }
+
          rval = 1;
       }
       else

@@ -282,6 +282,10 @@ static int private_pclDeinitLibrary(void)
 
    deliverToMainloop_NM(&data);                       // send quit command to dbus mainloop
 
+   deleteHandleTrees();                               // delete allocated trees
+   deleteBackupTree();
+   deleteNotifyTree();
+
    pthread_join(gMainLoopThread, (void**)&retval);    // wait until the dbus mainloop has ended
 
    pthread_mutex_unlock(&gDbusPendingRegMtx);

@@ -195,6 +195,12 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
 void pers_rct_close_all();
 
 
+/**
+ * @brief delete notification tree
+ */
+void deleteNotifyTree(void);
+
+
 #ifdef __cplusplus
 }
 #endif

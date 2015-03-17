@@ -64,10 +64,17 @@ extern int gOpenHandleArray[MaxPersHandle];
 //----------------------------------------------------------------
 //----------------------------------------------------------------
 
+
+/**
+ * @brief delete handle trees
+ */
+void deleteHandleTrees(void);
+
+
 /**
  * @brief get persistence handle
  *
- * @return a new handle or 0 if an error occured or EPERS_MAXHANDLE if max no of handles is reached
+ * @return a new handle or 0 if an error occurred or EPERS_MAXHANDLE if max no of handles is reached
  */
 int get_persistence_handle_idx();
 
@@ -144,6 +151,13 @@ void clear_key_handle_array(int idx);
  */
 int set_file_handle_data(int idx, PersistencePermission_e permission, const char* backup, const char* csumPath,  char* filePath);
 
+
+/**
+ * @brief remove file handle from file tree
+ *
+ * @param idx the index
+ */
+int remove_file_handle_data(int idx);
 
 /**
  * @brief set data to the key handle
@@ -335,6 +349,13 @@ void set_ossfile_backup_status(int idx, int status);
  */
 int get_ossfile_backup_status(int idx);
 
+
+/**
+ * @brief remove file handle from ass file tree
+ *
+ * @param idx the index
+ */
+int remove_ossfile_handle_data(int idx);
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */
 

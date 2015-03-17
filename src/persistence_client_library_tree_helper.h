@@ -169,5 +169,14 @@ void* key_val_dup(void *p);
 void  key_val_rel(void *p);
 
 
+#if 0
+/**
+ * @brief Release function for key tree item
+ *
+ * @param prefix a string prefix to identify the item
+ * @param item the item to debug
+ */
+void debugFileItem(const char* prefix, FileHandleTreeItem_s* item);
+#endif
 
 #endif /* PERSISTENCE_CLIENT_LIBRARY_TREE_HELPER_H */

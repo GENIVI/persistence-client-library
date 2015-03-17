@@ -108,4 +108,10 @@ inline int pclBackupNeeded(const char* path);
 int pclGetPosixPermission(PersistencePermission_e permission);
 
 
+/**
+ * @brief delete backup tree
+ */
+void deleteBackupTree(void);
+
+
 #endif /* PERS_BACKUP_BLACKLIST_H */

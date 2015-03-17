@@ -44,6 +44,15 @@ static int need_backup_key(unsigned int key);
 static int pclRecoverFromBackup(int backupFd, const char* original);
 
 
+void deleteBackupTree(void)
+{
+   if(gRb_tree_bl != NULL)
+   {
+      jsw_rbdelete(gRb_tree_bl);
+      gRb_tree_bl = NULL;
+   }
+}
+
 static void fillFileBackupCharTokenArray(unsigned int customConfigFileSize, char* fileMap)
 {
    unsigned int i=0;

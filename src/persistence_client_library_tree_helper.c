@@ -19,7 +19,22 @@
 #include "persistence_client_library_tree_helper.h"
 
 
-
+#if 0
+void debugFileItem(const char* prefix, FileHandleTreeItem_s* item)
+{
+   printf("-----------------------------------------\n");
+   printf("   prefix        : %s\n", prefix);
+   printf("   key           : %d\n", item->key );
+   printf("   backupCreated : %d\n", item->value.fileHandle.backupCreated );
+   printf("   backupPath    : %s\n", item->value.fileHandle.backupPath );
+   printf("   csumPath      : %s\n", item->value.fileHandle.csumPath );
+   printf("   filePath      : %s\n", item->value.fileHandle.filePath );
+   printf("   cacheStatus   : %d\n", item->value.fileHandle.cacheStatus );
+   printf("   permission    : %d\n", item->value.fileHandle.permission );
+   printf("   userId        : %d\n", item->value.fileHandle.userId );
+   printf("-----------------------------------------\n");
+}
+#endif
 /**
  * File handle helper functions
  */

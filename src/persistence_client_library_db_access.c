@@ -38,6 +38,17 @@ static int gHandlesDBCreated[DbTableSize][PersistenceDB_LastEntry] = { {0} };
 /// tree to store notification information
 static jsw_rbtree_t *gNotificationTree = NULL;
 
+
+void deleteNotifyTree(void)
+{
+   if(gNotificationTree != NULL)
+   {
+      jsw_rbdelete(gNotificationTree);
+      gNotificationTree = NULL;
+   }
+}
+
+
 static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 {
    int arrayIdx = 0, handleDB = -1;
