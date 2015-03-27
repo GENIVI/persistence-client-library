@@ -33,8 +33,9 @@ static int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t cal
 static int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
                       pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
 
-
+#if USE_APPCHECK
 extern int doAppcheck(void);
+#endif
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -48,8 +49,10 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceInfo_s dbContext;
 
          char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};    // database key
@@ -77,11 +80,13 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleOpen - no db context or res not a key "));
          }
+#if USE_APPCHECK
       }
       else
       {
          handle = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return handle;
@@ -95,8 +100,10 @@ int pclKeyHandleClose(int key_handle)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceKeyHandle_s persHandle;
 
          if(get_key_handle_data(key_handle, &persHandle) != -1)
@@ -117,11 +124,13 @@ int pclKeyHandleClose(int key_handle)
          {
             rval = EPERS_MAXHANDLE;
          }
+#if USE_APPCHECK
       }
       else
       {
          rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return rval;
@@ -135,8 +144,10 @@ int pclKeyHandleGetSize(int key_handle)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceKeyHandle_s persHandle;
 
          if(get_key_handle_data(key_handle, &persHandle) != -1)
@@ -155,11 +166,13 @@ int pclKeyHandleGetSize(int key_handle)
          {
             size = EPERS_MAXHANDLE;
          }
+#if USE_APPCHECK
       }
       else
       {
          size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return size;
@@ -173,8 +186,10 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceKeyHandle_s persHandle;
 
          if(get_key_handle_data(key_handle, &persHandle) != -1)
@@ -194,11 +209,13 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
          {
             size = EPERS_MAXHANDLE;
          }
+#if USE_APPCHECK
       }
       else
       {
          size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return size;
@@ -267,8 +284,10 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceKeyHandle_s persHandle;
 
          if(get_key_handle_data(key_handle, &persHandle) != -1)
@@ -287,11 +306,13 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
          {
             size = EPERS_MAXHANDLE;
          }
+#if USE_APPCHECK
       }
       else
       {
          size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return size;
@@ -313,8 +334,10 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
             PersistenceInfo_s dbContext;
@@ -345,11 +368,13 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
          {
             rval = EPERS_LOCKFS;
          }
+#if USE_APPCHECK
       }
       else
       {
          rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return rval;
@@ -363,8 +388,10 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceInfo_s dbContext;
 
          char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
@@ -392,11 +419,13 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
          {
            data_size = EPERS_BADPOL;
          }
+#if USE_APPCHECK
       }
       else
       {
          data_size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return data_size;
@@ -411,8 +440,10 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
             PersistenceInfo_s dbContext;
@@ -448,11 +479,13 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
          {
             data_size = EPERS_LOCKFS;
          }
+#if USE_APPCHECK
       }
       else
       {
          data_size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return data_size;
@@ -467,8 +500,10 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
          {
             if(buffer_size <= gMaxKeyValDataSize)  // check data size
@@ -527,11 +562,13 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
          {
             data_size = EPERS_LOCKFS;
          }
+#if USE_APPCHECK
       }
       else
       {
          data_size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
    return data_size;
 }
@@ -570,8 +607,10 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          PersistenceInfo_s dbContext;
 
          //   unsigned int hash_val_data = 0;
@@ -606,11 +645,13 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
                                  DLT_STRING("regNotifyOnChange - Not possible! get_db_context() returned:"),
                                  DLT_INT(rval));
          }
+#if USE_APPCHECK
       }
       else
       {
          rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
 
    return rval;

@@ -145,59 +145,6 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
 
 
-int signal_persModeChange(DBusConnection *connection, DBusMessage *message)
-{
-   int persistenceMode = 0, errorCode = 0;
-
-   DBusMessage *reply;
-   DBusError error;
-   dbus_error_init (&error);
-
-   if (!dbus_message_get_args (message, &error, DBUS_TYPE_INT32 , &persistenceMode,
-                                                DBUS_TYPE_INVALID))
-   {
-      reply = dbus_message_new_error(message, error.name, error.message);
-
-      if(reply == 0)
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
-      }
-
-      if (!dbus_connection_send(connection, reply, 0))
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
-      }
-
-      dbus_message_unref(reply);
-
-      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-   }
-
-   reply = dbus_message_new_method_return(message);
-
-   if (reply == 0)
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
-   }
-
-   if (!dbus_message_append_args(reply, DBUS_TYPE_INT32, &errorCode, DBUS_TYPE_INVALID))
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
-   }
-
-   if (!dbus_connection_send(connection, reply, 0))
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sigPersMoChng - DBus No mem"));
-   }
-
-   dbus_connection_flush(connection);
-   dbus_message_unref(reply);
-
-   return DBUS_HANDLER_RESULT_HANDLED;
-}
-
-
-
 DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;

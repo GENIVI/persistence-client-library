@@ -106,24 +106,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
    DBusHandlerResult result = DBUS_HANDLER_RESULT_HANDLED;
    (void)user_data;
 
-   // org.genivi.persistence.admin  S I G N A L
-   if((0==strcmp(gDbusPersAdminInterface, dbus_message_get_interface(message))))
-   {
-      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
-      {
-         if((0==strcmp("PersistenceModeChanged", dbus_message_get_member(message))))
-         {
-            // to do handle signal
-            result = signal_persModeChange(connection, message);
-         }
-         else
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - unknown sig:"), DLT_STRING(dbus_message_get_interface(message)) );
-         }
-      }
-   }
-   // org.genivi.persistence.admin  S I G N A L
-   else if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
+   if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
    {
       if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
       {
@@ -192,42 +175,6 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
             }
             dbus_connection_flush(connection);
          }
-      }
-   }
-   // org.genivi.persistence.admin  P R O P E R T Y
-   else  if((0==strcmp("org.freedesktop.DBus.Properties", dbus_message_get_interface(message))))
-   {
-      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
-      {
-         if((0==strcmp("EggDBusChanged", dbus_message_get_member(message))))
-         {
-            DBusMessageIter array;
-            DBusMessageIter dict;
-            DBusMessageIter variant;
-
-            char* dictString = NULL;
-            int value = 0;
-
-            dbus_message_iter_open_container(&array, DBUS_TYPE_DICT_ENTRY, 0, &dict);
-            dbus_message_iter_get_basic(&dict, &dictString);
-
-            dbus_message_iter_open_container(&dict,DBUS_TYPE_VARIANT, NULL, &variant);
-            dbus_message_iter_get_basic(&dict, &value);
-
-            dbus_message_iter_close_container(&dict, &variant);
-            dbus_message_iter_close_container(&array, &dict);
-
-            // to do handle signal
-            result = DBUS_HANDLER_RESULT_HANDLED;
-         }
-         else
-         {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - unknown property:"), DLT_STRING(dbus_message_get_interface(message)) );
-         }
-      }
-      else
-      {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - not a signal:"), DLT_STRING(dbus_message_get_member(message)) );
       }
    }
    return result;

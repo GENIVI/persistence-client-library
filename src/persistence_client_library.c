@@ -60,8 +60,7 @@ static int gAppCheckFlag = -1;
 
 int customAsyncInitClbk(int errcode)
 {
-   (void)errcode;
-  printf("Dummy async init Callback\n");
+  printf("Dummy async init Callback: %d\n", errcode);
 
   return 1;
 }
@@ -74,9 +73,10 @@ static int private_pclDeinitLibrary(void);
 /* security check for valid application:
    if the RCT table exists, the application is proven to be valid (trusted),
    otherwise return EPERS_NOPRCTABLE  */
+#if USE_APPCHECK
 static void doInitAppcheck(const char* appName)
 {
-#if USE_APPCHECK
+
    char rctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
    snprintf(rctFilename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), appName, plugin_gResTableCfg);
 
@@ -90,17 +90,15 @@ static void doInitAppcheck(const char* appName)
       gAppCheckFlag = 0;   // currently not a "trusted" application
       DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("NOT trusted app"));
    }
-#else
-   (void)appName;
-#endif
 }
+#endif
 
 
-
+#if USE_APPCHECK
 int doAppcheck(void)
 {
    int trusted = 1;
-#if USE_APPCHECK
+
    if(gAppCheckFlag != 1)
    {
       char rctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
@@ -115,10 +113,9 @@ int doAppcheck(void)
          trusted = 0;
       }
    }
-#endif
    return trusted;
 }
-
+#endif
 
 
 int pclInitLibrary(const char* appName, int shutdownMode)
@@ -153,7 +150,10 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 
    gShutdownMode = shutdownMode;
 
+#if USE_APPCHECK
    doInitAppcheck(appName);      // check if we have a trusted application
+#endif
+
 
 #if USE_FILECACHE
  DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("Using the filecache!!!"));
@@ -337,7 +337,7 @@ int pclLifecycleSet(int shutdown)
 }
 
 
-
+#if 0
 void pcl_test_send_shutdown_command()
 {
    const char* command = {"snmpset -v1 -c public 134.86.58.225 iso.3.6.1.4.1.1909.22.1.1.1.5.1 i 1"};
@@ -347,5 +347,5 @@ void pcl_test_send_shutdown_command()
       printf("Failed to send shutdown command!!!!\n");
    }
 }
-
+#endif
 

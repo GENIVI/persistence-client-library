@@ -923,7 +923,7 @@ char* get_ossfile_checksum_path(int idx)
 	return charPtr;
 }
 
-
+#if 0
 void set_ossfile_backup_status(int idx, int status)
 {
 	if(pthread_mutex_lock(&gOssFileHandleAccessMtx) == 0)
@@ -998,7 +998,7 @@ int get_ossfile_backup_status(int idx)
    }
 	return rval;
 }
-
+#endif
 
 int remove_ossfile_handle_data(int idx)
 {

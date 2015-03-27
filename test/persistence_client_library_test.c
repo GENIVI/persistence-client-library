@@ -24,7 +24,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-
+#include <dbus/dbus.h>
 #include <dlt/dlt.h>
 #include <dlt/dlt_common.h>
 
@@ -67,6 +67,14 @@ void data_setup_browser(void)
 {
    unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    (void)pclInitLibrary("browser", shutdownReg);
+}
+
+
+void data_setup_norct(void)
+{
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   (void)pclInitLibrary("norct", shutdownReg);
 }
 
 
@@ -179,6 +187,8 @@ START_TEST(test_GetData)
    		        "Buffer not correctly read - links/last_link");
    fail_unless(ret == strlen("CACHE_ /last_exit/queens"));
    memset(buffer, 0, READ_SIZE);
+
+
 
 #endif
 
@@ -757,6 +767,12 @@ START_TEST(test_DataFile)
    {
    	pclFileClose(fdArray[i]);
    }
+
+   // write to file not in RCT
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "nonRCT/aNonRctFile.db", 1, 1);
+   size = pclFileGetSize(fd);
+   size = pclFileWriteData(fd, "nonRCT/mediaDB.db", strlen("nonRCT/mediaDB.db"));
+
 
    free(writeBuffer);
 #endif
@@ -1421,6 +1437,9 @@ START_TEST(test_NegHandle)
    ret = pclKeyHandleRegisterNotifyOnChange(negativeHandle, &myChangeCallback);
    fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleRegisterNotifyOnChange => negative handle not detected");
 
+   ret = pclKeyHandleUnRegisterNotifyOnChange(negativeHandle, &myChangeCallback);
+   fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleUnRegisterNotifyOnChange => negative handle not detected");
+
    ret = pclKeyHandleWriteData(negativeHandle, (unsigned char*)"Whatever", strlen("Whatever"));
    fail_unless(ret == EPERS_MAXHANDLE, "pclKeyHandleWriteData => negative handle not detected");
 
@@ -1555,21 +1574,74 @@ END_TEST
 
 
 
-START_TEST(test_DbusInterface)
+
+START_TEST(test_PAS_DbusInterface)
 {
-   /* X_TEST_REPORT_TEST_NAME("persistence_client_library_test");
-   X_TEST_REPORT_COMP_NAME("libpersistence_client_library");
-   X_TEST_REPORT_REFERENCE("NONE");
-   X_TEST_REPORT_DESCRIPTION("Test dbus interface");
-   X_TEST_REPORT_TYPE(GOOD); */
+   // let the administration servis generate a message to the PCL
+   if(system("/usr/local/bin/persadmin_tool export /tmp/myBackup 0") == -1)
+   {
+      printf("Failed to execute command -> admin service!!\n");
+   }
+}
+END_TEST
 
-   // This test just keeps the PCL "alive" as long as the dbus is beeing tested by sending
-   // signals from external to test the dbus interface
 
-   // run the following test commands:
-   // - /home/ihuerner/development/GENIVI/persistence-administrator/test/persadmin_tool/persadmin_tool export /home/ihuerner/tmp/myBackup 0
 
-   sleep(5);
+START_TEST(test_LC_DbusInterface)
+{
+
+// send the following dbus command
+//
+   printf("\n\n*******************************************************\n");
+   printf("Past and execute NOW the following command to a console: \"dbus-send --system --print-reply --dest=org.genivi.NodeStateManager /org/genivi/NodeStateManager/LifecycleControl org.genivi.NodeStateManager.LifecycleControl.SetNodeState int32:6\"\n");
+   printf("*******************************************************\n\n");
+
+#if 0
+#if 0
+   const char* theDbusCommand =
+   "dbus-send --system --print-reply \
+   --dest=org.genivi.NodeStateManager \
+   /org/genivi/NodeStateManager/LifecycleControl \
+   \"org.genivi.NodeStateManager.LifecycleControl.SetNodeState\" \
+   int32:6";
+
+   // notify the NSM to shutdown the system
+   if(system(theDbusCommand) == -1)
+   {
+      printf("Failed to execute command -> NSM!!\n");
+   }
+#else
+   int nodeState = 6;   // shutdown state
+   DBusConnection* conn = NULL;
+   DBusError err;
+
+   dbus_error_init(&err);
+   conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
+
+   DBusMessage* message = dbus_message_new_method_call("org.genivi.NodeStateManager",        // destination
+                                                       "/org/genivi/NodeStateManager/LifecycleControl",           // path
+                                                       "org.genivi.NodeStateManager.LifecycleControl",        // interface
+                                                       "SetNodeState");                      // method
+
+   dbus_message_append_args(message, DBUS_TYPE_INT32, &nodeState, DBUS_TYPE_INVALID);
+
+   printf("*************************** ==> Send message and block\n");
+   if(!dbus_connection_send_with_reply_and_block(conn, message, 5000, &err))
+   {
+         printf("connection send: - Access denied: %s\n", err.message);
+   }
+   dbus_connection_flush(conn);
+   dbus_message_unref(message);
+   printf("*************************** <== \n");
+
+   dbus_connection_close(conn);
+   dbus_connection_unref(conn);
+#endif
+#else
+
+   sleep(6);
+
+#endif
 }
 END_TEST
 
@@ -1811,6 +1883,44 @@ END_TEST
 
 
 
+START_TEST(test_NoRct)
+{
+   int ret = 0;
+   const char writeBuffer[] = "This is a test string";
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "someResourceId", 0, 0, (unsigned char*)writeBuffer, strlen(writeBuffer));
+   fail_unless(ret == EPERS_NOPRCTABLE, "RCT available, but should not");
+}
+END_TEST
+
+
+
+START_TEST(test_InvalidPluginfConf)
+{
+   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   // change to an invalid plugin configuration file using environment variable
+   setenv(envVariable, "/tmp/whatever/pclCustomLibConfigFile.cfg", 1);
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   pclDeinitLibrary();
+
+
+   // change to an empty plugin configuration file using environment variable
+   setenv(envVariable, "/etc/pclCustomLibConfigFileEmpty.cfg", 1);
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   pclDeinitLibrary();
+
+
+
+   (void)unsetenv(envVariable);
+}
+END_TEST
+
 static Suite * persistencyClientLib_suite()
 {
    const char* testSuiteName = "Persistency_client_library";
@@ -1909,8 +2019,11 @@ static Suite * persistencyClientLib_suite()
    tcase_set_timeout(tc_ValidApplication, 2);
 #endif
 
-   TCase * tc_DbusInterface = tcase_create("DbusInterface");
-   tcase_add_test(tc_DbusInterface, test_DbusInterface);
+   TCase * tc_PAS_DbusInterface = tcase_create("PAS_DbusInterface");
+   tcase_add_test(tc_PAS_DbusInterface, test_PAS_DbusInterface);
+
+   TCase * tc_LC_DbusInterface = tcase_create("LC_DbusInterface");
+   tcase_add_test(tc_LC_DbusInterface, test_LC_DbusInterface);
 
    TCase * tc_VerifyROnly = tcase_create("VerifyROnly");
    tcase_add_test(tc_VerifyROnly, test_VerifyROnly);
@@ -1927,6 +2040,11 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_FileTest, test_FileTest);
    tcase_set_timeout(tc_FileTest, 2);
 
+   TCase * tc_NoRct = tcase_create("NoRct");
+   tcase_add_test(tc_NoRct, test_NoRct);
+
+   TCase * tc_InvalidPluginfConf = tcase_create("InvalidPluginfConf");
+   tcase_add_test(tc_InvalidPluginfConf, test_InvalidPluginfConf);
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1998,15 +2116,26 @@ static Suite * persistencyClientLib_suite()
    tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
 
 
-#if USE_APPCHECK
-   suite_add_tcase(s, tc_ValidApplication);
-#endif
+
+   suite_add_tcase(s, tc_InvalidPluginfConf);
+
    suite_add_tcase(s, tc_InitDeinit);
 
+#if USE_APPCHECK
+   suite_add_tcase(s, tc_ValidApplication);
+#else
+   suite_add_tcase(s, tc_NoRct);
+   tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
+#endif
+
+   suite_add_tcase(s, tc_PAS_DbusInterface);
+   tcase_add_checked_fixture(tc_PAS_DbusInterface, data_setup, data_teardown);
+   tcase_set_timeout(tc_PAS_DbusInterface, 10);
+
 #if 0
-   suite_add_tcase(s, tc_DbusInterface);
-   tcase_add_checked_fixture(tc_DbusInterface, data_setup, data_teardown);
-   tcase_set_timeout(tc_DbusInterface, 10);
+   suite_add_tcase(s, tc_LC_DbusInterface);
+   tcase_add_checked_fixture(tc_LC_DbusInterface, data_setup, data_teardown);
+   tcase_set_timeout(tc_LC_DbusInterface, 8);
 #endif
 
    return s;

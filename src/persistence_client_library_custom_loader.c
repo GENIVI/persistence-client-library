@@ -303,7 +303,7 @@ int get_custom_libraries()
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> failed to stat() file"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load custom library config file error ==> failed to stat() file:"), DLT_STRING(filename));
       rval = EPERS_COMMON;
    }
    return rval;

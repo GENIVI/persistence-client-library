@@ -53,7 +53,9 @@ static int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* reso
 static int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id,
                               char* dbKey, char* dbPath, int shared_DB, unsigned int user_no, unsigned int seat_no);
 
+#if USE_APPCHECK
 extern int doAppcheck(void);
+#endif
 
 
 char* get_raw_string(char* dbKey)
@@ -87,8 +89,10 @@ int pclFileClose(int fd)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+#if USE_APPCHECK
       if(doAppcheck() == 1)
       {
+#endif
          int  permission = get_file_permission(fd);
 
 
@@ -138,11 +142,13 @@ int pclFileClose(int fd)
          {
            rval = EPERS_MAXHANDLE;
          }
+#if USE_APPCHECK
       }
       else
       {
          rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
+#endif
    }
    return rval;
 }
@@ -337,9 +343,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
          }
       }
    }
-
-   // requested resource is not in the RCT, so create resource as local/cached.
-   else
+   else // requested resource is not in the RCT, so create resource as local/cached.
    {
       // assemble file string for local cached location
       snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);
@@ -750,9 +754,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 					}
             }
          }
-
-         // requested resource is not in the RCT, so create resource as local/cached.
-         else
+         else  // requested resource is not in the RCT, so create resource as local/cached.
          {
             // assemble file string for local cached location
             snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);

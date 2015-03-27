@@ -9,7 +9,8 @@ endif
 sysconfdir = "/etc/"
 
 # Write the config file for customer plugins to the config destination 
-sysconf_DATA = config/pclCustomLibConfigFile.cfg
+sysconf_DATA = config/pclCustomLibConfigFile.cfg \
+               config/pclCustomLibConfigFileEmpty.cfg
 
 # Add config file to distribution 
 EXTRA_DIST = $(sysconf_DATA) 
