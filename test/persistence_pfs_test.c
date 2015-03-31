@@ -534,7 +534,9 @@ void write_data_key_value(int numLoops, int counter)
          {
             // unlock mutex
             printf("Now POWER OFF => k: %d \n", k);
+#if 0
             pcl_test_send_shutdown_command();
+#endif
             break;
          }
          ret = pclKeyWriteData(PCL_LDBID_LOCAL, gDefaultKeyValueResName[i], 1, 1, (unsigned char*)buffer, strlen(buffer));
