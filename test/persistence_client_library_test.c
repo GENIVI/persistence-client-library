@@ -25,8 +25,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <dbus/dbus.h>
-#include <dlt/dlt.h>
-#include <dlt/dlt_common.h>
+#include <dlt.h>
+#include <dlt_common.h>
 
 //#include "persCheck.h"
 #include <check.h>
