@@ -251,6 +251,8 @@ void process_prepare_shutdown(int complete)
 			}
 		}
    }
+
+   sync();  // finally make sure data will be written back to the memory device.s
 }
 
 
