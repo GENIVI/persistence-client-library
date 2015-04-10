@@ -24,6 +24,8 @@
  * 12/11/14 Guy Sagnes      1.4.0 - Add defines for accessing:
  *                                   - node data, configurable default
  *                                   - specific logical database (local, shared public)
+ * 12/12/14 Petrica Manoila 1.4.1 - Additional error code ::EPERS_INVALID_ARGUMENT returned by pclInitLibrary()
+ * 10/04/14 Guy Sagnes      1.4.2 - Add range definition for the user id definition
  *
  */
 /** \ingroup GEN_PERS */
@@ -104,7 +106,7 @@ extern "C" {
  *  The most significant 2 bytes indicate the original Genivi library initialization IF version (major and minor version).
  *  The rest of the bytes indicate the patch version created over the original Genivi version.
 */
-#define  PERSIST_API_INTERFACE_VERSION   (0x01040000U)
+#define  PERSIST_API_INTERFACE_VERSION   (0x01040200U) /* 1.3.3 over 1.4.0 */
 
 /** \} */
 
@@ -159,8 +161,9 @@ extern "C" {
  * \{
  */
 
-#define PCL_USER_NODEDATA        0      /*!< user value to access the node value (user independent) */
-#define PCL_USER_DEFAULTDATA    -1      /*!< user value to access directly the configurable default value */
+#define PCL_USER_NODEDATA        0               /*!< user value to access the node value (user independent) */
+#define PCL_USER_DEFAULTDATA     0xFFFFFFFF      /*!< user value to access directly the configurable default value */
+#define PCL_USER_MAXUSERID       0xEFFFFFFF      /*!< range definition of the user, this is the last supported user */
 
 /** \} */
 
@@ -218,6 +221,8 @@ extern "C" {
  *   On error a negative value will be returned with the following error codes:
  *   ::EPERS_NOT_INITIALIZED, ::EPERS_DBUS_MAINLOOP,
  *   ::EPERS_REGISTER_LIFECYCLE, ::EPERS_REGISTER_ADMIN
+ *   - since V1.3.1: ::EPERS_NOPRCTABLE: the application (folder) is not or incorrectly installed
+ *   - since V1.4.1: ::EPERS_INVALID_ARGUMENT: invalid argument provided
  */
 int pclInitLibrary(const char* appname, int shutdownMode);
 
