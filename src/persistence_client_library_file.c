@@ -454,7 +454,7 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
 #if USE_FILECACHE
-   	if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
+   	if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
    	{
    		readSize = pfcReadFile(fd, buffer, buffer_size);
    	}
@@ -590,7 +590,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
             if(permission != PersistencePermission_ReadOnly )
             {
                // check if a backup file has to be created
-               if( (get_file_backup_status(fd) == 0) && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
+               if( (get_file_backup_status(fd) == 0) && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
                {
                   char csumBuf[ChecksumBufSize] = {0};
 
@@ -602,7 +602,7 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                }
 
 #if USE_FILECACHE
-               if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  PCL_USER_DEFAULTDATA)
+               if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
                {
                	size = pfcWriteFile(fd, buffer, buffer_size);
                }

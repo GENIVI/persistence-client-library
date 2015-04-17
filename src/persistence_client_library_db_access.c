@@ -317,7 +317,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
       int dbType = info->configKey.policy;      // assign default policy
       const char* dbInput = key;                // assign default key
 
-      if(info->context.user_no ==  PCL_USER_DEFAULTDATA)
+      if(info->context.user_no ==  (int)PCL_USER_DEFAULTDATA)
       {
          dbType = PersistenceDB_confdefault;    // change policy when writing configurable default data
          dbInput = resource_id;                 // change database key when writing configurable default data
