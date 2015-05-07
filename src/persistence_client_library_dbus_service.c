@@ -392,6 +392,13 @@ int setup_dbus_mainloop(void)
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
       conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
+
+      if(conn == NULL)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setupMainLoop - get_private() :"), DLT_STRING(err.message) );
+         dbus_error_free(&err);
+         return EPERS_COMMON;
+      }
    }
 
    if (-1 == (pipe(gPipeFd)))    // create communication pipe with the dbus mainloop

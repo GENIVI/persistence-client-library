@@ -219,8 +219,7 @@ extern "C" {
  *
  * @return positive value: success;
  *   On error a negative value will be returned with the following error codes:
- *   ::EPERS_NOT_INITIALIZED, ::EPERS_DBUS_MAINLOOP,
- *   ::EPERS_REGISTER_LIFECYCLE, ::EPERS_REGISTER_ADMIN
+ *   ::EPERS_DBUS_MAINLOOP, ::EPERS_REGISTER_LIFECYCLE, ::EPERS_REGISTER_ADMIN
  *   - since V1.3.1: ::EPERS_NOPRCTABLE: the application (folder) is not or incorrectly installed
  *   - since V1.4.1: ::EPERS_INVALID_ARGUMENT: invalid argument provided
  */
@@ -240,6 +239,7 @@ int pclInitLibrary(const char* appname, int shutdownMode);
  *
  * @return positive value: success;
  *   On error a negative value will be returned.
+ *   ::EPERS_NOT_INITIALIZED
  */
 int pclDeinitLibrary(void);
 
