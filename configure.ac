@@ -30,7 +30,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 
 # Overwrite the build in defaults
-CFLAGS="-Wall -Os -Wextra -Werror -fPIC -ffunction-sections"
+CFLAGS="-Wall -Os -Wextra -fPIC -ffunction-sections"
 
 # Checks for programs.
 AC_PROG_CC
