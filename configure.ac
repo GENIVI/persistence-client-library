@@ -3,8 +3,8 @@
 
 
 # create tag version information
-m4_define([pers_client_library_tag_version_major], [0])
-m4_define([pers_client_library_tag_version_minor], [10])
+m4_define([pers_client_library_tag_version_major], [1])
+m4_define([pers_client_library_tag_version_minor], [1])
 m4_define([pers_client_library_tag_version_micro], [0])
 m4_define([pers_client_library_tag_version], [pers_client_library_tag_version_major().pers_client_library_tag_version_minor().pers_client_library_tag_version_micro()])
 
@@ -18,7 +18,7 @@ AC_GNU_SOURCE()
 
 # create library version information
 m4_define([pers_client_library_version_current],  [8])
-m4_define([pers_client_library_version_revision], [0])
+m4_define([pers_client_library_version_revision], [1])
 m4_define([pers_client_library_version_age],      [1])
 m4_define([pers_client_library_version], [pers_client_library_version_current():pers_client_library_version_revision():pers_client_library_version_age()])
 
