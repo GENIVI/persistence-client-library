@@ -1821,6 +1821,8 @@ void runTestSequence(const char* resourceID)
       rval = pclFileClose(fd2);
       fail_unless(rval == 0, "Could not close file ==> dataLoc/file.txt");
 }
+
+
 START_TEST(test_FileTest)
 {
    int i = 0;
@@ -1920,6 +1922,37 @@ START_TEST(test_InvalidPluginfConf)
    (void)unsetenv(envVariable);
 }
 END_TEST
+
+
+START_TEST(test_SharedData)
+{
+   int ret = 0;
+   ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data___1111", strlen("Test notify shared data___1111"));
+   fail_unless(ret == (int)strlen("Test notify shared data___1111"), "Wrong write size");
+
+   sleep(1);
+
+   ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data___2211", strlen("Test notify shared data___2211"));
+   fail_unless(ret == (int)strlen("Test notify shared data___2211"), "Wrong write size");
+
+   sleep(1);
+
+   ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data___3311", strlen("Test notify shared data___3311"));
+   fail_unless(ret == (int)strlen("Test notify shared data___3311"), "Wrong write size");
+
+   sleep(1);
+
+   ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data___4411", strlen("Test notify shared data___4411"));
+   fail_unless(ret == (int)strlen("Test notify shared data___4411"), "Wrong write size");
+
+   sleep(1);
+
+   ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data___5511", strlen("Test notify shared data___5511"));
+   fail_unless(ret == (int)strlen("Test notify shared data___5511"), "Wrong write size");
+}
+END_TEST
+
+
 
 static Suite * persistencyClientLib_suite()
 {
@@ -2046,6 +2079,12 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_InvalidPluginfConf = tcase_create("InvalidPluginfConf");
    tcase_add_test(tc_InvalidPluginfConf, test_InvalidPluginfConf);
 
+   TCase * tc_SharedData = tcase_create("SharedData");
+   tcase_add_test(tc_SharedData, test_SharedData);
+   tcase_set_timeout(tc_SharedData, 10);
+
+
+
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
 
@@ -2137,6 +2176,9 @@ static Suite * persistencyClientLib_suite()
    tcase_add_checked_fixture(tc_LC_DbusInterface, data_setup, data_teardown);
    tcase_set_timeout(tc_LC_DbusInterface, 8);
 #endif
+
+   suite_add_tcase(s, tc_SharedData);
+   tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
    return s;
 }
