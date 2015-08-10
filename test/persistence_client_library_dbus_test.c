@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
 
    unsigned char readBuffer[READ_BUFFER_SIZE] = {0};
 
+   const char* appID = "lt-persistence_client_library_dbus_test";
+
    (void)argc;
    (void)argv;
 
@@ -70,8 +72,8 @@ int main(int argc, char *argv[])
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("noty","tests the persistence client library");
-   ret = pclInitLibrary("lt-persistence_client_library_test", shutdownReg);
-   printf("pclInitLibrary: %d\n", ret);
+   ret = pclInitLibrary(appID, shutdownReg);
+   printf("pclInitLibrary - %s - : %d\n", appID, ret);
 
    ret = pclKeyHandleOpen(PCL_LDBID_LOCAL, "posHandle/last_position", 0, 0);
 
