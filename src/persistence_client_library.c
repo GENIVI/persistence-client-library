@@ -60,7 +60,8 @@ static int gAppCheckFlag = -1;
 
 int customAsyncInitClbk(int errcode)
 {
-  printf("Dummy async init Callback: %d\n", errcode);
+  //printf("Dummy async init Callback: %d\n", errcode);
+   (void)errcode;
 
   return 1;
 }

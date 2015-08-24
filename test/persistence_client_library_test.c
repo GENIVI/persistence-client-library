@@ -1964,71 +1964,71 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_persGetData = tcase_create("GetData");
    tcase_add_test(tc_persGetData, test_GetData);
-   tcase_set_timeout(tc_persGetData, 2);
+   tcase_set_timeout(tc_persGetData, 3);
 
    TCase * tc_persSetData = tcase_create("SetData");
    tcase_add_test(tc_persSetData, test_SetData);
-   tcase_set_timeout(tc_persSetData, 2);
+   tcase_set_timeout(tc_persSetData, 3);
 
    TCase * tc_persSetDataNoPRCT = tcase_create("SetDataNoPRCT");
    tcase_add_test(tc_persSetDataNoPRCT, test_SetDataNoPRCT);
-   tcase_set_timeout(tc_persSetDataNoPRCT, 2);
+   tcase_set_timeout(tc_persSetDataNoPRCT, 3);
 
    TCase * tc_persGetDataSize = tcase_create("GetDataSize");
    tcase_add_test(tc_persGetDataSize, test_GetDataSize);
-   tcase_set_timeout(tc_persGetDataSize, 2);
+   tcase_set_timeout(tc_persGetDataSize, 3);
 
    TCase * tc_persDeleteData = tcase_create("DeleteData");
    tcase_add_test(tc_persDeleteData, test_DeleteData);
-   tcase_set_timeout(tc_persDeleteData, 2);
+   tcase_set_timeout(tc_persDeleteData, 3);
 
    TCase * tc_persGetDataHandle = tcase_create("GetDataHandle");
    tcase_add_test(tc_persGetDataHandle, test_GetDataHandle);
-   tcase_set_timeout(tc_persGetDataHandle, 2);
+   tcase_set_timeout(tc_persGetDataHandle, 3);
 
    TCase * tc_persDataHandle = tcase_create("DataHandle");
    tcase_add_test(tc_persDataHandle, test_DataHandle);
-   tcase_set_timeout(tc_persGetData, 2);
+   tcase_set_timeout(tc_persGetData, 3);
 
    TCase * tc_persDataHandleOpen = tcase_create("DataHandleOpen");
    tcase_add_test(tc_persDataHandleOpen, test_DataHandleOpen);
-   tcase_set_timeout(tc_persDataHandleOpen, 1);
+   tcase_set_timeout(tc_persDataHandleOpen, 3);
 
    TCase * tc_persDataFile = tcase_create("DataFile");
    tcase_add_test(tc_persDataFile, test_DataFile);
-   tcase_set_timeout(tc_persDataFile, 2);
+   tcase_set_timeout(tc_persDataFile, 3);
 
    TCase * tc_DataFileConfDefault = tcase_create("DataFileConfDefault");
    tcase_add_test(tc_DataFileConfDefault, test_DataFileConfDefault);
-   tcase_set_timeout(tc_DataFileConfDefault, 2);
+   tcase_set_timeout(tc_DataFileConfDefault, 3);
 
    TCase * tc_persDataFileBackupCreation = tcase_create("DataFileBackupCreation");
    tcase_add_test(tc_persDataFileBackupCreation, test_DataFileBackupCreation);
-   tcase_set_timeout(tc_persDataFileBackupCreation, 1);
+   tcase_set_timeout(tc_persDataFileBackupCreation, 3);
 
    TCase * tc_persDataFileRecovery = tcase_create("DataFileRecovery");
    tcase_add_test(tc_persDataFileRecovery, test_DataFileRecovery);
-   tcase_set_timeout(tc_persDataFileRecovery, 2);
+   tcase_set_timeout(tc_persDataFileRecovery, 3);
 
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
-   tcase_set_timeout(tc_Plugin, 2);
+   tcase_set_timeout(tc_Plugin, 3);
 
    TCase * tc_ReadDefault = tcase_create("ReadDefault");
    tcase_add_test(tc_ReadDefault, test_ReadDefault);
-   tcase_set_timeout(tc_ReadDefault, 2);
+   tcase_set_timeout(tc_ReadDefault, 3);
 
    TCase * tc_ReadConfDefault = tcase_create("ReadConfDefault");
    tcase_add_test(tc_ReadConfDefault, test_ReadConfDefault);
-   tcase_set_timeout(tc_ReadConfDefault, 2);
+   tcase_set_timeout(tc_ReadConfDefault, 3);
 
    TCase * tc_WriteConfDefault = tcase_create("WriteConfDefault");
    tcase_add_test(tc_WriteConfDefault, test_WriteConfDefault);
-   tcase_set_timeout(tc_WriteConfDefault, 2);
+   tcase_set_timeout(tc_WriteConfDefault, 3);
 
    TCase * tc_GetPath = tcase_create("GetPath");
    tcase_add_test(tc_GetPath, test_GetPath);
-   tcase_set_timeout(tc_GetPath, 2);
+   tcase_set_timeout(tc_GetPath, 3);
 
    TCase * tc_InitDeinit = tcase_create("InitDeinit");
    tcase_add_test(tc_InitDeinit, test_InitDeinit);
@@ -2036,34 +2036,37 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_NegHandle = tcase_create("NegHandle");
    tcase_add_test(tc_NegHandle, test_NegHandle);
-   tcase_set_timeout(tc_NegHandle, 2);
+   tcase_set_timeout(tc_NegHandle, 3);
 
    TCase * tc_utf8_string = tcase_create("UTF-8");
    tcase_add_test(tc_utf8_string, test_utf8_string);
-   tcase_set_timeout(tc_utf8_string, 2);
+   tcase_set_timeout(tc_utf8_string, 3);
 
    TCase * tc_Notifications = tcase_create("Notifications");
    tcase_add_test(tc_Notifications, test_Notifications);
-   tcase_set_timeout(tc_Notifications, 2);
+   tcase_set_timeout(tc_Notifications, 3);
 
 #if USE_APPCHECK
    TCase * tc_ValidApplication = tcase_create("ValidApplication");
    tcase_add_test(tc_ValidApplication, test_ValidApplication);
-   tcase_set_timeout(tc_ValidApplication, 2);
+   tcase_set_timeout(tc_ValidApplication, 3);
 #endif
 
    TCase * tc_PAS_DbusInterface = tcase_create("PAS_DbusInterface");
    tcase_add_test(tc_PAS_DbusInterface, test_PAS_DbusInterface);
+   tcase_set_timeout(tc_PAS_DbusInterface, 3);
 
    TCase * tc_LC_DbusInterface = tcase_create("LC_DbusInterface");
    tcase_add_test(tc_LC_DbusInterface, test_LC_DbusInterface);
+   tcase_set_timeout(tc_LC_DbusInterface, 3);
 
    TCase * tc_VerifyROnly = tcase_create("VerifyROnly");
    tcase_add_test(tc_VerifyROnly, test_VerifyROnly);
+   tcase_set_timeout(tc_VerifyROnly, 3);
 
    TCase * tc_SharedAccess = tcase_create("SharedAccess");
    tcase_add_test(tc_SharedAccess, test_SharedAccess);
-   tcase_set_timeout(tc_SharedAccess, 2);
+   tcase_set_timeout(tc_SharedAccess, 3);
 
    TCase * tc_VO722 = tcase_create("VO722");
    tcase_add_test(tc_VO722, test_VO722);
@@ -2071,10 +2074,11 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_FileTest = tcase_create("FileTest");
    tcase_add_test(tc_FileTest, test_FileTest);
-   tcase_set_timeout(tc_FileTest, 2);
+   tcase_set_timeout(tc_FileTest, 3);
 
    TCase * tc_NoRct = tcase_create("NoRct");
    tcase_add_test(tc_NoRct, test_NoRct);
+   tcase_set_timeout(tc_NoRct, 3);
 
    TCase * tc_InvalidPluginfConf = tcase_create("InvalidPluginfConf");
    tcase_add_test(tc_InvalidPluginfConf, test_InvalidPluginfConf);
@@ -2167,11 +2171,12 @@ static Suite * persistencyClientLib_suite()
    tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
 #endif
 
+#if 0
    suite_add_tcase(s, tc_PAS_DbusInterface);
    tcase_add_checked_fixture(tc_PAS_DbusInterface, data_setup, data_teardown);
    tcase_set_timeout(tc_PAS_DbusInterface, 10);
 
-#if 0
+
    suite_add_tcase(s, tc_LC_DbusInterface);
    tcase_add_checked_fixture(tc_LC_DbusInterface, data_setup, data_teardown);
    tcase_set_timeout(tc_LC_DbusInterface, 8);
