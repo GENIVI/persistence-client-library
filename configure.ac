@@ -196,6 +196,8 @@ AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 AC_CONFIG_FILES([Makefile
                  persistence_client_library.pc
+                 config/pclCustomLibConfigFile.cfg
+                 config/pclCustomLibConfigFileEmpty.cfg
                  src/Makefile
                  persclient_tool/Makefile
                  test/Makefile])

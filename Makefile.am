@@ -17,4 +17,4 @@ pkgconfig_DATA=persistence_client_library.pc
 
 MAINTAINERCLEANFILES = \
       Makefile.in aclocal.m4 compile config.guess config.h.in config.sub \
-      configure depcomp install-sh ltmain.sh persistence_client_library.pc config.h.in~ Makefile missing
+      configure depcomp install-sh ltmain.sh persistence_client_library.pc config/pclCustomLibConfigFile.cfg config/pclCustomLibConfigFileEmpty.cfg config.h.in~ Makefile missing
