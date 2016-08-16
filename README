@@ -2,7 +2,7 @@
 Persistence Client Library
 *****************************
 
-Copyright (C) 2015 XS Embedded GmbH. All rights reserved.
+Copyright (C) 2016 Mentor Graphics. All rights reserved.
 
 
 ----------------------------
@@ -26,7 +26,7 @@ Dependencies
 The client library has the following dependencies
 * Libraries
 ** automotive-dlt (http://projects.genivi.org/diagnostic-log-trace/)
-** Persistence Common Object (http://git.projects.genivi.org/?p=persistence/persistence-common-object.git;a=summary)
+** Persistence Common Object (https://github.com/GENIVI/persistence-common-object.git)
    Add "-- with_database=key-value-store" to the configure step
    The default backend if Itzam/C and will not supported anymore.
 ** dbus-1
@@ -166,7 +166,7 @@ The output above may vary as the test cases will beadopted or extended.
 ----------------------------
 Project page
 ----------------------------
-- http://projects.genivi.org/persistence-client-library/
+- https://at.projects.genivi.org/wiki/display/PROJ/Persistence+Client+Library
 
 
 ----------------------------
@@ -186,10 +186,10 @@ Documentation
 For details about the Persistence Client Library, please refer to to following documents:
 
 - Persistence Client Library Architecture Documentation:
-  http://docs.projects.genivi.org/persistence-client-library/1.0/GENIVI_Persistence_ArchitectureDocumentation.pdf
+  see docs sufolder: Persistence_ArchitectureManual.pdf
 
 - Persistence Client Library User Manual: 
-  http://docs.projects.genivi.org/persistence-client-library/1.0/GENIVI_Persistence_Client_Library_UserManual.pdf
+  see docs subfolder: Persistence_ClientLibrary_UserGuide.pdf
 
 
 ----------------------------
