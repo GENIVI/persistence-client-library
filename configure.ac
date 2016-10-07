@@ -42,7 +42,6 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
-
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h limits.h stdlib.h string.h unistd.h])
 
@@ -69,6 +68,7 @@ AC_CHECK_FUNCS([fdatasync ftruncate mkdir munmap rmdir strerror utime dlopen])
 
 PKG_CHECK_MODULES(DEPS,
                   automotive-dlt
+                  libperscommon
                   dbus-1)
 
 AC_SUBST(DEPS_CFLAGS)
