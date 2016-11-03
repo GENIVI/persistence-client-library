@@ -27,6 +27,7 @@
 #include <dbus/dbus.h>
 #include <dlt.h>
 #include <dlt_common.h>
+#include <pthread.h>
 
 //#include "persCheck.h"
 #include <check.h>
@@ -36,13 +37,20 @@
 #include "../include/persistence_client_library.h"
 #include "../include/persistence_client_library_error_def.h"
 
-#define BUF_SIZE     64
-#define NUM_OF_FILES 3
-#define READ_SIZE    1024
-#define MaxAppNameLen 256
-#define SOURCE_PATH "/Data/mnt-c/lt-persistence_client_library_test/"
+#define BUF_SIZE     	64
+#define NUM_OF_FILES 	3
+#define READ_SIZE    	1024
+#define MaxAppNameLen 	256
+
+#define NUM_THREADS  	100
+#define NUM_OF_READS 	100
+#define NUM_OF_WRITES 	100
+#define NAME_LEN 		24
+
+static pthread_barrier_t barrier;
 
 static const char* gPathSegemnts[] = {"user/", "1/", "seat/", "1/", "media", NULL };
+static const char* gSourcePath 	= "/Data/mnt-c/lt-persistence_client_library_test/";
 
 /// application id
 char gTheAppId[MaxAppNameLen] = {0};
@@ -891,7 +899,7 @@ void data_setupRecovery(void)
    (void)pclInitLibrary(gTheAppId, shutdownReg);
 
    // create directory, even if exist
-   snprintf(createPath, 128, "%s", SOURCE_PATH );
+   snprintf(createPath, 128, "%s", gSourcePath );
    while(gPathSegemnts[i] != NULL)
    {
    	strncat(createPath, gPathSegemnts[i++], 128-1);
@@ -1954,6 +1962,222 @@ END_TEST
 
 
 
+void* readThread(void* userData)
+{
+   int ret = 0, i = 0;
+   unsigned char buffer[READ_SIZE] = {0};
+
+   pthread_barrier_wait(&barrier);
+   usleep(10000);
+
+   (void)userData;
+
+   for(i=0; i<NUM_OF_READS; i++)
+   {
+      /**
+       * Logical DB ID: PCL_LDBID_LOCAL with user 0 and seat 0
+       *       ==> local value accessible by all users (user 0, seat 0)
+       */
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position",         1, 1, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "CACHE_ +48 10' 38.95, +8 44' 39.06",
+                    strlen((char*)buffer)) == 0, "Buffer not correctly read - pos/last_position");
+      fail_unless(ret == strlen("CACHE_ +48 10' 38.95, +8 44' 39.06"));
+
+      /**
+       * Logical DB ID: PCL_LDBID_LOCAL with user 3 and seat 2
+       *       ==> local USER value (user 3, seat 2)
+       */
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "status/open_document",      3, 2, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "WT_ /var/opt/user_manual_climateControl.pdf", strlen((char*)buffer)) == 0,
+                    "Buffer not correctly read - status/open_document");
+      fail_unless(ret == strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+
+      /**
+       * Logical DB ID: 0x20 with user 4 and seat 0
+       *       ==> shared user value accessible by a group (user 4 and seat 0)
+       */
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(0x20, "address/home_address",      4, 0, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31", strlen((char*)buffer)) == 0,
+                    "Buffer not correctly read - address/home_address");
+      fail_unless(ret == strlen("WT_ 55327 Heimatstadt, Wohnstrasse 31"));
+
+      /**
+       * Logical DB ID: PCL_LDBID_LOCAL with user 0 and seat 0
+       *       ==> local value accessible by ALL USERS (user 0, seat 0)
+       */
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_satellites",       0, 0, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "WT_ 17", strlen((char*)buffer)) == 0,
+                    "Buffer not correctly read - pos/last_satellites");
+      fail_unless(ret == strlen("WT_ 17"));
+
+      /**
+       * Logical DB ID: 0x20 with user 4 and seat 0
+       *       ==> shared user value accessible by A GROUP (user 4 and seat 0)
+       */
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(0x20, "links/last_link",           2, 0, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "CACHE_ /last_exit/queens", strlen((char*)buffer)) == 0,
+                    "Buffer not correctly read - links/last_link");
+      fail_unless(ret == strlen("CACHE_ /last_exit/queens"));
+   }
+
+   return NULL;
+}
+
+START_TEST(test_MultiThreadedRead)
+{
+   pthread_t threads[NUM_THREADS];
+   int* retval;
+   int i=0;
+   int success[NUM_THREADS] = {0};
+   char threadName[NUM_THREADS][NAME_LEN];
+
+   if(pthread_barrier_init(&barrier, NULL, NUM_THREADS) == 0)
+   {
+      for(i=0; i<NUM_THREADS; i++)
+      {
+         memset(threadName[i], 0, NAME_LEN);
+         sprintf(threadName[i], "R-Thread -%3d-", i);
+         threadName[i][NAME_LEN-1] = '\0';
+
+         if(pthread_create(&threads[i], NULL, readThread, threadName[i]) != -1)
+         {
+            (void)pthread_setname_np(threads[i], threadName[i]);
+            success[i] = 1;
+         }
+      }
+
+      // wait
+      for(i=0; i<NUM_THREADS; i++)
+      {
+         if(success[i] == 1)
+            pthread_join(threads[i], (void**)&retval);    // wait until thread has ended
+      }
+
+      if(pthread_barrier_destroy(&barrier) != 0)
+         printf("Failed to destroy barrier\n");
+   }
+   else
+   {
+      printf("Failed to init barrier\n");
+   }
+}
+END_TEST
+
+
+
+
+typedef struct s_threadData
+{
+	char threadName[NAME_LEN];
+	int index;
+} t_threadData;
+
+void* writeThread(void* userData)
+{
+   int ret = 0, i = 0;
+   unsigned char buffer[READ_SIZE] = {0};
+   char sysTimeBuffer[128];
+   char* staticString = "A quick movement of the enemy will jeopardize six gunboats";
+   char payload[NAME_LEN] = {0};
+   struct tm *locTime;
+   struct timespec curTime;
+   t_threadData* threadData = (t_threadData*)userData;
+
+   memset(payload, 0, NAME_LEN);
+   strncpy(payload, threadData->threadName, NAME_LEN);
+   payload[NAME_LEN-1] = '\0'; // string end termination
+
+   pthread_barrier_wait(&barrier);
+   usleep(5000);
+
+   for(i=0; i<NUM_OF_WRITES; i++)
+   {
+      time_t t = time(0);
+      locTime = localtime(&t);
+      clock_gettime(CLOCK_MONOTONIC, &curTime);
+      memset(sysTimeBuffer, 0, 128);
+      snprintf(sysTimeBuffer, 128, "\"%s %d.%d.%d - %d:%.2d:%.2d::%.4d:%.8ld Uhr\"", dayOfWeek[locTime->tm_wday], locTime->tm_mday, locTime->tm_mon+1, (locTime->tm_year+1900),
+                                                                        locTime->tm_hour, locTime->tm_min, locTime->tm_sec, (int)(curTime.tv_nsec / 1.0e6), curTime.tv_nsec );
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, "69", threadData->index, 2, (unsigned char*)payload, strlen(payload));
+      fail_unless(ret == (int)strlen(payload), "Wrong write size");
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, payload, 1, threadData->index, (unsigned char*)sysTimeBuffer, strlen(sysTimeBuffer));
+      fail_unless(ret == (int)strlen(sysTimeBuffer), "Wrong write size");
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, "70", 1, 2, (unsigned char*)staticString, strlen(staticString));
+      fail_unless(ret == (int)strlen(staticString), "Wrong write size");
+
+
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "69",      threadData->index, 2, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, payload, strlen(payload)) == 0, "2: Buffer not correctly read");
+      fail_unless(ret == (int)strlen(payload), "Wrong read size");
+
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, payload,      1, threadData->index, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, sysTimeBuffer, strlen(sysTimeBuffer)) == 0, "1: Buffer not correctly read");
+      fail_unless(ret == (int)strlen(sysTimeBuffer), "Wrong read size");
+
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "70",      1, 2, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, staticString, strlen(staticString)) == 0, "3: Buffer not correctly read");
+      fail_unless(ret == (int)strlen(staticString), "Wrong read size");
+   }
+
+   return NULL;
+}
+
+
+START_TEST(test_MultiThreadedWrite)
+{
+   pthread_t threads[NUM_THREADS];
+   int* retval;
+   int i=0;
+   int success[NUM_THREADS] = {0};
+   t_threadData threadData[NUM_THREADS];
+
+   if(pthread_barrier_init(&barrier, NULL, NUM_THREADS) == 0)
+   {
+      for(i=0; i<NUM_THREADS; i++)
+      {
+    	 memset(threadData[i].threadName, 0, NAME_LEN);
+         sprintf(threadData[i].threadName, "-%3d-W-Key-%3d-", i, i);
+         threadData[i].threadName[NAME_LEN-1] = '\0';
+         threadData[i].index = i;
+
+         if(pthread_create(&threads[i], NULL, writeThread, &(threadData[i])) != -1)
+         {
+            (void)pthread_setname_np(threads[i], threadData[i].threadName);
+            success[i] = 1;
+         }
+      }
+
+      // wait
+      for(i=0; i<NUM_THREADS; i++)
+      {
+         if(success[i] == 1)
+            pthread_join(threads[i], (void**)&retval);    // wait until thread has ended
+      }
+
+      if(pthread_barrier_destroy(&barrier) != 0)
+         printf("Failed to destroy barrier\n");
+   }
+   else
+   {
+      printf("Failed to init barrier\n");
+   }
+
+   printf("MultiWriteEnd\n");
+}
+END_TEST
+
+
 static Suite * persistencyClientLib_suite()
 {
    const char* testSuiteName = "Persistency_client_library";
@@ -2087,6 +2311,13 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_SharedData, test_SharedData);
    tcase_set_timeout(tc_SharedData, 10);
 
+   TCase * tc_MultiThreadedRead = tcase_create("MultiThreadedRead");
+   tcase_add_test(tc_MultiThreadedRead, test_MultiThreadedRead);
+   tcase_set_timeout(tc_MultiThreadedRead, 20);
+
+   TCase * tc_MultiThreadedWrite = tcase_create("MultiThreadedWrite");
+   tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
+   tcase_set_timeout(tc_MultiThreadedWrite, 20);
 
 
    suite_add_tcase(s, tc_persSetData);
@@ -2158,8 +2389,6 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_FileTest);
    tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
 
-
-
    suite_add_tcase(s, tc_InvalidPluginfConf);
 
    suite_add_tcase(s, tc_InitDeinit);
@@ -2185,6 +2414,13 @@ static Suite * persistencyClientLib_suite()
    suite_add_tcase(s, tc_SharedData);
    tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
+
+   suite_add_tcase(s, tc_MultiThreadedRead);
+   tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_MultiThreadedWrite);
+   tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
+
    return s;
 }
 
@@ -2206,6 +2442,8 @@ int main(int argc, char *argv[])
 
    /// debug log and trace (DLT) setup
    DLT_REGISTER_APP("PCLt","tests the persistence client library");
+
+   DLT_ENABLE_LOCAL_PRINT();
 
 
 #if 0
@@ -2256,7 +2494,6 @@ int main(int argc, char *argv[])
         if (ret < 0)
            printf("Failed to write data: %d\n", ret);
      }
-
      pclDeinitLibrary();
      sleep(1);
      _exit(EXIT_SUCCESS);
@@ -2323,6 +2560,8 @@ int main(int argc, char *argv[])
 		srunner_free(sr);
    }
 #endif
+
+   pclDeinitLibrary();
 
    // unregister debug log and trace
    DLT_UNREGISTER_APP();
