@@ -42,6 +42,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
+
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h limits.h stdlib.h string.h unistd.h])
 
@@ -58,6 +59,14 @@ AC_ARG_ENABLE([tests],
               [enable_tests=$enableval],[enable_tests="no"])
 
 AM_CONDITIONAL([WANT_TESTS], [test x"$enable_tests" = "xyes"])
+
+
+AC_ARG_ENABLE([tools],
+              [AS_HELP_STRING([--enable-tools],[Enable tools])],
+              [enable_tools=$enableval],[enable_tools="no"])
+
+AM_CONDITIONAL([WANT_TOOLS], [test x"$enable_tools" = "xyes"])
+
 
  
 # Checks for library functions.
@@ -199,7 +208,7 @@ AC_CONFIG_FILES([Makefile
                  config/pclCustomLibConfigFile.cfg
                  config/pclCustomLibConfigFileEmpty.cfg
                  src/Makefile
-                 persclient_tool/Makefile
+                 tools/Makefile
                  test/Makefile])
               
 AC_OUTPUT

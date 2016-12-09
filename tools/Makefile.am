@@ -7,8 +7,12 @@ AM_CFLAGS = $(DEPS_CFLAGS) $(CHECK_CFLAGS)
 #AM_CFLAGS = -fprofile-arcs -ftest-coverage $(DEPS_CFLAGS) $(CHECK_CFLAGS)
 endif
 
-noinst_PROGRAMS = persistence_client_tool
+bin_PROGRAMS = persistence_client_tool \
+                  persistence_db_viewer
 
 persistence_client_tool_SOURCES = persistence_client_tool.c
-persistence_client_tool_LDADD = $(DEPS_LIBS)     
+persistence_client_tool_LDADD = $(DEPS_LIBS)  
+
+persistence_db_viewer_SOURCES = persistence_db_viewer.c
+persistence_db_viewer_LDADD = $(DEPS_LIBS)      
 

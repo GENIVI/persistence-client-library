@@ -1,9 +1,13 @@
 SUBDIRS=src
-#SUBDIRS=src persclient_tool
+
+if WANT_TOOLS
+SUBDIRS+=tools
+endif
 
 if WANT_TESTS
 SUBDIRS+=test
 endif
+
 
 # Write the config file for customer plugins to the config destination 
 sysconf_DATA = config/pclCustomLibConfigFile.cfg \
