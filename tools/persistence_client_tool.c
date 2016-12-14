@@ -25,10 +25,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <persistence_client_library_file.h>
-#include <persistence_client_library_key.h>
-#include <persistence_client_library.h>
-#include <persistence_client_library_error_def.h>
+#include "../include/persistence_client_library_file.h"
+#include "../include/persistence_client_library_key.h"
+#include "../include/persistence_client_library.h"
+#include "../include/persistence_client_library_error_def.h"
 
 #include <dlt.h>
 #include <dlt_common.h>

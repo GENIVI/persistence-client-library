@@ -319,7 +319,8 @@ void printSingleApplicationDBs(const char* appname, const char* thePath, unsigne
 
    if(databaseTypes != dbTypeNone)
    {
-      for(int i=1; i<=5; i++)
+	  int i = 0;
+      for(i=1; i<=5; i++)
       {
          if(databaseTypes & gDbMaskArray[i]) // check if db content needs to be printed
          {
