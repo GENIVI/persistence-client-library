@@ -33,7 +33,6 @@ extern "C" {
 #include <persComDbAccess.h>
 #include <persComDataOrg.h>
 
-#include <dlt.h>
 #include <string.h>
 
 
@@ -51,7 +50,7 @@ typedef struct _PersistenceDbContext_s
 	/// lofical database id
    unsigned int ldbid;
    /// user number
-   int user_no;
+   unsigned int user_no;
    /// seat number
    unsigned int seat_no;
 } PersistenceDbContext_s;
@@ -273,8 +272,6 @@ const char* getLocalCacheFilePath(void);
 /// application id
 extern char gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE] __attribute__ ((visibility ("hidden")));
 
-/// the DLT context
-extern DltContext gPclDLTContext __attribute__ ((visibility ("hidden")));
 
 /// flag to indicate if client library has been initialized
 extern unsigned int gPclInitCounter __attribute__ ((visibility ("hidden")));

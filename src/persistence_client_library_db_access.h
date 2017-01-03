@@ -102,7 +102,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
  * @return the number of bytes written or a negative value if an error occured with the following error codes:
  *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_set_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
+int persistence_set_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info, unsigned char* buffer, int buffer_size);
 
 
 
@@ -119,7 +119,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
  *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
-int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size);
+int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, int buffer_size);
 
 
 

@@ -19,6 +19,9 @@
 
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_custom_loader.h"
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 
 /// pointer to resource table database
@@ -42,7 +45,7 @@ typedef enum _PersistenceRCT_e
 } PersistenceRCT_e;
 
 
-PersistenceRCT_e get_table_id(int ldbid, int* groupId)
+PersistenceRCT_e get_table_id(unsigned int ldbid, int* groupId)
 {
    PersistenceRCT_e rctType = PersistenceRCT_LastEntry;
 
@@ -52,7 +55,7 @@ PersistenceRCT_e get_table_id(int ldbid, int* groupId)
       if(ldbid != 0)
       {
          // shared  G R O U P  database * * * * * * * * * * * * *  * * * * * *
-         *groupId = ldbid;  // assign group ID
+         *groupId = (int)ldbid;  // assign group ID
          rctType = PersistenceRCT_shared_group;
       }
       else
@@ -96,10 +99,11 @@ void invalidate_resource_cfg_table(int i)
 
 int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
-   int arrayIdx = 0, rval = -1;
+   unsigned int arrayIdx = 0;
+   int rval = -1;
 
    // create array index: index is a combination of resource config table type and group
-   arrayIdx = rct + group;
+   arrayIdx = (rct + (unsigned int)group);
 
    if(arrayIdx < PrctDbTableSize)
    {
@@ -207,7 +211,7 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
       memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
       memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
 
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("gDBCtx - create res not in PRCT => key:"), DLT_STRING(resource_id) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("gDBCtx - create res not in PRCT => key:"), DLT_STRING(resource_id) );
 
       rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
    }

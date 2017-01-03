@@ -23,10 +23,15 @@
 #include "persistence_client_library_prct_access.h"
 #include "persistence_client_library_db_access.h"
 
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 /// max key value data size [default 16kB]
 static int gMaxKeyValDataSize = PERS_DB_MAX_SIZE_KEY_DATA;
 
+static pthread_mutex_t gKeyAPIHandleAccessMtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t gKeyAPIAccessMtx = PTHREAD_MUTEX_INITIALIZER;
 
 // function declaration
 static int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy);
@@ -47,46 +52,57 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 {
    int rval   = 0, handle = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("keyHandleOpen - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res:"), DLT_STRING(resource_id));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
       {
-#endif
-         PersistenceInfo_s dbContext;
 
-         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};    // database key
-         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
-
-         dbContext.context.ldbid   = ldbid;
-         dbContext.context.seat_no = seat_no;
-         dbContext.context.user_no = user_no;
-
-         // get database context: database path and database key
-         rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-         if((rval >= 0) && (dbContext.configKey.type == PersistenceResourceType_key))          // check if type matches
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
+#endif
+            PersistenceInfo_s dbContext;
+
+            char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};    // database key
+            char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
+
+            dbContext.context.ldbid   = ldbid;
+            dbContext.context.seat_no = seat_no;
+            dbContext.context.user_no = user_no;
+
+            // get database context: database path and database key
+            rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+            if((rval >= 0) && (dbContext.configKey.type == PersistenceResourceType_key))          // check if type matches
             {
-               // remember data in handle array
-               handle = set_key_handle_data(get_persistence_handle_idx(), resource_id, ldbid, user_no, seat_no);
+               if(dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
+               {
+                  // remember data in handle array
+                  handle = set_key_handle_data(get_persistence_handle_idx(), resource_id, ldbid, user_no, seat_no);
+               }
+               else
+               {
+                  handle = EPERS_BADPOL;
+               }
             }
             else
             {
-               handle = EPERS_BADPOL;
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleOpen - no db context or res not a key "));
             }
+#if USE_APPCHECK
          }
          else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleOpen - no db context or res not a key "));
+            handle = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         handle = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("keyHandleOpen - not initialized"));
    }
 
    return handle;
@@ -98,39 +114,49 @@ int pclKeyHandleClose(int key_handle)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleClose - key_handle:"), DLT_INT(key_handle));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
       {
-#endif
-         PersistenceKeyHandle_s persHandle;
-
-         if(get_key_handle_data(key_handle, &persHandle) != -1)
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if ('\0' != persHandle.resource_id[0])
+#endif
+            PersistenceKeyHandle_s persHandle;
+
+            if(get_key_handle_data(key_handle, &persHandle) != -1)
             {
-               /* Invalidate key handle data */
-               set_persistence_handle_close_idx(key_handle);
-               clear_key_handle_array(key_handle);
-               rval = 1;
+               if ('\0' != persHandle.resource_id[0])
+               {
+                  /* Invalidate key handle data */
+                  set_persistence_handle_close_idx(key_handle);
+                  clear_key_handle_array(key_handle);
+                  rval = 1;
+               }
+               else
+               {
+                  rval = EPERS_INVALID_HANDLE;
+               }
             }
             else
             {
-               rval = EPERS_INVALID_HANDLE;
+               rval = EPERS_MAXHANDLE;
             }
+#if USE_APPCHECK
          }
          else
          {
-            rval = EPERS_MAXHANDLE;
+            rval = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         rval = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleClose - not initialized"));
    }
 
    return rval;
@@ -142,30 +168,34 @@ int pclKeyHandleGetSize(int key_handle)
 {
    int size = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleGetSize - key_handle:"), DLT_INT(key_handle));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
       {
-#endif
-         PersistenceKeyHandle_s persHandle;
-
-         if(get_key_handle_data(key_handle, &persHandle) != -1)
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if ('\0' != persHandle.resource_id[0])
+#endif
+            PersistenceKeyHandle_s persHandle;
+
+            if(get_key_handle_data(key_handle, &persHandle) != -1)
             {
-             size = pclKeyGetSize(persHandle.ldbid, persHandle.resource_id,
-                                  persHandle.user_no, persHandle.seat_no);
+               if ('\0' != persHandle.resource_id[0])
+               {
+                size = pclKeyGetSize(persHandle.ldbid, persHandle.resource_id,
+                                     persHandle.user_no, persHandle.seat_no);
+               }
+               else
+               {
+                size = EPERS_INVALID_HANDLE;
+               }
             }
             else
             {
-             size = EPERS_INVALID_HANDLE;
+               size = EPERS_MAXHANDLE;
             }
-         }
-         else
-         {
-            size = EPERS_MAXHANDLE;
-         }
 #if USE_APPCHECK
       }
       else
@@ -173,6 +203,12 @@ int pclKeyHandleGetSize(int key_handle)
          size = EPERS_SHUTDOWN_NO_TRUSTED;
       }
 #endif
+         pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleGetSize - not initialized"));
    }
 
    return size;
@@ -184,38 +220,48 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 {
    int size = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleReadData - key_handle:"), DLT_INT(key_handle));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
       {
-#endif
-         PersistenceKeyHandle_s persHandle;
-
-         if(get_key_handle_data(key_handle, &persHandle) != -1)
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if ('\0' != persHandle.resource_id[0])
+#endif
+            PersistenceKeyHandle_s persHandle;
+
+            if(get_key_handle_data(key_handle, &persHandle) != -1)
             {
-             size = pclKeyReadData(persHandle.ldbid, persHandle.resource_id,
-                                   persHandle.user_no, persHandle.seat_no,
-                                   buffer, buffer_size);
+               if ('\0' != persHandle.resource_id[0])
+               {
+                size = pclKeyReadData(persHandle.ldbid, persHandle.resource_id,
+                                      persHandle.user_no, persHandle.seat_no,
+                                      buffer, buffer_size);
+               }
+               else
+               {
+                size = EPERS_INVALID_HANDLE;
+               }
             }
             else
             {
-             size = EPERS_INVALID_HANDLE;
+               size = EPERS_MAXHANDLE;
             }
+#if USE_APPCHECK
          }
          else
          {
-            size = EPERS_MAXHANDLE;
+            size = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         size = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleReadData - not initialized"));
    }
 
    return size;
@@ -226,23 +272,41 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
    int rval = EPERS_COMMON;
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
-   //            DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
-   if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange - key_handle:"), DLT_INT(key_handle));
+
+   if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
    {
-      rval = handleRegNotifyOnChange(key_handle, callback, Notify_register);
-   }
-   else
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleRegNotOnChange - Only one cBack allowed for ch notiy."));
-      rval = EPERS_NOTIFY_NOT_ALLOWED;
+      //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
+      //            DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
+      if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
+      {
+         rval = handleRegNotifyOnChange(key_handle, callback, Notify_register);
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleRegNotOnChange - Only one cBack allowed for ch notiy."));
+         rval = EPERS_NOTIFY_NOT_ALLOWED;
+      }
+      pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
    }
    return rval;
 }
 
 int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
-   return handleRegNotifyOnChange(key_handle, callback, Notify_unregister);
+   int rval = EPERS_NOT_INITIALIZED;
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleUnRegisterNotifyOnChange - key_handle:"), DLT_INT(key_handle));
+
+   if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+   {
+      rval = handleRegNotifyOnChange(key_handle, callback, Notify_unregister);
+
+      pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
+   }
+
+   return rval;
 }
 
 
@@ -251,27 +315,33 @@ int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, 
 {
    int rval = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("handleRegNotifyOnChange - key_handle:"), DLT_INT(key_handle));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-   	PersistenceKeyHandle_s persHandle;
+      PersistenceKeyHandle_s persHandle;
 
       if(get_key_handle_data(key_handle, &persHandle) != -1)
       {
          if ('\0' != persHandle.resource_id[0])
          {
             rval = regNotifyOnChange(persHandle.ldbid,   persHandle.resource_id,
-            		                   persHandle.user_no, persHandle.seat_no,
+                                     persHandle.user_no, persHandle.seat_no,
                                      callback, regPolicy);
           }
           else
           {
-         	 rval = EPERS_INVALID_HANDLE;
+             rval = EPERS_INVALID_HANDLE;
           }
       }
       else
       {
          rval = EPERS_MAXHANDLE;
       }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("handleRegNotifyOnChange - not initialized"));
    }
    return rval;
 }
@@ -282,37 +352,47 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 {
    int size = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleWriteData - key_handle:"), DLT_INT(key_handle));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
       {
-#endif
-         PersistenceKeyHandle_s persHandle;
-
-         if(get_key_handle_data(key_handle, &persHandle) != -1)
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if ('\0' != persHandle.resource_id[0])
+#endif
+            PersistenceKeyHandle_s persHandle;
+
+            if(get_key_handle_data(key_handle, &persHandle) != -1)
             {
-             size = pclKeyWriteData(persHandle.ldbid,   persHandle.resource_id,
-                                    persHandle.user_no, persHandle.seat_no, buffer, buffer_size);
+               if ('\0' != persHandle.resource_id[0])
+               {
+                size = pclKeyWriteData(persHandle.ldbid,   persHandle.resource_id,
+                                       persHandle.user_no, persHandle.seat_no, buffer, buffer_size);
+               }
+               else
+               {
+                size = EPERS_INVALID_HANDLE;
+               }
             }
             else
             {
-             size = EPERS_INVALID_HANDLE;
+               size = EPERS_MAXHANDLE;
             }
+#if USE_APPCHECK
          }
          else
          {
-            size = EPERS_MAXHANDLE;
+            size = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         size = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleWriteData - not initialized"));
    }
 
    return size;
@@ -332,49 +412,59 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 {
    int rval = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyDelete - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
       {
-#endif
-         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            PersistenceInfo_s dbContext;
+#endif
+            if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+            {
+               PersistenceInfo_s dbContext;
 
-           char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};     // database key
-           char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};     // database location
+              char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};     // database key
+              char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};     // database location
 
-           dbContext.context.ldbid   = ldbid;
-           dbContext.context.seat_no = seat_no;
-           dbContext.context.user_no = user_no;
+              dbContext.context.ldbid   = ldbid;
+              dbContext.context.seat_no = seat_no;
+              dbContext.context.user_no = user_no;
 
-           // get database context: database path and database key
-           rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-           if(   (rval >= 0)
-              && (dbContext.configKey.type == PersistenceResourceType_key) )     // check if type is matching
-           {
-              if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)  // check if store policy is valid
+              // get database context: database path and database key
+              rval = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+              if(   (rval >= 0)
+                 && (dbContext.configKey.type == PersistenceResourceType_key) )     // check if type is matching
               {
-                 rval = persistence_delete_data(dbPath, dbKey, resource_id, &dbContext);
+                 if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)  // check if store policy is valid
+                 {
+                    rval = persistence_delete_data(dbPath, dbKey, resource_id, &dbContext);
+                 }
+                 else
+                 {
+                   rval = EPERS_BADPOL;
+                 }
               }
-              else
-              {
-                rval = EPERS_BADPOL;
-              }
-           }
+            }
+            else
+            {
+               rval = EPERS_LOCKFS;
+            }
+#if USE_APPCHECK
          }
          else
          {
-            rval = EPERS_LOCKFS;
+            rval = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         rval = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyDelete - not initialized"));
    }
 
    return rval;
@@ -386,66 +476,16 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 {
    int data_size = EPERS_NOT_INITIALIZED;
 
-   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
-   {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
-      {
-#endif
-         PersistenceInfo_s dbContext;
-
-         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
-         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};       // database location
-
-         dbContext.context.ldbid   = ldbid;
-         dbContext.context.seat_no = seat_no;
-         dbContext.context.user_no = user_no;
-
-         // get database context: database path and database key
-         data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
-         if(   (data_size >= 0)
-            && (dbContext.configKey.type == PersistenceResourceType_key) )       // check if type matches
-         {
-            if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
-            {
-               data_size = persistence_get_data_size(dbPath, dbKey, resource_id, &dbContext);
-            }
-            else
-            {
-              data_size = EPERS_BADPOL;
-            }
-         }
-         else
-         {
-           data_size = EPERS_BADPOL;
-         }
-#if USE_APPCHECK
-      }
-      else
-      {
-         data_size = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
-#endif
-   }
-
-   return data_size;
-}
-
-
-
-int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
-                  unsigned char* buffer, int buffer_size)
-{
-   int data_size = EPERS_NOT_INITIALIZED;
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyGetSize - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
       {
-#endif
-         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
+#endif
             PersistenceInfo_s dbContext;
 
             char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
@@ -458,34 +498,34 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
             // get database context: database path and database key
             data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
             if(   (data_size >= 0)
-               && (dbContext.configKey.type == PersistenceResourceType_key) )
+               && (dbContext.configKey.type == PersistenceResourceType_key) )       // check if type matches
             {
-
-               if(dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
+               if(   dbContext.configKey.storage < PersistenceStorage_LastEntry)    // check if store policy is valid
                {
-                     data_size = persistence_get_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+                  data_size = persistence_get_data_size(dbPath, dbKey, resource_id, &dbContext);
                }
                else
                {
-                  data_size = EPERS_BADPOL;
+                 data_size = EPERS_BADPOL;
                }
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyReadData - no db context or res not a key"));
+              data_size = EPERS_BADPOL;
             }
+#if USE_APPCHECK
          }
          else
          {
-            data_size = EPERS_LOCKFS;
+            data_size = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         data_size = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyGetSize - not initialized"));
    }
 
    return data_size;
@@ -493,20 +533,22 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
 
 
-int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
-                   unsigned char* buffer, int buffer_size)
+int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
+                  unsigned char* buffer, int buffer_size)
 {
    int data_size = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyReadData - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
       {
-#endif
-         if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if(buffer_size <= gMaxKeyValDataSize)  // check data size
+#endif
+            if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
             {
                PersistenceInfo_s dbContext;
 
@@ -520,55 +562,134 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
                // get database context: database path and database key
                data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
                if(   (data_size >= 0)
-                  && (dbContext.configKey.type == PersistenceResourceType_key))
+                  && (dbContext.configKey.type == PersistenceResourceType_key) )
                {
-                  if(dbContext.configKey.permission != PersistencePermission_ReadOnly)    // don't write to a read only resource
+
+                  if(dbContext.configKey.storage < PersistenceStorage_LastEntry)   // check if store policy is valid
                   {
-                     // store data
-                     if(dbContext.configKey.storage < PersistenceStorage_LastEntry)       // check if store policy is valid
-                     {
-                        if(   (dbContext.configKey.storage == PersistenceStorage_shared)
-                           && (0 != strncmp(dbContext.configKey.reponsible, gAppId, PERS_RCT_MAX_LENGTH_RESPONSIBLE) ) )
-                        {
-                           data_size = EPERS_NOT_RESP_APP;
-                        }
-                        else
-                        {
-                           data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
-                        }
-                     }
-                     else
-                     {
-                        data_size = EPERS_BADPOL;
-                     }
+                        data_size = persistence_get_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
                   }
                   else
                   {
-                     data_size = EPERS_RESOURCE_READ_ONLY;
+                     data_size = EPERS_BADPOL;
                   }
                }
                else
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyWriteData no db context or res is not a key"));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyReadData - no db context or res not a key"));
                }
             }
             else
             {
-               data_size = EPERS_BUFLIMIT;
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+               data_size = EPERS_LOCKFS;
             }
+#if USE_APPCHECK
          }
          else
          {
-            data_size = EPERS_LOCKFS;
+            data_size = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         data_size = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gKeyAPIAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("keyReadData - not initialized"));
+   }
+
+   return data_size;
+}
+
+
+
+int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no,
+                   unsigned char* buffer, int buffer_size)
+{
+   int data_size = EPERS_NOT_INITIALIZED;
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyWriteData - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
+
+   if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
+   {
+      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+      {
+
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
+         {
+#endif
+            if(AccessNoLock != isAccessLocked() )     // check if access to persistent data is locked
+            {
+               if(buffer_size <= gMaxKeyValDataSize)  // check data size
+               {
+                  PersistenceInfo_s dbContext;
+
+                  char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};       // database key
+                  char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};       // database location
+
+                  dbContext.context.ldbid   = ldbid;
+                  dbContext.context.seat_no = seat_no;
+                  dbContext.context.user_no = user_no;
+
+                  // get database context: database path and database key
+                  data_size = get_db_context(&dbContext, resource_id, ResIsNoFile, dbKey, dbPath);
+                  if(   (data_size >= 0)
+                     && (dbContext.configKey.type == PersistenceResourceType_key))
+                  {
+                     if(dbContext.configKey.permission != PersistencePermission_ReadOnly)    // don't write to a read only resource
+                     {
+                        // store data
+                        if(dbContext.configKey.storage < PersistenceStorage_LastEntry)       // check if store policy is valid
+                        {
+                           if(   (dbContext.configKey.storage == PersistenceStorage_shared)
+                              && (0 != strncmp(dbContext.configKey.reponsible, gAppId, PERS_RCT_MAX_LENGTH_RESPONSIBLE) ) )
+                           {
+                              data_size = EPERS_NOT_RESP_APP;
+                           }
+                           else
+                           {
+                              data_size = persistence_set_data(dbPath, dbKey, resource_id, &dbContext, buffer, buffer_size);
+                           }
+                        }
+                        else
+                        {
+                           data_size = EPERS_BADPOL;
+                        }
+                     }
+                     else
+                     {
+                        data_size = EPERS_RESOURCE_READ_ONLY;
+                     }
+                  }
+                  else
+                  {
+                     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyWriteData no db context or res is not a key"));
+                  }
+               }
+               else
+               {
+                  data_size = EPERS_BUFLIMIT;
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyWriteData - buffer_size to big, limit is [bytes]:"), DLT_INT(gMaxKeyValDataSize));
+               }
+            }
+            else
+            {
+               data_size = EPERS_LOCKFS;
+            }
+#if USE_APPCHECK
+         }
+         else
+         {
+            data_size = EPERS_SHUTDOWN_NO_TRUSTED;
+         }
+#endif
+         pthread_mutex_unlock(&gKeyAPIAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyWriteData - not initialized"));
    }
    return data_size;
 }
@@ -577,7 +698,17 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
 int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_id, unsigned int  user_no, unsigned int  seat_no, pclChangeNotifyCallback_t  callback)
 {
-   return regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_unregister);
+   int rval = EPERS_NOT_INITIALIZED;
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyUnRegisterNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
+
+   if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+   {
+      rval = regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_unregister);
+
+      pthread_mutex_unlock(&gKeyAPIAccessMtx);
+   }
+   return rval;
 }
 
 
@@ -585,16 +716,21 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
 {
    int rval = EPERS_COMMON;
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclKeyRegisterNotifyOnChange: "),
-   //            DLT_INT(ldbid), DLT_STRING(resource_id) );
-   if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "), DLT_STRING(resource_id) );
+
+   if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
    {
-      rval = regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_register);
-   }
-   else
-   {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyRegNotifyOnChange - Only one cBack is allowed for ch noti."));
-      rval = EPERS_NOTIFY_NOT_ALLOWED;
+      if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
+      {
+         rval = regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_register);
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyRegNotifyOnChange - Only one cBack is allowed for ch noti."));
+         rval = EPERS_NOTIFY_NOT_ALLOWED;
+      }
+      pthread_mutex_unlock(&gKeyAPIAccessMtx);
    }
    return rval;
 }
@@ -604,6 +740,8 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
 int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback, PersNotifyRegPolicy_e regPolicy)
 {
    int rval = EPERS_NOT_INITIALIZED;
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("regNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "), DLT_STRING(resource_id) );
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
@@ -652,6 +790,10 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
          rval = EPERS_SHUTDOWN_NO_TRUSTED;
       }
 #endif
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("regNotifyOnChange - not initialized"));
    }
 
    return rval;

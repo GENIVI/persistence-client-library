@@ -23,7 +23,9 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
+#include <dlt.h>
 
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 /// type definition of persistence custom library information
 typedef struct sPersCustomLibInfo
@@ -252,7 +254,7 @@ int get_custom_libraries()
          int i = 0;
          int fd = open(filename, O_RDONLY);
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load custom library config file ==> "), DLT_STRING(filename));
 
          if (fd == -1)
          {
@@ -262,7 +264,7 @@ int get_custom_libraries()
          }
 
          // map the config file into memory
-         customConfFileMap = (char*)mmap(0, buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
+         customConfFileMap = (char*)mmap(0, (size_t)buffer.st_size, PROT_WRITE, MAP_PRIVATE, fd, 0);
 
          if (customConfFileMap == MAP_FAILED)
          {
@@ -271,7 +273,7 @@ int get_custom_libraries()
             return EPERS_COMMON;
          }
 
-         fillCustomCharTokenArray(buffer.st_size, customConfFileMap);
+         fillCustomCharTokenArray((unsigned int)buffer.st_size, customConfFileMap);
 
          while( i < (TOKENARRAYSIZE-3) )
          {
@@ -553,7 +555,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
             {
                if( (gPersCustomFuncs[customLib].custom_plugin_init) != NULL)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("load_custom_library => (sync)  : "), DLT_STRING(get_custom_client_lib_name(customLib)));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load_custom_library => (sync)  : "), DLT_STRING(get_custom_client_lib_name(customLib)));
                   gPersCustomFuncs[customLib].custom_plugin_init();
                }
                else
@@ -567,7 +569,7 @@ int load_custom_library(PersistenceCustomLibs_e customLib, Pers_custom_functs_s 
             {
                if( (gPersCustomFuncs[customLib].custom_plugin_init_async) != NULL)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("load_custom_library => (async) : "),
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("load_custom_library => (async) : "),
                                           DLT_STRING(get_custom_client_lib_name(customLib)));
 
                   gPersCustomFuncs[customLib].custom_plugin_init_async(gPlugin_callback_async_t);

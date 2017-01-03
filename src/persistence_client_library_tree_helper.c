@@ -190,7 +190,7 @@ int key_val_cmp(const void *p1, const void *p2 )
 /// duplicate function for key_value_s item
 void* key_val_dup(void *p)
 {
-   int value_size = 0;
+   size_t value_size = 0;
    key_value_s* src = NULL;
    key_value_s* dst = NULL;
 

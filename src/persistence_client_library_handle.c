@@ -21,6 +21,9 @@
 #include "persistence_client_library_tree_helper.h"
 
 #include <pthread.h>
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 
 pthread_mutex_t gKeyHandleAccessMtx      = PTHREAD_MUTEX_INITIALIZER;
@@ -81,7 +84,7 @@ int get_persistence_handle_idx()
 
    if(pthread_mutex_lock(&gMtx) == 0)
    {
-      if(gFreeHandleIdxHead > 0)   // check if we have a free spot in the array before the current max
+      if(gFreeHandleIdxHead > 0 && gFreeHandleIdxHead < MaxPersHandle)   // check if we have a free spot in the array before the current max
       {
          handle = gFreeHandleArray[--gFreeHandleIdxHead];
       }
@@ -107,7 +110,7 @@ void set_persistence_handle_close_idx(int handle)
 {
    if(pthread_mutex_lock(&gMtx) == 0)
    {
-      if(gFreeHandleIdxHead < MaxPersHandle)
+      if(gFreeHandleIdxHead >= 0 && gFreeHandleIdxHead < MaxPersHandle )
       {
          gFreeHandleArray[gFreeHandleIdxHead++] = handle;
       }
@@ -363,7 +366,6 @@ int get_file_permission(int idx)
             if(foundItem != NULL)
             {
                permission = foundItem->value.fileHandle.permission;
-               //debugFileItem("get_file_permission => foundItem", foundItem);
             }
             else
             {

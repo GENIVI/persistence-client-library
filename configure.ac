@@ -30,7 +30,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 
 # Overwrite the build in defaults
-CFLAGS="-Wall -Os -Wextra -fPIC -ffunction-sections"
+CFLAGS="-Wall -O -Werror -fstack-protector -pthread -Wformat -Wformat-security -fexceptions -fstrict-aliasing -fno-omit-frame-pointer -Wconversion -D_FORTIFY_SOURCE=2"
 
 # Checks for programs.
 AC_PROG_CC
@@ -89,7 +89,7 @@ AC_ARG_WITH([localcheck],
 
 if test "x$enable_tests" != "xno" ; then
    if test -z "$localcheck" ; then
-      PKG_CHECK_MODULES(CHECK, check)
+      PKG_CHECK_MODULES([CHECK], [check >= 0.9.6])
    else
       CHECK_CFLAGS="-I$localcheck/include"
       CHECK_LIBS="-L$localcheck/lib -lcheck"

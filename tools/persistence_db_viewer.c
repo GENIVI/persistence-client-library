@@ -146,8 +146,8 @@ void printDBcontent(const char* appname, dbType type)
       listSize = persComDbGetSizeKeysList(handle);
       if(listSize > 0 && listSize < 2048)
       {
-         resourceList = (char*)malloc(listSize+4);
-         memset(resourceList, 0, listSize+4-1);
+         resourceList = (char*)malloc((size_t)listSize+4);
+         memset(resourceList, 0, (size_t)listSize+4-1);
 
          if(resourceList != NULL)
          {
@@ -222,8 +222,8 @@ void printRCTcontent(const char* appname, int full)
       listSize = persComRctGetSizeResourcesList(handle);
       if(listSize > 0 && listSize < 2048)
       {
-         resourceList = (char*)malloc(listSize+4);
-         memset(resourceList, 0, listSize+4-1);
+         resourceList = (char*)malloc((size_t)listSize+4);
+         memset(resourceList, 0, (size_t)listSize+4-1);
 
          if(resourceList != NULL)
          {
@@ -319,7 +319,7 @@ void printSingleApplicationDBs(const char* appname, const char* thePath, unsigne
 
    if(databaseTypes != dbTypeNone)
    {
-	  int i = 0;
+      int i = 0;
       for(i=1; i<=5; i++)
       {
          if(databaseTypes & gDbMaskArray[i]) // check if db content needs to be printed

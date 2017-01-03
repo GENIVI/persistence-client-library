@@ -24,6 +24,9 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
 
@@ -79,7 +82,7 @@ typedef struct SObjectEntry
 /// polling structure
 typedef struct SPollInfo
 {
-   int nfds;						/// number of polls
+   nfds_t nfds;						/// number of polls
    struct pollfd fds[10];		/// poll file descriptors array
    tObjectEntry objects[10];	/// poll object
 } tPollInfo;
@@ -96,7 +99,7 @@ static void unregisterMessageHandler(DBusConnection *connection, void *user_data
 {
    (void)connection;
    (void)user_data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("unregisterObjectPath\n"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregisterObjectPath\n"));
 }
 
 
@@ -159,9 +162,9 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
             }
             else
             {
-               notifyStruct.ldbid       = atoi(ldbid);
-               notifyStruct.user_no     = atoi(user_no);
-               notifyStruct.seat_no     = atoi(seat_no);
+               notifyStruct.ldbid       = (unsigned int)atoi(ldbid);
+               notifyStruct.user_no     = (unsigned int)atoi(user_no);
+               notifyStruct.seat_no     = (unsigned int)atoi(seat_no);
 
                if(gChangeNotifyCallback != NULL )  // call the registered callback function
                {
@@ -186,7 +189,7 @@ static void  unregisterObjectPathFallback(DBusConnection *connection, void *user
 {
    (void)connection;
    (void)user_data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("unregObjPathFback"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("unregObjPathFback"));
 }
 
 
@@ -198,7 +201,7 @@ static dbus_bool_t addWatch(DBusWatch *watch, void *data)
 
    if (ARRAY_SIZE(gPollInfo.fds) > (unsigned int)(gPollInfo.nfds))
    {
-      int flags = dbus_watch_get_flags(watch);
+      unsigned int flags = dbus_watch_get_flags(watch);
 
       tObjectEntry * const pEntry = &gPollInfo.objects[gPollInfo.nfds];
       pEntry->objtype = OT_WATCH;
@@ -233,7 +236,7 @@ static void removeWatch(DBusWatch *watch, void *data)
 
    (void)data;
 
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT( (long)watch) );
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("removeWatch called "), DLT_INT64( (long)watch) );
 
    if(w_data)
       free(w_data);
@@ -246,7 +249,7 @@ static void removeWatch(DBusWatch *watch, void *data)
 static void watchToggled(DBusWatch *watch, void *data)
 {
    (void)data;
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT( (long)watch) );
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("watchToggled called "), DLT_INT64( (long)watch) );
 
    if(dbus_watch_get_enabled(watch))
       addWatch(watch, data);
@@ -302,8 +305,8 @@ static dbus_bool_t addTimeout(DBusTimeout *timeout, void *data)
 
 static void removeTimeout(DBusTimeout *timeout, void *data)
 {
-   int i = gPollInfo.nfds;
-   (void)data;
+   int i = (int)gPollInfo.nfds;
+  (void)data;
 
    while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
 
@@ -332,11 +335,11 @@ static void removeTimeout(DBusTimeout *timeout, void *data)
 // callback for libdbus' when timeout changed
 static void timeoutToggled(DBusTimeout *timeout, void *data)
 {
-   int i = gPollInfo.nfds;
+   int i = (int)gPollInfo.nfds;
    (void)data;
 
    while ((0<i--)&&(timeout!=gPollInfo.objects[i].timeout));
-   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("timeoutToggled") );
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("timeoutToggled") );
    if (0<i)
    {
       const int interval = (TRUE==dbus_timeout_get_enabled(timeout))?dbus_timeout_get_interval(timeout):0;
@@ -368,7 +371,7 @@ int setup_dbus_mainloop(void)
 
    if(pAddress != NULL)    // Connect to the bus and check for errors
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - specific dbus address:"), DLT_STRING(pAddress) );
 
       conn = dbus_connection_open_private(pAddress, &err);
 
@@ -390,7 +393,7 @@ int setup_dbus_mainloop(void)
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setupMainLoop - Use def bus (DBUS_BUS_SYSTEM)"));
       conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &err);
 
       if(conn == NULL)
@@ -492,39 +495,39 @@ int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int*
 {
    int rval = 1;
 
-   //DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
    switch (readData->message.cmd)
    {
       case CMD_PAS_BLOCK_AND_WRITE_BACK:
-         process_block_and_write_data_back(readData->message.params[1] /*requestID*/, readData->message.params[0] /*status*/);
-         process_send_pas_request(conn,    readData->message.params[1] /*request*/,   readData->message.params[0] /*status*/);
+         process_block_and_write_data_back((unsigned int)readData->message.params[1] /*requestID*/, (unsigned int)readData->message.params[0] /*status*/);
+         process_send_pas_request(conn,    (unsigned int)readData->message.params[1] /*request*/,   (int)readData->message.params[0] /*status*/);
          break;
       case CMD_LC_PREPARE_SHUTDOWN:
          process_prepare_shutdown(Shutdown_Full);
-         process_send_lifecycle_request(conn, readData->message.params[1] /*requestID*/, readData->message.params[0] /*status*/);
+         process_send_lifecycle_request(conn, (unsigned int)readData->message.params[1] /*requestID*/, (unsigned int)readData->message.params[0] /*status*/);
          break;
       case CMD_SEND_NOTIFY_SIGNAL:
-         process_send_notification_signal(conn, readData->message.params[0] /*ldbid*/, readData->message.params[1], /*user*/
-                                                readData->message.params[2] /*seat*/,  readData->message.params[3], /*reason*/
+         process_send_notification_signal(conn, (unsigned int)readData->message.params[0] /*ldbid*/, (unsigned int)readData->message.params[1], /*user*/
+                                                (unsigned int)readData->message.params[2] /*seat*/,  (unsigned int)readData->message.params[3], /*reason*/
                                                 readData->message.string);
          break;
       case CMD_REG_NOTIFY_SIGNAL:
-         process_reg_notification_signal(conn, readData->message.params[0] /*ldbid*/, readData->message.params[1], /*user*/
-                                               readData->message.params[2] /*seat*/,  readData->message.params[3], /*,policy*/
+         process_reg_notification_signal(conn, (unsigned int)readData->message.params[0] /*ldbid*/, (unsigned int)readData->message.params[1], /*user*/
+                                               (unsigned int)readData->message.params[2] /*seat*/,  (unsigned int)readData->message.params[3], /*,policy*/
                                                readData->message.string);
          break;
       case CMD_SEND_PAS_REGISTER:
-         process_send_pas_register(conn, readData->message.params[0] /*regType*/, readData->message.params[1] /*notifyFlag*/);
+         process_send_pas_register(conn, (int)readData->message.params[0] /*regType*/, (int)readData->message.params[1] /*notifyFlag*/);
          break;
       case CMD_SEND_LC_REGISTER:
-         process_send_lifecycle_register(conn, readData->message.params[0] /*regType*/, readData->message.params[1] /*mode*/);
+         process_send_lifecycle_register(conn, (int)readData->message.params[0] /*regType*/, (int)readData->message.params[1] /*mode*/);
          break;
       case CMD_QUIT:
          rval = 0;
          *quit = TRUE;
          break;
       default:
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_INT(readData->message.cmd) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_UINT32(readData->message.cmd) );
          break;
    }
 
@@ -583,7 +586,7 @@ void* mainLoop(void* userData)
                   {
                      MainLoopData_u readData;
                      bContinue = TRUE;
-                     while ((-1==(ret = read(gPollInfo.fds[i].fd, readData.payload, sizeof(struct message_))))&&(EINTR == errno));
+                     while ((-1==(ret = (int)read((int)(gPollInfo.fds[i].fd), readData.payload, (size_t)sizeof(struct message_))))&&(EINTR == errno));
                      if(ret < 0)
                      {
                         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - read() failed"), DLT_STRING(strerror(errno)) );
@@ -602,7 +605,7 @@ void* mainLoop(void* userData)
                }
                else
                {
-                  int flags = 0;
+                  unsigned int flags = 0;
 
                   if (0!=(gPollInfo.fds[i].revents & POLLIN))
                   {
@@ -620,7 +623,7 @@ void* mainLoop(void* userData)
                   {
                      flags |= DBUS_WATCH_HANGUP;
                   }
-                  bContinue = dbus_watch_handle(gPollInfo.objects[i].watch, flags);
+                  bContinue = (int)dbus_watch_handle(gPollInfo.objects[i].watch, flags);
                }
             }
          }

@@ -35,6 +35,8 @@
 
 pthread_mutex_t gMtx   = PTHREAD_MUTEX_INITIALIZER;
 
+/// debug log and trace (DLT) setup
+DLT_DECLARE_CONTEXT(gPcltDLTContext);
 
 
 int myChangeCallback(pclNotification_s * notifyStruct)
@@ -58,10 +60,8 @@ int myChangeCallback(pclNotification_s * notifyStruct)
 
 int main(int argc, char *argv[])
 {
-   int ret = 0, i = 0;
-   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   unsigned char readBuffer[READ_BUFFER_SIZE] = {0};
+   int ret = 0;
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    const char* appID = "lt-persistence_client_library_dbus_test";
 
@@ -71,7 +71,10 @@ int main(int argc, char *argv[])
    printf("Dbus interface test application\n");
 
    /// debug log and trace (DLT) setup
-   DLT_REGISTER_APP("noty","tests the persistence client library");
+   DLT_REGISTER_APP("NOTY","tests the persistence client library");
+
+   DLT_REGISTER_CONTEXT(gPcltDLTContext, "PCLt", "Context for PCL testing");
+
    ret = pclInitLibrary(appID, shutdownReg);
    printf("pclInitLibrary - %s - : %d\n", appID, ret);
 
@@ -81,7 +84,6 @@ int main(int argc, char *argv[])
    ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link2", 2/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
 
-#if 0
    ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link3", 3/*user_no*/, 2/*seat_no*/, &myChangeCallback);
    ret = pclKeyRegisterNotifyOnChange(0x20, "links/last_link4", 4/*user_no*/, 1/*seat_no*/, &myChangeCallback);
 
@@ -118,33 +120,12 @@ int main(int argc, char *argv[])
    printf("Press enter to end\n");
    getchar();
 
-   sleep(2);
-
-#else
-
-
-
-   while(i<18)
-   {
-      memset(readBuffer, 0, READ_BUFFER_SIZE);
-      pthread_mutex_lock(&gMtx);
-
-      pclKeyReadData(0x20, "links/last_link2", 2, 1, readBuffer, READ_BUFFER_SIZE);
-      printf("%d - Read value of resource \"links/last_link2\" = %s \n\n\n", i++, readBuffer);
-   }
-
-#endif
-
-
    pclDeinitLibrary();
 
-
    // unregister debug log and trace
+   DLT_UNREGISTER_CONTEXT(gPcltDLTContext);
    DLT_UNREGISTER_APP();
 
-   dlt_free();
-
-   printf("By\n");
    return ret;
 }
 

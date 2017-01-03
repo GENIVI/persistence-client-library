@@ -20,6 +20,9 @@
 #include "persistence_client_library_pas_interface.h"
 
 #include <errno.h>
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 /// flag if access is locked
 static int gLockAccess = 0;
@@ -60,7 +63,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
       	data.message.params[1] = requestID;
       	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("chkPasReq - case PasMsg_Block o. PasMsg_WriteBack"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chkPasReq - case PasMsg_Block o. PasMsg_WriteBack"));
          if(-1 == deliverToMainloop_NM(&data))
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("write failed w/ errno "), DLT_INT(errno), DLT_STRING(strerror(errno)));
@@ -74,7 +77,7 @@ int check_pas_request(unsigned int request, unsigned int requestID)
       }
       case PasMsg_Unblock:
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("chkPasReq - case PasMsg_Unblock"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chkPasReq - case PasMsg_Unblock"));
          pers_unlock_access();
          rval = PasErrorStatus_OK;
          break;
@@ -118,7 +121,7 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
-   errorReturn = check_pas_request(request, requestID);
+   errorReturn = check_pas_request((unsigned int)request, (unsigned int)requestID);
 
    reply = dbus_message_new_method_return(message);
 
@@ -153,7 +156,7 @@ DBusHandlerResult checkPersAdminMsg(DBusConnection * connection, DBusMessage * m
 
    if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("checkPasMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
+   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("checkPasMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
 
       if((0==strcmp(gDbusPersAdminConsMsg, dbus_message_get_member(message))))
       {

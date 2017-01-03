@@ -27,9 +27,6 @@ char gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE] = { [0 ... PERS_RCT_MAX_LENGTH_RESP
 /// flag to indicate if client library has been initialized
 unsigned int gPclInitCounter = 0;
 
-/// the DLT context
-DltContext gPclDLTContext;
-
 int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
 /// character lookup table used for parsing configuration files

@@ -76,7 +76,7 @@ void printHexDump(unsigned char* buffer, int formatNumPerRow)
 
 
 
-int readKey(char * resource_id, unsigned int user, unsigned int seat, unsigned int ldbid, unsigned int doHexdump, unsigned char* buffer, unsigned int size)
+int readKey(const char * resource_id, unsigned int user, unsigned int seat, unsigned int ldbid, unsigned int doHexdump, unsigned char* buffer, int size)
 {
    int rval = 0;
    int numPerRow = 8;
@@ -103,7 +103,7 @@ int readKey(char * resource_id, unsigned int user, unsigned int seat, unsigned i
 
 
 
-int writeKey(char * resource_id, unsigned int user, unsigned int seat, unsigned int ldbid, unsigned char* buffer, unsigned int doHexdump)
+int writeKey(const char * resource_id, unsigned int user, unsigned int seat, unsigned int ldbid, unsigned char* buffer, unsigned int doHexdump)
 {
    int rval = 0, size = 0;
    int numPerRow = 8;
@@ -112,7 +112,7 @@ int writeKey(char * resource_id, unsigned int user, unsigned int seat, unsigned 
    printf("   ResourceID: \"%s\" \n", resource_id);
    printf("   Data      : \"%s \"\n", buffer);
 
-   size = pclKeyWriteData(ldbid, resource_id, user, seat, buffer, strlen((char*)buffer));
+   size = pclKeyWriteData(ldbid, resource_id, user, seat, buffer, (int)strlen((char*)buffer));
 
    if(doHexdump == 1)
    {
@@ -169,7 +169,7 @@ int writeDataToFile(char* fileName, unsigned char* buffer, int size)
       rval = ftruncate(fd, size);
       if(rval != -1)
       {
-         rval = write(fd, buffer, size);
+         rval = (int)write(fd, buffer, (size_t)size);
 
          if(rval == -1)
          {
@@ -202,14 +202,14 @@ unsigned char* readDataFromFile(char* fileName)
         int fd = open(fileName, O_RDONLY);
         if(fd != -1)
         {
-           int readSize = 0;
-           writeBuffer =  malloc(buffer.st_size );
+           ssize_t readSize = 0;
+           writeBuffer =  malloc((size_t)buffer.st_size );
            if(writeBuffer != NULL)
            {
-              readSize = read(fd, writeBuffer, buffer.st_size-1);   //-1 - just read content, not line endings
+              readSize = read(fd, writeBuffer, (size_t)(buffer.st_size-1));   //-1 - just read content, not line endings
               if(readSize < 0)
               {
-                 printf("Failed to read data: %d\n", readSize);
+                 printf("Failed to read data: %d\n", (int)readSize);
               }
            }
            else
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 	{
 	   printf("Application name: %s\n", appName);
 
-	   unsigned int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+	   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 	   (void)pclInitLibrary(appName, shutdownReg);
 
       switch(opMode)
@@ -374,10 +374,10 @@ int main(int argc, char *argv[])
 
             if(keysize > 0)
             {
-               buffer = malloc(keysize);
+               buffer = malloc((size_t)keysize);
                if(buffer != NULL)
                {
-                  memset(buffer, 0, keysize-1);
+                  memset(buffer, 0, (size_t)(keysize-1));
                   readKey(resourceID, user_no, seat_no, ldbid, doHexdump, buffer, keysize);
 
                   if(fileName != NULL)

@@ -27,7 +27,9 @@
 #include <persComErrors.h>
 
 #include <errno.h>
+#include <dlt.h>
 
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 
 
@@ -51,14 +53,15 @@ void deleteNotifyTree(void)
 
 static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 {
-   int arrayIdx = 0, handleDB = -1;
+   unsigned int arrayIdx = 0;
+   int handleDB = -1;
 
    // create array index: index is a combination of resource configuration table type and group
    arrayIdx = info->configKey.storage + info->context.ldbid ;
 
    if(arrayIdx < DbTableSize)
    {
-      int openFlags = 0x01;   // by default create file if not existing
+      unsigned char openFlags = 0x01;   // by default create file if not existing
 
       if(gHandlesDBCreated[arrayIdx][dbType] == 0)
       {
@@ -131,7 +134,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
       {
          if (PersGetDefault_Data == job)
          {
-         	read_size = plugin_persComDbReadKey(handleDefaultDB, key, (char*)buffer, buffer_size);
+         	read_size = plugin_persComDbReadKey(handleDefaultDB, key, (char*)buffer, (signed int)buffer_size);
          }
          else if (PersGetDefault_Size == job)
          {
@@ -160,7 +163,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
             {
                 snprintf(dltMessage, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, plugin_gLocalFactoryDefault);
             }
-            DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getDefaults - default data will be used for Key"), DLT_STRING(key),
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDefaults - default data will be used for Key"), DLT_STRING(key),
                                                   DLT_STRING("from"), DLT_STRING(dltMessage));
             break;
          }
@@ -169,7 +172,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
 
    if (read_size < 0)
    {
-       DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getDefaults - default data not available for Key"), DLT_STRING(key),
+       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDefaults - default data not available for Key"), DLT_STRING(key),
                                              DLT_STRING("Path:"), DLT_STRING(dbPath));
    }
 
@@ -204,7 +207,7 @@ void database_close_all()
 
 
 
-int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
+int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, int buffer_size)
 {
    int read_size = -1, ret_defaults = -1;
 
@@ -217,7 +220,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
          read_size = plugin_persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
          if(read_size < 0)
          {
-            read_size = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
+            read_size = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, (unsigned int)buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
          }
       }
    }
@@ -253,7 +256,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
 				}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getData - Plugin not avail, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getData - Plugin not avail, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 read_size = EPERS_COMMON;
 				}
@@ -293,8 +296,8 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
 
          (void)get_db_path_and_key(info, key, NULL, dbPath);
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getData - Plugin data not available - get default data of key:"), DLT_STRING(key));
-         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, buffer_size, PersGetDefault_Data);
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getData - Plugin data not available - get default data of key:"), DLT_STRING(key));
+         ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, (unsigned int)buffer_size, PersGetDefault_Data);
          if (0 < ret_defaults)
          {
         	   read_size = ret_defaults;
@@ -306,7 +309,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
 
 
 
-int persistence_set_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size)
+int persistence_set_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info, unsigned char* buffer, int buffer_size)
 {
    int write_size = -1;
 
@@ -380,7 +383,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
 				}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("setData - Plugin not avail, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("setData - Plugin not avail, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 write_size = EPERS_COMMON;
 				}
@@ -475,7 +478,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
       		}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getDataSize - Plugin not avail, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDataSize - Plugin not avail, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 read_size = EPERS_COMMON;
 				}
@@ -513,7 +516,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
          info->configKey.policy = PersistencePolicy_wc;			/* Set the policy */
          info->configKey.type   = PersistenceResourceType_key;  /* Set the type */
          (void)get_db_path_and_key(info, key, NULL, dbPath);
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("getDataSize - Plugin data not avail,  get size of default data for key:"),
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("getDataSize - Plugin data not avail,  get size of default data for key:"),
                                             DLT_STRING(key));
          ret_defaults = pers_get_defaults(dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
          if (0 < ret_defaults)
@@ -589,7 +592,7 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
 				}
 				else
 				{
-					 DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("deleteData - Plugin not available, unknown loading type: "),
+					 DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("deleteData - Plugin not available, unknown loading type: "),
 					                                       DLT_INT(getCustomLoadingType(idx)));
 					 ret = EPERS_COMMON;
 				}

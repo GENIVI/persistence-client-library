@@ -91,7 +91,7 @@ int plugin_handle_get_data(int handle, char* buffer, int size)
    //printf("plugin_handle_get_data: %s\n", LIBIDENT);
    (void)handle;
 
-   return snprintf(buffer, size, "Custom plugin -> plugin_get_data_handle: %s!", LIBIDENT);
+   return snprintf(buffer, (size_t)size, "Custom plugin -> plugin_get_data_handle: %s!", LIBIDENT);
 }
 /**
  * @brief get data
@@ -111,7 +111,7 @@ int plugin_get_data(const char* path, char* buffer, int size)
    (void)buffer;
    (void)size;
 
-   return snprintf(buffer, size, "Custom plugin -> plugin_get_data: %s!", LIBIDENT);
+   return snprintf(buffer, (size_t)size, "Custom plugin -> plugin_get_data: %s!", LIBIDENT);
 }
 
 

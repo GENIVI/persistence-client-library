@@ -20,6 +20,9 @@
 #include "persistence_client_library_lc_interface.h"
 
 #include <errno.h>
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 
 int check_lc_request(unsigned int request, unsigned int requestID)
@@ -49,7 +52,7 @@ int check_lc_request(unsigned int request, unsigned int requestID)
       }
       default:
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lcCechkReq - Unknown lcm message"), DLT_INT(request));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("lcCechkReq - Unknown lcm message"), DLT_UINT(request));
          break;
       }
    }
@@ -122,7 +125,7 @@ DBusHandlerResult checkLifecycleMsg(DBusConnection * connection, DBusMessage * m
 
    if((0==strncmp(gDbusLcConsterface, dbus_message_get_interface(message), 46)))
    {
-   	DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("chLcMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
+   	DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chLcMsg - Received dbus msg: "), DLT_STRING(dbus_message_get_member(message)));
       if((0==strncmp(gDbusLcConsMsg, dbus_message_get_member(message), 16)))
       {
          result = msg_lifecycleRequest(connection, message);
@@ -143,7 +146,7 @@ int register_lifecycle(int shutdownMode)
 
 	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
 	data.message.params[0] = 1;
-	data.message.params[1] = shutdownMode;
+	data.message.params[1] = (uint32_t)shutdownMode;
 	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
    return deliverToMainloop(&data);
@@ -157,7 +160,7 @@ int unregister_lifecycle(int shutdownMode)
 
 	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
 	data.message.params[0] = 0;
-	data.message.params[1] = shutdownMode;
+	data.message.params[1] = (uint32_t)shutdownMode;
 	data.message.string[0] = '\0'; 	// no string parameter, set to 0
 
    return deliverToMainloop(&data);

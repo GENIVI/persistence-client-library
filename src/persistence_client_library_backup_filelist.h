@@ -93,7 +93,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
  * @return 1 if a backup will shall be created,
  *         0 if a backup shall be not created or -1 for an error
  */
-inline int pclBackupNeeded(const char* path);
+int pclBackupNeeded(const char* path);
 
 
 /**

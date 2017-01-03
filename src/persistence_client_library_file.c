@@ -35,6 +35,10 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/sendfile.h>
+#include <dlt.h>
+
+DLT_IMPORT_CONTEXT(gPclDLTContext);
+
 
 // path for the backup location
 static const char* gBackupPrefix     = PERS_ORG_ROOT_PATH "/mnt-backup/";
@@ -46,6 +50,8 @@ static const char* gBackupCsPostfix  = "~.crc";
 static const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
 // size of write through string
 static const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
+
+static pthread_mutex_t gFileAccessMtx = PTHREAD_MUTEX_INITIALIZER;
 
 // local function prototype
 static int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
@@ -85,71 +91,79 @@ int pclFileClose(int fd)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose - fd:"), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-#if USE_APPCHECK
-      if(doAppcheck() == 1)
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-#endif
-         int  permission = get_file_permission(fd);
-
-
-         if(permission != -1)	   // permission is here also used for range check
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            // check if a backup and checksum file needs to be deleted
-            if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
+#endif
+            int  permission = get_file_permission(fd);
+
+
+            if(permission != -1)	   // permission is here also used for range check
             {
-               // remove backup file
-               if(remove(get_file_backup_path(fd)) == -1)
+               // check if a backup and checksum file needs to be deleted
+               if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"), DLT_STRING(strerror(errno)));
-               }
+                  // remove backup file
+                  if(remove(get_file_backup_path(fd)) == -1)
+                  {
+                     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"), DLT_STRING(strerror(errno)));
+                  }
 
-               // remove checksum file
-               if(remove(get_file_checksum_path(fd)) == -1)
+                  // remove checksum file
+                  if(remove(get_file_checksum_path(fd)) == -1)
+                  {
+                     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - csum remove failed!"), DLT_STRING(strerror(errno)) );
+                  }
+
+               }
+               __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
+
+               // remove form file tree;
+               if(remove_file_handle_data(fd) != 1)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - csum remove failed!"), DLT_STRING(strerror(errno)) );
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - Failed to remove from tree!"), DLT_INT(fd) );
                }
-
-            }
-            __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
-
-            // remove form file tree;
-            if(remove_file_handle_data(fd) != 1)
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - Failed to remove from tree!"), DLT_INT(fd) );
-            }
 
    #if USE_FILECACHE
-            if(get_file_cache_status(fd) == 1)
-            {
-               rval = pfcCloseFile(fd);
+               if(get_file_cache_status(fd) == 1)
+               {
+                  rval = pfcCloseFile(fd);
+               }
+               else
+               {
+                  fsync(fd);
+                  rval = close(fd);
+               }
+   #else
+               fsync(fd);
+               rval = close(fd);
+   #endif
             }
             else
             {
-               fsync(fd);
-               rval = close(fd);
+              rval = EPERS_MAXHANDLE;
             }
-   #else
-            fsync(fd);
-            rval = close(fd);
-   #endif
-
+#if USE_APPCHECK
          }
          else
          {
-           rval = EPERS_MAXHANDLE;
+            rval = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-#if USE_APPCHECK
-      }
-      else
-      {
-         rval = EPERS_SHUTDOWN_NO_TRUSTED;
-      }
 #endif
+         pthread_mutex_unlock(&gFileAccessMtx);
+      }
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - not initialized"));
+   }
+
    return rval;
 }
 
@@ -161,30 +175,38 @@ int pclFileGetSize(int fd)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      struct stat buf;
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      {
+         struct stat buf;
 
 #if USE_FILECACHE
-      if(get_file_cache_status(fd) == 1)
-      {
-      	size = pfcFileGetSize(fd);
-      }
-      else
-      {
-			size = fstat(fd, &buf);
+         if(get_file_cache_status(fd) == 1)
+         {
+            size = pfcFileGetSize(fd);
+         }
+         else
+         {
+            size = fstat(fd, &buf);
 
-			if(size != -1)
-			{
-				size = buf.st_size;
-			}
-      }
+            if(size != -1)
+            {
+               size = buf.st_size;
+            }
+         }
 #else
-      size = fstat(fd, &buf);
+         size = fstat(fd, &buf);
 
-      if(size != -1)
-      {
-         size = buf.st_size;
-      }
+         if(size != -1)
+         {
+            size = (int)buf.st_size;
+         }
 #endif
+         pthread_mutex_unlock(&gFileAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileGetSize - not initialized"));
    }
    return size;
 }
@@ -202,18 +224,26 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
    (void)fd;
    DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileMapData not supported when using file cache"));
 #else
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileMapData fd: "), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(AccessNoLock != isAccessLocked() )  // check if access to persistent data is locked
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-         ptr = mmap(addr,size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, offset);
+         if(AccessNoLock != isAccessLocked() )  // check if access to persistent data is locked
+         {
+            ptr = mmap(addr, (size_t)size, PROT_WRITE | PROT_READ, MAP_SHARED, fd, (off_t)offset);
+         }
+         else
+         {
+            ptr = EPERS_MAP_LOCKFS;
+         }
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
-      else
-      {
-         ptr = EPERS_MAP_LOCKFS;
-      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileMapData - not initialized"));
    }
 #endif
 
@@ -229,6 +259,8 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
    char fileSubPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
    char backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // backup file
    char csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]   = {0};    // checksum file
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpenRegular - res:"), DLT_STRING(resource_id));
 
    if(dbContext->configKey.policy ==  PersistencePolicy_wc)
    {
@@ -265,9 +297,9 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       else
       {
          if(dbContext->configKey.permission == PersistencePermission_ReadOnly)
-            DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileOpen: NoBackup - file RONLY!"), DLT_STRING(dbKey));
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileOpen: NoBackup - file RONLY!"), DLT_STRING(dbKey));
          else
-            DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileOpen: NoBackup - file in blacklist!"), DLT_STRING(dbKey));
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileOpen: NoBackup - file in blacklist!"), DLT_STRING(dbKey));
       }
 
 #if USE_FILECACHE
@@ -378,6 +410,8 @@ int pclFileOpenDefaultData(PersistenceInfo_s* dbContext, const char* resource_id
 {
    int flags = pclGetPosixPermission(dbContext->configKey.permission);
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpenDefaultData - res:"), DLT_STRING(resource_id));
+
    // check if there is default data available
    char pathPrefix[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
    char defaultPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
@@ -403,44 +437,53 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 {
    int handle = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res:"), DLT_STRING(resource_id));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      PersistenceInfo_s dbContext;
-
-      int shared_DB = 0;
-      char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]       = {0};    // database key
-      char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]     = {0};    // database location
-
-      //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
-
-      dbContext.context.ldbid   = ldbid;
-      dbContext.context.seat_no = seat_no;
-      dbContext.context.user_no = user_no;
-
-      // get database context: database path and database key
-      shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
-
-      // check if the resource is marked as a file resource
-      if(dbContext.configKey.type == PersistenceResourceType_file)
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-         if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
+         PersistenceInfo_s dbContext;
+
+         int shared_DB = 0;
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]       = {0};    // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]     = {0};    // database location
+
+         //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
+
+         // get database context: database path and database key
+         shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
+
+         // check if the resource is marked as a file resource
+         if(dbContext.configKey.type == PersistenceResourceType_file)
          {
-            handle = pclFileOpenDefaultData(&dbContext, resource_id);
-            set_file_user_id(handle, PCL_USER_DEFAULTDATA);
-            // as default data will be opened, use read/write permission and we don't need backup and csum path so use an empty string.
-            set_file_handle_data(handle, PersistencePermission_ReadWrite, "", "", NULL);
+            if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
+            {
+               handle = pclFileOpenDefaultData(&dbContext, resource_id);
+               set_file_user_id(handle, (int)PCL_USER_DEFAULTDATA);
+               // as default data will be opened, use read/write permission and we don't need backup and csum path so use an empty string.
+               set_file_handle_data(handle, PersistencePermission_ReadWrite, "", "", NULL);
+            }
+            else
+            {
+               handle = pclFileOpenRegular(&dbContext, resource_id, dbKey, dbPath, shared_DB, user_no, seat_no);
+            }
          }
          else
          {
-            handle = pclFileOpenRegular(&dbContext, resource_id, dbKey, dbPath, shared_DB, user_no, seat_no);
+            handle = EPERS_RESOURCE_NO_FILE;	// resource is not marked as file in RCT
          }
-      }
-      else
-      {
-         handle = EPERS_RESOURCE_NO_FILE;	// resource is not marked as file in RCT
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
    } // initialized
-
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen - not initialized"));
+   }
    return handle;
 }
 
@@ -450,21 +493,31 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
 {
    int readSize = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileReadData fd: "), DLT_INT(fd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileReadData - fd:"), DLT_INT(fd));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      {
+
 #if USE_FILECACHE
-   	if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
-   	{
-   		readSize = pfcReadFile(fd, buffer, buffer_size);
-   	}
-   	else
-   	{
-   		readSize = read(fd, buffer, buffer_size);
-   	}
+         if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
+         {
+            readSize = pfcReadFile(fd, buffer, buffer_size);
+         }
+         else
+         {
+            readSize = read(fd, buffer, buffer_size);
+         }
 #else
-      readSize = read(fd, buffer, buffer_size);
+         readSize = (int)read(fd, buffer, (size_t)buffer_size);
 #endif
+         pthread_mutex_unlock(&gFileAccessMtx);
+      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReadData - not initialized"));
    }
    return readSize;
 }
@@ -475,44 +528,52 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileReadData "), DLT_INT(ldbid), DLT_STRING(resource_id));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileRemove - ldbid"), DLT_UINT(ldbid), DLT_STRING(" res:"), DLT_STRING(resource_id));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-         int shared_DB = 0;
-         PersistenceInfo_s dbContext;
-
-         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};      // database key
-         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
-
-         dbContext.context.ldbid   = ldbid;
-         dbContext.context.seat_no = seat_no;
-         dbContext.context.user_no = user_no;
-
-         // get database context: database path and database key
-         shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
-
-         if(   (shared_DB >= 0)                                               // check valid database context
-            && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
+         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
-            rval = remove(dbPath);
-            if(rval == -1)
+            int shared_DB = 0;
+            PersistenceInfo_s dbContext;
+
+            char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]   = {0};      // database key
+            char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // database location
+
+            dbContext.context.ldbid   = ldbid;
+            dbContext.context.seat_no = seat_no;
+            dbContext.context.user_no = user_no;
+
+            // get database context: database path and database key
+            shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
+
+            if(   (shared_DB >= 0)                                               // check valid database context
+               && (dbContext.configKey.type == PersistenceResourceType_file) )   // check if type matches
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileRemove - remove()"), DLT_STRING(resource_id), DLT_STRING(strerror(errno)) );
+               rval = remove(dbPath);
+               if(rval == -1)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileRemove - remove()"), DLT_STRING(resource_id), DLT_STRING(strerror(errno)) );
+               }
+            }
+            else
+            {
+               rval = shared_DB;
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileRemove - no valid db context or res not a file"));
             }
          }
          else
          {
-            rval = shared_DB;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileRemove - no valid db context or res not a file"));
+            rval = EPERS_LOCKFS;
          }
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
-      else
-      {
-         rval = EPERS_LOCKFS;
-      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileRemove - not initialized"));
    }
    return rval;
 }
@@ -523,30 +584,39 @@ int pclFileSeek(int fd, long int offset, int whence)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileSeek fd:"), DLT_INT(fd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileSeek - fd"), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
+         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+         {
 #if USE_FILECACHE
-      	if(get_file_cache_status(fd) == 1)
-      	{
-      		rval = pfcFileSeek(fd, offset, whence);
-      	}
-      	else
-      	{
-      		 rval = lseek(fd, offset, whence);
-      	}
+            if(get_file_cache_status(fd) == 1)
+            {
+               rval = pfcFileSeek(fd, offset, whence);
+            }
+            else
+            {
+                rval = lseek(fd, offset, whence);
+            }
 #else
-         rval = lseek(fd, offset, whence);
+            rval = (int)lseek(fd, offset, whence);
 #endif
-      }
-      else
-      {
-         rval = EPERS_LOCKFS;
+         }
+         else
+         {
+            rval = EPERS_LOCKFS;
+         }
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileSeek - not initialized"));
+   }
+
    return rval;
 }
 
@@ -556,19 +626,28 @@ int pclFileUnmapData(void* address, long size)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileUnmapData"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileUnmapData"));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-         rval =  munmap(address, size);
-      }
-      else
-      {
-         rval = EPERS_LOCKFS;
+         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+         {
+            rval =  munmap(address, (size_t)size);
+         }
+         else
+         {
+            rval = EPERS_LOCKFS;
+         }
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileUnmapData - not initialized"));
+   }
+
    return rval;
 }
 
@@ -578,65 +657,73 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 {
    int size = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileWriteData fd:"), DLT_INT(fd));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-      	int permission = get_file_permission(fd);
-         if(permission != -1)
+         if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
-            if(permission != PersistencePermission_ReadOnly )
+            int permission = get_file_permission(fd);
+            if(permission != -1)
             {
-               // check if a backup file has to be created
-               if( (get_file_backup_status(fd) == 0) && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
+               if(permission != PersistencePermission_ReadOnly )
                {
-                  char csumBuf[ChecksumBufSize] = {0};
+                  // check if a backup file has to be created
+                  if( (get_file_backup_status(fd) == 0) && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
+                  {
+                     char csumBuf[ChecksumBufSize] = {0};
 
-                  pclCalcCrc32Csum(fd, csumBuf);      // calculate checksum
+                     pclCalcCrc32Csum(fd, csumBuf);      // calculate checksum
 
-                  pclCreateBackup(get_file_backup_path(fd), fd, get_file_checksum_path(fd), csumBuf); // create checksum and backup file
+                     pclCreateBackup(get_file_backup_path(fd), fd, get_file_checksum_path(fd), csumBuf); // create checksum and backup file
 
-                  set_file_backup_status(fd, 1);
-               }
+                     set_file_backup_status(fd, 1);
+                  }
 
 #if USE_FILECACHE
-               if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
-               {
-               	size = pfcWriteFile(fd, buffer, buffer_size);
+                  if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
+                  {
+                     size = pfcWriteFile(fd, buffer, buffer_size);
+                  }
+                  else
+                  {
+                     size = write(fd, buffer, buffer_size);
+
+                     if(fsync(fd) == -1)
+                        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileWriteData: Failed fsync ==>!"), DLT_STRING(strerror(errno)));
+                  }
+#else
+                  size = (int)write(fd, buffer, (size_t)buffer_size);
+                  if(get_file_cache_status(fd) == 1)
+                  {
+                     if(fsync(fd) == -1)
+                        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileWriteData - Failed fsync ==>!"), DLT_STRING(strerror(errno)));
+                  }
+#endif
                }
                else
                {
-                  size = write(fd, buffer, buffer_size);
-
-						if(fsync(fd) == -1)
-							DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileWriteData: Failed fsync ==>!"), DLT_STRING(strerror(errno)));
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileWriteData - Failed write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
+                  size = EPERS_RESOURCE_READ_ONLY;
                }
-#else
-               size = write(fd, buffer, buffer_size);
-               if(get_file_cache_status(fd) == 1)
-               {
-               	if(fsync(fd) == -1)
-               		DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileWriteData - Failed fsync ==>!"), DLT_STRING(strerror(errno)));
-               }
-#endif
             }
             else
             {
-            	DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileWriteData - Failed write ==> read only file!"), DLT_STRING(get_file_backup_path(fd)));
-               size = EPERS_RESOURCE_READ_ONLY;
+               size = EPERS_MAXHANDLE;
             }
          }
-			else
-			{
-			   size = EPERS_MAXHANDLE;
-			}
+         else
+         {
+            size = EPERS_LOCKFS;
+         }
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
-      else
-      {
-         size = EPERS_LOCKFS;
-      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileWriteData - not initialized"));
    }
 
    return size;
@@ -647,143 +734,154 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 {
    int handle = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileCreatePath - ldbid"), DLT_UINT(ldbid), DLT_STRING(" res:"), DLT_STRING(resource_id));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      int shared_DB = 0;
-      PersistenceInfo_s dbContext;
-
-      char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]      = {0};    // database key
-      char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]    = {0};    // database location
-      char backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // backup file
-      char csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = {0};    // checksum file
-
-      //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
-
-      dbContext.context.ldbid   = ldbid;
-      dbContext.context.seat_no = seat_no;
-      dbContext.context.user_no = user_no;
-
-      // get database context: database path and database key
-      shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
-
-      if( dbContext.configKey.type == PersistenceResourceType_file)     // check if type matches
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-         if(shared_DB >= 0)                                             // check valid database context
+         int shared_DB = 0;
+         PersistenceInfo_s dbContext;
+
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]      = {0};    // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]    = {0};    // database location
+         char backupPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};    // backup file
+         char csumPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = {0};    // checksum file
+
+         //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
+         dbContext.context.ldbid   = ldbid;
+         dbContext.context.seat_no = seat_no;
+         dbContext.context.user_no = user_no;
+
+         // get database context: database path and database key
+         shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
+
+         if( dbContext.configKey.type == PersistenceResourceType_file)     // check if type matches
          {
-            int flags = pclGetPosixPermission(dbContext.configKey.permission);
-
-            // file will be opened writable, so check about data consistency
-            if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
-               && pclBackupNeeded(get_raw_string(dbPath)) == CREATE_BACKUP)
+            if(shared_DB >= 0)                                             // check valid database context
             {
-               snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s", dbPath, gBackupPostfix);
-               snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s", dbPath, gBackupCsPostfix);
+               int flags = pclGetPosixPermission(dbContext.configKey.permission);
 
-               if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
+               // file will be opened writable, so check about data consistency
+               if(   dbContext.configKey.permission != PersistencePermission_ReadOnly
+                  && pclBackupNeeded(get_raw_string(dbPath)) == CREATE_BACKUP)
                {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath - file inconsistent, recovery  NOT  possible!"));
-                  return -1;
-               }
-               // we don't need the file handle here
-               // the application calling this function must use the POSIX open() function to get an file descriptor
-               if(handle > 0)
-               	close(handle);
-            }
-            else
-				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("fileCreatePath - No Backup, read only OR in blacklist!"), DLT_STRING(dbKey));
-				}
+                  snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s", dbPath, gBackupPostfix);
+                  snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME-1, "%s%s", dbPath, gBackupCsPostfix);
 
-            handle = get_persistence_handle_idx();
-
-            if(handle != -1)
-            {
-               if(handle < MaxPersHandle)
-               {
-                  *size = strlen(dbPath);
-                  *path = malloc((*size)+1);    // allocate 1 byte for the string termination
-
-                  if(NULL != (*path))           // Check if malloc was successful
+                  if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                   {
-							memcpy(*path, dbPath, (*size));
-							(*path)[(*size)] = '\0';         // terminate string
+                     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath - file inconsistent, recovery  NOT  possible!"));
+                     return -1;
+                  }
+                  // we don't need the file handle here
+                  // the application calling this function must use the POSIX open() function to get an file descriptor
+                  if(handle > 0)
+                     close(handle);
+               }
+               else
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("fileCreatePath - No Backup, read only OR in blacklist!"), DLT_STRING(dbKey));
+               }
 
-                     if(access(*path, F_OK) == -1)
+               handle = get_persistence_handle_idx();
+
+               if(handle != -1)
+               {
+                  if(handle < MaxPersHandle)
+                  {
+                     *size = (unsigned int)strlen(dbPath);
+                     *path = malloc((*size)+1);    // allocate 1 byte for the string termination
+
+                     if(NULL != (*path))           // Check if malloc was successful
                      {
-								int handle = 0, cacheStatus = -1;
-				            if(strstr(dbPath, WTPREFIX) != NULL)
-								{
-				            	cacheStatus = 0;
-								}
-				            else
-				            {
-				            	cacheStatus = 1;
-				            }
+                        memcpy(*path, dbPath, (*size));
+                        (*path)[(*size)] = '\0';         // terminate string
 
-								handle = pclCreateFile(*path, cacheStatus);	// file does not exist, create it.
-								set_file_cache_status(handle, cacheStatus);
+                        if(access(*path, F_OK) == -1)
+                        {
+                           int handle = 0, cacheStatus = -1;
+                           if(strstr(dbPath, WTPREFIX) != NULL)
+                           {
+                              cacheStatus = 0;
+                           }
+                           else
+                           {
+                              cacheStatus = 1;
+                           }
 
-								if(handle == -1)
-								{
-									DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath - Err create file: "), DLT_STRING(*path));
-								}
-								else
-								{
-									if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
-									{
-										DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileCreatePath - no def data avail: "), DLT_STRING(resource_id));
-									}
-									close(handle);    // don't need the open file
-								}
+                           handle = pclCreateFile(*path, cacheStatus);	// file does not exist, create it.
+                           set_file_cache_status(handle, cacheStatus);
+
+                           if(handle == -1)
+                           {
+                              DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath - Err create file: "), DLT_STRING(*path));
+                           }
+                           else
+                           {
+                              if(pclFileGetDefaultData(handle, resource_id, dbContext.configKey.policy) == -1)	// try to get default data
+                              {
+                                 DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileCreatePath - no def data avail: "), DLT_STRING(resource_id));
+                              }
+                              close(handle);    // don't need the open file
+                           }
+                        }
+                        __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);        // set open flag
+
+                        set_ossfile_handle_data(handle, dbContext.configKey.permission, 0/*backupCreated*/, backupPath, csumPath, *path);
                      }
-                     __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);        // set open flag
-
-                     set_ossfile_handle_data(handle, dbContext.configKey.permission, 0/*backupCreated*/, backupPath, csumPath, *path);
+                     else
+                     {
+                          handle = EPERS_DESER_ALLOCMEM;
+                          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath: malloc() failed for path:"),
+                                                                 DLT_STRING(dbPath), DLT_STRING("With size:"), DLT_UINT(*size));
+                     }
                   }
-						else
+                  else
                   {
-               	     handle = EPERS_DESER_ALLOCMEM;
-               	     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath: malloc() failed for path:"),
-               	                                            DLT_STRING(dbPath), DLT_STRING("With size:"), DLT_UINT(*size));
+                     set_persistence_handle_close_idx(handle);
+                     handle = EPERS_MAXHANDLE;
                   }
                }
-               else
-					{
-						set_persistence_handle_close_idx(handle);
-						handle = EPERS_MAXHANDLE;
-					}
             }
-         }
-         else  // requested resource is not in the RCT, so create resource as local/cached.
-         {
-            // assemble file string for local cached location
-            snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);
-            handle = get_persistence_handle_idx();
-
-            if(handle != -1)
+            else  // requested resource is not in the RCT, so create resource as local/cached.
             {
-               if(handle < MaxPersHandle)
-               {
-                  snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupPostfix);
-                  snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupCsPostfix);
+               // assemble file string for local cached location
+               snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);
+               handle = get_persistence_handle_idx();
 
-                  __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);  // set open flag
-
-                  set_ossfile_handle_data(handle, PersistencePermission_ReadWrite, 0/*backupCreated*/, backupPath, csumPath, NULL);
-               }
-               else
+               if(handle != -1)
                {
-                  set_persistence_handle_close_idx(handle);
-                  handle = EPERS_MAXHANDLE;
+                  if(handle < MaxPersHandle)
+                  {
+                     snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupPostfix);
+                     snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupCsPostfix);
+
+                     __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);  // set open flag
+
+                     set_ossfile_handle_data(handle, PersistencePermission_ReadWrite, 0/*backupCreated*/, backupPath, csumPath, NULL);
+                  }
+                  else
+                  {
+                     set_persistence_handle_close_idx(handle);
+                     handle = EPERS_MAXHANDLE;
+                  }
                }
             }
          }
-      }
-      else
-      {
-         handle = EPERS_RESOURCE_NO_FILE;
+         else
+         {
+            handle = EPERS_RESOURCE_NO_FILE;
+         }
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileCreatePath - not initialized"));
+   }
+
    return handle;
 }
 
@@ -793,47 +891,55 @@ int pclFileReleasePath(int pathHandle)
 {
    int rval = EPERS_NOT_INITIALIZED;
 
-   //DLT_LOG(gDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclFileClose fd: "), DLT_INT(fd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileClose fd: "), DLT_INT(pathHandle));
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-   	int  permission = get_ossfile_permission(pathHandle);
-      if(permission != -1)		// permission is here also used for range check
+      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
       {
-         // check if a backup and checksum file needs to be deleted
-         if(permission != PersistencePermission_ReadOnly)
+         int  permission = get_ossfile_permission(pathHandle);
+         if(permission != -1)		// permission is here also used for range check
          {
-            // remove backup file
-            if(remove(get_ossfile_backup_path(pathHandle)) == -1)
+            // check if a backup and checksum file needs to be deleted
+            if(permission != PersistencePermission_ReadOnly)
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"));
+               // remove backup file
+               if(remove(get_ossfile_backup_path(pathHandle)) == -1)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"));
+               }
+
+               // remove checksum file
+               if(remove(get_ossfile_checksum_path(pathHandle)) == -1)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"), DLT_STRING(strerror(errno)) );
+               }
+            }
+            free(get_ossfile_file_path(pathHandle));
+
+            __sync_fetch_and_sub(&gOpenHandleArray[pathHandle], FileClosed);   // set closed flag
+
+            set_persistence_handle_close_idx(pathHandle);
+
+            set_ossfile_file_path(pathHandle, NULL);
+
+            if(remove_ossfile_handle_data(pathHandle) != 1)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReleasePath - Failed to remove from tree!"), DLT_INT(pathHandle) );
             }
 
-            // remove checksum file
-            if(remove(get_ossfile_checksum_path(pathHandle)) == -1)
-            {
-               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - backup remove failed!"), DLT_STRING(strerror(errno)) );
-            }
+            rval = 1;
          }
-         free(get_ossfile_file_path(pathHandle));
-
-         __sync_fetch_and_sub(&gOpenHandleArray[pathHandle], FileClosed);   // set closed flag
-
-         set_persistence_handle_close_idx(pathHandle);
-
-         set_ossfile_file_path(pathHandle, NULL);
-
-         if(remove_ossfile_handle_data(pathHandle) != 1)
+         else
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReleasePath - Failed to remove from tree!"), DLT_INT(pathHandle) );
+           rval = EPERS_MAXHANDLE;
          }
-
-         rval = 1;
+         pthread_mutex_unlock(&gFileAccessMtx);
       }
-      else
-      {
-        rval = EPERS_MAXHANDLE;
-      }
+   }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReleasePath - not initialized"));
    }
 
    return rval;
@@ -849,6 +955,8 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 	// check if there is default data available
 	char pathPrefix[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
 	char defaultPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = { [0 ... PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = 0};
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetDefaultData fd: "), DLT_INT(handle), DLT_STRING(" res:"),DLT_STRING(resource_id));
 
 	// create path to default data
 	if(policy == PersistencePolicy_wc)
@@ -877,10 +985,10 @@ int pclFileGetDefaultData(int handle, const char* resource_id, int policy)
 
 		if(fstat(defaultHandle, &buf) != -1)
 		{
-         rval = sendfile(handle, defaultHandle, 0, buf.st_size);
+         rval = (int)sendfile(handle, defaultHandle, (off_t)0, (size_t)buf.st_size);
          if(rval != -1)
          {
-            rval = lseek(handle, 0, SEEK_SET);  // set fd back to beginning of the file
+            rval = (int)lseek(handle, 0, SEEK_SET);  // set fd back to beginning of the file
          }
          else
          {

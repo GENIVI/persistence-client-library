@@ -37,10 +37,11 @@
 #include <dlfcn.h>
 #include <dbus/dbus.h>
 #include <pthread.h>
+#include <dlt.h>
 
 
 /// debug log and trace (DLT) setup
-DLT_DECLARE_CONTEXT(gPclDLTContext)
+DLT_DECLARE_CONTEXT(gPclDLTContext);
 
 
 /// global variable to store lifecycle shutdown mode
@@ -84,12 +85,12 @@ static void doInitAppcheck(const char* appName)
    if(access(rctFilename, F_OK) == 0)
    {
       gAppCheckFlag = 1;   // "trusted" application
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("trusted app"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("trusted app"));
    }
    else
    {
       gAppCheckFlag = 0;   // currently not a "trusted" application
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("NOT trusted app"));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("NOT trusted app"));
    }
 }
 #endif
@@ -126,16 +127,17 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    pthread_mutex_lock(&gInitMutex);
    if(gPclInitCounter == 0)
    {
-      DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Context for persistence client library logging");
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclInitLibrary => INIT  PCL - "), DLT_STRING(appName),
-                              DLT_STRING("- init counter: "), DLT_INT(gPclInitCounter) );
+      DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Ctx for PCL Logging");
+
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => App:"), DLT_STRING(appName),
+                              DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter) );
 
       rval = private_pclInitLibrary(appName, shutdownMode);
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclInitLibrary - INIT  PCL - "), DLT_STRING(gAppId),
-                                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_INT(gPclInitCounter) );
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - App:"), DLT_STRING(gAppId),
+                                            DLT_STRING("- ONLY INCREMENT init counter: "), DLT_UINT(gPclInitCounter) );
    }
 
    gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
@@ -157,7 +159,7 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 
 
 #if USE_FILECACHE
- DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("Using the filecache!!!"));
+ DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
  pfcInitCache(appName);
 #endif
 
@@ -168,7 +170,7 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 
    if(readBlacklistConfigFile(blacklistPath) == -1)
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("initLibrary - Err access blacklist:"), DLT_STRING(blacklistPath));
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - Err access blacklist:"), DLT_STRING(blacklistPath));
    }
 
    if(setup_dbus_mainloop() == -1)
@@ -188,7 +190,7 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
      }
    }
 #if USE_PASINTERFACE
-   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("PAS interface is enabled!!"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
    if(register_pers_admin_service() == -1)
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed reg to PAS dbus interface"));
@@ -197,10 +199,10 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    }
    else
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG,  DLT_STRING("initLibrary - Successfully established IPC protocol for PCL."));
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("initLibrary - Successfully established IPC protocol for PCL."));
    }
 #else
-   DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 
    if(load_custom_plugins(customAsyncInitClbk) < 0)      // load custom plugins
@@ -228,8 +230,8 @@ int pclDeinitLibrary(void)
 
    if(gPclInitCounter == 1)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclDeinitLibrary - DEINIT  client lib - "), DLT_STRING(gAppId),
-                                            DLT_STRING("- init counter: "), DLT_INT(gPclInitCounter));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - DEINIT  client lib - "), DLT_STRING(gAppId),
+                                            DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter));
       rval = private_pclDeinitLibrary();
 
       gPclInitCounter--;   // decrement init counter
@@ -237,8 +239,8 @@ int pclDeinitLibrary(void)
    }
    else if(gPclInitCounter > 1)
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("pclDeinitLibrary - DEINIT client lib - "), DLT_STRING(gAppId),
-                                           DLT_STRING("- ONLY DECREMENT init counter: "), DLT_INT(gPclInitCounter));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclDeinitLibrary - DEINIT client lib - "), DLT_STRING(gAppId),
+                                           DLT_STRING("- ONLY DECREMENT init counter: "), DLT_UINT(gPclInitCounter));
       gPclInitCounter--;   // decrement init counter
    }
    else
@@ -275,7 +277,7 @@ static int private_pclDeinitLibrary(void)
  }
    else
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG,  DLT_STRING("pclDeinitLibrary - Succ de-initialized IPC protocol for PCL."));
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Succ de-initialized IPC protocol for PCL."));
    }
 #endif
 
@@ -308,13 +310,13 @@ int pclLifecycleSet(int shutdown)
    {
       if(shutdown == PCL_SHUTDOWN)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("lifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("lifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
          process_prepare_shutdown(Shutdown_Partial);
          gCancelCounter++;
       }
       else if(shutdown == PCL_SHUTDOWN_CANCEL)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_DEBUG, DLT_STRING("lifecycleSet - PCL_SHUTDOWN_CANCEL -"), DLT_STRING(gAppId), DLT_STRING(" Cancel Counter - "), DLT_INT(gCancelCounter));
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("lifecycleSet - PCL_SHUTDOWN_CANCEL -"), DLT_STRING(gAppId), DLT_STRING(" Cancel Counter - "), DLT_INT(gCancelCounter));
          if(gCancelCounter < Shutdown_MaxCount)
          {
            pers_unlock_access();
