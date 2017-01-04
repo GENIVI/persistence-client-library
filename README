@@ -27,7 +27,7 @@ The client library has the following dependencies
 * Libraries
 ** automotive-dlt (http://projects.genivi.org/diagnostic-log-trace/)
 ** Persistence Common Object (https://github.com/GENIVI/persistence-common-object.git)
-   Add "-- with_database=key-value-store" to the configure step
+   Add "--with-database=key-value-store" to the configure step
    The default backend if Itzam/C and will not supported anymore.
 ** dbus-1
 ** check unit test framework for C used when configured with "--enable-tests"
