@@ -92,15 +92,23 @@ static int database_get(PersistenceInfo_s* info, const char* dbPath, int dbType)
 
          if (handleDB == -1)
          {
-            handleDB = plugin_persComDbOpen(path, openFlags);
-            if(handleDB >= 0)
+            if(*plugin_persComDbOpen != NULL)
             {
-               gHandlesDB[arrayIdx][dbType] = handleDB ;
-               gHandlesDBCreated[arrayIdx][dbType] = 1;
+               handleDB = plugin_persComDbOpen(path, openFlags);
+               if(handleDB >= 0)
+               {
+                  gHandlesDB[arrayIdx][dbType] = handleDB ;
+                  gHandlesDBCreated[arrayIdx][dbType] = 1;
+               }
+               else
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbGet - persComDbOpen() failed"));
+               }
             }
             else
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbGet - persComDbOpen() failed"));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbGet - EPERS_NO_PLUGIN_FUNCT"));
+               handleDB = EPERS_NO_PLUGIN_FUNCT;
             }
          }
          else
@@ -134,11 +142,23 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
       {
          if (PersGetDefault_Data == job)
          {
-         	read_size = plugin_persComDbReadKey(handleDefaultDB, key, (char*)buffer, (signed int)buffer_size);
+            if(*plugin_persComDbReadKey != NULL)
+               read_size = plugin_persComDbReadKey(handleDefaultDB, key, (char*)buffer, (signed int)buffer_size);
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("getDefaults - EPERS_NO_PLUGIN_FUNCT"));
+               read_size = EPERS_NO_PLUGIN_FUNCT;
+            }
          }
          else if (PersGetDefault_Size == job)
          {
-            read_size = plugin_persComDbGetKeySize(handleDefaultDB, key);
+            if(*plugin_persComDbGetKeySize != NULL)
+               read_size = plugin_persComDbGetKeySize(handleDefaultDB, key);
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("getDefaults - EPERS_NO_PLUGIN_FUNCT"));
+               read_size = EPERS_NO_PLUGIN_FUNCT;
+            }
          }
          else
          {
@@ -191,15 +211,22 @@ void database_close_all()
    	{
 			if(gHandlesDBCreated[i][j] == 1)
 			{
-				int iErrorCode = plugin_persComDbClose(gHandlesDB[i][j]);
-				if (iErrorCode < 0)
-				{
-					DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbCloseAll - Err close db"));
-				}
-				else
-				{
-					 gHandlesDBCreated[i][j] = 0;
-				}
+			   if(*plugin_persComDbClose != NULL)
+			   {
+               int iErrorCode = plugin_persComDbClose(gHandlesDB[i][j]);
+               if (iErrorCode < 0)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbCloseAll - Err close db"));
+               }
+               else
+               {
+                   gHandlesDBCreated[i][j] = 0;
+               }
+			   }
+			   else
+			   {
+			      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("dbCloseAll - plugin function NULL"));
+			   }
 			}
    	}
    }
@@ -217,10 +244,18 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
       int handleDB = database_get(info, dbPath, info->configKey.policy);
       if(handleDB >= 0)
       {
-         read_size = plugin_persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
-         if(read_size < 0)
+         if(*plugin_persComDbReadKey != NULL)
          {
-            read_size = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, (unsigned int)buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
+            read_size = plugin_persComDbReadKey(handleDB, key, (char*)buffer, buffer_size);
+            if(read_size < 0)
+            {
+               read_size = pers_get_defaults(dbPath, (char*)resourceID, info, buffer, (unsigned int)buffer_size, PersGetDefault_Data); /* 0 ==> Get data */
+            }
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("getData - EPERS_NO_PLUGIN_FUNCT"));
+            read_size = EPERS_NO_PLUGIN_FUNCT;
          }
       }
    }
@@ -330,22 +365,30 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
 
       if(handleDB >= 0)
       {
-         write_size = plugin_persComDbWriteKey(handleDB, dbInput, (char*)buffer, buffer_size) ;
-         if(write_size < 0)
+         if(*plugin_persComDbWriteKey != NULL)
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - persComDbWriteKey() failure"));
+            write_size = plugin_persComDbWriteKey(handleDB, dbInput, (char*)buffer, buffer_size) ;
+            if(write_size < 0)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - persComDbWriteKey() failure"));
+            }
+            else
+            {
+               if(PersistenceStorage_shared == info->configKey.storage)
+               {
+                  int rval = pers_send_Notification_Signal(resource_id, &info->context, pclNotifyStatus_changed);
+                  if(rval <= 0)
+                  {
+                     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - Err to send noty sig"));
+                     write_size = rval;
+                  }
+               }
+            }
          }
          else
          {
-            if(PersistenceStorage_shared == info->configKey.storage)
-            {
-               int rval = pers_send_Notification_Signal(resource_id, &info->context, pclNotifyStatus_changed);
-               if(rval <= 0)
-               {
-                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - Err to send noty sig"));
-                  write_size = rval;
-               }
-            }
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("setData - EPERS_NO_PLUGIN_FUNCT"));
+            write_size = EPERS_NO_PLUGIN_FUNCT;
          }
       }
       else
@@ -441,11 +484,18 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
       int handleDB = database_get(info, dbPath, info->configKey.policy);
       if(handleDB >= 0)
       {
-
-         read_size = plugin_persComDbGetKeySize(handleDB, key);
-         if(read_size < 0)
+         if(*plugin_persComDbGetKeySize != NULL)
          {
-            read_size = pers_get_defaults( dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
+            read_size = plugin_persComDbGetKeySize(handleDB, key);
+            if(read_size < 0)
+            {
+               read_size = pers_get_defaults( dbPath, (char*)resourceID, info, NULL, 0, PersGetDefault_Size);
+            }
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("getDataSize - EPERS_NO_PLUGIN_FUNCT"));
+            read_size = EPERS_NO_PLUGIN_FUNCT;
          }
       }
    }
@@ -538,23 +588,31 @@ int persistence_delete_data(char* dbPath, char* key, const char* resource_id, Pe
       int handleDB = database_get(info, dbPath, info->configKey.policy);
       if(handleDB >= 0)
       {
-         ret = plugin_persComDbDeleteKey(handleDB, key) ;
-         if(ret < 0)
+         if(*plugin_persComDbDeleteKey != NULL)
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deleteData - failed: "), DLT_STRING(key));
-            if(PERS_COM_ERR_NOT_FOUND == ret)
+            ret = plugin_persComDbDeleteKey(handleDB, key) ;
+            if(ret < 0)
             {
-                ret = EPERS_NOKEY ;
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deleteData - failed: "), DLT_STRING(key));
+               if(PERS_COM_ERR_NOT_FOUND == ret)
+               {
+                   ret = EPERS_NOKEY ;
+               }
+               else
+               {
+                   ret = EPERS_DB_ERROR_INTERNAL ;
+               }
             }
-            else
+
+            if(PersistenceStorage_shared == info->configKey.storage)
             {
-                ret = EPERS_DB_ERROR_INTERNAL ;
+               pers_send_Notification_Signal(resource_id, &info->context, pclNotifyStatus_deleted);
             }
          }
-
-         if(PersistenceStorage_shared == info->configKey.storage)
+         else
          {
-            pers_send_Notification_Signal(resource_id, &info->context, pclNotifyStatus_deleted);
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("deleteData - EPERS_NO_PLUGIN_FUNCT"));
+            ret = EPERS_NO_PLUGIN_FUNCT;
          }
       }
       else
@@ -708,7 +766,7 @@ int persistence_notify_on_change(const char* resource_id, const char* dbKey, uns
 
       if(-1 == deliverToMainloop(&data))
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - Err to write to pipe"), DLT_INT(errno));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - Write to pipe"), DLT_INT(errno));
          rval = -1;
       }
 
@@ -741,7 +799,7 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
 
       if(-1 == deliverToMainloop(&data) )
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - Err write to pipe"), DLT_INT(errno));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendNotifySig - Write to pipe"), DLT_INT(errno));
          rval = EPERS_NOTIFY_SIG;
       }
    }
@@ -762,11 +820,18 @@ void pers_rct_close_all()
    {
    	if(get_resource_cfg_table_by_idx(i) != -1)
    	{
-			if(plugin_persComRctClose(get_resource_cfg_table_by_idx(i)) != 0)
-			{
-				DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - Err close db => index:"), DLT_INT(i));
-			}
-			invalidate_resource_cfg_table(i);
+   	   if(*plugin_persComRctClose != NULL)
+   	   {
+            if(plugin_persComRctClose(get_resource_cfg_table_by_idx(i)) != 0)
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - Close db => index:"), DLT_INT(i));
+            }
+            invalidate_resource_cfg_table(i);
+   	   }
+   	   else
+   	   {
+   	      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - No plugin function available"));
+   	   }
    	}
    }
 }

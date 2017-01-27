@@ -1011,6 +1011,10 @@ int main(int argc, char *argv[])
    SRunner * sr = srunner_create(s);
    srunner_set_fork_status(sr, CK_NOFORK);
 
+   srunner_set_xml(sr, "/tmp/persistenceClientLibraryTestFile.xml");
+   srunner_set_log(sr, "/tmp/persistenceClientLibraryTestFile.log");
+
+
    srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
 
    nr_failed = srunner_ntests_failed(sr);

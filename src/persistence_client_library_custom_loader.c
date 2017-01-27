@@ -320,7 +320,10 @@ int load_default_library(void* handle)
 
    if(handle != NULL)
    {
+      void * tmpLibVar = NULL;
+
       /// D A T A B A S E   F U N C T I O N S
+      // if a function could not be loaded, this is not an error
       *(void **) (&plugin_persComDbOpen) = dlsym(handle, "persComDbOpen");
       if ((error = dlerror()) != NULL)
       {
@@ -380,45 +383,93 @@ int load_default_library(void* handle)
       }
 
       /// V A R I A B L E S
-      plugin_gUser  = *(char**)dlsym(handle, "gUser");
-      if ((error = dlerror()) != NULL)
+      // it is an error if varaibles coulr not be loaded, and will cause an error
+      tmpLibVar = dlsym(handle, "gUser");
+      if(tmpLibVar != 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         plugin_gUser = *(char**)tmpLibVar;
       }
-      plugin_gLocalWt  = *(char**)dlsym(handle, "gLocalWt");
-      if ((error = dlerror()) != NULL)
+      else
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
       }
-      plugin_gSeat = *(char**)dlsym(handle, "gSeat");
-      if ((error = dlerror()) != NULL)
+
+      tmpLibVar  = dlsym(handle, "gLocalWt");
+      if(tmpLibVar != 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         plugin_gLocalWt = *(char**)tmpLibVar;
       }
-      plugin_gLocalFactoryDefault = *(char**)dlsym(handle, "gLocalFactoryDefault");
-      if ((error = dlerror()) != NULL)
+      else
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
       }
-      plugin_gLocalCached = *(char**) dlsym(handle, "gLocalCached");
-      if ((error = dlerror()) != NULL)
+
+      tmpLibVar = dlsym(handle, "gSeat");
+      if(tmpLibVar != 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         plugin_gSeat = *(char**)tmpLibVar;
       }
-      plugin_gNode = *(char**)dlsym(handle, "gNode");
-      if ((error = dlerror()) != NULL)
+      else
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
       }
-      plugin_gLocalConfigurableDefault = *(char**)dlsym(handle, "gLocalConfigurableDefault");
-      if ((error = dlerror()) != NULL)
+
+      tmpLibVar = dlsym(handle, "gLocalFactoryDefault");
+      if(tmpLibVar != 0)
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         plugin_gLocalFactoryDefault  = *(char**)tmpLibVar;
       }
-      plugin_gResTableCfg = *(char**)dlsym(handle, "gResTableCfg");
-      if ((error = dlerror()) != NULL)
+      else
       {
          DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
+      }
+
+      tmpLibVar = dlsym(handle, "gLocalCached");
+      if(tmpLibVar != 0)
+      {
+         plugin_gLocalCached = *(char**)tmpLibVar;
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
+      }
+
+      tmpLibVar = dlsym(handle, "gNode");
+      if(tmpLibVar != 0)
+      {
+         plugin_gNode = *(char**)tmpLibVar;
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
+      }
+
+      tmpLibVar = dlsym(handle, "gLocalConfigurableDefault");
+      if(tmpLibVar != 0)
+      {
+         plugin_gLocalConfigurableDefault = *(char**)tmpLibVar;
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
+      }
+
+      tmpLibVar = dlsym(handle, "gResTableCfg");
+      if(tmpLibVar != 0)
+      {
+         plugin_gResTableCfg = *(char**)tmpLibVar;
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("load_default_library - error:"), DLT_STRING(error));
+         rval = EPERS_NO_PLUGIN_VAR;
       }
    }
    else
@@ -653,11 +704,10 @@ int load_custom_plugins(plugin_callback_async_t pfInitCompletedCB)
          {
             if(getCustomLoadingType(i) == LoadType_PclInit) // check if the plugin must be loaded on pclInitLibrary
             {
-               if(load_custom_library(i, &gPersCustomFuncs[i] ) <= 0)
+               if((rval = load_custom_library(i, &gPersCustomFuncs[i] )) <= 0)
                {
                   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("load_custom_plugins => E r r o r could not load plugin: "),
                                        DLT_STRING(get_custom_client_lib_name(i)));
-                  rval = EPERS_COMMON;
                }
             }
          }

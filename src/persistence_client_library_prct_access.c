@@ -100,7 +100,7 @@ void invalidate_resource_cfg_table(int i)
 int get_resource_cfg_table(PersistenceRCT_e rct, int group)
 {
    unsigned int arrayIdx = 0;
-   int rval = -1;
+   int rval = EPERS_NOPRCTABLE;
 
    // create array index: index is a combination of resource config table type and group
    arrayIdx = (rct + (unsigned int)group);
@@ -126,16 +126,25 @@ int get_resource_cfg_table(PersistenceRCT_e rct, int group)
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - no valid PersistenceRCT_e"));
             break;
          }
-         gResource_table[arrayIdx] = plugin_persComRctOpen(filename, 0x04);   // 0x04 ==> open in read only mode
 
-         if(gResource_table[arrayIdx] < 0)
+         if(*plugin_persComRctOpen != NULL)
          {
-         	gResourceOpen[arrayIdx] = 0;
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
+            gResource_table[arrayIdx] = plugin_persComRctOpen(filename, 0x04);   // 0x04 ==> open in read only mode
+
+            if(gResource_table[arrayIdx] < 0)
+            {
+               gResourceOpen[arrayIdx] = 0;
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - RCT problem"), DLT_INT(gResource_table[arrayIdx] ));
+            }
+            else
+            {
+                gResourceOpen[arrayIdx] = 1 ;
+            }
          }
          else
          {
-             gResourceOpen[arrayIdx] = 1 ;
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gRCT - no plugin function"));
+            rval = EPERS_NO_PLUGIN_FUNCT;
          }
       }
 
@@ -158,37 +167,45 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
 
    if(handleRCT >= 0)
    {
-      PersistenceConfigurationKey_s sRctEntry ;
-
-      // check if resouce id is in write through table
-      int iErrCode = plugin_persComRctRead(handleRCT, resource_id, &sRctEntry) ;
-      
-      if(sizeof(PersistenceConfigurationKey_s) == iErrCode)
+      if(*plugin_persComRctRead != NULL)
       {
-    	   memcpy(&dbContext->configKey, &sRctEntry, sizeof(dbContext->configKey)) ;
-         if(sRctEntry.storage != PersistenceStorage_custom )
+         PersistenceConfigurationKey_s sRctEntry ;
+
+         // check if resouce id is in write through table
+         int iErrCode = plugin_persComRctRead(handleRCT, resource_id, &sRctEntry) ;
+
+         if(sizeof(PersistenceConfigurationKey_s) == iErrCode)
          {
-            rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
+            memcpy(&dbContext->configKey, &sRctEntry, sizeof(dbContext->configKey)) ;
+            if(sRctEntry.storage != PersistenceStorage_custom )
+            {
+               rval = get_db_path_and_key(dbContext, resource_id, dbKey, dbPath);
+            }
+            else
+            {
+               // if customer storage, we use the custom name as dbPath
+               strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
+
+               strncpy(dbKey, resource_id, strlen(resource_id));     // and resource_id as dbKey
+            }
+            resourceFound = 1;
          }
          else
          {
-            // if customer storage, we use the custom name as dbPath
-            strncpy(dbPath, dbContext->configKey.custom_name, strlen(dbContext->configKey.custom_name));
-
-            strncpy(dbKey, resource_id, strlen(resource_id));     // and resource_id as dbKey
+            DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("gDBCtx - RCT: no value for key:"), DLT_STRING(resource_id) );
+            rval = EPERS_NOKEYDATA;
          }
-         resourceFound = 1;
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("gDBCtx - RCT: no value for key:"), DLT_STRING(resource_id) );
-         rval = EPERS_NOKEYDATA;
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("gDBCtx - no plugin function available"));
+         rval = EPERS_NO_PLUGIN_FUNCT;
       }
    }  // resource table
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("gDBCtx - RCT"));
-      rval = EPERS_NOPRCTABLE;
+      rval = handleRCT;
    }
 
    if((resourceFound == 0) && (dbContext->context.ldbid == PCL_LDBID_LOCAL) ) // create only when the resource is local data

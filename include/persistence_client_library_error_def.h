@@ -121,6 +121,10 @@ extern "C" {
 #define EPERS_SHUTDOWN_NO_TRUSTED (-43)
 /// not the responsible application to modify shared data
 #define EPERS_NOT_RESP_APP        (-44)
+/// plugin function not available
+#define EPERS_NO_PLUGIN_FUNCT     (-45)
+/// plugin variable not available
+#define EPERS_NO_PLUGIN_VAR       (-46)
 /// requested handle is not valid. \since PCL v7.0.3
 #define EPERS_INVALID_HANDLE     (-1000)
 

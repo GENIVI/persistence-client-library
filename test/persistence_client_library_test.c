@@ -122,6 +122,8 @@ START_TEST(test_GetData)
    int ret = 0;
    unsigned char buffer[READ_SIZE] = {0};
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_GetData"));
+
    /**
     * Logical DB ID: PCL_LDBID_LOCAL with user 0 and seat 0
     *       ==> local value accessible by all users (user 0, seat 0)
@@ -188,6 +190,8 @@ START_TEST (test_GetDataHandle)
    struct tm *locTime;
 
    char sysTimeBuffer[128];
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_GetDataHandle"));
 
    time_t t = time(0);
 
@@ -258,11 +262,14 @@ START_TEST(test_SetData)
 {
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
+
    char write1[READ_SIZE] = {0};
    char write2[READ_SIZE] = {0};
    char sysTimeBuffer[256];
 
    struct tm *locTime;
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_SetData"));
 
    /**
     * Logical DB ID: PCL_LDBID_LOCAL with user 3 and seat 2
@@ -315,6 +322,7 @@ START_TEST(test_SetData)
    /*******************************************************************************************************************************************/
    /* used for changed notification testing */
    /*******************************************************************************************************************************************/
+#if 0
    /**
     * Logical DB ID: 0x84 with user 2 and seat 1
     *       ==> shared user value accessible by A GROUP (user 2 and seat 1)
@@ -323,6 +331,7 @@ START_TEST(test_SetData)
     */
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
+   printf("Ist: %d - Soll: %d\n", ret, (int)strlen("Test notify shared data"));
    fail_unless(ret == (int)strlen("Test notify shared data"), "Wrong write size");
 
    /**
@@ -344,6 +353,7 @@ START_TEST(test_SetData)
    //printf("Write data to trigger change notification\n");
    ret = pclKeyWriteData(0x20, "links/last_link4",  4, 1, (unsigned char*)"Test notify shared data", strlen("Test notify shared data"));
    fail_unless(ret == strlen("Test notify shared data"), "Wrong write size");
+#endif
    /*******************************************************************************************************************************************/
    /*******************************************************************************************************************************************/
 
@@ -369,6 +379,7 @@ START_TEST(test_SetData)
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "key_70", 1, 2, buffer, READ_SIZE);
    fail_unless(strncmp((char*)buffer, write2, strlen(write2)) == 0, "Buffer not correctly read");
    fail_unless(ret == (int)strlen(write2), "Wrong read size");
+
 }
 END_TEST
 
@@ -388,6 +399,8 @@ START_TEST(test_SetDataNoPRCT)
    time_t t = time(0);
 
    char sysTimeBuffer[128];
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_SetDataNoPRCT"));
 
    locTime = localtime(&t);
 
@@ -421,6 +434,8 @@ END_TEST
 START_TEST(test_GetDataSize)
 {
    int size = 0;
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_GetDataSize"));
    /**
     * Logical DB ID: PCL_LDBID_LOCAL with user 3 and seat 2
     *       ==> local USER value (user 3, seat 2)
@@ -447,6 +462,8 @@ START_TEST(test_DeleteData)
 {
    int rval = 0;
    unsigned char buffer[READ_SIZE];
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_DeleteData"));
 
    // read data from key
    rval = pclKeyReadData(PCL_LDBID_LOCAL, "key_70", 1, 2, buffer, READ_SIZE);
@@ -506,6 +523,9 @@ void data_setupBackup(void)
 START_TEST(test_DataHandleOpen)
 {
    int hd1 = -2, hd2 = -2, hd3 = -2, hd4 = -2, hd5 = -2, hd6 = -2, hd7 = -2, hd8 = -2, hd9 = -2, ret = 0;
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_DataHandleOpen"));
+
    // open handles ----------------------------------------------------
    hd1 = pclKeyHandleOpen(PCL_LDBID_LOCAL, "posHandle/last_position1", 0, 0);
    fail_unless(hd1 == 1, "Failed to open handle ==> /posHandle/last_position1");
@@ -573,6 +593,8 @@ START_TEST(test_Plugin)
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_Plugin"));
+
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "secured",           0, 0, buffer, READ_SIZE);
    //printf("B U F F E R - secure: \"%s\" => ist: %d | soll: %d\n", buffer, ret, strlen("Custom plugin -> plugin_get_data: secure!"));
    fail_unless(ret == strlen("Custom plugin -> plugin_get_data: secure!") );
@@ -637,6 +659,8 @@ START_TEST(test_ReadDefault)
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_ReadDefault"));
+
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/default01", 3, 2, buffer, READ_SIZE);
    //printf(" --- test_ReadConfDefault => statusHandle/default01: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("DEFAULT_01!"));
    fail_unless(ret == strlen("DEFAULT_01!"));
@@ -647,7 +671,12 @@ START_TEST(test_ReadDefault)
    fail_unless(ret == strlen("DEFAULT_02!"));
    fail_unless(strncmp((char*)buffer,"DEFAULT_02!", strlen((char*)buffer)) == 0, "Buffer not correctly read");
 
+   ret = pclKeyGetSize(PCL_LDBID_LOCAL, "statusHandle/default02", 3, 2);
+   //printf("IST: %d - SOLL: %d\n", ret, (int)strlen("DEFAULT_02!"));
+   fail_unless(ret == strlen("DEFAULT_01!"), "Invalid size");
+
    ret = pclKeyGetSize(PCL_LDBID_LOCAL, "statusHandle/default01", 3, 2);
+   //printf("IST: %d - SOLL: %d\n", ret, (int)strlen("DEFAULT_01!"));
    fail_unless(ret == strlen("DEFAULT_01!"), "Invalid size");
 }
 END_TEST
@@ -658,6 +687,9 @@ START_TEST(test_ReadConfDefault)
 {
    int ret = 0;
    unsigned char buffer[READ_SIZE]  = {0};
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_ReadConfDefault"));
+
 #if 1
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "statusHandle/confdefault01",     3, 2, buffer, READ_SIZE);
    //printf(" --- test_ReadConfDefault => statusHandle/confdefault01: %s => retIst: %d retSoll: %d\n", buffer, ret, strlen("CONF_DEFAULT_01!"));
@@ -685,6 +717,7 @@ START_TEST(test_WriteConfDefault)
    unsigned char writeBuffer2[]  = "And this is a test string which is different form previous test string";
    unsigned char readBuffer[READ_SIZE]  = {0};
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_WriteConfDefault"));
 
    // -- key-value interface ---
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "statusHandle/writeconfdefault01", PCL_USER_DEFAULTDATA, 0, writeBuffer, (int)strlen((char*)writeBuffer));
@@ -711,6 +744,8 @@ START_TEST(test_InitDeinit)
 {
    int i = 0, rval = -1, handle = 0;
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_InitDeinit"));
 
    for(i=0; i<5; i++)
    {
@@ -776,6 +811,8 @@ START_TEST(test_NegHandle)
    int negativeHandle = -17;
    unsigned char buffer[128] = {0};
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_NegHandle"));
+
    handle = pclKeyHandleOpen(PCL_LDBID_LOCAL, "posHandle/last_position", 0, 0);
    fail_unless(handle >= 0, "Failed to open handle ==> /posHandle/last_position");
 
@@ -814,6 +851,8 @@ START_TEST(test_utf8_string)
    const char* utf8StringBuffer = "String °^° Ñ text";
    unsigned char buffer[128] = {0};
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_utf8_string"));
+
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "utf8String", 3, 2, buffer, READ_SIZE);
    fail_unless(ret == (int)strlen(utf8StringBuffer), "Wrong read size");
    fail_unless(strncmp((char*)buffer, utf8StringBuffer, (size_t)ret-1) == 0, "Buffer not correctly read => 1");
@@ -828,6 +867,9 @@ END_TEST
 START_TEST(test_Notifications)
 {
    int ret = 0;
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_Notifications"));
+
    ret = pclKeyRegisterNotifyOnChange(0x20, "address/home_address", 1, 1, myChangeCallback);
    fail_unless(ret == 0, "Failed to register");
 
@@ -852,6 +894,8 @@ START_TEST(test_ValidApplication)
    int ret = 0;
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    unsigned char buffer[128] = {0};
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_ValidApplication"));
 
    ret = pclInitLibrary("InvalidAppID", shutdownReg);
 
@@ -969,6 +1013,8 @@ START_TEST(test_SharedAccess)
    struct tm *locTime;
    time_t t = time(0);
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_SharedAccess"));
+
    locTime = localtime(&t);
 
    // write data
@@ -1015,6 +1061,9 @@ START_TEST(test_VO722)
    char* writeBuffer2[] = {"2 - VO722 - Test - String One",
                            "2 - VO722 - Test - String Two -",
                            "2 - VO722 - Test - String Three -", };
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_VO722"));
+
    (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
 
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "ContactListViewSortOrder", 1, 2, (unsigned char*)writeBuffer[0], (int)strlen(writeBuffer[0]));
@@ -1101,6 +1150,8 @@ START_TEST(test_NoRct)
    int ret = 0;
    const char writeBuffer[] = "This is a test string";
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_NoRct"));
+
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "someResourceId", 0, 0, (unsigned char*)writeBuffer, (int)strlen(writeBuffer));
    fail_unless(ret == EPERS_NOPRCTABLE, "RCT available, but should not");
 }
@@ -1112,6 +1163,8 @@ START_TEST(test_InvalidPluginfConf)
 {
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
    const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_InvalidPluginfConf"));
 
    // change to an invalid plugin configuration file using environment variable
    setenv(envVariable, "/tmp/whatever/pclCustomLibConfigFile.cfg", 1);
@@ -1128,8 +1181,6 @@ START_TEST(test_InvalidPluginfConf)
 
    pclDeinitLibrary();
 
-
-
    (void)unsetenv(envVariable);
 }
 END_TEST
@@ -1138,6 +1189,8 @@ END_TEST
 START_TEST(test_SharedData)
 {
    int ret = 0;
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_SharedData"));
+
    ret = pclKeyWriteData(0x20, "links/last_link2",  2, 1, (unsigned char*)"Test notify shared data___1111", strlen("Test notify shared data___1111"));
    fail_unless(ret == (int)strlen("Test notify shared data___1111"), "Wrong write size");
 
@@ -1250,6 +1303,8 @@ START_TEST(test_MultiThreadedRead)
    int i=0;
    char threadName[NUM_THREADS][NAME_LEN];
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_MultiThreadedRead"));
+
    if(pthread_barrier_init(&gBarrierOne, NULL, NUM_THREADS) == 0)
    {
       for(i=0; i<NUM_THREADS; i++)
@@ -1351,6 +1406,8 @@ START_TEST(test_MultiThreadedWrite)
    pthread_t gWritethreads[NUM_THREADS];
    t_threadData threadData[NUM_THREADS];
 
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_MultiThreadedWrite"));
+
    if(pthread_barrier_init(&gBarrierTwo, NULL, NUM_THREADS) == 0)
    {
       for(i=0; i<NUM_THREADS; i++)
@@ -1379,6 +1436,46 @@ START_TEST(test_MultiThreadedWrite)
    {
       printf("Failed to init barrier\n");
    }
+}
+END_TEST
+
+
+
+START_TEST(test_NoPluginFunc)
+{
+   unsigned char buffer[READ_SIZE] = {0};
+   int ret = 0, handle;
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_NoPluginFunc"));
+
+   // change to an wrong plugin configuration file using environment variable
+   setenv(envVariable, "/etc/pclCustomLibConfigFileWrongDefault.cfg", 1);
+
+   sleep(3);
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
+
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "status/open_document", 3, 2, buffer, READ_SIZE);
+   printf("*** ret: %d\n", ret);
+   ck_assert_int_eq(ret, EPERS_COMMON);
+
+   ret = pclKeyGetSize(PCL_LDBID_LOCAL, "status/open_document", 3, 2);
+   ck_assert_int_eq(ret, EPERS_COMMON);
+
+   handle = pclKeyHandleOpen(PCL_LDBID_LOCAL, "posHandle/last_position", 0, 0);
+   ck_assert_int_gt(handle, 0);
+
+   ret = pclKeyHandleReadData(handle, buffer, READ_SIZE);
+   ck_assert_int_eq(ret, EPERS_COMMON);
+
+   ret = pclKeyHandleClose(handle);
+   ck_assert_int_eq(ret, 1);
+
+   pclDeinitLibrary();
+
+   (void)unsetenv(envVariable);
 }
 END_TEST
 
@@ -1417,7 +1514,6 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_persDataHandleOpen = tcase_create("DataHandleOpen");
    tcase_add_test(tc_persDataHandleOpen, test_DataHandleOpen);
    tcase_set_timeout(tc_persDataHandleOpen, 3);
-
 
    TCase * tc_Plugin = tcase_create("Plugin");
    tcase_add_test(tc_Plugin, test_Plugin);
@@ -1477,6 +1573,9 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_NoRct, test_NoRct);
    tcase_set_timeout(tc_NoRct, 3);
 
+   TCase * tc_NoPluginFunc = tcase_create("NoPluginFunc");
+   tcase_add_test(tc_NoPluginFunc, test_NoPluginFunc);
+
    TCase * tc_InvalidPluginfConf = tcase_create("InvalidPluginfConf");
    tcase_add_test(tc_InvalidPluginfConf, test_InvalidPluginfConf);
 
@@ -1492,11 +1591,13 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
    tcase_set_timeout(tc_MultiThreadedWrite, 20);
 
-   suite_add_tcase(s, tc_persGetData);
-   tcase_add_checked_fixture(tc_persGetData, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_persGetData);
+   tcase_add_checked_fixture(tc_persGetData, data_setup, data_teardown);
+
 
    suite_add_tcase(s, tc_persGetDataHandle);
    tcase_add_checked_fixture(tc_persGetDataHandle, data_setup, data_teardown);
@@ -1542,8 +1643,10 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_InitDeinit);
 
-   suite_add_tcase(s, tc_SharedData);
-   tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
+   //suite_add_tcase(s, tc_NoPluginFunc);
+
+   // suite_add_tcase(s, tc_SharedData);
+   // tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_MultiThreadedRead);
    tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);

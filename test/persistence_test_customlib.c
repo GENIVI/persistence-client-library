@@ -36,6 +36,38 @@
 
 #include "../include/persistence_client_custom.h"
 
+#define PERS_ORG_RCT_NAME "resource-table-cfg.itz"
+#define PERS_ORG_RCT_NAME_ "/"PERS_ORG_RCT_NAME
+const char* gResTableCfg = PERS_ORG_RCT_NAME_;
+
+#define PERS_ORG_LOCAL_CONFIGURABLE_DEFAULT_DB_NAME "configurable-default-data.itz"
+#define PERS_ORG_LOCAL_CONFIGURABLE_DEFAULT_DB_NAME_ "/"PERS_ORG_LOCAL_CONFIGURABLE_DEFAULT_DB_NAME
+const char* gLocalConfigurableDefault = PERS_ORG_LOCAL_CONFIGURABLE_DEFAULT_DB_NAME_;
+
+#define PERS_ORG_NODE_FOLDER_NAME "node"
+#define PERS_ORG_NODE_FOLDER_NAME_ "/" PERS_ORG_NODE_FOLDER_NAME
+const char* gNode = PERS_ORG_NODE_FOLDER_NAME_;
+
+#define PERS_ORG_LOCAL_CACHE_DB_NAME "cached.itz"
+#define PERS_ORG_LOCAL_CACHE_DB_NAME_ "/"PERS_ORG_LOCAL_CACHE_DB_NAME
+const char* gLocalCached = PERS_ORG_LOCAL_CACHE_DB_NAME_;
+
+#define PERS_ORG_LOCAL_FACTORY_DEFAULT_DB_NAME "default-data.itz"
+#define PERS_ORG_LOCAL_FACTORY_DEFAULT_DB_NAME_ "/"PERS_ORG_LOCAL_FACTORY_DEFAULT_DB_NAME
+const char* gLocalFactoryDefault = PERS_ORG_LOCAL_FACTORY_DEFAULT_DB_NAME_;
+
+#define PERS_ORG_SEAT_FOLDER_NAME "seat"
+#define PERS_ORG_SEAT_FOLDER_NAME_ "/"PERS_ORG_SEAT_FOLDER_NAME "/"
+const char* gSeat = PERS_ORG_SEAT_FOLDER_NAME_;
+
+#define PERS_ORG_LOCAL_WT_DB_NAME "wt.itz"
+#define PERS_ORG_LOCAL_WT_DB_NAME_ "/" PERS_ORG_LOCAL_WT_DB_NAME;
+const char* gLocalWt = PERS_ORG_LOCAL_WT_DB_NAME_;
+
+#define PERS_ORG_USER_FOLDER_NAME "user"
+#define PERS_ORG_USER_FOLDER_NAME_ "/"PERS_ORG_USER_FOLDER_NAME "/"
+const char* gUser = PERS_ORG_USER_FOLDER_NAME_;
+
 /**
  * @brief close the given handle
  *

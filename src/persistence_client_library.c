@@ -205,9 +205,11 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
 #endif
 
-   if(load_custom_plugins(customAsyncInitClbk) < 0)      // load custom plugins
+   if((rval = load_custom_plugins(customAsyncInitClbk)) < 0)      // load custom plugins
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
+     pthread_mutex_unlock(&gDbusPendingRegMtx);
+     return rval;
    }
 
    init_key_handle_array();

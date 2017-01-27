@@ -46,7 +46,7 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
  * @param dbKey the array where the database key will be stored
  * @param dbPath the array where the database location path will be stored
  *
- * @return 0 or a negative value with one of the following errors: EPERS_NOKEYDATA or EPERS_NOPRCTABLE
+ * @return 0 or a negative value with one of the following errors: EPERS_NO_PLUGIN_FUNCT, EPERS_NOKEYDATA or EPERS_NOPRCTABLE
  */
 int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsigned int isFile, char dbKey[], char dbPath[]);
 

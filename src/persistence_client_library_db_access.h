@@ -59,19 +59,6 @@ char* pers_get_raw_key(char *key);
 
 
 /**
- * @brief open the default value database specified by the 'DefaultType'
- *
- * @param dbPath path to the directory were the databases are included in.
- * @param DefaultType the default type
- *
- * @return >= 0 for valid handler; if an error occured the following error code:
- *   EPERS_COMMON
- */
-int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType);
-
-
-
-/**
  * @brief tries to get default values for a key from the configurable and factory default databases.
  *
  * @param dbPath the path to the directory where the default databases are in 
@@ -83,7 +70,7 @@ int pers_db_open_default(const char* dbPath, PersDefaultType_e DefaultType);
  *
  * @return the number of bytes read or the size of the key (depends on parameter 'job').
            negative value if an error occured and the following error code:
- *         EPERS_NOKEY
+ *         EPERS_NO_PLUGIN_FUNCT, EPERS_NOKEY
  */
 int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned char* buffer, unsigned int buffer_size, PersGetDefault_e job);
 
@@ -100,7 +87,7 @@ int pers_get_defaults(char* dbPath, char* key, PersistenceInfo_s* info, unsigned
  * @param buffer_size the size of the buffer
  *
  * @return the number of bytes written or a negative value if an error occured with the following error codes:
- *   EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
+ *   EPERS_NO_PLUGIN_FUNCT, EPERS_SETDTAFAILED  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
 int persistence_set_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info, unsigned char* buffer, int buffer_size);
 
@@ -117,7 +104,7 @@ int persistence_set_data(char* dbPath, char* key, const char* resource_id, Persi
  * @param buffer_size the size of the buffer
  *
  * @return the number of bytes read or a negative value if an error occured with the following error codes:
- *  EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
+ *  EPERS_NO_PLUGIN_FUNCT, EPERS_NOPRCTABLE  EPERS_NOKEYDATA  EPERS_NOKEY
  */
 int persistence_get_data(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info, unsigned char* buffer, int buffer_size);
 
@@ -132,7 +119,7 @@ int persistence_get_data(char* dbPath, char* key, const char* resourceID, Persis
  * @param info persistence information
  *
  * @return size of data in bytes read from the key or on error a negative value with the following error codes:
- *  EPERS_NOPRCTABLE or EPERS_NOKEY
+ *  EPERS_NO_PLUGIN_FUNCT, EPERS_NOPRCTABLE or EPERS_NOKEY
  */
 int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, PersistenceInfo_s* info);
 
@@ -147,7 +134,7 @@ int persistence_get_data_size(char* dbPath, char* key, const char* resourceID, P
  * @param info persistence information
  *
  * @return 0 if deletion was successfull;
- *         or an error code: EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
+ *         or an error code: EPERS_NO_PLUGIN_FUNCT, EPERS_DB_KEY_SIZE, EPERS_NOPRCTABLE, EPERS_DB_ERROR_INTERNAL or EPERS_NOPLUGINFUNCT
  */
 int persistence_delete_data(char* dbPath, char* key, const char* resource_id, PersistenceInfo_s* info);
 
