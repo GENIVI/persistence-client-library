@@ -165,7 +165,7 @@ enum _PersistenceConstantDef
    /// persistence administration service msg return status
    PasErrorStatus_FAIL     = 0x8000,
    /// max number of parallel open persistence handles
-   MaxPersHandle = 255,
+   MaxPersHandle = 512,
    /// length of the config key responsible name
    MaxConfKeyLengthResp    = 32,
    /// length of the config key custom name

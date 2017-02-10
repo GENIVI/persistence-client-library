@@ -28,6 +28,7 @@
 #include <dlt.h>
 #include <dlt_common.h>
 #include <pthread.h>
+#include <string.h>
 
 #include <check.h>
 
@@ -40,8 +41,8 @@
 #define READ_SIZE       1024
 #define MaxAppNameLen   256
 
-#define NUM_THREADS     100
-#define NUM_OF_WRITES   350
+#define NUM_THREADS     10
+#define NUM_OF_WRITES   500
 #define NAME_LEN     24
 
 typedef struct s_threadData
@@ -477,81 +478,146 @@ END_TEST
  */
 START_TEST(test_DataHandle)
 {
-   int handle1 = 0, handle2 = 0;
-   int handleArray[4] = {0};
-   int ret = 0;
+   int handleArray[1024] = {0};
    unsigned char buffer[READ_SIZE] = {0};
+   {
+      int ret = 0;
+      int handle1 = 0, handle2 = 0;
 
-   // test multiple handles
-   handleArray[0] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_01.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
+      // test multiple handles
+      handleArray[0] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_01.db", 1, 1);
+      fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_01.db");
 
-   handleArray[1] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_02.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_02.db");
+      handleArray[1] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_02.db", 1, 1);
+      fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_02.db");
 
-   handleArray[2] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_03.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_03.db");
+      handleArray[2] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_03.db", 1, 1);
+      fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_03.db");
 
-   handleArray[3] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_04.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_04.db");
+      handleArray[3] = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB_write_04.db", 1, 1);
+      fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB_write_04.db");
 
-   memset(buffer, 0, READ_SIZE);
-   ret = pclFileReadData(handleArray[0], buffer, READ_SIZE);
-   fail_unless(ret >= 0, "Failed to read handle idx \"0\"!!");
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_01.db",
-         strlen("/user/1/seat/1/media/mediaDB_write_01.db"))
-         == 0, "Buffer not correctly read => mediaDB_write_01.db");
+      memset(buffer, 0, READ_SIZE);
+      ret = pclFileReadData(handleArray[0], buffer, READ_SIZE);
+      fail_unless(ret >= 0, "Failed to read handle idx \"0\"!!");
+      fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_01.db",
+            strlen("/user/1/seat/1/media/mediaDB_write_01.db"))
+            == 0, "Buffer not correctly read => mediaDB_write_01.db");
 
-   memset(buffer, 0, READ_SIZE);
-   ret = pclFileReadData(handleArray[1], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_02.db",
-         strlen("/user/1/seat/1/media/mediaDB_write_02.db"))
-         == 0, "Buffer not correctly read => mediaDB_write_02.db");
+      memset(buffer, 0, READ_SIZE);
+      ret = pclFileReadData(handleArray[1], buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_02.db",
+            strlen("/user/1/seat/1/media/mediaDB_write_02.db"))
+            == 0, "Buffer not correctly read => mediaDB_write_02.db");
 
-   memset(buffer, 0, READ_SIZE);
-   ret = pclFileReadData(handleArray[2], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_03.db",
-         strlen("/user/1/seat/1/media/mediaDB_write_03.db"))
-         == 0, "Buffer not correctly read => mediaDB_write_03.db");
+      memset(buffer, 0, READ_SIZE);
+      ret = pclFileReadData(handleArray[2], buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_03.db",
+            strlen("/user/1/seat/1/media/mediaDB_write_03.db"))
+            == 0, "Buffer not correctly read => mediaDB_write_03.db");
 
-   memset(buffer, 0, READ_SIZE);
-   (void)pclFileReadData(handleArray[3], buffer, READ_SIZE);
-   fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_04.db",
-         strlen("/user/1/seat/1/media/mediaDB_write_04.db"))
-         == 0, "Buffer not correctly read => mediaDB_write_04.db");
+      memset(buffer, 0, READ_SIZE);
+      (void)pclFileReadData(handleArray[3], buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "/user/1/seat/1/media/mediaDB_write_04.db",
+            strlen("/user/1/seat/1/media/mediaDB_write_04.db"))
+            == 0, "Buffer not correctly read => mediaDB_write_04.db");
 
-   ret = pclKeyHandleClose(handleArray[0]);
-   fail_unless(ret != -1, "Failed to close handle idx \"0\"!!");
+      ret = pclKeyHandleClose(handleArray[0]);
+      fail_unless(ret != -1, "Failed to close handle idx \"0\"!!");
 
-   ret = pclKeyHandleClose(handleArray[1]);
-   fail_unless(ret != -1, "Failed to close handle idx \"1\"!!");
+      ret = pclKeyHandleClose(handleArray[1]);
+      fail_unless(ret != -1, "Failed to close handle idx \"1\"!!");
 
-   ret = pclKeyHandleClose(handleArray[2]);
-   fail_unless(ret != -1, "Failed to close handle idx \"2\"!!");
+      ret = pclKeyHandleClose(handleArray[2]);
+      fail_unless(ret != -1, "Failed to close handle idx \"2\"!!");
 
-   ret = pclKeyHandleClose(handleArray[3]);
-   fail_unless(ret != -1, "Failed to close handle idx \"3\"!!");
+      ret = pclKeyHandleClose(handleArray[3]);
+      fail_unless(ret != -1, "Failed to close handle idx \"3\"!!");
 
-   // test key handles
-   handle2 = pclKeyHandleOpen(PCL_LDBID_LOCAL, "statusHandle/open_document", 3, 2);
-   fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
+      // test key handles
+      handle2 = pclKeyHandleOpen(PCL_LDBID_LOCAL, "statusHandle/open_document", 3, 2);
+      fail_unless(handle2 >= 0, "Failed to open handle /statusHandle/open_document");
 
-   ret = pclKeyHandleClose(handle2);
-   fail_unless(ret != -1, "Failed to close handle!!");
+      ret = pclKeyHandleClose(handle2);
+      fail_unless(ret != -1, "Failed to close handle!!");
 
-   ret = pclKeyHandleClose(1024);
-   fail_unless(ret == EPERS_MAXHANDLE, "Max handle!!");
+      ret = pclKeyHandleClose(1024);
+      fail_unless(ret == EPERS_MAXHANDLE, "Max handle!!");
 
 
-   // test file handles
-   handle1 = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB.db", 1, 1);
-   fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
+      // test file handles
+      handle1 = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDB.db", 1, 1);
+      fail_unless(handle1 != -1, "Could not open file ==> /media/mediaDB.db");
 
-   ret = pclFileClose(handle1);
-   fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
+      ret = pclFileClose(handle1);
+      fail_unless(handle1 != -1, "Could not closefile ==> /media/mediaDB.db");
 
-   ret = pclFileClose(1024);
-   fail_unless(ret == EPERS_MAXHANDLE, "1. Could close file, but should not!!");
+      ret = pclFileClose(1024);
+      fail_unless(ret == EPERS_MAXHANDLE, "1. Could close file, but should not!!");
+   }
+
+   {
+      char writeBuffer[256] = {0};
+      char fileNameBuf[1024] = {0};
+      int i = 0, size = 0;
+
+      memset(handleArray, -1, 1024);
+
+      for(i=0; i<1024; i++)
+      {
+         memset(fileNameBuf,0,1024);
+         snprintf(fileNameBuf, 1024, "media/threeAnotherFileTestData.db_%d", i);
+         //printf("\n\nOpen - %d\n", i);
+         handleArray[i] = pclFileOpen(PCL_LDBID_LOCAL, fileNameBuf, 4, 12);
+      }
+
+      // now write data
+      for(i=0; i<1024; i++)
+      {
+         if(handleArray[i] >=0 )
+         {
+            memset(writeBuffer,0,256);
+            snprintf(writeBuffer, 256, "START_TEST(test_DataHandle)_media/some_test_data_to_show_read and write is working_%d", i);
+
+            pclFileSeek(handleArray[i], 0, SEEK_SET);
+            size = pclFileWriteData(handleArray[i], writeBuffer, (int)strlen(writeBuffer));
+            fail_unless(size == (int)strlen(writeBuffer), "Wrong size written - %d", i);
+         }
+
+      }
+
+      // now read data
+      for(i=0; i<1024; i++)
+      {
+         if(handleArray[i] >=0 )
+         {
+            memset(buffer,     0, READ_SIZE);
+            memset(writeBuffer,0, 256);
+            snprintf(writeBuffer, 256, "START_TEST(test_DataHandle)_media/some_test_data_to_show_read and write is working_%d", i);
+            pclFileSeek(handleArray[i], 0, SEEK_SET);
+            size = pclFileReadData(handleArray[i], buffer, READ_SIZE);
+#if 0
+            if(strncmp((const char*)buffer, (const char*)writeBuffer, 256) != 0)
+            {
+               printf("ERROR Read: \"%s\" - \"%s\"\n", buffer, writeBuffer);
+            }
+            else
+            {
+               printf("ERROR Read: \"%s\" - \"%s\"\n", buffer, writeBuffer);
+            }
+#endif
+            fail_unless(strncmp((const char*)buffer, (const char*)writeBuffer, 256) == 0);
+         }
+      }
+
+      // now close data
+      for(i=0; i<1024; i++)
+      {
+         if(handleArray[i] >=0 )
+            (void)pclFileClose(handleArray[i]);
+      }
+   }
+
 }
 END_TEST
 
@@ -793,47 +859,74 @@ void* fileWriteThread(void* userData)
 {
    t_threadData* threadData = (t_threadData*)userData;
 
-   static int i = 0;
+   int i = 0;
 
    size_t bufferSize = strlen(gWriteBuffer);
    size_t bufferSize2 = strlen(gWriteBuffer2);
 
    unsigned char* readbuffer = malloc(bufferSize);
    unsigned char* readbuffer2 = malloc(bufferSize2);
+   unsigned char* keyBuffer = malloc(1024);
 
-   if(readbuffer != NULL && readbuffer2 != NULL)
+   if(readbuffer != NULL && readbuffer2 != NULL && keyBuffer != NULL)
    {
+      //printf("\"%s\"\n", threadData->threadName);
       pthread_barrier_wait(&gBarrierOne);
       usleep(5000);
 
+      printf("\"%s\" r u n \n", threadData->threadName);
       for(i=0; i<NUM_OF_WRITES; i++)
       {
-         int wsize = 0, rsize = 0;
+         int wsize = 0, rsize = 0, ret = 0;
          int wsize2 = 0, rsize2 = 0;
-
-         memset(readbuffer, 0, bufferSize);
 
          wsize = pclFileWriteData(threadData->fd1, gWriteBuffer, (int)bufferSize);
          ck_assert_int_ge(wsize, 0);
          pclFileSeek(threadData->fd1, 0, SEEK_SET);
 
-         rsize = pclFileReadData(threadData->fd1, readbuffer, (int)bufferSize);
-         ck_assert_int_eq(rsize, (int)bufferSize);
+         ret = pclKeyWriteData(PCL_LDBID_LOCAL, "status/open_document",      3, 2, (unsigned char*)"WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+         fail_unless(ret == strlen("WT_ /var/opt/user_manual_climateControl.pdf"), "Wrong write size");
 
-         usleep( (useconds_t)(50 * i * threadData->index));   // do some "random" sleep
-
-         memset(readbuffer2, 0, bufferSize2);
+         usleep( (useconds_t)(100 * i * threadData->index));   // do some "random" sleep
 
          wsize2 = pclFileWriteData(threadData->fd2, gWriteBuffer2, (int)bufferSize2);
          ck_assert_int_ge(wsize2, 0);
          pclFileSeek(threadData->fd2, 0, SEEK_SET);
 
+
+         memset(readbuffer, 0, bufferSize);
+         rsize = pclFileReadData(threadData->fd1, readbuffer, (int)bufferSize);
+         ck_assert_int_eq(rsize, (int)bufferSize);
+
+         memset(keyBuffer, 0, 1024);
+         ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position",  1, 1, keyBuffer, 1024);
+         ck_assert_str_eq( (char*)keyBuffer, "CACHE_ +48 10' 38.95, +8 44' 39.06");
+         ck_assert_int_eq( ret,  (int)strlen("CACHE_ +48 10' 38.95, +8 44' 39.06") );
+
+         memset(readbuffer2, 0, bufferSize2);
          rsize2 = pclFileReadData(threadData->fd2, readbuffer2, (int)bufferSize2);
          ck_assert_int_eq(rsize2, (int)bufferSize2);
+
+         memset(keyBuffer, 0, 1024);
+         ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+         ck_assert_str_eq( (char*)keyBuffer, "WT_ 55327 Heimatstadt, Wohnstrasse 31");
+         ck_assert_int_eq(ret, (int)strlen("WT_ 55327 Heimatstadt, Wohnstrasse 31"));
+
+         usleep(75000);
+
+         printf("\"%s\" %d\n", threadData->threadName, i);
       }
 
-      free(readbuffer);
-      free(readbuffer2);
+      printf("\"%s\" e n d \n", threadData->threadName);
+
+      if(keyBuffer != 0)
+         free(keyBuffer);
+
+      if(readbuffer != 0)
+         free(readbuffer);
+
+      if(readbuffer2 != 0)
+         free(readbuffer2);
    }
 
    return NULL;
@@ -844,6 +937,11 @@ START_TEST(test_MultFileReadWrite)
 {
    int fd1 = -1;
    int fd2 = -1;
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
 
    fd1 = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDBWrite.db", 1, 1);
    fd2 = pclFileOpen(PCL_LDBID_LOCAL, "media/mediaDBWrite.db", 2, 1);
@@ -895,6 +993,9 @@ START_TEST(test_MultFileReadWrite)
    {
      printf("Could not open file ==> /media/mediaDBWrite.db\n");
    }
+
+
+   pclDeinitLibrary();
 }
 END_TEST
 
@@ -949,43 +1050,466 @@ static Suite * persistencyClientLib_suite()
 
    TCase * tc_MultiFileReadWrite = tcase_create("MultFileReadWrite");
    tcase_add_test(tc_MultiFileReadWrite, test_MultFileReadWrite);
-   tcase_set_timeout(tc_MultiFileReadWrite, 20);
+   tcase_set_timeout(tc_MultiFileReadWrite, 200000);
 
+
+#if 1
+   suite_add_tcase(s, tc_persDataFile);
+   tcase_add_checked_fixture(tc_persDataFile, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_WriteConfDefault);
    tcase_add_checked_fixture(tc_WriteConfDefault, data_setup, data_teardown);
 
-   suite_add_tcase(s, tc_persDataFile);
-   tcase_add_checked_fixture(tc_persDataFile, data_setup, data_teardown);
-
    suite_add_tcase(s, tc_persDataFileBackupCreation);
-   tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
+    tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
 
-   suite_add_tcase(s, tc_persDataFileRecovery);
-   tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
+    suite_add_tcase(s, tc_persDataFileRecovery);
+    tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
 
-   suite_add_tcase(s, tc_GetPath);
-   tcase_add_checked_fixture(tc_GetPath, data_setup, data_teardown);
+    suite_add_tcase(s, tc_GetPath);
+    tcase_add_checked_fixture(tc_GetPath, data_setup, data_teardown);
 
-   suite_add_tcase(s, tc_VerifyROnly);
-   tcase_add_checked_fixture(tc_VerifyROnly, data_setup, data_teardown);
+    suite_add_tcase(s, tc_VerifyROnly);
+    tcase_add_checked_fixture(tc_VerifyROnly, data_setup, data_teardown);
 
-   suite_add_tcase(s, tc_DataFileConfDefault);
-   tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
+    suite_add_tcase(s, tc_DataFileConfDefault);
+    tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
 
-   suite_add_tcase(s, tc_FileTest);
-   tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
+    suite_add_tcase(s, tc_FileTest);
+    tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
 
-   suite_add_tcase(s, tc_InitDeinit);
+    suite_add_tcase(s, tc_InitDeinit);
 
-   suite_add_tcase(s, tc_DataHandle);
-   tcase_add_checked_fixture(tc_DataHandle, data_setup, data_teardown);
+    suite_add_tcase(s, tc_DataHandle);
+    tcase_add_checked_fixture(tc_DataHandle, data_setup, data_teardown);
 
-   suite_add_tcase(s, tc_MultiFileReadWrite);
-   tcase_add_checked_fixture(tc_MultiFileReadWrite, data_setup, data_teardown);
+
+#else
+
+
+    //suite_add_tcase(s, tc_MultiFileReadWrite);
+    //tcase_add_checked_fixture(tc_MultiFileReadWrite, data_setup, data_teardown);
+#endif
+
+
 
    return s;
 }
+
+#define NUM_OF_OPEN_FILES 200
+
+void* WriteOneThread(void* userData)
+{
+   int fd1 = -1, fd2 = -1, i = 0, j = 0;
+   int size1 = 0, size2 = 0;
+   int ret = 0;
+   unsigned char keyBuffer[1024] = {0};
+   int fda[NUM_OF_OPEN_FILES] = {0};
+   char fileBuffer[1024] = {0};
+   char writeBuffer[128] = {0};
+
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+   printf("Thread: %s\n", (const char*)userData);
+
+   size_t bufferSize = strlen(gWriteBuffer);
+   size_t bufferSize2 = strlen(gWriteBuffer2);
+
+   unsigned char* readbuffer = malloc(bufferSize);
+   unsigned char* readbuffer2 = malloc(bufferSize2);
+
+
+   fd1 = pclFileOpen(PCL_LDBID_LOCAL, "media/oneSomeFileTestData.db", 1, 1);
+   printf("fd1: %d\n", fd1);
+
+   fd2 = pclFileOpen(PCL_LDBID_LOCAL, "media/oneAnotherFileTestData.db", 2, 1);
+   printf("fd2: %d\n", fd2);
+
+   for(i=0; i<NUM_OF_OPEN_FILES; i++)
+   {
+      memset(fileBuffer,0,1024);
+      snprintf(fileBuffer, 1024, "media/oneAnotherFileTestData.db_%d", i);
+      printf("One open: %d\n", i);
+      fda[i] = pclFileOpen(PCL_LDBID_LOCAL, fileBuffer, 4, 4);
+      if(fda[i] < 0)
+      {
+         printf("ERROR Invlaid handle: \n");
+         exit(0);
+      }
+      usleep(120000);
+   }
+
+   for(i=0; i< 20000; i++)
+   {
+      printf("loop One: %d\n", i);
+
+      memset(readbuffer, 0, bufferSize);
+      memset(readbuffer2, 0, bufferSize2);
+      memset(keyBuffer, 0, 1024);
+
+      if(i%2)
+      {
+         size1 = pclFileWriteData(fd1, gWriteBuffer2, (int)strlen(gWriteBuffer2));
+         size2 = pclFileWriteData(fd2, gWriteBuffer, (int)strlen(gWriteBuffer));
+
+         size2 = pclFileReadData(fd1, readbuffer2, (int)bufferSize2);
+         size2 = pclFileReadData(fd2, readbuffer, (int)bufferSize);
+
+         printf("Wb\n");
+         for(j=0; j< NUM_OF_OPEN_FILES; j++)
+         {
+            memset(readbuffer, 0, bufferSize);
+            memset(writeBuffer,0,128);
+            snprintf(writeBuffer, 128, "%s_media/oneAnotherFileTestData.db_%d", (const char*)userData, j);
+            pclFileSeek(fda[j], 0, SEEK_SET);
+            size2 = pclFileReadData(fda[j], readbuffer, (int)bufferSize);
+            if(strncmp((const char*)readbuffer, (const char*)writeBuffer, 128) != 0)
+            {
+               printf("ERROR Read: \"%s\" - \"%s\"\n", readbuffer, writeBuffer);
+               pclDeinitLibrary();
+               exit(0);
+            }
+         }
+      }
+      else
+      {
+         size1 = pclFileWriteData(fd1, gWriteBuffer, (int)strlen(gWriteBuffer));
+         size2 = pclFileWriteData(fd2, gWriteBuffer2, (int)strlen(gWriteBuffer2));
+
+         ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+         if( ret < 0)
+          printf("Failed\n");
+
+         size2 = pclFileReadData(fd1, readbuffer, (int)bufferSize);
+         size2 = pclFileReadData(fd2, readbuffer2, (int)bufferSize2);
+
+         printf("Wa\n");
+         for(j=0; j< NUM_OF_OPEN_FILES; j++)
+         {
+            memset(writeBuffer,0,128);
+            snprintf(writeBuffer, 128, "%s_media/oneAnotherFileTestData.db_%d", (const char*)userData, j);
+            pclFileSeek(fda[j], 0, SEEK_SET);
+            size2 = pclFileWriteData(fda[j], writeBuffer, (int)strlen(writeBuffer));
+         }
+      }
+
+      if(size2 < 0 || size1 < 0)
+         printf("Failed file\n");
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, "status/open_document",      3, 2,
+            (unsigned char*)"WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position",  1, 1, keyBuffer, 1024);
+      if( ret < 0)
+         printf("Failed\n");
+
+      if(i%10 == 0)
+      {
+         pclFileSeek(fd1, 0, SEEK_SET);
+         pclFileSeek(fd2, 0, SEEK_SET);
+      }
+
+      memset(keyBuffer, 0, 1024);
+      ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+      if( ret < 0)
+         printf("Failed\n");
+
+      printf("T1\n");
+
+      usleep(17500);
+   }
+
+   for(i=0; i<NUM_OF_OPEN_FILES; i++)
+   {
+      (void)pclFileClose(fda[i]);
+   }
+
+
+   (void)pclFileClose(fd1);
+   (void)pclFileClose(fd2);
+
+   pclDeinitLibrary();
+
+   return NULL;
+}
+
+void* WriteThreeThread(void* userData)
+{
+   int fd1 = -1, fd2 = -1, i = 0, j = 0;
+   int size1 = 0, size2 = 0;
+   int ret = 0;
+   unsigned char keyBuffer[1024] = {0};
+   int fda[NUM_OF_OPEN_FILES] = {0};
+   char fileBuffer[1024] = {0};
+   char writeBuffer[128] = {0};
+
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+   printf("Thread: %s\n", (const char*)userData);
+
+   size_t bufferSize = strlen(gWriteBuffer);
+   size_t bufferSize2 = strlen(gWriteBuffer2);
+
+   unsigned char* readbuffer = malloc(bufferSize);
+   unsigned char* readbuffer2 = malloc(bufferSize2);
+
+
+   fd1 = pclFileOpen(PCL_LDBID_LOCAL, "media/oneSomeFileTestData.db", 1, 1);
+   printf("fd1: %d\n", fd1);
+
+   fd2 = pclFileOpen(PCL_LDBID_LOCAL, "media/oneAnotherFileTestData.db", 2, 1);
+   printf("fd2: %d\n", fd2);
+
+   for(i=0; i<NUM_OF_OPEN_FILES; i++)
+   {
+      memset(fileBuffer,0,1024);
+      snprintf(fileBuffer, 1024, "media/threeAnotherFileTestData.db_%d", i);
+      printf("Three open: %d\n", i);
+      fda[i] = pclFileOpen(PCL_LDBID_LOCAL, fileBuffer, 5, 5);
+      if(fda[i] < 0)
+      {
+         printf("ERROR Invlaid handle: \n");
+         pclDeinitLibrary();
+         exit(0);
+      }
+      usleep(120000);
+   }
+
+   for(i=0; i< 20000; i++)
+   {
+      printf("loop Three: %d\n", i);
+
+      memset(readbuffer, 0, bufferSize);
+      memset(readbuffer2, 0, bufferSize2);
+      memset(keyBuffer, 0, 1024);
+
+      if(i%2)
+      {
+         size1 = pclFileWriteData(fd1, gWriteBuffer2, (int)strlen(gWriteBuffer2));
+         size2 = pclFileWriteData(fd2, gWriteBuffer, (int)strlen(gWriteBuffer));
+
+         size2 = pclFileReadData(fd1, readbuffer2, (int)bufferSize2);
+         size2 = pclFileReadData(fd2, readbuffer, (int)bufferSize);
+
+         printf("Wb\n");
+         for(j=0; j< NUM_OF_OPEN_FILES; j++)
+         {
+            memset(readbuffer, 0, bufferSize);
+            memset(writeBuffer,0,128);
+            snprintf(writeBuffer, 128, "%s_media/oneAnotherFileTestData.db_%d", (const char*)userData, j);
+            pclFileSeek(fda[j], 0, SEEK_SET);
+            size2 = pclFileReadData(fda[j], readbuffer, (int)bufferSize);
+            if(strncmp((const char*)readbuffer, (const char*)writeBuffer, 128) != 0)
+            {
+               printf("ERROR Read: \"%s\" - \"%s\"\n", readbuffer, writeBuffer);
+               exit(0);
+            }
+         }
+      }
+      else
+      {
+         size1 = pclFileWriteData(fd1, gWriteBuffer, (int)strlen(gWriteBuffer));
+         size2 = pclFileWriteData(fd2, gWriteBuffer2, (int)strlen(gWriteBuffer2));
+
+         ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+         if( ret < 0)
+          printf("Failed\n");
+
+
+         size2 = pclFileReadData(fd1, readbuffer, (int)bufferSize);
+         size2 = pclFileReadData(fd2, readbuffer2, (int)bufferSize2);
+
+         printf("Wa\n");
+         for(j=0; j< NUM_OF_OPEN_FILES; j++)
+         {
+            memset(writeBuffer,0,128);
+            snprintf(writeBuffer, 128, "%s_media/oneAnotherFileTestData.db_%d", (const char*)userData, j);
+            pclFileSeek(fda[j], 0, SEEK_SET);
+            size2 = pclFileWriteData(fda[j], writeBuffer, (int)strlen(writeBuffer));
+         }
+      }
+
+      if(size2 < 0 || size1 < 0)
+         printf("Failed file\n");
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, "status/open_document",      3, 2,
+            (unsigned char*)"WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position",  1, 1, keyBuffer, 1024);
+      if( ret < 0)
+         printf("Failed\n");
+
+      if(i%10 == 0)
+      {
+         //printf("   * One seek *\n");
+         pclFileSeek(fd1, 0, SEEK_SET);
+         pclFileSeek(fd2, 0, SEEK_SET);
+      }
+
+      memset(keyBuffer, 0, 1024);
+      ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+      if( ret < 0)
+         printf("Failed\n");
+
+      printf("T3\n");
+
+      usleep(17500);
+   }
+
+   for(i=0; i<NUM_OF_OPEN_FILES; i++)
+   {
+      (void)pclFileClose(fda[i]);
+   }
+
+
+   (void)pclFileClose(fd1);
+   (void)pclFileClose(fd2);
+
+   pclDeinitLibrary();
+
+   return NULL;
+}
+
+
+
+void* WriteTwoThread(void* userData)
+{
+   int fd1 = -1, fd2 = -1, i = 0;
+   int size1 = 0, size2 = 0;
+   int ret = 0;
+   unsigned char keyBuffer[1024] = {0};
+
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+   printf("Thread: %s\n", (const char*)userData);
+
+   size_t bufferSize = strlen(gWriteBuffer);
+   size_t bufferSize2 = strlen(gWriteBuffer2);
+
+   unsigned char* readbuffer = malloc(bufferSize);
+   unsigned char* readbuffer2 = malloc(bufferSize2);
+
+
+   fd1 = pclFileOpen(PCL_LDBID_LOCAL, "media/oneSomeFileTestData.db", 1, 1);
+   printf("Two fd1: %d\n", fd1);
+
+   fd2 = pclFileOpen(PCL_LDBID_LOCAL, "media/oneAnotherFileTestData.db", 2, 1);
+   printf("Two  fd2: %d\n", fd2);
+
+
+   for(i=0; i< 20000; i++)
+   {
+      memset(readbuffer, 0, bufferSize);
+      memset(readbuffer2, 0, bufferSize2);
+      memset(keyBuffer, 0, 1024);
+
+      printf("loop Two: %d\n", i);
+      if(i%2)
+      {
+         size1 = pclFileWriteData(fd1, gWriteBuffer, (int)strlen(gWriteBuffer));
+         size2 = pclFileWriteData(fd2, gWriteBuffer2, (int)strlen(gWriteBuffer2));
+
+
+         ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+         if( ret < 0)
+            printf("Failed\n");
+
+         size2 = pclFileReadData(fd1, readbuffer, (int)bufferSize);
+         size2 = pclFileReadData(fd2, readbuffer2, (int)bufferSize2);
+      }
+      else
+      {
+         printf("Two write1\n");
+         size1 = pclFileWriteData(fd1, gWriteBuffer2, (int)strlen(gWriteBuffer2));
+         printf("Two write2\n");
+         size2 = pclFileWriteData(fd2, gWriteBuffer, (int)strlen(gWriteBuffer));
+
+         printf("Two read key\n");
+         ret = pclKeyReadData(0x20, "address/home_address",      4, 0, keyBuffer, READ_SIZE);
+         if( ret < 0)
+            printf("Failed\n");
+
+         size2 = pclFileReadData(fd1, readbuffer2, (int)bufferSize2);
+         size2 = pclFileReadData(fd2, readbuffer, (int)bufferSize);
+      }
+
+      if(size2 < 0 || size1 < 0)
+         printf("Failed file\n");
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, "status/open_document",      3, 2,
+            (unsigned char*)"WT_ /var/opt/user_manual_climateControl.pdf", strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
+
+
+      memset(keyBuffer, 0, 1024);
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, "pos/last_position",  1, 1, keyBuffer, 1024);
+      if( ret < 0)
+         printf("Failed\n");
+
+      //printf("Two - write - %d -- %d - %d \n", i, size1, size2);
+
+      if(i%10 == 0)
+      {
+         //printf("   * Two seek *\n");
+         pclFileSeek(fd1, 0, SEEK_SET);
+         pclFileSeek(fd2, 0, SEEK_SET);
+      }
+
+      printf("T2\n");
+
+      usleep(17500);
+   }
+
+   (void)pclFileClose(fd1);
+   (void)pclFileClose(fd2);
+
+   pclDeinitLibrary();
+
+   return NULL;
+}
+
+
+
+void doEndlessWrite()
+{
+   int* retval;
+   pthread_t one, two, three;
+
+
+   if(pthread_create(&one, NULL, WriteOneThread, "One") != -1)
+   {
+      (void)pthread_setname_np(one, "One");
+   }
+
+   if(pthread_create(&two, NULL, WriteTwoThread, "Two") != -1)
+   {
+      (void)pthread_setname_np(two, "Two");
+   }
+
+   if(pthread_create(&three, NULL, WriteThreeThread, "Three") != -1)
+   {
+      (void)pthread_setname_np(three, "Three");
+   }
+
+   pthread_join(one, (void**)&retval);    // wait until thread has ended
+   printf("Thread One joined\n");
+
+   pthread_join(two, (void**)&retval);    // wait until thread has ended
+   printf("Thread Two joined\n");
+
+   pthread_join(three, (void**)&retval);    // wait until thread has ended
+   printf("Thread One2 joined\n");
+
+   printf("End Test\n");
+
+}
+
+
 
 
 int main(int argc, char *argv[])
@@ -999,7 +1523,7 @@ int main(int argc, char *argv[])
    gTheAppId[MaxAppNameLen-1] = '\0';
 
    /// debug log and trace (DLT) setup
-   DLT_REGISTER_APP("PCLT", "PCL tests");
+   DLT_REGISTER_APP("PCLTf", "PCL tests");
 
    DLT_REGISTER_CONTEXT(gPcltDLTContext, "PCLt", "Context for PCL testing");
 
@@ -1007,19 +1531,26 @@ int main(int argc, char *argv[])
 
    data_setupBlacklist();
 
-   Suite * s = persistencyClientLib_suite();
-   SRunner * sr = srunner_create(s);
-   srunner_set_fork_status(sr, CK_NOFORK);
+   if(argc == 1)
+   {
+      Suite * s = persistencyClientLib_suite();
+      SRunner * sr = srunner_create(s);
+      srunner_set_fork_status(sr, CK_NOFORK);
 
-   srunner_set_xml(sr, "/tmp/persistenceClientLibraryTestFile.xml");
-   srunner_set_log(sr, "/tmp/persistenceClientLibraryTestFile.log");
+      srunner_set_xml(sr, "/tmp/persistenceClientLibraryTestFile.xml");
+      srunner_set_log(sr, "/tmp/persistenceClientLibraryTestFile.log");
 
 
-   srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
+      srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
 
-   nr_failed = srunner_ntests_failed(sr);
-   srunner_ntests_run(sr);
-   srunner_free(sr);
+      nr_failed = srunner_ntests_failed(sr);
+      srunner_ntests_run(sr);
+      srunner_free(sr);
+   }
+   else
+   {
+      doEndlessWrite();
+   }
 
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("End of PCL test"));
 

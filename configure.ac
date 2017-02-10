@@ -207,6 +207,7 @@ AC_CONFIG_FILES([Makefile
                  persistence_client_library.pc
                  config/pclCustomLibConfigFile.cfg
                  config/pclCustomLibConfigFileEmpty.cfg
+                 config/pclCustomLibConfigFileWrongDefault.cfg
                  src/Makefile
                  tools/Makefile
                  test/Makefile])

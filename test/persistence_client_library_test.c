@@ -742,10 +742,13 @@ END_TEST
 
 START_TEST(test_InitDeinit)
 {
-   int i = 0, rval = -1, handle = 0;
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
+   int i = 0, rval = -1, handle = 0;
+
+
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_InitDeinit"));
+
 
    for(i=0; i<5; i++)
    {
@@ -1591,7 +1594,6 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
    tcase_set_timeout(tc_MultiThreadedWrite, 20);
 
-
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
 
@@ -1641,24 +1643,27 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_InvalidPluginfConf);
 
-   suite_add_tcase(s, tc_InitDeinit);
-
-   //suite_add_tcase(s, tc_NoPluginFunc);
-
-   // suite_add_tcase(s, tc_SharedData);
-   // tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
-
    suite_add_tcase(s, tc_MultiThreadedRead);
    tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_MultiThreadedWrite);
    tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
 
+   suite_add_tcase(s, tc_NoRct);
+   tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
+
+   suite_add_tcase(s, tc_InitDeinit);
+
+   //suite_add_tcase(s, tc_NoPluginFunc);
+
+    //suite_add_tcase(s, tc_SharedData);
+    //tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
+
+
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);
 #else
-   suite_add_tcase(s, tc_NoRct);
-   tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
+
 #endif
 
 #if 0
@@ -1685,7 +1690,7 @@ int main(int argc, char *argv[])
    gTheAppId[MaxAppNameLen-1] = '\0';
 
    /// debug log and trace (DLT) setup
-   DLT_REGISTER_APP("PCLT", "PCL test");
+   DLT_REGISTER_APP("PCLTk", "PCL test");
 
    DLT_REGISTER_CONTEXT(gPcltDLTContext, "PCLt", "Context for PCL testing");
 

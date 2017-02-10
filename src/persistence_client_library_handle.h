@@ -56,10 +56,10 @@ typedef struct _PersistenceFileHandle_s
 } PersistenceFileHandle_s;
 
 /// open file descriptor handle array
-extern int gOpenFdArray[MaxPersHandle];
+extern char gOpenFdArray[MaxPersHandle];
 
 /// handle array
-extern int gOpenHandleArray[MaxPersHandle];
+extern char gOpenHandleArray[MaxPersHandle];
 
 //----------------------------------------------------------------
 //----------------------------------------------------------------

@@ -34,10 +34,12 @@ int check_lc_request(unsigned int request, unsigned int requestID)
       case NsmShutdownNormal:
       {
       	MainLoopData_u data;
-      	data.message.cmd = (uint32_t)CMD_LC_PREPARE_SHUTDOWN;
-      	data.message.params[0] = request;
-      	data.message.params[1] = requestID;
-      	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+      	memset(&data, 0, sizeof(MainLoopData_u));
+      	data.cmd = (uint32_t)CMD_LC_PREPARE_SHUTDOWN;
+      	data.params[0] = request;
+      	data.params[1] = requestID;
+      	data.string[0] = '\0'; 	// no string parameter, set to 0
 
          if(-1 == deliverToMainloop_NM(&data) )
          {
@@ -144,10 +146,11 @@ int register_lifecycle(int shutdownMode)
 {
 	MainLoopData_u data;
 
-	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
-	data.message.params[0] = 1;
-	data.message.params[1] = (uint32_t)shutdownMode;
-	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+   memset(&data, 0, sizeof(MainLoopData_u));
+	data.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
+	data.params[0] = 1;
+	data.params[1] = (uint32_t)shutdownMode;
+	data.string[0] = '\0'; 	// no string parameter, set to 0
 
    return deliverToMainloop(&data);
 }
@@ -158,10 +161,11 @@ int unregister_lifecycle(int shutdownMode)
 {
 	MainLoopData_u data;
 
-	data.message.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
-	data.message.params[0] = 0;
-	data.message.params[1] = (uint32_t)shutdownMode;
-	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+	memset(&data, 0, sizeof(MainLoopData_u));
+	data.cmd = (uint32_t)CMD_SEND_LC_REGISTER;
+	data.params[0] = 0;
+	data.params[1] = (uint32_t)shutdownMode;
+	data.string[0] = '\0'; 	// no string parameter, set to 0
 
    return deliverToMainloop(&data);
 }

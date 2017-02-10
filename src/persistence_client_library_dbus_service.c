@@ -496,38 +496,38 @@ int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int*
    int rval = 1;
 
    //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
-   switch (readData->message.cmd)
+   switch (readData->cmd)
    {
       case CMD_PAS_BLOCK_AND_WRITE_BACK:
-         process_block_and_write_data_back((unsigned int)readData->message.params[1] /*requestID*/, (unsigned int)readData->message.params[0] /*status*/);
-         process_send_pas_request(conn,    (unsigned int)readData->message.params[1] /*request*/,   (int)readData->message.params[0] /*status*/);
+         process_block_and_write_data_back((unsigned int)readData->params[1] /*requestID*/, (unsigned int)readData->params[0] /*status*/);
+         process_send_pas_request(conn,    (unsigned int)readData->params[1] /*request*/,   (int)readData->params[0] /*status*/);
          break;
       case CMD_LC_PREPARE_SHUTDOWN:
          process_prepare_shutdown(Shutdown_Full);
-         process_send_lifecycle_request(conn, (unsigned int)readData->message.params[1] /*requestID*/, (unsigned int)readData->message.params[0] /*status*/);
+         process_send_lifecycle_request(conn, (unsigned int)readData->params[1] /*requestID*/, (unsigned int)readData->params[0] /*status*/);
          break;
       case CMD_SEND_NOTIFY_SIGNAL:
-         process_send_notification_signal(conn, (unsigned int)readData->message.params[0] /*ldbid*/, (unsigned int)readData->message.params[1], /*user*/
-                                                (unsigned int)readData->message.params[2] /*seat*/,  (unsigned int)readData->message.params[3], /*reason*/
-                                                readData->message.string);
+         process_send_notification_signal(conn, (unsigned int)readData->params[0] /*ldbid*/, (unsigned int)readData->params[1], /*user*/
+                                                (unsigned int)readData->params[2] /*seat*/,  (unsigned int)readData->params[3], /*reason*/
+                                                readData->string);
          break;
       case CMD_REG_NOTIFY_SIGNAL:
-         process_reg_notification_signal(conn, (unsigned int)readData->message.params[0] /*ldbid*/, (unsigned int)readData->message.params[1], /*user*/
-                                               (unsigned int)readData->message.params[2] /*seat*/,  (unsigned int)readData->message.params[3], /*,policy*/
-                                               readData->message.string);
+         process_reg_notification_signal(conn, (unsigned int)readData->params[0] /*ldbid*/, (unsigned int)readData->params[1], /*user*/
+                                               (unsigned int)readData->params[2] /*seat*/,  (unsigned int)readData->params[3], /*,policy*/
+                                               readData->string);
          break;
       case CMD_SEND_PAS_REGISTER:
-         process_send_pas_register(conn, (int)readData->message.params[0] /*regType*/, (int)readData->message.params[1] /*notifyFlag*/);
+         process_send_pas_register(conn, (int)readData->params[0] /*regType*/, (int)readData->params[1] /*notifyFlag*/);
          break;
       case CMD_SEND_LC_REGISTER:
-         process_send_lifecycle_register(conn, (int)readData->message.params[0] /*regType*/, (int)readData->message.params[1] /*mode*/);
+         process_send_lifecycle_register(conn, (int)readData->params[0] /*regType*/, (int)readData->params[1] /*mode*/);
          break;
       case CMD_QUIT:
          rval = 0;
          *quit = TRUE;
          break;
       default:
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_UINT32(readData->message.cmd) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - cmd not handled"), DLT_UINT32(readData->cmd) );
          break;
    }
 
@@ -585,8 +585,9 @@ void* mainLoop(void* userData)
                   if (0!=(gPollInfo.fds[i].revents & POLLIN))  // dispatch internal command
                   {
                      MainLoopData_u readData;
+
                      bContinue = TRUE;
-                     while ((-1==(ret = (int)read((int)(gPollInfo.fds[i].fd), readData.payload, (size_t)sizeof(struct message_))))&&(EINTR == errno));
+                     while ((-1==(ret = (int)read((int)(gPollInfo.fds[i].fd), (void*)&readData, (size_t)sizeof(MainLoopData_u))))&&(EINTR == errno));
                      if(ret < 0)
                      {
                         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("mainLoop - read() failed"), DLT_STRING(strerror(errno)) );
@@ -676,7 +677,7 @@ int deliverToMainloop_NM(MainLoopData_u* payload)
 {
    int rval = 0;
 
-   if(-1 == write(gPipeFd[1], payload->payload, sizeof(struct message_)))
+   if(-1 == write(gPipeFd[1], payload, sizeof(MainLoopData_u)))
    {
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("toMainloop => failed write pipe"), DLT_INT(errno));
      rval = -1;

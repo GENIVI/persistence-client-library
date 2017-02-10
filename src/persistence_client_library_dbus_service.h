@@ -51,20 +51,16 @@ typedef enum ECmd
 
 
 /// command data union definition
-typedef union MainLoopData_u_{
+typedef struct MainLoopData_u_{
 
-	/// message structure
-	struct message_ {
-		/// dbus mainloop command
-		uint32_t cmd;
-		/// unsigned int parameters
-		uint32_t params[4];
-		/// string parameter
-		char string[PERS_DB_MAX_LENGTH_KEY_NAME];
-	}message;
+   /// dbus mainloop command
+   uint32_t cmd;
+   /// unsigned int parameters
+   uint32_t params[4];
+   /// string parameter
+   char string[PERS_DB_MAX_LENGTH_KEY_NAME];
 
-	/// the message payload
-	char payload[sizeof(struct message_)];
+
 } MainLoopData_u;
 
 /// dbus pending mutex => visibility "hidden" to prevent the use outside the library

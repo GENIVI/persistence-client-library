@@ -56,7 +56,8 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+      if(lock == 0)
       {
 
 #if USE_APPCHECK
@@ -99,11 +100,17 @@ int pclKeyHandleOpen(unsigned int ldbid, const char* resource_id, unsigned int u
 #endif
          pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyHandleOpen - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("keyHandleOpen - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- keyHandleOpen - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res:"), DLT_STRING(resource_id));
 
    return handle;
 }
@@ -118,7 +125,9 @@ int pclKeyHandleClose(int key_handle)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -153,11 +162,17 @@ int pclKeyHandleClose(int key_handle)
 #endif
          pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleClose - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleClose - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyHandleClose - key_handle:"), DLT_INT(key_handle));
 
    return rval;
 }
@@ -172,7 +187,8 @@ int pclKeyHandleGetSize(int key_handle)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+      if( lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -205,11 +221,17 @@ int pclKeyHandleGetSize(int key_handle)
 #endif
          pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleGetSize - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleGetSize - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyHandleGetSize - key_handle:"), DLT_INT(key_handle));
 
    return size;
 }
@@ -224,7 +246,8 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -258,11 +281,17 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 #endif
          pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleReadData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleReadData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyHandleReadData - key_handle:"), DLT_INT(key_handle));
 
    return size;
 }
@@ -272,10 +301,11 @@ int pclKeyHandleReadData(int key_handle, unsigned char* buffer, int buffer_size)
 int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
    int rval = EPERS_COMMON;
-
+   int lock = 0;
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange - key_handle:"), DLT_INT(key_handle));
 
-   if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+   lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+   if(lock == 0)
    {
       //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleRegisterNotifyOnChange: "),
       //            DLT_INT(gKeyHandleArray[key_handle].info.context.ldbid), DLT_STRING(gKeyHandleArray[key_handle].resourceID) );
@@ -290,21 +320,36 @@ int pclKeyHandleRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t
       }
       pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleReadData - mutex lock failed:"), DLT_INT(lock));
+   }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyHandleRegisterNotifyOnChange - key_handle:"), DLT_INT(key_handle));
+
    return rval;
 }
 
 int pclKeyHandleUnRegisterNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback)
 {
    int rval = EPERS_NOT_INITIALIZED;
+   int lock = 0;
 
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyHandleUnRegisterNotifyOnChange - key_handle:"), DLT_INT(key_handle));
 
-   if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+   lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+   if(lock == 0)
    {
       rval = handleRegNotifyOnChange(key_handle, callback, Notify_unregister);
 
       pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleUnRegisterNotifyOnChange - mutex lock failed:"), DLT_INT(lock));
+   }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyHandleUnRegisterNotifyOnChange - key_handle:"), DLT_INT(key_handle));
 
    return rval;
 }
@@ -343,6 +388,9 @@ int handleRegNotifyOnChange(int key_handle, pclChangeNotifyCallback_t callback, 
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("handleRegNotifyOnChange - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- handleRegNotifyOnChange - key_handle:"), DLT_INT(key_handle));
+
    return rval;
 }
 
@@ -356,7 +404,8 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIHandleAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIHandleAccessMtx);
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -389,11 +438,17 @@ int pclKeyHandleWriteData(int key_handle, unsigned char* buffer, int buffer_size
 #endif
          pthread_mutex_unlock(&gKeyAPIHandleAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyHandleWriteData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyHandleWriteData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyHandleWriteData - key_handle:"), DLT_INT(key_handle));
 
    return size;
 }
@@ -416,7 +471,8 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIAccessMtx);
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -461,11 +517,17 @@ int pclKeyDelete(unsigned int ldbid, const char* resource_id, unsigned int user_
 #endif
          pthread_mutex_unlock(&gKeyAPIAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyDelete - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyDelete - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyDelete - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
 
    return rval;
 }
@@ -480,7 +542,8 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIAccessMtx);
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -522,11 +585,17 @@ int pclKeyGetSize(unsigned int ldbid, const char* resource_id, unsigned int user
 #endif
          pthread_mutex_unlock(&gKeyAPIAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyGetSize - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyGetSize - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyGetSize - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
 
    return data_size;
 }
@@ -542,7 +611,8 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIAccessMtx);
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
@@ -592,11 +662,17 @@ int pclKeyReadData(unsigned int ldbid, const char* resource_id, unsigned int use
 #endif
          pthread_mutex_unlock(&gKeyAPIAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyGetSize - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("keyReadData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyReadData - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
 
    return data_size;
 }
@@ -612,9 +688,9 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gKeyAPIAccessMtx);
+      if(lock == 0)
       {
-
 #if USE_APPCHECK
          if(doAppcheck() == 1)
          {
@@ -686,11 +762,18 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 #endif
          pthread_mutex_unlock(&gKeyAPIAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyWriteData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclKeyWriteData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyWriteData - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
+
    return data_size;
 }
 
@@ -699,15 +782,22 @@ int pclKeyWriteData(unsigned int ldbid, const char* resource_id, unsigned int us
 int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_id, unsigned int  user_no, unsigned int  seat_no, pclChangeNotifyCallback_t  callback)
 {
    int rval = EPERS_NOT_INITIALIZED;
-
+   int lock = 0;
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyUnRegisterNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
 
-   if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+   lock = pthread_mutex_lock(&gKeyAPIAccessMtx);
+   if(lock == 0)
    {
       rval = regNotifyOnChange(ldbid, resource_id, user_no, seat_no, callback, Notify_unregister);
 
       pthread_mutex_unlock(&gKeyAPIAccessMtx);
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyUnRegisterNotifyOnChange - mutex lock failed:"), DLT_INT(lock));
+   }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyUnRegisterNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "),DLT_STRING(resource_id));
    return rval;
 }
 
@@ -716,10 +806,12 @@ int pclKeyUnRegisterNotifyOnChange( unsigned int  ldbid, const char *  resource_
 int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int user_no, unsigned int seat_no, pclChangeNotifyCallback_t callback)
 {
    int rval = EPERS_COMMON;
+   int lock = 0;
 
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclKeyRegisterNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "), DLT_STRING(resource_id) );
 
-   if(pthread_mutex_lock(&gKeyAPIAccessMtx) == 0)
+   lock = pthread_mutex_lock(&gKeyAPIAccessMtx);
+   if(lock == 0)
    {
       if((gChangeNotifyCallback == callback) || (gChangeNotifyCallback == NULL))
       {
@@ -727,11 +819,18 @@ int pclKeyRegisterNotifyOnChange(unsigned int ldbid, const char* resource_id, un
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("keyRegNotifyOnChange - Only one cBack is allowed for ch noti."));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange - Only one cBack is allowed for ch noti."));
          rval = EPERS_NOTIFY_NOT_ALLOWED;
       }
       pthread_mutex_unlock(&gKeyAPIAccessMtx);
    }
+   else
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclKeyRegisterNotifyOnChange - mutex lock failed:"), DLT_INT(lock));
+   }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclKeyRegisterNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "), DLT_STRING(resource_id) );
+
    return rval;
 }
 
@@ -795,6 +894,8 @@ int regNotifyOnChange(unsigned int ldbid, const char* resource_id, unsigned int 
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("regNotifyOnChange - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("regNotifyOnChange - ldbid:"), DLT_UINT(ldbid), DLT_STRING(" res: "), DLT_STRING(resource_id) );
 
    return rval;
 }

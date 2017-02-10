@@ -44,9 +44,9 @@ static jsw_rbtree_t *gOssFileHandleTree = NULL;
 
 
 // open file descriptor handle array
-int gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
+char gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 // handle array
-int gOpenHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
+char gOpenHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 
 // handle index
 static int gHandleIdx = 1;
@@ -262,6 +262,7 @@ int remove_file_handle_data(int idx)
          {
             item->key = idx;
             rval = jsw_rberase(gFileHandleTree, item);
+            free(item);
          }
       }
 
@@ -308,8 +309,6 @@ int set_file_handle_data(int idx, PersistencePermission_e permission, const char
 
             //debugFileItem("set_file_handle_data => insert", item);
             jsw_rbinsert(gFileHandleTree, item);
-
-
          }
          else
          {
@@ -1015,6 +1014,7 @@ int remove_ossfile_handle_data(int idx)
          {
             item->key = idx;
             rval = jsw_rberase(gOssFileHandleTree, item);
+            free(item);
          }
       }
 

@@ -58,10 +58,11 @@ int check_pas_request(unsigned int request, unsigned int requestID)
       {
       	MainLoopData_u data;
 
-      	data.message.cmd = (uint32_t)CMD_PAS_BLOCK_AND_WRITE_BACK;
-      	data.message.params[0] = request;
-      	data.message.params[1] = requestID;
-      	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+      	memset(&data, 0, sizeof(MainLoopData_u));
+      	data.cmd = (uint32_t)CMD_PAS_BLOCK_AND_WRITE_BACK;
+      	data.params[0] = request;
+      	data.params[1] = requestID;
+      	data.string[0] = '\0'; 	// no string parameter, set to 0
 
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("chkPasReq - case PasMsg_Block o. PasMsg_WriteBack"));
          if(-1 == deliverToMainloop_NM(&data))
@@ -182,10 +183,11 @@ int register_pers_admin_service(void)
 
 	MainLoopData_u data;
 
-	data.message.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
-	data.message.params[0] = 1;
-	data.message.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);
-	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+	memset(&data, 0, sizeof(MainLoopData_u));
+	data.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
+	data.params[0] = 1;
+	data.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);
+	data.string[0] = '\0'; 	// no string parameter, set to 0
 
    if(-1 == deliverToMainloop(&data))
    {
@@ -207,10 +209,12 @@ int unregister_pers_admin_service(void)
    int rval =  0;
 
 	MainLoopData_u data;
-	data.message.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
-	data.message.params[0] = 0;
-	data.message.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);
-	data.message.string[0] = '\0'; 	// no string parameter, set to 0
+
+	memset(&data, 0, sizeof(MainLoopData_u));
+	data.cmd = (uint32_t)CMD_SEND_PAS_REGISTER;
+	data.params[0] = 0;
+	data.params[1] = (PasMsg_Block | PasMsg_WriteBack | PasMsg_Unblock);
+	data.string[0] = '\0'; 	// no string parameter, set to 0
 
    if(-1 == deliverToMainloop(&data))
    {

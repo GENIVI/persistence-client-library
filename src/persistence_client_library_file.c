@@ -51,7 +51,7 @@ static const int gCPathPrefixSize = sizeof(CACHEPREFIX)-1;
 // size of write through string
 static const int gWTPathPrefixSize = sizeof(WTPREFIX)-1;
 
-static pthread_mutex_t gFileAccessMtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gFileAccessMtx = PTHREAD_MUTEX_INITIALIZER;
 
 // local function prototype
 static int pclFileGetDefaultData(int handle, const char* resource_id, int policy);
@@ -95,14 +95,14 @@ int pclFileClose(int fd)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
 #if USE_APPCHECK
          if(doAppcheck() == 1)
          {
 #endif
             int  permission = get_file_permission(fd);
-
 
             if(permission != -1)	   // permission is here also used for range check
             {
@@ -120,9 +120,9 @@ int pclFileClose(int fd)
                   {
                      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - csum remove failed!"), DLT_STRING(strerror(errno)) );
                   }
-
                }
-               __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
+               if(fd < MaxPersHandle)
+                  __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
 
                // remove form file tree;
                if(remove_file_handle_data(fd) != 1)
@@ -158,11 +158,17 @@ int pclFileClose(int fd)
 #endif
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileClose - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileClose - fd:"), DLT_INT(fd));
 
    return rval;
 }
@@ -173,9 +179,12 @@ int pclFileGetSize(int fd)
 {
    int size = EPERS_NOT_INITIALIZED;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileGetSize fd: "), DLT_INT(fd));
+
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          struct stat buf;
 
@@ -203,11 +212,18 @@ int pclFileGetSize(int fd)
 #endif
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileGetSize - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileGetSize - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileGetSize fd: "), DLT_INT(fd));
+
    return size;
 }
 
@@ -228,7 +244,8 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          if(AccessNoLock != isAccessLocked() )  // check if access to persistent data is locked
          {
@@ -240,12 +257,18 @@ void* pclFileMapData(void* addr, long size, long offset, int fd)
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileMapData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileMapData - not initialized"));
    }
 #endif
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileMapData fd: "), DLT_INT(fd));
 
    return ptr;
 }
@@ -291,6 +314,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
          if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileOpen - file inconsist, recov  N O T  possible!"));
+            close(handle);
             return -1;
          }
       }
@@ -334,45 +358,61 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
             cacheStatus = 1;
          }
       }
-#endif
 
-      // file does not exist, create it and get default data
-      if(handle == -1 && errno == ENOENT)
+#endif
+      if(handle < MaxPersHandle)
       {
-         if((handle = pclCreateFile(dbPath, cacheStatus)) == -1)
+         // file does not exist, create it and get default data
+         if(handle == -1 && errno == ENOENT)
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileOpen - failed create file: "), DLT_STRING(dbPath));
-         }
-         else
-         {
-            if(pclFileGetDefaultData(handle, resource_id, dbContext->configKey.policy) == -1) // try to get default data
+            handle = pclCreateFile(dbPath, cacheStatus);
+
+            if(handle == -1)
             {
-               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileOpen - no def data avail: "), DLT_STRING(resource_id));
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileOpen - failed create file: "), DLT_STRING(dbPath));
+            }
+            else if(handle >= MaxPersHandle) // number of max handles exceeded
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileOpen - failed create file: "), DLT_STRING(dbPath));
+               close(handle);
+               handle = EPERS_MAXHANDLE;
+            }
+            else
+            {
+               if(pclFileGetDefaultData(handle, resource_id, dbContext->configKey.policy) == -1) // try to get default data
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileOpen - no def data avail: "), DLT_STRING(resource_id));
+               }
+               set_file_cache_status(handle, cacheStatus);
             }
          }
-         set_file_cache_status(handle, cacheStatus);
-      }
 
-      if(dbContext->configKey.permission != PersistencePermission_ReadOnly)
-      {
-         if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) != -1)
+         if(dbContext->configKey.permission != PersistencePermission_ReadOnly)
          {
-            set_file_backup_status(handle, wantBackup);
-            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+            if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) != -1)
+            {
+               set_file_backup_status(handle, wantBackup);
+               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+            }
+            else
+            {
+               close(handle);
+               handle = EPERS_MAXHANDLE;
+            }
          }
          else
          {
-            close(handle);
-            handle = EPERS_MAXHANDLE;
+            if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) == -1)
+            {
+               close(handle);
+               handle = EPERS_MAXHANDLE;
+            }
          }
       }
       else
       {
-         if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) == -1)
-         {
-            close(handle);
-            handle = EPERS_MAXHANDLE;
-         }
+         close(handle);
+         handle = EPERS_MAXHANDLE;
       }
    }
    else // requested resource is not in the RCT, so create resource as local/cached.
@@ -380,26 +420,37 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
       // assemble file string for local cached location
       snprintf(dbPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalCacheFilePath(), gAppId, user_no, seat_no, resource_id);
       handle = pclCreateFile(dbPath, 1);
-      set_file_cache_status(handle, 1);
 
-      if(handle != -1)
+      if(handle < MaxPersHandle)
       {
-         if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
+         set_file_cache_status(handle, 1);
+
+         if(handle != -1)
          {
-            set_file_backup_status(handle, 1);
-            __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
-         }
-         else
-         {
-#if USE_FILECACHE
-            pfcCloseFile(handle);
-#else
-            close(handle);
-#endif
-            handle = EPERS_MAXHANDLE;
+            if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
+            {
+               set_file_backup_status(handle, 1);
+               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+            }
+            else
+            {
+   #if USE_FILECACHE
+               pfcCloseFile(handle);
+   #else
+               close(handle);
+   #endif
+               handle = EPERS_MAXHANDLE;
+            }
          }
       }
+      else
+      {
+         close(handle);
+         handle = EPERS_MAXHANDLE;
+      }
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileOpenRegular - res:"), DLT_STRING(resource_id));
 
    return handle;
 }
@@ -441,13 +492,15 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+
+      if(lock == 0)
       {
          PersistenceInfo_s dbContext;
 
          int shared_DB = 0;
-         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]       = {0};    // database key
-         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]     = {0};    // database location
+         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]         = {0};    // database key
+         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = {0};    // database location
 
          //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
 
@@ -464,7 +517,15 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
             if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
             {
                handle = pclFileOpenDefaultData(&dbContext, resource_id);
+               if(handle >= MaxPersHandle)
+               {
+                  close(handle);
+                  pthread_mutex_unlock(&gFileAccessMtx);
+                  return EPERS_MAXHANDLE;
+               }
+
                set_file_user_id(handle, (int)PCL_USER_DEFAULTDATA);
+
                // as default data will be opened, use read/write permission and we don't need backup and csum path so use an empty string.
                set_file_handle_data(handle, PersistencePermission_ReadWrite, "", "", NULL);
             }
@@ -477,13 +538,21 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
          {
             handle = EPERS_RESOURCE_NO_FILE;	// resource is not marked as file in RCT
          }
+
          pthread_mutex_unlock(&gFileAccessMtx);
+      }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileOpen - mutex lock failed:"), DLT_INT(lock));
       }
    } // initialized
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileOpen - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileOpen - handle:"), DLT_INT(handle), DLT_STRING(" res:"), DLT_STRING(resource_id));
+
    return handle;
 }
 
@@ -497,9 +566,9 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
-
 #if USE_FILECACHE
          if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
          {
@@ -514,11 +583,17 @@ int pclFileReadData(int fd, void * buffer, int buffer_size)
 #endif
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileReadData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReadData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileReadData - fd:"), DLT_INT(fd));
    return readSize;
 }
 
@@ -532,7 +607,8 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
@@ -570,11 +646,17 @@ int pclFileRemove(unsigned int ldbid, const char* resource_id, unsigned int user
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileRemove - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileRemove - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileRemove - ldbid"), DLT_UINT(ldbid), DLT_STRING(" res:"), DLT_STRING(resource_id));
    return rval;
 }
 
@@ -588,7 +670,8 @@ int pclFileSeek(int fd, long int offset, int whence)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
@@ -611,11 +694,17 @@ int pclFileSeek(int fd, long int offset, int whence)
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileSeek - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileSeek - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileSeek - fd"), DLT_INT(fd));
 
    return rval;
 }
@@ -630,7 +719,8 @@ int pclFileUnmapData(void* address, long size)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock  == 0)
       {
          if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
@@ -642,11 +732,17 @@ int pclFileUnmapData(void* address, long size)
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileUnmapData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileUnmapData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileUnmapData"));
 
    return rval;
 }
@@ -661,7 +757,8 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          if(AccessNoLock != isAccessLocked() ) // check if access to persistent data is locked
          {
@@ -681,7 +778,6 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
 
                      set_file_backup_status(fd, 1);
                   }
-
 #if USE_FILECACHE
                   if(get_file_cache_status(fd) == 1 && get_file_user_id(fd) !=  (int)PCL_USER_DEFAULTDATA)
                   {
@@ -720,11 +816,17 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileWriteData - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileWriteData - not initialized"));
    }
+
+   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("<- pclFileWriteData fd:"), DLT_INT(fd));
 
    return size;
 }
@@ -738,7 +840,8 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          int shared_DB = 0;
          PersistenceInfo_s dbContext;
@@ -773,6 +876,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                   if((handle = pclVerifyConsistency(dbPath, backupPath, csumPath, flags)) == -1)
                   {
                      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("fileCreatePath - file inconsistent, recovery  NOT  possible!"));
+                     pthread_mutex_unlock(&gFileAccessMtx);
                      return -1;
                   }
                   // we don't need the file handle here
@@ -876,6 +980,10 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileCreatePath - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
@@ -895,7 +1003,8 @@ int pclFileReleasePath(int pathHandle)
 
    if(__sync_add_and_fetch(&gPclInitCounter, 0) > 0)
    {
-      if(pthread_mutex_lock(&gFileAccessMtx) == 0)
+      int lock = pthread_mutex_lock(&gFileAccessMtx);
+      if(lock == 0)
       {
          int  permission = get_ossfile_permission(pathHandle);
          if(permission != -1)		// permission is here also used for range check
@@ -936,12 +1045,15 @@ int pclFileReleasePath(int pathHandle)
          }
          pthread_mutex_unlock(&gFileAccessMtx);
       }
+      else
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclFileReleasePath - mutex lock failed:"), DLT_INT(lock));
+      }
    }
    else
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileReleasePath - not initialized"));
    }
-
    return rval;
 }
 

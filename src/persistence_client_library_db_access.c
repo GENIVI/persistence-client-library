@@ -705,13 +705,14 @@ int persistence_notify_on_change(const char* resource_id, const char* dbKey, uns
       key_value_s* searchItem = NULL;
       unsigned int hashKey = pclCrc32(0, (unsigned char*)dbKey, strlen(dbKey));
 
-   	data.message.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
-   	data.message.params[0] = ldbid;
-   	data.message.params[1] = user_no;
-   	data.message.params[2] = seat_no;
-   	data.message.params[3] = regPolicy;
+      memset(&data, 0, sizeof(MainLoopData_u));
+   	data.cmd = (uint32_t)CMD_REG_NOTIFY_SIGNAL;
+   	data.params[0] = ldbid;
+   	data.params[1] = user_no;
+   	data.params[2] = seat_no;
+   	data.params[3] = regPolicy;
 
-   	snprintf(data.message.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", resource_id);
+   	snprintf(data.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", resource_id);
 
       // check if the tree has already been created
    	if(gNotificationTree == NULL)
@@ -789,13 +790,14 @@ int pers_send_Notification_Signal(const char* key, PersistenceDbContext_s* conte
    {
    	MainLoopData_u data;
 
-   	data.message.cmd = (uint32_t)CMD_SEND_NOTIFY_SIGNAL;
-   	data.message.params[0] = context->ldbid;
-   	data.message.params[1] = context->user_no;
-   	data.message.params[2] = context->seat_no;
-   	data.message.params[3] = reason;
+   	memset(&data, 0, sizeof(MainLoopData_u));
+   	data.cmd = (uint32_t)CMD_SEND_NOTIFY_SIGNAL;
+   	data.params[0] = context->ldbid;
+   	data.params[1] = context->user_no;
+   	data.params[2] = context->seat_no;
+   	data.params[3] = reason;
 
-   	snprintf(data.message.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", key);
+   	snprintf(data.string, PERS_DB_MAX_LENGTH_KEY_NAME, "%s", key);
 
       if(-1 == deliverToMainloop(&data) )
       {
