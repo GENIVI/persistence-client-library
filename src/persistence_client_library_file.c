@@ -496,49 +496,60 @@ int pclFileOpen(unsigned int ldbid, const char* resource_id, unsigned int user_n
 
       if(lock == 0)
       {
-         PersistenceInfo_s dbContext;
-
-         int shared_DB = 0;
-         char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]         = {0};    // database key
-         char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = {0};    // database location
-
-         //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
-
-         dbContext.context.ldbid   = ldbid;
-         dbContext.context.seat_no = seat_no;
-         dbContext.context.user_no = user_no;
-
-         // get database context: database path and database key
-         shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
-
-         // check if the resource is marked as a file resource
-         if(dbContext.configKey.type == PersistenceResourceType_file)
+#if USE_APPCHECK
+         if(doAppcheck() == 1)
          {
-            if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
+#endif
+            PersistenceInfo_s dbContext;
+
+            int shared_DB = 0;
+            char dbKey[PERS_DB_MAX_LENGTH_KEY_NAME]         = {0};    // database key
+            char dbPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME]  = {0};    // database location
+
+            //DLT_LOG(gDLTContext, DLT_LOG_INFO, DLT_STRING("pclFileOpen: "), DLT_INT(ldbid), DLT_STRING(resource_id) );
+
+            dbContext.context.ldbid   = ldbid;
+            dbContext.context.seat_no = seat_no;
+            dbContext.context.user_no = user_no;
+
+            // get database context: database path and database key
+            shared_DB = get_db_context(&dbContext, resource_id, ResIsFile, dbKey, dbPath);
+
+            // check if the resource is marked as a file resource
+            if(dbContext.configKey.type == PersistenceResourceType_file)
             {
-               handle = pclFileOpenDefaultData(&dbContext, resource_id);
-               if(handle >= MaxPersHandle)
+               if(user_no == (unsigned int)PCL_USER_DEFAULTDATA)
                {
-                  close(handle);
-                  pthread_mutex_unlock(&gFileAccessMtx);
-                  return EPERS_MAXHANDLE;
+                  handle = pclFileOpenDefaultData(&dbContext, resource_id);
+                  if(handle >= MaxPersHandle)
+                  {
+                     close(handle);
+                     pthread_mutex_unlock(&gFileAccessMtx);
+                     return EPERS_MAXHANDLE;
+                  }
+
+                  set_file_user_id(handle, (int)PCL_USER_DEFAULTDATA);
+
+                  // as default data will be opened, use read/write permission and we don't need backup and csum path so use an empty string.
+                  set_file_handle_data(handle, PersistencePermission_ReadWrite, "", "", NULL);
                }
-
-               set_file_user_id(handle, (int)PCL_USER_DEFAULTDATA);
-
-               // as default data will be opened, use read/write permission and we don't need backup and csum path so use an empty string.
-               set_file_handle_data(handle, PersistencePermission_ReadWrite, "", "", NULL);
+               else
+               {
+                  handle = pclFileOpenRegular(&dbContext, resource_id, dbKey, dbPath, shared_DB, user_no, seat_no);
+               }
             }
             else
             {
-               handle = pclFileOpenRegular(&dbContext, resource_id, dbKey, dbPath, shared_DB, user_no, seat_no);
+               handle = EPERS_RESOURCE_NO_FILE;	// resource is not marked as file in RCT
             }
+
+#if USE_APPCHECK
          }
          else
          {
-            handle = EPERS_RESOURCE_NO_FILE;	// resource is not marked as file in RCT
+            handle = EPERS_SHUTDOWN_NO_TRUSTED;
          }
-
+#endif
          pthread_mutex_unlock(&gFileAccessMtx);
       }
       else
