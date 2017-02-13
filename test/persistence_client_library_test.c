@@ -35,6 +35,8 @@
 #include "../include/persistence_client_library.h"
 #include "../include/persistence_client_library_error_def.h"
 
+#define SKIP_MULTITHREADED_TESTS 1
+
 #define BUF_SIZE        64
 #define NUM_OF_FILES    3
 #define READ_SIZE       1024
@@ -1586,6 +1588,10 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_SharedData, test_SharedData);
    tcase_set_timeout(tc_SharedData, 10);
 
+#ifdef SKIP_MULTITHREADED_TESTS
+   printf("INFO: Skipping testcase MultiThreadedRead  (%p)\n", test_MultiThreadedRead);
+   printf("INFO: Skipping testcase MultiThreadedWrite (%p)\n", test_MultiThreadedWrite);
+#else
    TCase * tc_MultiThreadedRead = tcase_create("MultiThreadedRead");
    tcase_add_test(tc_MultiThreadedRead, test_MultiThreadedRead);
    tcase_set_timeout(tc_MultiThreadedRead, 20);
@@ -1593,6 +1599,7 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_MultiThreadedWrite = tcase_create("MultiThreadedWrite");
    tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
    tcase_set_timeout(tc_MultiThreadedWrite, 20);
+#endif
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1643,11 +1650,13 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_InvalidPluginfConf);
 
+#ifndef SKIP_MULTITHREADED_TESTS
    suite_add_tcase(s, tc_MultiThreadedRead);
    tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_MultiThreadedWrite);
    tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
+#endif
 
    suite_add_tcase(s, tc_NoRct);
    tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
