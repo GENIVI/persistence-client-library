@@ -1586,6 +1586,7 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_SharedData, test_SharedData);
    tcase_set_timeout(tc_SharedData, 10);
 
+#if 0 /* DEBUG BASE-37 */
    TCase * tc_MultiThreadedRead = tcase_create("MultiThreadedRead");
    tcase_add_test(tc_MultiThreadedRead, test_MultiThreadedRead);
    tcase_set_timeout(tc_MultiThreadedRead, 20);
@@ -1593,6 +1594,7 @@ static Suite * persistencyClientLib_suite()
    TCase * tc_MultiThreadedWrite = tcase_create("MultiThreadedWrite");
    tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
    tcase_set_timeout(tc_MultiThreadedWrite, 20);
+#endif	/* DEBUG BASE-37 */
 
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
@@ -1643,11 +1645,13 @@ static Suite * persistencyClientLib_suite()
 
    suite_add_tcase(s, tc_InvalidPluginfConf);
 
+#if 0    /* DEBUG BASE-37 */
    suite_add_tcase(s, tc_MultiThreadedRead);
    tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_MultiThreadedWrite);
    tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
+#endif
 
    suite_add_tcase(s, tc_NoRct);
    tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
