@@ -121,8 +121,6 @@ int pclFileClose(int fd)
                      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclFileClose - csum remove failed!"), DLT_STRING(strerror(errno)) );
                   }
                }
-               if(fd < MaxPersHandle)
-                  __sync_fetch_and_sub(&gOpenFdArray[fd], FileClosed);   // set closed flag
 
                // remove form file tree;
                if(remove_file_handle_data(fd) != 1)
@@ -144,6 +142,7 @@ int pclFileClose(int fd)
                fsync(fd);
                rval = close(fd);
    #endif
+               list_item_remove(&gOpenFdList, fd);
             }
             else
             {
@@ -392,7 +391,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
             if(set_file_handle_data(handle, dbContext->configKey.permission, backupPath, csumPath, NULL) != -1)
             {
                set_file_backup_status(handle, wantBackup);
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+               list_item_insert(&gOpenFdList, handle);
             }
             else
             {
@@ -430,7 +429,7 @@ int pclFileOpenRegular(PersistenceInfo_s* dbContext, const char* resource_id, ch
             if(set_file_handle_data(handle, PersistencePermission_ReadWrite, backupPath, csumPath, NULL) != -1)
             {
                set_file_backup_status(handle, 1);
-               __sync_fetch_and_add(&gOpenFdArray[handle], FileOpen); // set open flag
+               list_item_insert(&gOpenFdList, handle);
             }
             else
             {
@@ -942,9 +941,9 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                               close(handle);    // don't need the open file
                            }
                         }
-                        __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);        // set open flag
-
                         set_ossfile_handle_data(handle, dbContext.configKey.permission, 0/*backupCreated*/, backupPath, csumPath, *path);
+
+                        list_item_insert(&gCPOpenFdList, handle);     // remember open fd
                      }
                      else
                      {
@@ -973,7 +972,7 @@ int pclFileCreatePath(unsigned int ldbid, const char* resource_id, unsigned int 
                      snprintf(backupPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupPostfix);
                      snprintf(csumPath,   PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s", dbPath, gBackupCsPostfix);
 
-                     __sync_fetch_and_add(&gOpenHandleArray[handle], FileOpen);  // set open flag
+                     list_item_insert(&gCPOpenFdList, handle);     // remember open fd
 
                      set_ossfile_handle_data(handle, PersistencePermission_ReadWrite, 0/*backupCreated*/, backupPath, csumPath, NULL);
                   }
@@ -1037,11 +1036,11 @@ int pclFileReleasePath(int pathHandle)
             }
             free(get_ossfile_file_path(pathHandle));
 
-            __sync_fetch_and_sub(&gOpenHandleArray[pathHandle], FileClosed);   // set closed flag
-
             set_persistence_handle_close_idx(pathHandle);
 
             set_ossfile_file_path(pathHandle, NULL);
+
+            list_item_remove(&gCPOpenFdList, pathHandle); // remove open fd form list
 
             if(remove_ossfile_handle_data(pathHandle) != 1)
             {

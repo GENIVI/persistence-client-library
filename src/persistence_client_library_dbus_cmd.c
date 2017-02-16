@@ -22,6 +22,7 @@
 #include "persistence_client_library_custom_loader.h"
 #include "persistence_client_library_pas_interface.h"
 #include "persistence_client_library_db_access.h"
+#include "persistence_client_library_file.h"
 
 
 #if USE_FILECACHE
@@ -191,7 +192,7 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
 
 void process_prepare_shutdown(int complete)
 {
-   int i = 0, rval = 0;
+   int i = 0;
 
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("prepShtdwn - writing all changed data / closing all handles"));
 
@@ -199,37 +200,26 @@ void process_prepare_shutdown(int complete)
    pers_lock_access();
 
    // flush open files to disk
-   for(i=0; i<MaxPersHandle; i++)
-   {
-      if(gOpenFdArray[i] == FileOpen)
-      {
 
 #if USE_FILECACHE
-         if(complete == Shutdown_Full)
-         {
-         	rval = pfcCloseFile(i);
-         }
-         else if(complete == Shutdown_Partial)
-         {
-         	pfcWriteBackAndSync(i);
-         }
-#else
-         if(complete == Shutdown_Full)
-         {
-         	rval = close(i);
-         }
-         else if(complete == Shutdown_Partial)
-         {
-         	fsync(i);
-         }
-#endif
-         if(rval == -1)
-         {
-         	DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("prepShtdwn - failed close file: "), DLT_STRING(strerror(errno)) );
-         }
-
-      }
+   if(complete == Shutdown_Full)
+   {
+      rval = pfcCloseFile(i);
    }
+   else if(complete == Shutdown_Partial)
+   {
+      pfcWriteBackAndSync(i);
+   }
+#else
+   if(complete == Shutdown_Full)
+   {
+      list_iterate(&gOpenFdList, &pclFileClose);
+   }
+   else if(complete == Shutdown_Partial)
+   {
+      list_iterate(&gOpenFdList, &fsync);
+   }
+#endif
 
    pers_rct_close_all();      // close all opened resource configuration table
 

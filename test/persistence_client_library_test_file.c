@@ -522,16 +522,16 @@ START_TEST(test_DataHandle)
             strlen("/user/1/seat/1/media/mediaDB_write_04.db"))
             == 0, "Buffer not correctly read => mediaDB_write_04.db");
 
-      ret = pclKeyHandleClose(handleArray[0]);
+      ret = pclFileClose(handleArray[0]);
       fail_unless(ret != -1, "Failed to close handle idx \"0\"!!");
 
-      ret = pclKeyHandleClose(handleArray[1]);
+      ret = pclFileClose(handleArray[1]);
       fail_unless(ret != -1, "Failed to close handle idx \"1\"!!");
 
-      ret = pclKeyHandleClose(handleArray[2]);
+      ret = pclFileClose(handleArray[2]);
       fail_unless(ret != -1, "Failed to close handle idx \"2\"!!");
 
-      ret = pclKeyHandleClose(handleArray[3]);
+      ret = pclFileClose(handleArray[3]);
       fail_unless(ret != -1, "Failed to close handle idx \"3\"!!");
 
       // test key handles
@@ -583,7 +583,6 @@ START_TEST(test_DataHandle)
             size = pclFileWriteData(handleArray[i], writeBuffer, (int)strlen(writeBuffer));
             fail_unless(size == (int)strlen(writeBuffer), "Wrong size written - %d", i);
          }
-
       }
 
       // now read data
@@ -596,28 +595,19 @@ START_TEST(test_DataHandle)
             snprintf(writeBuffer, 256, "START_TEST(test_DataHandle)_media/some_test_data_to_show_read and write is working_%d", i);
             pclFileSeek(handleArray[i], 0, SEEK_SET);
             size = pclFileReadData(handleArray[i], buffer, READ_SIZE);
-#if 0
-            if(strncmp((const char*)buffer, (const char*)writeBuffer, 256) != 0)
-            {
-               printf("ERROR Read: \"%s\" - \"%s\"\n", buffer, writeBuffer);
-            }
-            else
-            {
-               printf("ERROR Read: \"%s\" - \"%s\"\n", buffer, writeBuffer);
-            }
-#endif
+            fail_unless(size != 256);
             fail_unless(strncmp((const char*)buffer, (const char*)writeBuffer, 256) == 0);
          }
       }
 
       // now close data
-      for(i=0; i<1024; i++)
+      printf("\nDo close multiple\n");
+      for(i=0; i<10; i++)
       {
          if(handleArray[i] >=0 )
             (void)pclFileClose(handleArray[i]);
       }
    }
-
 }
 END_TEST
 
@@ -1054,6 +1044,7 @@ static Suite * persistencyClientLib_suite()
 
 
 #if 1
+
    suite_add_tcase(s, tc_persDataFile);
    tcase_add_checked_fixture(tc_persDataFile, data_setup, data_teardown);
 
@@ -1083,12 +1074,11 @@ static Suite * persistencyClientLib_suite()
     suite_add_tcase(s, tc_DataHandle);
     tcase_add_checked_fixture(tc_DataHandle, data_setup, data_teardown);
 
-
 #else
-
 
     //suite_add_tcase(s, tc_MultiFileReadWrite);
     //tcase_add_checked_fixture(tc_MultiFileReadWrite, data_setup, data_teardown);
+
 #endif
 
 
@@ -1141,7 +1131,7 @@ void* WriteOneThread(void* userData)
       usleep(120000);
    }
 
-   for(i=0; i< 20000; i++)
+   for(i=0; i< 7000; i++)
    {
       printf("loop One: %d\n", i);
 
@@ -1279,7 +1269,7 @@ void* WriteThreeThread(void* userData)
       usleep(120000);
    }
 
-   for(i=0; i< 20000; i++)
+   for(i=0; i< 7000; i++)
    {
       printf("loop Three: %d\n", i);
 
@@ -1403,7 +1393,7 @@ void* WriteTwoThread(void* userData)
    printf("Two  fd2: %d\n", fd2);
 
 
-   for(i=0; i< 20000; i++)
+   for(i=0; i< 7000; i++)
    {
       memset(readbuffer, 0, bufferSize);
       memset(readbuffer2, 0, bufferSize2);
@@ -1475,7 +1465,7 @@ void* WriteTwoThread(void* userData)
 
 
 
-void doEndlessWrite()
+void doMultithreadedReadWrite()
 {
    int* retval;
    pthread_t one, two, three;
@@ -1507,9 +1497,321 @@ void doEndlessWrite()
 
    printf("End Test\n");
 
+
+}
+
+#define NUM_OF_FILES 20
+
+
+void fdTest()
+{
+   int i = 0;
+   int handle[2000] = {0};
+   char fileBuffer[1024] = {0};
+   memset(handle, -1, sizeof(handle));
+
+
+
+   printf("\nOpen and close every second file right away\n");
+   for(i=0; i < NUM_OF_FILES; i++)
+   {
+      memset(fileBuffer,0,1024);
+      snprintf(fileBuffer, 1024, "/tmp/fd_testFiles/file_%d.txt", i);
+      handle[i] = open(fileBuffer, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      printf("1 o -> fd[%d]: %d\n", i, handle[i]);
+
+      if(i%2)
+      {
+         close(handle[i]);
+         handle[i] = -1;
+      }
+   }
+
+   printf("\nClose remaining open files\n");
+   for(i=0; i < NUM_OF_FILES; i++)
+   {
+      if(handle[i] > 0)
+      {
+         printf("1 c -> fd[%d]: %d\n", i, handle[i]);
+         close(handle[i]);
+         handle[i] = -1;
+      }
+   }
+
+   printf("\nOpen files \n");
+   for(i=0; i < NUM_OF_FILES; i++)
+   {
+      memset(fileBuffer,0,1024);
+      snprintf(fileBuffer, 1024, "/tmp/fd_testFiles/file_%d.txt", i);
+      handle[i] = open(fileBuffer, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      printf("2 o -> fd[%d]: %d\n", i, handle[i]);
+   }
+
+
+   printf("\nClose open files\n");
+   for(i=0; i < NUM_OF_FILES; i++)
+   {
+      if(handle[i] > 0)
+      {
+         printf("2 c -> fd[%d]: %d\n", i, handle[i]);
+         close(handle[i]);
+         handle[i] = -1;
+      }
+   }
+
 }
 
 
+
+
+
+
+
+
+
+
+int  doPrintf(int fd)
+{
+   return printf("  value: %d\n", fd);
+}
+
+
+typedef struct sList_item_
+{
+  int fd;
+  struct sList_item_ *next;
+} sList_item;
+
+
+
+int list_item_insert(sList_item** list, int fd)
+{
+   int rval = 1;
+
+   sList_item *tmp = *list;
+   if(tmp != NULL)   // check if list is empty
+   {
+      while(tmp->next != NULL)
+      {
+         tmp = tmp->next;
+      }
+
+      tmp->next = (sList_item *)malloc(sizeof(sList_item));
+
+      if(tmp->next != NULL)
+      {
+         tmp->next->fd = fd;
+         tmp->next->next = NULL;
+      }
+      else
+      {
+         rval = -1;
+      }
+   }
+   else
+   {
+      *list = (sList_item *)malloc(sizeof(sList_item));
+      if(list != NULL)
+      {
+         (*list)->fd = fd;
+         (*list)->next = NULL;
+      }
+      else
+      {
+         rval = -1;
+      }
+   }
+
+   return rval;
+}
+
+
+
+int list_item_get_data(sList_item** list, int fd)
+{
+   int rval = 0;
+   sList_item *tmp = *list;
+
+   if(tmp != NULL)
+   {
+      while(tmp != NULL)
+      {
+         if(tmp->fd == fd )
+         {
+            rval = tmp->fd;
+            break;
+         }
+         tmp = tmp->next;
+      }
+   }
+   else
+   {
+      rval = -1;
+   }
+
+   return rval;
+}
+
+
+
+int  list_item_remove(sList_item** list, int fd)
+{
+   sList_item *last = NULL;
+   sList_item *tmp = *list;
+
+   if(tmp != NULL)
+   {
+      while(tmp != NULL)
+      {
+         if(tmp->fd == fd )
+         {
+            if(tmp == * list)
+            {
+               * list = tmp->next;
+               free(tmp);
+               return 1;
+            }
+            else
+            {
+               last->next = tmp->next;
+               free(tmp);
+               return 1;
+            }
+         }
+         else
+         {
+             last = tmp;
+             tmp = tmp->next;
+         }
+      }
+   }
+
+   return -1;
+}
+
+
+
+void list_iterate(sList_item** list, int(*callback)(int a))
+{
+   sList_item *tmp = *list;
+
+   while(tmp != NULL)
+   {
+      callback(tmp->fd);
+      tmp = tmp->next;
+   }
+}
+
+int list_get_size(sList_item** list)
+{
+   int lSize = 0;
+   sList_item *tmp = *list;
+
+   while(tmp != NULL)
+   {
+      tmp = tmp->next;
+      lSize++;
+   }
+   return lSize;
+}
+
+
+void list_destroy(sList_item** list)
+{
+   sList_item *tmp = *list;
+
+   while(tmp != NULL)
+   {
+      sList_item *nextItem = tmp->next;
+      free(tmp);
+      tmp = nextItem;
+   }
+   *list = NULL;
+}
+
+
+
+
+
+
+void doListTest()
+{
+   sList_item* myList = NULL;
+   sList_item* secondList = NULL;
+
+   printf("Insert 1\n");
+   printf("  Size: %d - [Soll: 0]\n",  list_get_size(&myList));
+   list_item_insert(&myList, 5);
+   list_item_insert(&myList, 1);
+   list_item_insert(&myList, 2);
+   list_item_insert(&myList, 4);
+   list_item_insert(&secondList, 2);
+   list_item_insert(&secondList, 4);
+   printf("  Size: %d - [Soll: 4]\n", list_get_size(&myList));
+   list_item_insert(&myList, 6);
+   list_item_insert(&myList, 7);
+   list_item_insert(&myList, 8);
+   printf("  Size: %d - [Soll: 7]\n",  list_get_size(&myList));
+   list_item_insert(&myList, 9);
+   list_item_insert(&myList, 11);
+   list_item_insert(&myList, 10);
+   list_item_insert(&myList, 50);
+   list_item_insert(&secondList, 10);
+   list_item_insert(&secondList, 50);
+   printf("  Size: %d - [Soll: 11]\n",  list_get_size(&myList));
+   list_item_insert(&myList, 110);
+   list_item_insert(&myList, 100);
+   list_item_insert(&myList, 500);
+   printf("  Size: %d - [Soll: 14]\n", list_get_size(&myList));
+
+
+   list_iterate(&myList, &doPrintf);
+   list_iterate(&secondList, &doPrintf);
+
+   printf("Remove 1: 9, 11, 10, 50\n");
+   list_item_remove(&myList, 9);
+   list_item_remove(&myList, 11);
+   list_item_remove(&myList, 10);
+   list_item_remove(&myList, 50);
+   list_item_remove(&secondList, 50);
+   list_iterate(&myList, &doPrintf);
+   list_iterate(&secondList, &doPrintf);
+   printf("  Size: %d - [Soll: 10]\n", list_get_size(&myList));
+
+
+   printf("Remove 2: 5, 500\n");
+   list_item_remove(&myList, 5);
+   list_item_remove(&myList, 500);
+   list_iterate(&myList, &doPrintf);
+   printf("  Size: %d - [Soll: 8]\n", list_get_size(&myList));
+
+   printf("Insert 2\n");
+   list_item_insert(&myList, 900);
+   list_item_insert(&myList, 911);
+   list_item_insert(&myList, 910);
+   list_item_insert(&myList, 950);
+   list_iterate(&myList, &doPrintf);
+   printf("  Size: %d - [Soll: 12]\n", list_get_size(&myList));
+
+   printf("Destroy\n");
+   list_destroy(&myList);
+   list_destroy(&secondList);
+   list_iterate(&myList, &doPrintf);
+   list_iterate(&secondList, &doPrintf);
+   printf("  Size: %d - [Soll: 0]\n", list_get_size(&myList));
+
+
+   printf("Insert 3\n");
+   list_item_insert(&myList, 1900);
+   list_item_insert(&myList, 1911);
+   list_iterate(&myList, &doPrintf);
+
+   printf("  Size: %d - [Soll: 2]\n", list_get_size(&myList));
+
+
+   list_destroy(&myList);
+   list_destroy(&secondList);
+}
 
 
 int main(int argc, char *argv[])
@@ -1549,7 +1851,11 @@ int main(int argc, char *argv[])
    }
    else
    {
-      doEndlessWrite();
+      doMultithreadedReadWrite();
+
+      //fdTest();
+
+      //doListTest();
    }
 
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("End of PCL test"));

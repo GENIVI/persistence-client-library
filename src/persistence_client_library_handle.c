@@ -31,29 +31,171 @@ pthread_mutex_t gFileHandleAccessMtx     = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gOssFileHandleAccessMtx  = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t gMtx = PTHREAD_MUTEX_INITIALIZER;
 
+//list maintaining open file file handles
+PersList_item_s* gCPOpenFdList = NULL;
+PersList_item_s* gOpenFdList = NULL;
+
 /// tree to store key handle information
 static jsw_rbtree_t *gKeyHandleTree = NULL;
 
 /// tree to store file handle information
 static jsw_rbtree_t *gFileHandleTree = NULL;
 
-
 static jsw_rbtree_t *gOssFileHandleTree = NULL;
 
-
-
-
-// open file descriptor handle array
-char gOpenFdArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
-// handle array
-char gOpenHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
-
-// handle index
+/// handle index
 static int gHandleIdx = 1;
 /// free handle array
 static int gFreeHandleArray[MaxPersHandle] = { [0 ...MaxPersHandle-1] = 0 };
 /// free handle array head index
 static int gFreeHandleIdxHead = 0;
+
+
+
+int list_item_insert(PersList_item_s** list, int fd)
+{
+   int rval = 1;
+
+   PersList_item_s *tmp = *list;
+   if(tmp != NULL)   // check if list is empty
+   {
+      while(tmp->next != NULL)
+      {
+         tmp = tmp->next;
+      }
+
+      tmp->next = (PersList_item_s*)malloc(sizeof(PersList_item_s));
+
+      if(tmp->next != NULL)
+      {
+         tmp->next->fd = fd;
+         tmp->next->next = NULL;
+      }
+      else
+      {
+         rval = -1;
+      }
+   }
+   else
+   {
+      *list = (PersList_item_s *)malloc(sizeof(PersList_item_s));
+      if(list != NULL)
+      {
+         (*list)->fd = fd;
+         (*list)->next = NULL;
+      }
+      else
+      {
+         rval = -1;
+      }
+   }
+
+   return rval;
+}
+
+
+
+int list_item_get_data(PersList_item_s** list, int fd)
+{
+   int rval = 0;
+   PersList_item_s *tmp = *list;
+
+   if(tmp != NULL)
+   {
+      while(tmp != NULL)
+      {
+         if(tmp->fd == fd )
+         {
+            rval = tmp->fd;
+            break;
+         }
+         tmp = tmp->next;
+      }
+   }
+   else
+   {
+      rval = -1;
+   }
+
+   return rval;
+}
+
+
+
+int  list_item_remove(PersList_item_s** list, int fd)
+{
+   PersList_item_s *last = NULL;
+   PersList_item_s *tmp = *list;
+
+   if(tmp != NULL)
+   {
+      while(tmp != NULL)
+      {
+         if(tmp->fd == fd )
+         {
+            if(tmp == * list)
+            {
+               * list = tmp->next;
+               free(tmp);
+               return 1;
+            }
+            else
+            {
+               last->next = tmp->next;
+               free(tmp);
+               return 1;
+            }
+         }
+         else
+         {
+             last = tmp;
+             tmp = tmp->next;
+         }
+      }
+   }
+
+   return -1;
+}
+
+
+void list_iterate(PersList_item_s** list, int(*callback)(int a))
+{
+   PersList_item_s *tmp = *list;
+
+   while(tmp != NULL)
+   {
+      callback(tmp->fd);
+      tmp = tmp->next;
+   }
+}
+
+
+int list_get_size(PersList_item_s** list)
+{
+   int lSize = 0;
+   PersList_item_s *tmp = *list;
+
+   while(tmp != NULL)
+   {
+      tmp = tmp->next;
+      lSize++;
+   }
+   return lSize;
+}
+
+
+void list_destroy(PersList_item_s** list)
+{
+   PersList_item_s *tmp = *list;
+
+   while(tmp != NULL)
+   {
+      PersList_item_s *nextItem = tmp->next;
+      free(tmp);
+      tmp = nextItem;
+   }
+   *list = NULL;
+}
 
 
 void deleteHandleTrees(void)
@@ -125,8 +267,9 @@ void close_all_persistence_handle()
    {
       // "free" all handles
       memset(gFreeHandleArray, 0, sizeof(gFreeHandleArray));
-      memset(gOpenHandleArray, 0, sizeof(gOpenHandleArray));
-      memset(gOpenFdArray,     0, sizeof(gOpenFdArray));
+
+      list_destroy(&gCPOpenFdList);
+      list_destroy(&gOpenFdList);
 
       // reset variables
       gHandleIdx = 1;

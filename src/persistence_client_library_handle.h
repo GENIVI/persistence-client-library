@@ -22,6 +22,7 @@
 
 #include "persistence_client_library_data_organization.h"
 
+
 /// key handle structure definition
 typedef struct _PersistenceKeyHandle_s
 {
@@ -34,6 +35,15 @@ typedef struct _PersistenceKeyHandle_s
    /// Resource ID
    char resource_id[PERS_DB_MAX_LENGTH_KEY_NAME];
 } PersistenceKeyHandle_s;
+
+
+
+typedef struct _PersList_item_s
+{
+  int fd;
+  struct _PersList_item_s *next;
+} PersList_item_s;
+
 
 
 /// file handle structure definition
@@ -55,11 +65,14 @@ typedef struct _PersistenceFileHandle_s
    char* filePath;
 } PersistenceFileHandle_s;
 
-/// open file descriptor handle array
-extern char gOpenFdArray[MaxPersHandle];
 
-/// handle array
-extern char gOpenHandleArray[MaxPersHandle];
+
+/// list to store open file handles (pclFileCreatePath and pclFileReleasePath)
+extern PersList_item_s* gCPOpenFdList;
+
+/// list to store open file handles
+extern PersList_item_s* gOpenFdList;
+
 
 //----------------------------------------------------------------
 //----------------------------------------------------------------
@@ -356,6 +369,53 @@ int get_ossfile_backup_status(int idx);
  * @param idx the index
  */
 int remove_ossfile_handle_data(int idx);
+
+
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+
+/**
+ * @brief insert a list item at the end of the list
+ *
+ * @param list the list to append the item to
+ * @param fd the file handle
+ */
+int list_item_insert(PersList_item_s** list, int fd);
+
+
+/**
+ * @brief check if a item is in a list
+ *
+ * @param handle of the item
+ * @param fd the file handle
+ */
+int list_item_get_data(PersList_item_s** list, int fd);
+
+
+/**
+ * @brief remove a list item from the given list with the matching handle
+ *
+ * @param list the list to remove the item from
+ * @param fd the file handle
+ */
+int  list_item_remove(PersList_item_s** list, int fd);
+
+
+/**
+ * @brief destroy a list (free all items)
+ *
+ * @param list the list to destroy
+ */
+void list_destroy(PersList_item_s** list);
+
+
+/**
+ * @brief insert a list item at the end of the list
+ *
+ * @param list the list to append the item to
+ * @param fd the file handle
+ */
+void list_iterate(PersList_item_s** list, int(*callback)(int a));
 
 #endif /* PERSISTENCY_CLIENT_LIBRARY_HANDLE_H */
 
