@@ -1,5 +1,5 @@
 /******************************************************************************
- * Project         Persistency
+ * Project         Persistence
  * (c) copyright   2012
  * Company         XS Embedded GmbH
  *****************************************************************************/
@@ -1486,9 +1486,9 @@ END_TEST
 
 
 
-static Suite * persistencyClientLib_suite()
+static Suite * persistenceClientLib_suite()
 {
-   const char* testSuiteName = "Persistency Client Library (Key-API)";
+   const char* testSuiteName = "Persistence Client Library (Key-API)";
 
    Suite * s  = suite_create(testSuiteName);
 
@@ -1713,7 +1713,7 @@ int main(int argc, char *argv[])
    }
    else
    {
-      Suite * s = persistencyClientLib_suite();
+      Suite * s = persistenceClientLib_suite();
       SRunner * sr = srunner_create(s);
       srunner_set_fork_status(sr, CK_NOFORK);
       srunner_set_xml(sr, "/tmp/persistenceClientLibraryTest.xml");
