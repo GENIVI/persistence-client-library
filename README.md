@@ -13,7 +13,7 @@ The client library has the following dependencies
 * build-time library dependencies;
   * automotive-dlt (http://projects.genivi.org/diagnostic-log-trace/)
   * Persistence Common Object (https://github.com/GENIVI/persistence-common-object.git)
-    Add "-- with_database=key-value-store" to the configure step
+    Add "--with_database=key-value-store" to the configure step
     The previous default backend Itzam/C and will not supported anymore.
   * dbus-1
   *  check unit test framework for C used when configured with "--enable-tests"
@@ -75,7 +75,7 @@ Preconditions:
 * Persistence Common Object is available in the system
   * The GENIVI Persistence Common Object is available here:
    http://git.projects.genivi.org/?p=persistence/persistence-common-object.git
-   use the key-value-store backend (run configure step with "-- with_database=key-value-store")
+   use the key-value-store backend (run configure step with "--with_database=key-value-store")
 * Persistence partitions has been created and mounted and test data is
 * If partition and data is not available, use the PAS to setup the test data.
   * make sure node-state-manager and pers_admin_svc are running
