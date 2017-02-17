@@ -28,7 +28,7 @@
  *
  * @param complete The mode: Shutdown_Partial=0; Shutdown_Full=1
  */
-void process_prepare_shutdown(int complete);
+void process_prepare_shutdown(unsigned int complete);
 
 
 /**

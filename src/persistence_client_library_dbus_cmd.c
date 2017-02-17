@@ -66,6 +66,9 @@ void process_reg_notification_signal(DBusConnection* conn, unsigned int notifyLd
    char ruleDeleted[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
    char ruleCreated[DbusMatchRuleSize] = {[0 ... DbusMatchRuleSize-1] = 0};
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("process notification - User:"), DLT_UINT(notifyUserNo), DLT_STRING("- Seat:"), DLT_UINT(notifySeatNo));
+
+
    // add match for  c h a n g e
    snprintf(ruleChanged, DbusMatchRuleSize,
             "type='signal',interface='org.genivi.persistence.adminconsumer',member='PersistenceResChange',path='/org/genivi/persistence/adminconsumer',arg0='%s',arg1='%u',arg2='%u',arg3='%u'",
@@ -107,6 +110,7 @@ void process_send_notification_signal(DBusConnection* conn, unsigned int notifyL
    dbus_bool_t ret;
    DBusMessage* message;
    const char* notifyReasonString = NULL;
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("send notification - User:"), DLT_UINT(notifyUserNo), DLT_STRING("- Seat:"), DLT_UINT(notifySeatNo));
 
    char ldbidArray[DbusSubMatchSize] = {[0 ... DbusSubMatchSize-1] = 0};
    char userArray[DbusSubMatchSize]  = {[0 ... DbusSubMatchSize-1] = 0};
@@ -190,7 +194,7 @@ void process_block_and_write_data_back(unsigned int requestID, unsigned int stat
 
 
 
-void process_prepare_shutdown(int complete)
+void process_prepare_shutdown(unsigned int complete)
 {
    int i = 0;
 
@@ -295,6 +299,8 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
    char* method = NULL;
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendPasReg - Type:"), DLT_INT(regType) );
+
    if(regType == 0)
       method = "UnRegisterPersAdminNotification";
    else if(regType == 1)
@@ -356,6 +362,8 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
    dbus_error_init (&error);
 
    char* method = NULL;
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendLcmReg - Type:"), DLT_INT(regType) );
 
    if(regType == 1)
       method = "RegisterShutdownClient";

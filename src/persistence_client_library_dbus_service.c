@@ -495,7 +495,7 @@ int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int*
 {
    int rval = 1;
 
-   //DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_INT(readData.message.cmd));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop - receive cmd:"), DLT_UINT(readData->cmd));
    switch (readData->cmd)
    {
       case CMD_PAS_BLOCK_AND_WRITE_BACK:
@@ -503,9 +503,21 @@ int dispatchInternalCommand(DBusConnection* conn, MainLoopData_u* readData, int*
          process_send_pas_request(conn,    (unsigned int)readData->params[1] /*request*/,   (int)readData->params[0] /*status*/);
          break;
       case CMD_LC_PREPARE_SHUTDOWN:
-         process_prepare_shutdown(Shutdown_Full);
-         process_send_lifecycle_request(conn, (unsigned int)readData->params[1] /*requestID*/, (unsigned int)readData->params[0] /*status*/);
+      {
+
+         if(readData->params[1] == 0)  // if params[1] == 0, internal shutdown; no need to send lifecycle notification
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop  internal shutdown"), DLT_UINT(readData->cmd));
+            process_prepare_shutdown(readData->params[0]);
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("mainLoop  external shutdown"), DLT_UINT(readData->cmd));
+            process_prepare_shutdown(Shutdown_Full);
+            process_send_lifecycle_request(conn, (unsigned int)readData->params[1] /*requestID*/, (unsigned int)readData->params[0] /*status*/);
+         }
          break;
+      }
       case CMD_SEND_NOTIFY_SIGNAL:
          process_send_notification_signal(conn, (unsigned int)readData->params[0] /*ldbid*/, (unsigned int)readData->params[1], /*user*/
                                                 (unsigned int)readData->params[2] /*seat*/,  (unsigned int)readData->params[3], /*reason*/

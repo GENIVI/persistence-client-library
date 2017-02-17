@@ -451,6 +451,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
 
    if(handle == -1)     // if we are in an inconsistent state: delete file, backup and checksum
    {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("verifyConsist - no recovery possible"));
       (void)remove(origPath);
       (void)remove(backupPath);
       (void)remove(csumPath);

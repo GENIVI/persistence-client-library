@@ -563,16 +563,16 @@ START_TEST(test_DataHandle)
 
       memset(handleArray, -1, 1024);
 
-      for(i=0; i<1024; i++)
+      for(i=0; i<512; i++)
       {
          memset(fileNameBuf,0,1024);
          snprintf(fileNameBuf, 1024, "media/threeAnotherFileTestData.db_%d", i);
          //printf("\n\nOpen - %d\n", i);
-         handleArray[i] = pclFileOpen(PCL_LDBID_LOCAL, fileNameBuf, 4, 12);
+         handleArray[i] = pclFileOpen(PCL_LDBID_LOCAL, fileNameBuf, 4, 77);
       }
 
       // now write data
-      for(i=0; i<1024; i++)
+      for(i=0; i<512; i++)
       {
          if(handleArray[i] >=0 )
          {
@@ -586,7 +586,7 @@ START_TEST(test_DataHandle)
       }
 
       // now read data
-      for(i=0; i<1024; i++)
+      for(i=0; i<512; i++)
       {
          if(handleArray[i] >=0 )
          {
@@ -596,6 +596,7 @@ START_TEST(test_DataHandle)
             pclFileSeek(handleArray[i], 0, SEEK_SET);
             size = pclFileReadData(handleArray[i], buffer, READ_SIZE);
             fail_unless(size != 256);
+            //printf("\n%s - \n%s\n", buffer, writeBuffer);
             fail_unless(strncmp((const char*)buffer, (const char*)writeBuffer, 256) == 0);
          }
       }
@@ -660,9 +661,86 @@ END_TEST
 
 
 
+
+void do_shutdown_sequence(int shutdownReg, unsigned int numOfFiles)
+{
+   char writeBuffer[1024] = {0};
+   char fileNameBuf[1024] = {0};
+   int*  handleArray;
+   int size = 0, i =0;
+   size_t arraySize = (numOfFiles*sizeof(int));
+
+   handleArray = (int*)malloc(arraySize);
+   memset(handleArray, -1, arraySize);
+
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# pclInitLibrary ->"));
+   pclInitLibrary(gTheAppId, shutdownReg);
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# pclInitLibrary <-"));
+
+   for(i=0; i<numOfFiles; i++)
+   {
+     memset(fileNameBuf,0,1024);
+     snprintf(fileNameBuf, 1024, "media/threeAnotherFileTestData.db_%d", i);
+     handleArray[i] = pclFileOpen(PCL_LDBID_LOCAL, fileNameBuf, 4, 12);
+   }
+
+
+   for(i=0; i<numOfFiles; i++)
+   {
+      if(handleArray[i] >=0 )
+      {
+         memset(writeBuffer,0,1024);
+         snprintf(writeBuffer, 1024, "START_TEST(test_DataHandle)_media/some_test_data_to_show_read and write is working_%d_%s", i, gWriteBuffer);
+
+         pclFileSeek(handleArray[i], 0, SEEK_SET);
+         size = pclFileWriteData(handleArray[i], writeBuffer, (int)strlen(writeBuffer));
+         fail_unless(size == (int)strlen(writeBuffer), "Wrong size written - %d", i);
+
+         size = pclFileWriteData(handleArray[i], writeBuffer, (int)strlen(writeBuffer));
+         fail_unless(size == (int)strlen(writeBuffer), "Wrong size written - %d", i);
+
+         size = pclFileWriteData(handleArray[i], writeBuffer, (int)strlen(writeBuffer));
+         fail_unless(size == (int)strlen(writeBuffer), "Wrong size written - %d", i);
+      }
+   }
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# pclLifecycleSet ->"));
+   (void)pclLifecycleSet(PCL_SHUTDOWN);
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# pclLifecycleSet <-"));
+
+   if(shutdownReg != PCL_SHUTDOWN_TYPE_NONE)
+   {
+      // make the NSM to send shutdown notification to registered clients
+      const char* theDbusCommand =
+      "dbus-send --system --print-reply \
+      --dest=org.genivi.NodeStateManager \
+      /org/genivi/NodeStateManager/LifecycleControl \
+      \"org.genivi.NodeStateManager.LifecycleControl.SetNodeState\" \
+      int32:6";
+
+      // notify the NSM to shutdown the system
+      DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# dbus-send: make NSM send shutdown notification"));
+      if(system(theDbusCommand) == -1)
+      {
+         printf("Failed to execute command -> NSM!!\n");
+      }
+   }
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# pclDeinitLibrary ->"));
+   pclDeinitLibrary();
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# pclDeinitLibrary <-"));
+
+   free(handleArray);
+}
+
+
+
 START_TEST(test_InitDeinit)
 {
-   int i = 0, rval = -1, handle = 0;
+
+   int i = 0;
+   int handle = 0, rval = -1;
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
 
    for(i=0; i<5; i++)
@@ -721,6 +799,15 @@ START_TEST(test_InitDeinit)
    rval = pclLifecycleSet(PCL_SHUTDOWN_CANCEL);
 
    pclDeinitLibrary();
+
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# do_shutdown_sequence - PCL_SHUTDOWN_TYPE_NONE ->"));
+   do_shutdown_sequence(PCL_SHUTDOWN_TYPE_NONE, 100);
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# do_shutdown_sequence <-"));
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# do_shutdown_sequence - PCL_SHUTDOWN_TYPE_NORMAL ->"));
+   do_shutdown_sequence(PCL_SHUTDOWN_TYPE_NORMAL, 400);
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("# do_shutdown_sequence <-"));
 }
 END_TEST
 
@@ -1069,12 +1156,15 @@ static Suite * persistencyClientLib_suite()
     suite_add_tcase(s, tc_FileTest);
     tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
 
-    suite_add_tcase(s, tc_InitDeinit);
-
     suite_add_tcase(s, tc_DataHandle);
     tcase_add_checked_fixture(tc_DataHandle, data_setup, data_teardown);
 
+
+
+    suite_add_tcase(s, tc_InitDeinit);    // I M P O R T A N T: this needs to be the last test, as this tests ends NSM
+
 #else
+
 
     //suite_add_tcase(s, tc_MultiFileReadWrite);
     //tcase_add_checked_fixture(tc_MultiFileReadWrite, data_setup, data_teardown);
@@ -1500,76 +1590,6 @@ void doMultithreadedReadWrite()
 
 }
 
-#define NUM_OF_FILES 20
-
-
-void fdTest()
-{
-   int i = 0;
-   int handle[2000] = {0};
-   char fileBuffer[1024] = {0};
-   memset(handle, -1, sizeof(handle));
-
-
-
-   printf("\nOpen and close every second file right away\n");
-   for(i=0; i < NUM_OF_FILES; i++)
-   {
-      memset(fileBuffer,0,1024);
-      snprintf(fileBuffer, 1024, "/tmp/fd_testFiles/file_%d.txt", i);
-      handle[i] = open(fileBuffer, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-      printf("1 o -> fd[%d]: %d\n", i, handle[i]);
-
-      if(i%2)
-      {
-         close(handle[i]);
-         handle[i] = -1;
-      }
-   }
-
-   printf("\nClose remaining open files\n");
-   for(i=0; i < NUM_OF_FILES; i++)
-   {
-      if(handle[i] > 0)
-      {
-         printf("1 c -> fd[%d]: %d\n", i, handle[i]);
-         close(handle[i]);
-         handle[i] = -1;
-      }
-   }
-
-   printf("\nOpen files \n");
-   for(i=0; i < NUM_OF_FILES; i++)
-   {
-      memset(fileBuffer,0,1024);
-      snprintf(fileBuffer, 1024, "/tmp/fd_testFiles/file_%d.txt", i);
-      handle[i] = open(fileBuffer, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-      printf("2 o -> fd[%d]: %d\n", i, handle[i]);
-   }
-
-
-   printf("\nClose open files\n");
-   for(i=0; i < NUM_OF_FILES; i++)
-   {
-      if(handle[i] > 0)
-      {
-         printf("2 c -> fd[%d]: %d\n", i, handle[i]);
-         close(handle[i]);
-         handle[i] = -1;
-      }
-   }
-
-}
-
-
-
-
-
-
-
-
-
-
 int  doPrintf(int fd)
 {
    return printf("  value: %d\n", fd);
@@ -1835,27 +1855,34 @@ int main(int argc, char *argv[])
 
    if(argc == 1)
    {
+      printf("R U N  T E S T S\n");
       Suite * s = persistencyClientLib_suite();
       SRunner * sr = srunner_create(s);
-      srunner_set_fork_status(sr, CK_NOFORK);
-
       srunner_set_xml(sr, "/tmp/persistenceClientLibraryTestFile.xml");
       srunner_set_log(sr, "/tmp/persistenceClientLibraryTestFile.log");
 
+      srunner_set_fork_status(sr, CK_NOFORK);
 
       srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
 
-      nr_failed = srunner_ntests_failed(sr);
-      srunner_ntests_run(sr);
+      //nr_failed = srunner_ntests_failed(sr);
+      //srunner_ntests_run(sr);
       srunner_free(sr);
    }
    else
    {
-      doMultithreadedReadWrite();
-
-      //fdTest();
-
-      //doListTest();
+      switch(atoi(argv[1]))
+      {
+      case 0:
+         doMultithreadedReadWrite();
+         break;
+      case 1:
+         doListTest();
+         break;
+      default:
+         printf("invalid parameter\n");
+         break;
+      }
    }
 
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("End of PCL test"));

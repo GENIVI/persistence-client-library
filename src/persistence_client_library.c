@@ -363,10 +363,6 @@ static int private_pclDeinitLibrary(void)
 
    MainLoopData_u data;
 
-   memset(&data, 0, sizeof(MainLoopData_u));
-   data.cmd = (uint32_t)CMD_QUIT;
-   data.string[0] = '\0';  // no string parameter, set to 0
-
    if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)  // unregister for lifecycle dbus messages
    {
       rval = unregister_lifecycle(gShutdownMode);
@@ -384,15 +380,25 @@ static int private_pclDeinitLibrary(void)
    }
 #endif
 
-   process_prepare_shutdown(Shutdown_Full);           // close all db's and fd's and block access
+   memset(&data, 0, sizeof(MainLoopData_u));
+   data.cmd = (uint32_t)CMD_LC_PREPARE_SHUTDOWN;
+   data.params[0] = Shutdown_Full;        // shutdown full
+   data.params[1] = 0;                    // internal prepare shutdown
+   data.string[0] = '\0';                 // no string parameter, set to 0
+   deliverToMainloop_NM(&data);           // send quit command to dbus mainloop
+
+
+   memset(&data, 0, sizeof(MainLoopData_u));
+   data.cmd = (uint32_t)CMD_QUIT;
+   data.string[0] = '\0';           // no string parameter, set to 0
 
    deliverToMainloop_NM(&data);                       // send quit command to dbus mainloop
+
+   pthread_join(gMainLoopThread, (void**)&retval);    // wait until the dbus mainloop has ended
 
    deleteHandleTrees();                               // delete allocated trees
    deleteBackupTree();
    deleteNotifyTree();
-
-   pthread_join(gMainLoopThread, (void**)&retval);    // wait until the dbus mainloop has ended
 
    pthread_mutex_unlock(&gDbusPendingRegMtx);
 
@@ -413,8 +419,17 @@ int pclLifecycleSet(int shutdown)
    {
       if(shutdown == PCL_SHUTDOWN)
       {
+         MainLoopData_u data;
+
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("lifecycleSet - PCL_SHUTDOWN -"), DLT_STRING(gAppId));
-         process_prepare_shutdown(Shutdown_Partial);
+
+         memset(&data, 0, sizeof(MainLoopData_u));
+         data.cmd = (uint32_t)CMD_LC_PREPARE_SHUTDOWN;
+         data.params[0] = Shutdown_Partial;     // shutdown partial
+         data.params[1] = 0;                    // internal prepare shutdown
+         data.string[0] = '\0';                 // no string parameter, set to 0
+         deliverToMainloop_NM(&data);           // send quit command to dbus mainloop
+
          gCancelCounter++;
       }
       else if(shutdown == PCL_SHUTDOWN_CANCEL)
@@ -436,6 +451,7 @@ int pclLifecycleSet(int shutdown)
    }
    else
    {
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("lifecycleSet - not allowed, type not PCL_SHUTDOWN_TYPE_NONE"));
       rval = EPERS_SHUTDOWN_NO_PERMIT;
    }
 
