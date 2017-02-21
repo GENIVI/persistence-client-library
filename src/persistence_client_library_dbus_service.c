@@ -29,15 +29,16 @@
 DLT_IMPORT_CONTEXT(gPclDLTContext);
 
 pthread_mutex_t gDbusPendingRegMtx   = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_mutex_t gDeliverpMtx         = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  gDbusPendingCond     = PTHREAD_COND_INITIALIZER;
+int gDbusPendingCondValue            = 0;
 
 pthread_mutex_t gMainCondMtx         = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  gMainLoopCond        = PTHREAD_COND_INITIALIZER;
+int gMainLoopCondValue               = 0;
+
+pthread_mutex_t gDeliverpMtx         = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_t gMainLoopThread;
-
-int gMainLoopCondValue = 0;
 
 const char* gDbusLcConsDest    = "org.genivi.NodeStateManager";
 
@@ -46,6 +47,7 @@ const char* gDbusLcConsPath    = "/org/genivi/NodeStateManager/LifeCycleConsumer
 const char* gDbusLcInterface   = "org.genivi.NodeStateManager.Consumer";
 const char* gDbusLcCons        = "/org/genivi/NodeStateManager/Consumer";
 const char* gDbusLcConsMsg     = "LifecycleRequest";
+
 
 const char* gDbusPersAdminConsInterface = "org.genivi.persistence.adminconsumer";
 const char* gPersAdminConsumerPath      = "/org/genivi/persistence/adminconsumer";
@@ -103,10 +105,54 @@ static void unregisterMessageHandler(DBusConnection *connection, void *user_data
 }
 
 
+#if USE_PASINTERFACE
+
+void* doSendPasRegister(void *data)
+{
+   long rval = 0;
+
+   rval = (long)register_pers_admin_service();  // register to PAS
+
+   return (void*)rval;
+}
+
+void* registerToPas(void* data)
+{
+   pthread_t thread;
+   long* retval = NULL;
+
+   // create send thread in order to wait until registration succeeded
+   pthread_create(&thread, NULL, doSendPasRegister, NULL);
+
+   // wait untill registration has finished
+   pthread_join(thread, (void**)&retval);
+
+   if((long)retval == -1)
+   {
+      //printf("==> PAS Appeared - register failed\n");
+      DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("NameOwnerChanged - Failed reg to PAS dbus interface"));
+   }
+   else
+   {
+      //printf("==> PAS Appeared - register success\n");
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("NameOwnerChanged - Successfully established IPC protocol for PCL."));
+      gPasRegistered = 1;   // remember registration to PAS
+   }
+
+   return NULL;
+}
+
+#endif
+
+
+
 /* catches messages not directed to any registered object path ("garbage collector") */
 static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connection, DBusMessage * message, void * user_data)
 {
    DBusHandlerResult result = DBUS_HANDLER_RESULT_HANDLED;
+   DBusError error;
+   DBusMessage *reply;
+   dbus_error_init (&error);
    (void)user_data;
 
    if((0==strcmp(gDbusPersAdminConsInterface, dbus_message_get_interface(message))))
@@ -134,9 +180,6 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
 
          if(validMessage == 1)
          {
-            DBusError error;
-            DBusMessage *reply;
-            dbus_error_init (&error);
             char *ldbid, *user_no, *seat_no;
 
             if (!dbus_message_get_args(message, &error, DBUS_TYPE_STRING, &notifyStruct.resource_id,
@@ -157,7 +200,7 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
                   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - DBus No mem"), DLT_STRING(dbus_message_get_interface(message)) );
                }
 
-               result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;;
+               result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
                dbus_message_unref(reply);
             }
             else
@@ -178,7 +221,87 @@ static DBusHandlerResult handleObjectPathMessageFallback(DBusConnection * connec
             }
             dbus_connection_flush(connection);
          }
+         else
+         {
+            result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+         }
       }
+      else
+      {
+         result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+      }
+   }
+#if USE_PASINTERFACE
+   else if((0==strcmp("org.freedesktop.DBus", dbus_message_get_interface(message))))
+   {
+      if(dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_SIGNAL)
+      {
+         if((0==strcmp("NameOwnerChanged", dbus_message_get_member(message))))
+         {
+            char* dbusname = NULL;
+            char* new_owner = NULL;
+            char* old_owner = NULL;
+
+            if(!dbus_message_get_args(message, &error, DBUS_TYPE_STRING, &dbusname,
+                                                       DBUS_TYPE_STRING, &new_owner,
+                                                       DBUS_TYPE_STRING, &old_owner,
+                                                       DBUS_TYPE_INVALID))
+            {
+               reply = dbus_message_new_error(message, error.name, error.message);
+
+               if(reply == 0)
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - DBus No mem"), DLT_STRING(dbus_message_get_interface(message)) );
+               }
+
+               if(!dbus_connection_send(connection, reply, 0))
+               {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("handleObjPathMsgFback - DBus No mem"), DLT_STRING(dbus_message_get_interface(message)) );
+               }
+
+               result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+               dbus_message_unref(reply);
+            }
+            else
+            {
+               if(0==strcmp(gDbusPersAdminInterface, dbusname)) // listen when PAS becomes available/unavailable
+               {
+                  if(new_owner != NULL)
+                  {
+                    if(new_owner[0] == '\0')
+                    {
+                       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("NameOwnerChanged - PAS service appeared"));
+                       if(gPasRegistered == 0)
+                       {
+                          pthread_t thread;
+                          // create register thread to prevent blocking of mainloop until registration has finished
+                          pthread_create(&thread, NULL, registerToPas, NULL);
+                       }
+                    }
+                  }
+
+                  if(old_owner != NULL)
+                  {
+                    if(old_owner[0] == '\0')
+                    {
+                       printf("PAS Disappeared\n");
+                       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("NameOwnerChanged - PAS service disappeared"));
+                       gPasRegistered = 0;   // just remember not PAS disappeared, no ned to unregister as service is not available anymore
+                    }
+                  }
+               }
+            }
+         }
+         else
+         {
+            result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+         }
+      }
+   }
+#endif
+   else
+   {
+      result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
    return result;
 }
@@ -412,11 +535,11 @@ int setup_dbus_mainloop(void)
    else
    {
       // persistence administrator message
-      const struct DBusObjectPathVTable vtablePersAdmin = {unregisterMessageHandler, checkPersAdminMsg, NULL, NULL, NULL, NULL};
+      static const struct DBusObjectPathVTable vtablePersAdmin = {unregisterMessageHandler, checkPersAdminMsg, NULL, NULL, NULL, NULL};
       // lifecycle message
-      const struct DBusObjectPathVTable vtableLifecycle = {unregisterMessageHandler, checkLifecycleMsg, NULL, NULL, NULL, NULL};
+      static const struct DBusObjectPathVTable vtableLifecycle = {unregisterMessageHandler, checkLifecycleMsg, NULL, NULL, NULL, NULL};
       // fallback
-      const struct DBusObjectPathVTable vtableFallback  = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, NULL, NULL, NULL};
+      static const struct DBusObjectPathVTable vtableFallback  = {unregisterObjectPathFallback, handleObjectPathMessageFallback, NULL, NULL, NULL, NULL};
 
 #if USE_PASINTERFACE != 1
       (void)vtablePersAdmin;
@@ -428,6 +551,9 @@ int setup_dbus_mainloop(void)
       gPollInfo.fds[0].events = POLLIN;
 
       dbus_bus_add_match(conn, "type='signal',interface='org.genivi.persistence.admin',member='PersistenceModeChanged',path='/org/genivi/persistence/admin'", &err);
+#if USE_PASINTERFACE
+      dbus_bus_add_match(conn, "type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',path='/org/freedesktop/DBus'", &err);
+#endif
 
       // register for messages
       if (   (TRUE==dbus_connection_register_object_path(conn, gDbusLcConsPath, &vtableLifecycle, conn))
@@ -670,12 +796,10 @@ int deliverToMainloop(MainLoopData_u* payload)
    pthread_mutex_lock(&gDeliverpMtx);     // make sure  deliverToMainloop will be used exclusively
    rval = deliverToMainloop_NM(payload);
 
-
    pthread_mutex_lock(&gMainCondMtx);     // mutex needed for pthread condition used to wait on other thread (mainloop)
    while(0 == gMainLoopCondValue)
       pthread_cond_wait(&gMainLoopCond, &gMainCondMtx);
    pthread_mutex_unlock(&gMainCondMtx);
-
 
    gMainLoopCondValue = 0;
    pthread_mutex_unlock(&gDeliverpMtx);

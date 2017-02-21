@@ -65,6 +65,9 @@ typedef struct MainLoopData_u_{
 
 /// dbus pending mutex => visibility "hidden" to prevent the use outside the library
 extern pthread_mutex_t gDbusPendingRegMtx __attribute__ ((visibility ("hidden")));
+extern pthread_cond_t  gDbusPendingCond;
+extern int gDbusPendingCondValue;
+
 /// dbus mainloop conditional variable => visibility "hidden" to prevent the use outside the library
 extern pthread_mutex_t gMainCondMtx __attribute__ ((visibility ("hidden")));
 /// dbus mainloop mutex => visibility "hidden" to prevent the use outside the library

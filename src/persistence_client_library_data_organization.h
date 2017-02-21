@@ -280,6 +280,10 @@ extern unsigned int gPclInitCounter __attribute__ ((visibility ("hidden")));
 extern int gDbusPendingRvalue __attribute__ ((visibility ("hidden")));
 
 
+/// flag to indicate if PCL has registered to PAS
+extern int gPasRegistered;
+
+
 /**
  * @brief definition of change callback function
  *

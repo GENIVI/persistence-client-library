@@ -457,11 +457,15 @@ void msg_pending_func(DBusPendingCall *call, void *data)
    DBusError err;
    dbus_error_init(&err);
 
+   DBusMessage *message = NULL;
+
    (void)data;
 
-   DBusMessage *message = dbus_pending_call_steal_reply(call);
+   pthread_mutex_lock(&gDbusPendingRegMtx);
 
-   if (dbus_set_error_from_message(&err, message))
+   message = dbus_pending_call_steal_reply(call);
+
+   if(dbus_set_error_from_message(&err, message))
    {
       DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgPendFunc - Access denied") );
    }
@@ -472,8 +476,12 @@ void msg_pending_func(DBusPendingCall *call, void *data)
    }
 
    gDbusPendingRvalue = replyArg;   // set the return value
-   dbus_message_unref(message);
+
+   gDbusPendingCondValue = 1;
+   pthread_cond_signal(&gDbusPendingCond);
 
    // unlock the mutex because we have received the reply to the dbus message
    pthread_mutex_unlock(&gDbusPendingRegMtx);
+
+   dbus_message_unref(message);
 }

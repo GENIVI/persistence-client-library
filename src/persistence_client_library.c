@@ -238,82 +238,69 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    int rval = 1;
    char blacklistPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
-   int lock =  pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
 
-   if(lock == 0)
-   {
-      gShutdownMode = shutdownMode;
+
+   gShutdownMode = shutdownMode;
 
 #if USE_APPCHECK
-      doInitAppcheck(appName);      // check if we have a trusted application
+   doInitAppcheck(appName);      // check if we have a trusted application
 #endif
 
 
 #if USE_FILECACHE
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
-      pfcInitCache(appName);
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
+   pfcInitCache(appName);
 #endif
 
-      // Assemble backup blacklist path
-      snprintf(blacklistPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
+   // Assemble backup blacklist path
+   snprintf(blacklistPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
 
-      if(readBlacklistConfigFile(blacklistPath) == -1)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - Err access blacklist:"), DLT_STRING(blacklistPath));
-      }
+   if(readBlacklistConfigFile(blacklistPath) == -1)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - Err access blacklist:"), DLT_STRING(blacklistPath));
+   }
 
-      if(setup_dbus_mainloop() == -1)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed to setup main loop"));
-        pthread_mutex_unlock(&gDbusPendingRegMtx);
-        return EPERS_DBUS_MAINLOOP;
-      }
+   if(setup_dbus_mainloop() == -1)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed to setup main loop"));
+     return EPERS_DBUS_MAINLOOP;
+   }
 
-      if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
-      {
-        if(register_lifecycle(shutdownMode) == -1) // register for lifecycle dbus messages
-        {
-          DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary => Failed reg to LC dbus interface"));
-          pthread_mutex_unlock(&gDbusPendingRegMtx);
-          return EPERS_REGISTER_LIFECYCLE;
-        }
-      }
+
+   if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
+   {
+     if(register_lifecycle(shutdownMode) == -1) // register for lifecycle dbus messages
+     {
+       DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("initLibrary => Failed reg to LC dbus interface"));
+     }
+   }
 #if USE_PASINTERFACE
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
-      if(register_pers_admin_service() == -1)
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed reg to PAS dbus interface"));
-        pthread_mutex_unlock(&gDbusPendingRegMtx);
-        return EPERS_REGISTER_ADMIN;
-      }
-      else
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("initLibrary - Successfully established IPC protocol for PCL."));
-      }
-#else
-      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
-#endif
-
-      if((rval = load_custom_plugins(customAsyncInitClbk)) < 0)      // load custom plugins
-      {
-        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
-        pthread_mutex_unlock(&gDbusPendingRegMtx);
-        return rval;
-      }
-
-      init_key_handle_array();
-
-      pers_unlock_access();
-
-      strncpy(gAppId, appName, PERS_RCT_MAX_LENGTH_RESPONSIBLE);  // assign application name
-      gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = '\0';
-
-      pthread_mutex_unlock(&gDbusPendingRegMtx);
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
+   if(register_pers_admin_service() == -1)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("initLibrary - Failed reg to PAS dbus interface"));
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("private_pclInitLibrary - mutex lock failed:"), DLT_INT(lock));
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("initLibrary - Successfully established IPC protocol for PCL."));
+     gPasRegistered = 1;   // remember registration to PAS
    }
+#else
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
+#endif
+
+   if((rval = load_custom_plugins(customAsyncInitClbk)) < 0)      // load custom plugins
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to load custom plugins"));
+     return rval;
+   }
+
+   init_key_handle_array();
+
+   strncpy(gAppId, appName, PERS_RCT_MAX_LENGTH_RESPONSIBLE);  // assign application name
+   gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = '\0';
+
+   pers_unlock_access();
 
    return rval;
 }
@@ -371,12 +358,13 @@ static int private_pclDeinitLibrary(void)
 #if USE_PASINTERFACE == 1
    rval = unregister_pers_admin_service();
    if(0 != rval)
- {
-   DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Err to de-initialize IPC protocol for PCL."));
- }
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclDeinitLibrary - Err to de-initialize IPC protocol for PCL."));
+   }
    else
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Succ de-initialized IPC protocol for PCL."));
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("pclDeinitLibrary - Succ de-initialized IPC protocol for PCL."));
+      gPasRegistered = 0;
    }
 #endif
 
@@ -399,8 +387,6 @@ static int private_pclDeinitLibrary(void)
    deleteHandleTrees();                               // delete allocated trees
    deleteBackupTree();
    deleteNotifyTree();
-
-   pthread_mutex_unlock(&gDbusPendingRegMtx);
 
 #if USE_FILECACHE
    pfcDeinitCache();

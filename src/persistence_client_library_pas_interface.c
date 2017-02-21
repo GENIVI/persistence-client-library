@@ -191,13 +191,21 @@ int register_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(&data))
    {
-    DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regPas - failed write pipe"), DLT_INT(errno));
-    rval = -1;
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("regPas - failed write pipe"), DLT_INT(errno));
+      rval = -1;
    }
    else
    {
-      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+      pthread_mutex_lock(&gDbusPendingRegMtx);
+      while(0 == gDbusPendingCondValue)
+      {
+         pthread_cond_wait(&gDbusPendingCond, &gDbusPendingRegMtx);
+      }
+      pthread_mutex_unlock(&gDbusPendingRegMtx);
+
+      gDbusPendingCondValue = 0;
       rval = gDbusPendingRvalue;
+
    }
    return rval;
 }
@@ -218,13 +226,19 @@ int unregister_pers_admin_service(void)
 
    if(-1 == deliverToMainloop(&data))
    {
-     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("unregPas - failed write pipe"), DLT_INT(errno));
-     rval = -1;
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("unregPas - failed write pipe"), DLT_INT(errno));
+      rval = -1;
    }
    else
    {
-      pthread_mutex_lock(&gDbusPendingRegMtx);   // block until pending received
+      pthread_mutex_lock(&gDbusPendingRegMtx);
+      while(0 == gDbusPendingCondValue)
+         pthread_cond_wait(&gDbusPendingCond, &gDbusPendingRegMtx);
+      pthread_mutex_unlock(&gDbusPendingRegMtx);
+
+      gDbusPendingCondValue = 0;
       rval = gDbusPendingRvalue;
+
    }
    return rval;
 }
