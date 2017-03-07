@@ -267,6 +267,11 @@ const char* getSharedPublicWtPathKey(void);
  */
 const char* getLocalCacheFilePath(void);
 
+/// file descriptor used to call syncfs to commit buffer cache to disk
+extern int gSyncFd;
+
+/// flag to didicate if the lib is used by the NodeStateManager (appid)
+extern int gIsNodeStateManager;
 
 
 /// application id

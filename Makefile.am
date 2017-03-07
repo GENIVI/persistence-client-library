@@ -11,6 +11,7 @@ endif
 
 # Write the config file for customer plugins to the config destination 
 sysconf_DATA = config/pclCustomLibConfigFile.cfg \
+               config/pclCustomLibConfigFileTest.cfg \
                config/pclCustomLibConfigFileEmpty.cfg \
                config/pclCustomLibConfigFileWrongDefault.cfg
 
@@ -22,5 +23,5 @@ pkgconfig_DATA=persistence_client_library.pc
 
 MAINTAINERCLEANFILES = \
       Makefile.in aclocal.m4 compile config.guess config.h.in config.sub \
-      configure depcomp install-sh ltmain.sh persistence_client_library.pc config/pclCustomLibConfigFile.cfg \
+      configure depcomp install-sh ltmain.sh persistence_client_library.pc config/pclCustomLibConfigFile.cfg config/pclCustomLibConfigFileTest.cfg\
       config/pclCustomLibConfigFileEmpty.cfg config/pclCustomLibConfigFileWrongDefault.cfg config.h.in~ Makefile missing

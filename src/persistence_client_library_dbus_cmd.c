@@ -249,7 +249,8 @@ void process_prepare_shutdown(unsigned int complete)
 		}
    }
 
-   sync();  // finally make sure data will be written back to the memory device.s
+   if(gIsNodeStateManager == 0)
+      syncfs(gSyncFd);  // finally make sure to commit buffer cache to disk
 }
 
 

@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 	{
 	   printf("Application name: %s\n", appName);
 
-	   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+	   int shutdownReg = PCL_SHUTDOWN_TYPE_NONE;
 	   (void)pclInitLibrary(appName, shutdownReg);
 
       switch(opMode)
@@ -434,6 +434,8 @@ int main(int argc, char *argv[])
       if(fileName != NULL)
          free(fileName);
 
+
+      pclLifecycleSet(PCL_SHUTDOWN);
 
       pclDeinitLibrary();
 	}

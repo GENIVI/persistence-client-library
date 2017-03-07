@@ -92,14 +92,6 @@ void data_setup_browser(void)
 }
 
 
-void data_setup_norct(void)
-{
-   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
-
-   (void)pclInitLibrary("norct", shutdownReg);
-}
-
-
 void data_teardown(void)
 {
    pclDeinitLibrary();
@@ -1834,6 +1826,17 @@ void doListTest()
 }
 
 
+void doPclInitTest()
+{
+   int rval = pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NORMAL);
+
+   printf("Wait until a key has been pressed - return: %d\n", rval);
+   getchar();
+
+
+   pclDeinitLibrary();
+}
+
 int main(int argc, char *argv[])
 {
    int nr_failed = 0;
@@ -1878,6 +1881,9 @@ int main(int argc, char *argv[])
          break;
       case 1:
          doListTest();
+         break;
+      case 2:
+         doPclInitTest();
          break;
       default:
          printf("invalid parameter\n");

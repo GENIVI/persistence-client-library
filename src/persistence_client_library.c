@@ -54,11 +54,19 @@ static int gCancelCounter = 0;
 static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /// name of the backup blacklist file (contains all the files which are excluded from backup creation)
-const char* gBackupFilename = "BackupFileList.info";
+static const char* gBackupFilename = "BackupFileList.info";
+
+static const char* gNsmAppId = "NodeStateManager";
+
+static char gAppFolder[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+
 
 #if USE_APPCHECK
 /// global flag
 static int gAppCheckFlag = -1;
+
+static char gRctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+
 #endif
 
 int customAsyncInitClbk(int errcode)
@@ -80,11 +88,11 @@ static int private_pclDeinitLibrary(void);
 #if USE_APPCHECK
 static void doInitAppcheck(const char* appName)
 {
+   // no need for NULL ptr check for appName, already done in calling function
 
-   char rctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
-   snprintf(rctFilename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), appName, plugin_gResTableCfg);
+   snprintf(gRctFilename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), appName, plugin_gResTableCfg);
 
-   if(access(rctFilename, F_OK) == 0)
+   if(access(gRctFilename, F_OK) == 0)
    {
       gAppCheckFlag = 1;   // "trusted" application
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - app check: "), DLT_STRING(appName), DLT_STRING("trusted app"));
@@ -105,9 +113,7 @@ int doAppcheck(void)
 
    if(gAppCheckFlag != 1)
    {
-      char rctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
-      snprintf(rctFilename, PERS_ORG_MAX_LENGTH_PATH_FILENAME, getLocalWtPathKey(), gAppId, plugin_gResTableCfg);
-      if(access(rctFilename, F_OK) == 0)
+      if(access(gRctFilename, F_OK) == 0)
       {
          gAppCheckFlag = 1;   // "trusted" application
       }
@@ -204,26 +210,35 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    int lock = pthread_mutex_lock(&gInitMutex);
    if(lock == 0)
    {
-      if(gPclInitCounter == 0)
+      if(appName != NULL)
       {
-         DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Ctx for PCL Logging");
+         if(gPclInitCounter == 0)
+         {
+            DLT_REGISTER_CONTEXT(gPclDLTContext,"PCL","Ctx for PCL Logging");
 
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => App:"), DLT_STRING(appName),
-                                 DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => App:"), DLT_STRING(appName),
+                                    DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter) );
 
-         // do check if there are remaining shared memory and semaphores for local app
-         checkLocalArtefacts("/dev/shm/", appName);
-         //checkGroupArtefacts("/dev/shm", "group_");
+            // do check if there are remaining shared memory and semaphores for local app
+            checkLocalArtefacts("/dev/shm/", appName);
+            //checkGroupArtefacts("/dev/shm", "group_");
 
-         rval = private_pclInitLibrary(appName, shutdownMode);
+            rval = private_pclInitLibrary(appName, shutdownMode);
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - App:"), DLT_STRING(gAppId),
+                                                  DLT_STRING("- ONLY INCREMENT init counter: "), DLT_UINT(gPclInitCounter) );
+         }
+
+         gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - App:"), DLT_STRING(gAppId),
-                                               DLT_STRING("- ONLY INCREMENT init counter: "), DLT_UINT(gPclInitCounter) );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - appName NULL"));
+         rval = EPERS_COMMON;
       }
 
-      gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
       pthread_mutex_unlock(&gInitMutex);
    }
    else
@@ -236,16 +251,36 @@ int pclInitLibrary(const char* appName, int shutdownMode)
 
 static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
-   int rval = 1;
-   char blacklistPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
+   // no need for NULL ptr check for appName, already done in calling function
 
+   int rval = 1;
+
+   char blacklistPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
    gShutdownMode = shutdownMode;
 
-#if USE_APPCHECK
-   doInitAppcheck(appName);      // check if we have a trusted application
-#endif
+   strncpy(gAppId, appName, PERS_RCT_MAX_LENGTH_RESPONSIBLE);  // assign application name
+   gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = '\0';
 
+   if(strcmp(appName, gNsmAppId)  != 0)   // check for NodeStateManager
+   {
+      // get and fd to the app folder, needed to call syncfs when cmd CMD_LC_PREPARE_SHUTDOWN is called
+      // (commit buffer cache to disk)
+      // only if not NSM ==> if NSM ha an handle to the folder, it may interfere with PAS installation sequence
+      memset(gAppFolder, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1);
+      snprintf(gAppFolder, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "/Data/mnt-c/%s/", appName);
+      gAppFolder[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0';
+
+      gSyncFd = open(gAppFolder, O_RDONLY);
+      if(gSyncFd == -1)
+      {
+         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("Failed to open syncfd:"), DLT_STRING(strerror(errno)));
+      }
+   }
+   else
+   {
+      gIsNodeStateManager = 1;
+   }
 
 #if USE_FILECACHE
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
@@ -265,7 +300,6 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed to setup main loop"));
      return EPERS_DBUS_MAINLOOP;
    }
-
 
    if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
    {
@@ -297,8 +331,9 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 
    init_key_handle_array();
 
-   strncpy(gAppId, appName, PERS_RCT_MAX_LENGTH_RESPONSIBLE);  // assign application name
-   gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = '\0';
+#if USE_APPCHECK
+   doInitAppcheck(appName);      // check if we have a trusted application
+#endif
 
    pers_unlock_access();
 
@@ -391,6 +426,9 @@ static int private_pclDeinitLibrary(void)
 #if USE_FILECACHE
    pfcDeinitCache();
 #endif
+
+   if(gIsNodeStateManager == 0)
+      close(gSyncFd);
 
    return rval;
 }

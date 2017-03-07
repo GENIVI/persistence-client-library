@@ -80,6 +80,10 @@ void run_concurrency_test();
 void data_setup(void)
 {
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   setenv(envVariable, "/etc/pclCustomLibConfigFileTest.cfg", 1);
+
    (void)pclInitLibrary(gTheAppId, shutdownReg);
 }
 
@@ -805,6 +809,11 @@ START_TEST(test_InitDeinit)
 
    pclDeinitLibrary();
 
+   pclInitLibrary("NodeStateManager", PCL_SHUTDOWN_TYPE_NONE);
+
+   pclDeinitLibrary();
+
+
 }
 END_TEST
 
@@ -1158,7 +1167,13 @@ START_TEST(test_NoRct)
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_NoRct"));
 
    ret = pclKeyWriteData(PCL_LDBID_LOCAL, "someResourceId", 0, 0, (unsigned char*)writeBuffer, (int)strlen(writeBuffer));
+
+#if USE_APPCHECK
+   fail_unless(ret == EPERS_SHUTDOWN_NO_TRUSTED, "Shutdown is trusted, but should not");
+#else
    fail_unless(ret == EPERS_NOPRCTABLE, "RCT available, but should not");
+#endif
+
 }
 END_TEST
 
@@ -1458,12 +1473,11 @@ START_TEST(test_NoPluginFunc)
    // change to an wrong plugin configuration file using environment variable
    setenv(envVariable, "/etc/pclCustomLibConfigFileWrongDefault.cfg", 1);
 
-   sleep(3);
+   sleep(2);
 
    (void)pclInitLibrary(gTheAppId, shutdownReg);   // use the app id, the resource is registered for
 
    ret = pclKeyReadData(PCL_LDBID_LOCAL, "status/open_document", 3, 2, buffer, READ_SIZE);
-   printf("*** ret: %d\n", ret);
    ck_assert_int_eq(ret, EPERS_COMMON);
 
    ret = pclKeyGetSize(PCL_LDBID_LOCAL, "status/open_document", 3, 2);
@@ -1601,12 +1615,15 @@ static Suite * persistenceClientLib_suite()
    tcase_set_timeout(tc_MultiThreadedWrite, 20);
 #endif
 
+
+
+   suite_add_tcase(s, tc_NoPluginFunc);
+
    suite_add_tcase(s, tc_persSetData);
    tcase_add_checked_fixture(tc_persSetData, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_persGetData);
    tcase_add_checked_fixture(tc_persGetData, data_setup, data_teardown);
-
 
    suite_add_tcase(s, tc_persGetDataHandle);
    tcase_add_checked_fixture(tc_persGetDataHandle, data_setup, data_teardown);
@@ -1663,17 +1680,14 @@ static Suite * persistenceClientLib_suite()
 
    suite_add_tcase(s, tc_InitDeinit);
 
-   //suite_add_tcase(s, tc_NoPluginFunc);
-
-    //suite_add_tcase(s, tc_SharedData);
-    //tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
+   suite_add_tcase(s, tc_SharedData);
+   tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
 
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);
-#else
-
 #endif
+
 
 #if 0
    suite_add_tcase(s, tc_PAS_DbusInterface);

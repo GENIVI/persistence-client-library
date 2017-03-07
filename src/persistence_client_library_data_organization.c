@@ -30,6 +30,11 @@ unsigned int gPclInitCounter = 0;
 /// flag to indicate if PCL has registered to PAS
 int gPasRegistered = 0;
 
+int gSyncFd = -1;
+
+int gIsNodeStateManager = 0;
+
+
 int(* gChangeNotifyCallback)(pclNotification_s * notifyStruct);
 
 /// character lookup table used for parsing configuration files

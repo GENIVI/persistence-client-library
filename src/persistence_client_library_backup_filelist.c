@@ -239,6 +239,11 @@ int pclCreateFile(const char* path, int chached)
    char thePath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
    int numTokens = 0, i = 0, validPath = 1, handle = -1;
 
+   if (path == NULL) 
+   {
+      return handle;
+   }
+
    strncpy(thePath, path, PERS_ORG_MAX_LENGTH_PATH_FILENAME);
    thePath[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
@@ -348,26 +353,20 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
                      }
                      // else case: checksum matches ==> keep original file ==> nothing to do
                   }
-                  else
-                  {
-                     close(handle);
-                     handle = -1;     // error: file corrupt
-                  }
                }
             }
             close(fdCsum);
          }
          else
          {
-            close(fdCsum);
             handle = -1;     // error: file corrupt
          }
+         close(fdBackup);
       }
       else
       {
          handle = -1;
       }
-      close(fdBackup);
    }
    // *************************************************
    // there is ONLY a checksum file
@@ -398,11 +397,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
             }
             // else case: checksum matches ==> keep original file ==> nothing to do
          }
-         else
-         {
-            close(handle);
-            handle = -1;      // error: file corrupt
-         }
       }
       else
       {
@@ -430,20 +424,15 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
 
             if(strcmp(backCsumBuf, origCsumBuf)  != 0)
             {
-               close(handle);
                handle = -1;   // checksum does NOT match ==> error: file corrupt
             }
             // else case: checksum matches ==> keep original file ==> nothing to do
-         }
-         else
-         {
             close(handle);
-            handle = -1;      // error: file corrupt
          }
+         close(fdBackup);
       }
       else
       {
-         close(fdBackup);
          handle = -1;         // error: file corrupt
       }
    }
@@ -482,6 +471,11 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
 {
    int dstFd = 0, csfd = 0, readSize = -1;
 
+   if ((dstPath == NULL) || (csumPath == NULL))
+   {
+     return readSize;
+   }
+
    if(access(dstPath, F_OK) != 0)
    {
       int handle = -1;
@@ -491,7 +485,10 @@ int pclCreateBackup(const char* dstPath, int srcfd, const char* csumPath, const 
       pathToCreate[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0'; // Ensures 0-Termination
 
       handle = pclCreateFile(pathToCreate, 0);
-      close(handle);       // don't need the open file
+      if (handle != -1) 
+      {
+          close(handle);       // don't need the open file
+      }
    }
 
    // create checksum file and and write checksum
