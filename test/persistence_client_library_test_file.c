@@ -67,8 +67,42 @@ char* gWriteBackupTestData  = "This is the content of the file /Data/mnt-c/lt-pe
 char* gWriteRecoveryTestData = "This is the data to recover: /Data/mnt-c/lt-persistence_client_library_test/user/1/seat/1/media/mediaDB_DataRecovery.db";
 char* gRecovChecksum = "608a3b5d";  // generated with http://www.tools4noobs.com/online_php_functions/crc32/
 
+// some test data to write to files, data can be found at the end of the files
 extern const char* gWriteBuffer;
 extern const char* gWriteBuffer2;
+extern const char* gWriteBuffer3;
+
+const char* gFile1      = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/file01.txt";
+const char* gFile2      = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/file02.txt";
+const char* gFile3      = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/file03.txt";
+const char* gFileCsMis  = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/csMismatch.txt";
+const char* gFileBackMis= "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/backMismatch.txt";
+const char* gFileCuB_ok = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/csumAndB_ok.txt";
+const char* gFileCsumOK = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/csum_ok.txt";
+const char* gFileCsumNOK= "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/csum_nok.txt";
+const char* gFileBackOK = "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/back_ok.txt";
+const char* gFileBackNOK= "/Data/mnt-c/lt-persistence_client_library_test/user/200/seat/100/media/back_nok.txt";
+
+
+const char* gFile1Backup      = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/file01.txt~";
+const char* gFile2Backup      = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/file02.txt~";
+const char* gFile3Backup      = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/file03.txt~";
+const char* gFileCsMisBackup  = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/csMismatch.txt~";
+const char* gFileBackMisBackup= "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/backMismatch.txt~";
+const char* gFileCuB_okBack   = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/csumAndB_ok.txt~";
+const char* gFileBackOKBackup = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/back_ok.txt~";
+const char* gFileBackNOKBackup= "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/back_nok.txt~";
+
+
+const char* gFile1Csum        = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/file01.txt~.crc";
+const char* gFile2Csum        = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/file02.txt~.crc";
+const char* gFile3Csum        = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/file03.txt~.crc";
+const char* gFileCsMisCsum    = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/csMismatch.txt~.crc";
+const char* gFileBackMisCsum  = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/backMismatch.txt~.crc";
+const char* gFileCuB_okCsum   = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/csumAndB_ok.txt~.crc";
+const char* gFileCsumOKCsum   = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/csum_ok.txt~.crc";
+const char* gFileCsumNOKCsum  = "/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/csum_nok.txt~.crc";
+
 
 
 /// debug log and trace (DLT) setup
@@ -96,6 +130,120 @@ void data_teardown(void)
 {
    pclDeinitLibrary();
 }
+
+
+
+
+void setupRecoveryData(const char* originalFileName, const char* origData,
+                       const char* backupFileName,   const char* backupData,
+                       const char* csumFileName,     const char* csumBuffer)
+{
+   int fd = -1;
+   ssize_t written = 0;
+
+   // write data file
+   fd = open(originalFileName,  O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+   written = write(fd, origData, strlen(origData));
+   if(written != strlen(origData))
+      printf("Failed to write file - %s\n", originalFileName);
+   close(fd);
+   fd = -1;
+
+   if(backupFileName != NULL)
+   {
+      // write backup file
+      fd = open(backupFileName,  O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      written = write(fd, backupData, strlen(backupData));
+      if(written != strlen(backupData))
+         printf("Failed to write file - %s\n", backupFileName);
+      close(fd);
+      fd = -1;
+   }
+
+   if(csumFileName != NULL)
+   {
+      // write checksum file
+      fd = open(csumFileName,  O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+      written = write(fd, csumBuffer, strlen(csumBuffer));
+      if(written != strlen(csumBuffer))
+         printf("Failed to write file - %s\n", csumFileName);
+      close(fd);
+      fd = -1;
+   }
+
+}
+
+
+void data_setupBandR(void)
+{
+   const char* invalidCs = "deadbeef";
+
+   //const char* validCs   = "809ff12f";          // checksum for gWriteBuffer
+   const char* validCs2  = "2f7fb691";          // checksum for gWriteBuffer2
+   const char* validCs3  = "e6f52bda";          // checksum for gWriteBuffer3
+
+
+   // create test data (original files only)
+   //
+   setupRecoveryData(gFile1,  gWriteBuffer,
+                     NULL,    NULL,    // don't create backup file
+                     NULL,    NULL);   // don't create csum file
+
+   setupRecoveryData(gFile2,  gWriteBuffer2,
+                      NULL,   NULL,    // don't create backup file
+                      NULL,   NULL);   // don't create csum file
+
+   setupRecoveryData(gFile3,  gWriteBuffer3,
+                      NULL,   NULL,    // don't create backup file
+                      NULL,   NULL);   // don't create csum file
+
+
+   // invalid checksum file
+   setupRecoveryData(gFileCsMis,       gWriteBuffer3,
+                     gFileCsMisBackup, gWriteBuffer3,
+                     gFileCsMisCsum,   invalidCs);
+
+   // invalid backup file
+   setupRecoveryData(gFileBackMis,       gWriteBuffer3,
+                     gFileBackMisBackup, "aabcdefhg",
+                     gFileBackMisCsum,   validCs3);
+
+   // valid backup and csum file
+   setupRecoveryData(gFileCuB_ok,     "Some data abcd",
+                     gFileCuB_okBack, gWriteBuffer2,
+                     gFileCuB_okCsum, validCs2);
+
+
+   // only csum file available - csum OK
+   setupRecoveryData(gFileCsumOK,     gWriteBuffer2,
+                     NULL, NULL,       // don't create backup file
+                     gFileCsumOKCsum, validCs2);
+
+   // only sum file available - csum NOK
+   setupRecoveryData(gFileCsumNOK,     gWriteBuffer2,
+                     NULL, NULL,       // don't create backup file
+                     gFileCsumNOKCsum, invalidCs);
+
+
+   // onyl backup file available - backup OK
+   setupRecoveryData(gFileBackOK,       gWriteBuffer,
+                     gFileBackOKBackup, gWriteBuffer,
+                     NULL, NULL);       // don't create csum file)
+
+   // onyl backup file available - backup NOK
+   setupRecoveryData(gFileBackNOK,      gWriteBuffer3,
+                     gFileBackNOKBackup, "This is an invalid backup content",
+                     NULL, NULL);      // don't create csum file
+
+}
+
+
+
+void data_teardownBandR(void)
+{
+   pclDeinitLibrary();
+}
+
 
 
 int myChangeCallback(pclNotification_s * notifyStruct)
@@ -1071,6 +1219,230 @@ END_TEST
 
 
 
+
+
+START_TEST(test_FileBackupAndRecovery)
+{
+   int shutdownReg = PCL_SHUTDOWN_TYPE_NONE;
+
+   int fd = -1;
+   int fd1 = -1, fd2 = -1, fd3 = -1;
+   int fd1b = -1, fd2b = -1, fd3b = -1;
+   int fd1c = -1, fd2c = -1, fd3c = -1;
+
+   int sizeRead = 0;
+   ssize_t readSize = 0;
+
+   char readBuffer[8192] = {0};
+   char readBufferBackup[8192] = {0};
+   char readBufferCsum[256] = {0};
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+#if 1
+   //
+   // test backup and checksum creation
+   //
+   fd1 = pclFileOpen(PCL_LDBID_LOCAL, "media/file01.txt", 200, 100);
+   fd2 = pclFileOpen(PCL_LDBID_LOCAL, "media/file02.txt", 200, 100);
+   fd3 = pclFileOpen(PCL_LDBID_LOCAL, "media/file03.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd1, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer), "FailedReadSize 1 => soll:%d - ist: %d\n", strlen(gWriteBuffer), sizeRead);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd2, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer2), "FailedReadSize 2 => soll:%d - ist: %d\n", strlen(gWriteBuffer2), sizeRead);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd3, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer3), "FailedReadSize 3 => soll:%d - ist: %d\n", strlen(gWriteBuffer3), sizeRead);
+
+   // check availability of backup and csum files
+   fail_unless(access(gFile1Backup, F_OK) != 0, "Backup 1 does exist, but should not\n");
+   fail_unless(access(gFile2Backup, F_OK) != 0, "Backup 2 does exist, but should not\n");
+   fail_unless(access(gFile3Backup, F_OK) != 0, "Backup 3 does exist, but should not\n");
+
+   fail_unless(access(gFile1Csum, F_OK) != 0, "Csum 1 does exist, but should not\n");
+   fail_unless(access(gFile2Csum, F_OK) != 0, "Csum 2 does exist, but should not\n");
+   fail_unless(access(gFile3Csum, F_OK) != 0, "Csum 3 does exist, but should not\n");
+
+   // write data: backup and csum files will be automatically generated (copy on write - (COW))
+   pclFileWriteData(fd1, "Some Data", strlen("Some Data"));
+   fail_unless(access(gFile1Backup, F_OK) == 0, "Backup 1 should exist, but does not\n");
+   fail_unless(access(gFile1Csum,   F_OK) == 0, "Csum 1 should exist, but does not\n");
+
+   pclFileWriteData(fd2, "Some Data", strlen("Some Data"));
+   fail_unless(access(gFile2Backup, F_OK) == 0, "Backup 2 should exist, but does not\n");
+   fail_unless(access(gFile2Csum,   F_OK) == 0, "Csum 2 should exist, but does not\n");
+
+   pclFileWriteData(fd3, "Some Data", strlen("Some Data"));
+   fail_unless(access(gFile3Backup, F_OK) == 0, "Backup 3 should exist, but does not\n");
+   fail_unless(access(gFile3Csum,   F_OK) == 0, "Csum 3 should exist, but does not\n");
+
+   //
+   // check content of backup and csum
+   //
+   memset(readBufferBackup, 0, 8192);
+   memset(readBufferCsum, 0, 256);
+
+   fd1b = open(gFile1Backup, O_RDONLY);
+   fd1c = open(gFile1Csum, O_RDONLY);
+
+   readSize = read(fd1b, readBufferBackup, 8192);
+   fail_unless(readSize == strlen(gWriteBuffer), "FailedReadSize 1 Backup => soll:%d - ist: %d\n", strlen(gWriteBuffer), readSize);
+   fail_unless(strncmp((const char*)readBufferBackup, (const char*)gWriteBuffer, strlen(gWriteBuffer)) == 0, "BackupFile 1 does not match\n");
+   readSize = 0;
+
+   readSize = read(fd1c, readBufferCsum, 256);
+   fail_unless(strncmp((const char*)readBufferCsum, "809ff12f", strlen(readBufferCsum)) == 0, "CsumFile 1 does not match\n");
+
+   readSize = 0;
+   close(fd1b);
+   close(fd1c);
+
+   // -----
+   memset(readBufferBackup, 0, 8192);
+   memset(readBufferCsum, 0, 256);
+
+   fd2b = open(gFile2Backup, O_RDONLY);
+   fd2c = open(gFile2Csum, O_RDONLY);
+
+   readSize = read(fd2b, readBufferBackup, 8192);
+   fail_unless(readSize == strlen(gWriteBuffer2), "FailedReadSize 2 Backup => soll:%d - ist: %d\n", strlen(gWriteBuffer2), readSize);
+   fail_unless(strncmp((const char*)readBufferBackup, (const char*)gWriteBuffer2, strlen(gWriteBuffer2)) == 0, "BackupFile 2 does not match\n");
+   readSize = 0;
+
+   readSize = read(fd2c, readBufferCsum, 256);
+   fail_unless(strncmp((const char*)readBufferCsum, "2f7fb691", strlen(readBufferCsum)) == 0, "CsumFile 2 does not match\n");
+
+   readSize = 0;
+   close(fd2b);
+   close(fd2c);
+
+   // -----
+   memset(readBufferBackup, 0, 8192);
+   memset(readBufferCsum, 0, 256);
+
+   fd3b = open(gFile3Backup, O_RDONLY);
+   fd3c = open(gFile3Csum, O_RDONLY);
+
+   readSize = read(fd3b, readBufferBackup, 8192);
+   fail_unless(readSize == strlen(gWriteBuffer3), "FailedReadSize 3 Backup => soll:%d - ist: %d\n", strlen(gWriteBuffer3), readSize);
+   fail_unless(strncmp((const char*)readBufferBackup, (const char*)gWriteBuffer3, strlen(gWriteBuffer3)) == 0, "BackupFile 3 does not match\n");
+   readSize = 0;
+
+   readSize = read(fd3c, readBufferCsum, 256);
+   fail_unless(strncmp((const char*)readBufferCsum, "e6f52bda", strlen(readBufferCsum)) == 0, "CsumFile 3 does not match\n");
+
+   readSize = 0;
+   close(fd3b);
+   close(fd3c);
+
+   // close files (backup and csum files will be removed
+   pclFileClose(fd1);
+   fail_unless(access(gFile1Backup, F_OK) != 0, "Backup 1 does exist, but should not\n");
+   fail_unless(access(gFile1Csum, F_OK) != 0, "Csum 1 does exist, but should not\n");
+
+   pclFileClose(fd2);
+   fail_unless(access(gFile2Backup, F_OK) != 0, "Backup 2 does exist, but should not\n");
+   fail_unless(access(gFile2Csum, F_OK) != 0, "Csum 2 does exist, but should not\n");
+
+   pclFileClose(fd3);
+   fail_unless(access(gFile2Backup, F_OK) != 0, "Backup 3 does exist, but should not\n");
+   fail_unless(access(gFile2Csum, F_OK) != 0, "Csum 3 does exist, but should not\n");
+
+#endif
+
+#if 1
+   //
+   // now the error cases
+   //
+
+   //
+   // invalid checksum in checksum file, but backup and original file checksum matches,
+   // expected: so keep original
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/csMismatch.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer3), "Failed read=> soll:%d - ist: %d\n", strlen(gWriteBuffer3), sizeRead);
+   fail_unless(strncmp((const char*)readBuffer, (const char*)gWriteBuffer3, strlen(gWriteBuffer3)) == 0, "Read data does not match\n");
+   pclFileClose(fd);
+
+   //
+   // invalid backup file, but checksum and checksum file and original file matches,
+   // expected: keep original
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/backMismatch.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer3), "Failed read=> soll:%d - ist: %d\n", strlen(gWriteBuffer3), sizeRead);
+   fail_unless(strncmp((const char*)readBuffer, (const char*)gWriteBuffer3, strlen(gWriteBuffer3)) == 0, "Read data does not match\n");
+   pclFileClose(fd);
+
+   //
+   // checksum of checksum file and backup file matches,
+   // expected: use content form backup file
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "media/csumAndB_ok.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer2), "Failed read=> soll:%d - ist: %d\n", strlen(gWriteBuffer2), sizeRead);
+   fail_unless(strncmp((const char*)readBuffer, (const char*)gWriteBuffer2, strlen(gWriteBuffer2)) == 0, "Read data does not match\n");
+
+
+
+   // only csum file available, matches original data
+   // expected: keep original
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "/media/csum_ok.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer2), "Failed read=> soll:%d - ist: %d\n", strlen(gWriteBuffer2), sizeRead);
+   fail_unless(strncmp((const char*)readBuffer, (const char*)gWriteBuffer2, strlen(gWriteBuffer2)) == 0, "Read data does not match\n");
+   pclFileClose(fd);
+
+
+   // onyl csum file available, don't match original files
+   // expected: no recovery possible, return error code
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "/media/csum_nok.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead <= EPERS_COMMON, "Read succeeded, but should not => return: %dn", sizeRead);
+   pclFileClose(fd);
+#endif
+
+   // only backup file available, matches original data
+   // expected: keep original
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "/media/back_ok.txt", 200, 100);
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead == strlen(gWriteBuffer), "Failed read=> soll:%d - ist: %d\n", strlen(gWriteBuffer), sizeRead);
+   fail_unless(strncmp((const char*)readBuffer, (const char*)gWriteBuffer, strlen(gWriteBuffer)) == 0, "Read data does not match\n");
+   pclFileClose(fd);
+
+
+   // only backup file available, don't match original file
+   // expected: no recovery possible, return error code
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "/media/back_nok.txt", 200, 100);
+
+   memset(readBuffer, 0, 8192);
+   sizeRead = pclFileReadData(fd, readBuffer, 8192);
+   fail_unless(sizeRead <= EPERS_COMMON, "Read succeeded, but should not => return: %dn", sizeRead);
+   pclFileClose(fd);
+
+
+   (void)pclLifecycleSet(PCL_SHUTDOWN);
+
+}
+END_TEST
+
+
+
+
 static Suite * persistencyClientLib_suite()
 {
    const char* testSuiteName = "Persistency Client Library (File-API)";
@@ -1122,7 +1494,9 @@ static Suite * persistencyClientLib_suite()
    tcase_set_timeout(tc_MultiFileReadWrite, 200000);
 
 
-#if 1
+   TCase * tc_FileBackupAndRecovery = tcase_create("FileBackupAndRecovery");
+   tcase_add_test(tc_FileBackupAndRecovery, test_FileBackupAndRecovery);
+   tcase_set_timeout(tc_FileBackupAndRecovery, 30);
 
    suite_add_tcase(s, tc_persDataFile);
    tcase_add_checked_fixture(tc_persDataFile, data_setup, data_teardown);
@@ -1131,39 +1505,34 @@ static Suite * persistencyClientLib_suite()
    tcase_add_checked_fixture(tc_WriteConfDefault, data_setup, data_teardown);
 
    suite_add_tcase(s, tc_persDataFileBackupCreation);
-    tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
+   tcase_add_checked_fixture(tc_persDataFileBackupCreation, data_setupBackup, data_teardown);
 
-    suite_add_tcase(s, tc_persDataFileRecovery);
-    tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
+   suite_add_tcase(s, tc_persDataFileRecovery);
+   tcase_add_checked_fixture(tc_persDataFileRecovery, data_setupRecovery, data_teardown);
 
-    suite_add_tcase(s, tc_GetPath);
-    tcase_add_checked_fixture(tc_GetPath, data_setup, data_teardown);
+   suite_add_tcase(s, tc_GetPath);
+   tcase_add_checked_fixture(tc_GetPath, data_setup, data_teardown);
 
-    suite_add_tcase(s, tc_VerifyROnly);
-    tcase_add_checked_fixture(tc_VerifyROnly, data_setup, data_teardown);
+   suite_add_tcase(s, tc_VerifyROnly);
+   tcase_add_checked_fixture(tc_VerifyROnly, data_setup, data_teardown);
 
-    suite_add_tcase(s, tc_DataFileConfDefault);
-    tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
+   suite_add_tcase(s, tc_DataFileConfDefault);
+   tcase_add_checked_fixture(tc_DataFileConfDefault, data_setup, data_teardown);
 
-    suite_add_tcase(s, tc_FileTest);
-    tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
+   suite_add_tcase(s, tc_FileTest);
+   tcase_add_checked_fixture(tc_FileTest, data_setup_browser, data_teardown);
 
-    suite_add_tcase(s, tc_DataHandle);
-    tcase_add_checked_fixture(tc_DataHandle, data_setup, data_teardown);
+   suite_add_tcase(s, tc_DataHandle);
+   tcase_add_checked_fixture(tc_DataHandle, data_setup, data_teardown);
 
+   suite_add_tcase(s, tc_FileBackupAndRecovery);
+   tcase_add_checked_fixture(tc_FileBackupAndRecovery, data_setupBandR, data_teardownBandR);
 
 
     suite_add_tcase(s, tc_InitDeinit);    // I M P O R T A N T: this needs to be the last test, as this tests ends NSM
 
-#else
-
-
     //suite_add_tcase(s, tc_MultiFileReadWrite);
     //tcase_add_checked_fixture(tc_MultiFileReadWrite, data_setup, data_teardown);
-
-#endif
-
-
 
    return s;
 }
@@ -2072,4 +2441,12 @@ const char* gWriteBuffer2 =   "Pack my box with five dozen liquor jugs. - "
    "Pack my box with five dozen liquor jugs. - "
    "Jackdaws love my big sphinx of quartz. - "
    "The five boxing wizards jump quickly. - ";
+
+const char* gWriteBuffer3 =   "Pack my box with five dozen liquor jugs. - "
+   "Jackdaws love my big sphinx of quartz. - "
+   "The five boxing wizards jump quickly. - "
+   "How vexingly quick daft zebras jump! - "
+   "Bright vixens jump; dozy fowl quack - "
+   "Sphinx of black quartz, judge my vow";
+
 

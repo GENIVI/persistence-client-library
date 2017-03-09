@@ -338,20 +338,36 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
             {
                if(strcmp(csumBuf, backCsumBuf)  == 0)
                {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum matches, replace with original"));
                   handle = pclRecoverFromBackup(fdBackup, origPath);    // checksum matches ==> replace with original file
                }
                else
                {
+                  DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum does not match from csum file and backup file"));
                   handle = open(origPath, openFlags);    // checksum does not match, check checksum with original file
                   if(handle != -1)
                   {
                      pclCalcCrc32Csum(handle, origCsumBuf);
                      if(strcmp(csumBuf, origCsumBuf)  != 0)
                      {
-                        close(handle);
-                        handle = -1;  // error: file corrupt
+                        DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum no match csum and original"));
+
+                        if(strcmp(origCsumBuf, origCsumBuf)  != 0)
+                        {
+                           DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum no match backup and original"));
+                           close(handle);
+                           handle = -1;  // error: file corrupt
+                        }
+                        else
+                        {
+                           DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum match backup and original keep original"));
+                        }
                      }
-                     // else case: checksum matches ==> keep original file ==> nothing to do
+                     else
+                     {
+                        // else case: checksum matches ==> keep original file ==> nothing to do
+                        DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- checksum matches checksum file and original, keep original"));
+                     }
                   }
                }
             }
@@ -383,7 +399,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("verifyConsist - read csum: invalid readSize"));
          }
-         close(fdCsum);
 
          handle = open(origPath, openFlags);    // calculate the checksum form the original file to see if it matches
          if(handle != -1)
@@ -392,15 +407,25 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
 
             if(strcmp(csumBuf, origCsumBuf)  != 0)
             {
-                close(handle);
                 handle = -1;  // checksum does NOT match ==> error: file corrupt
+                close(handle);
+                DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a csum file - no match, no recovery"));
             }
-            // else case: checksum matches ==> keep original file ==> nothing to do
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a csum file - matches, keep original"));
+               // else case: checksum matches ==> keep original file ==> nothing to do
+            }
          }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a csum file - failed open original"));
+         }
+         close(fdCsum);
       }
       else
       {
-         close(fdCsum);
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a csum file - failed open csum, no nocovery"));
          handle = -1;         // error: file corrupt
       }
    }
@@ -415,7 +440,6 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
       if(fdBackup != -1)
       {
          pclCalcCrc32Csum(fdBackup, backCsumBuf);
-         close(fdBackup);
 
          handle = open(origPath, openFlags);       // calculate the checksum form the original file to see if it matches
          if(handle != -1)
@@ -425,14 +449,24 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
             if(strcmp(backCsumBuf, origCsumBuf)  != 0)
             {
                handle = -1;   // checksum does NOT match ==> error: file corrupt
+               close(handle);
+               DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a backup file - no match, no recovery"));
             }
-            // else case: checksum matches ==> keep original file ==> nothing to do
-            close(handle);
+            else
+            {
+               DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a backup file - matches, keep original"));
+               // else case: checksum matches ==> keep original file ==> nothing to do
+            }
+         }
+         else
+         {
+            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a backup file - failed open original"));
          }
          close(fdBackup);
       }
       else
       {
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist - there is ONLY a backup file - failed open backup, no nocovery"));
          handle = -1;         // error: file corrupt
       }
    }
