@@ -119,3 +119,5 @@ persistence_client_library_test.c:604:P:DataFileRecovery:test_DataFileRecovery:0
 persistence_client_library_test.c:794:P:Cursor:test_Cursor:0: Passed
 persistence_client_library_test.c:864:P:ReadDefault:test_ReadDefault:0: Passed
 persistence_client_library_test.c:886:P:ReadConfDefault:test_ReadConfDefault:0: Passed
+
+The output above may vary as the test cases will be adopted or extended. 
