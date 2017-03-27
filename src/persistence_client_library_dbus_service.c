@@ -607,7 +607,8 @@ int setup_dbus_mainloop(void)
 
       dbus_connection_close(conn);
       dbus_connection_unref(conn);
-      dbus_shutdown();
+      //dbus_shutdown();   // according to dbus documentation it is not neccessary to call dbus_shutdown:
+                           // There is absolutely no requirement to call dbus_shutdown() - in fact, most applications won't bother and should not feel guilty.
 
       rval = EPERS_COMMON;
    }
@@ -782,7 +783,8 @@ void* mainLoop(void* userData)
 
    dbus_connection_close(conn);
    dbus_connection_unref(conn);
-   dbus_shutdown();
+   //dbus_shutdown();   // according to dbus documentation it is not neccessary to call dbus_shutdown:
+                        // There is absolutely no requirement to call dbus_shutdown() - in fact, most applications won't bother and should not feel guilty.
 
    return NULL;
 }
