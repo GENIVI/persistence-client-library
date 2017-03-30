@@ -271,9 +271,10 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
          dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestID,
                                            DBUS_TYPE_INT32,  &status, DBUS_TYPE_INVALID);
 
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendPasRequest - pas_request"), DLT_UINT(requestID), DLT_INT(status) );
          if(!dbus_connection_send(conn, message, 0))
          {
-            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Access denied"), DLT_STRING(error.message) );
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasRequest - Access denied"), DLT_STRING(error.message) );
          }
 
          dbus_connection_flush(conn);
@@ -281,12 +282,12 @@ void process_send_pas_request(DBusConnection* conn, unsigned int requestID, int 
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Inval msg") );
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasRequest - Inval msg") );
       }
    }
    else
    {
-      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmReg - Inval con") );
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendPasRequest - Inval con") );
    }
 }
 
@@ -300,8 +301,6 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
 
    char* method = NULL;
 
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendPasReg - Type:"), DLT_INT(regType) );
-
    if(regType == 0)
       method = "UnRegisterPersAdminNotification";
    else if(regType == 1)
@@ -310,6 +309,8 @@ void process_send_pas_register(DBusConnection* conn, int regType, int notificati
    if(conn != NULL)
    {
       const char* busName = dbus_bus_get_unique_name(conn);
+
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendPasRegister - Type:"), DLT_INT(regType), DLT_STRING(busName) );
 
       if(busName != NULL)
       {
@@ -364,8 +365,6 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
 
    char* method = NULL;
 
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendLcmReg - Type:"), DLT_INT(regType) );
-
    if(regType == 1)
       method = "RegisterShutdownClient";
    else if(regType == 0)
@@ -374,6 +373,8 @@ void process_send_lifecycle_register(DBusConnection* conn, int regType, int shut
    if(conn != NULL)
    {
       const char* busName = dbus_bus_get_unique_name(conn);
+
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendLcmRegister - Type:"), DLT_INT(regType), DLT_STRING(busName) );
 
       DBusMessage* message = dbus_message_new_method_call(gDbusLcConsDest,       // destination
       		                                              gDbusLcCons,           // path
@@ -431,6 +432,7 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
          dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
                                            DBUS_TYPE_INT32, &status, DBUS_TYPE_INVALID);
 
+         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendLcmRequest: "), DLT_UINT(requestId), DLT_UINT(status) );
          if(!dbus_connection_send(conn, message, 0))
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("sendLcmRequest - Access denied"), DLT_STRING(error.message) );
@@ -464,6 +466,7 @@ void msg_pending_func(DBusPendingCall *call, void *data)
 
    pthread_mutex_lock(&gDbusPendingRegMtx);
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("msgPendFunc - steal_reply: "));
    message = dbus_pending_call_steal_reply(call);
 
    if(dbus_set_error_from_message(&err, message))

@@ -92,6 +92,8 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
 
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("msg_lifecycleRequest"), DLT_UINT(request), DLT_UINT(requestID) );
+
    msgReturn = check_lc_request(request, requestID);
 
    reply = dbus_message_new_method_return(message);

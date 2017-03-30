@@ -804,8 +804,14 @@ int pclFileWriteData(int fd, const void * buffer, int buffer_size)
                   size = (int)write(fd, buffer, (size_t)buffer_size);
                   if(get_file_cache_status(fd) == 1)
                   {
+#if USE_FSYNC
                      if(fsync(fd) == -1)
+#else
+                     if(fdatasync(fd) == -1)
+#endif
+                     {
                         DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("fileWriteData - Failed fsync ==>!"), DLT_STRING(strerror(errno)));
+                     }
                   }
 #endif
                }

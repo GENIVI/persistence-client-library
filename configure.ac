@@ -148,29 +148,6 @@ fi
 ######################################################################
 
 
-# enable tracing ###########
-#AC_ARG_ENABLE([xstrace],
-#            [AS_HELP_STRING([--enable-xstrace],[Enable xstrace])],
-#            [use_xstrace=$enableval],
-#            [use_xstrace="no"])
-#
-#AM_CONDITIONAL([USE_XSTRACE_PERS], [test x"$use_xstrace" = "no"])
-#
-#if test "$use_xstrace" != "yes" -a "$use_xstrace" != "no"; then   
-#   AC_MSG_ERROR([Invalid tracing check mode specified: $use_xstrace. Only "yes" or "no" is valid])
-#else   
-#   AC_MSG_NOTICE([Use tracing: $use_xstrace])
-
-#   if test "$use_xstrace" = "yes"; then
-#      AC_CHECK_HEADERS([xsm_user.h])
-#      AC_DEFINE_UNQUOTED([USE_XSTRACE_PERS], [1], [tracing enabled])
-#   else
-#      AC_DEFINE_UNQUOTED([USE_XSTRACE_PERS], [0], [tracing disabled])     
-#   fi
-#fi
-######################################################################
-
-
 # enable persistence application security check ###########
 AC_ARG_ENABLE([appcheck],
             [AS_HELP_STRING([--enable-appcheck],[Enable application security check])],
@@ -190,6 +167,7 @@ else
 fi
 ######################################################################
 
+
 AC_ARG_ENABLE(debug,
 AS_HELP_STRING([--enable-debug],
                [enable debugging, default: no]),
@@ -201,6 +179,26 @@ esac],
 [debug=false])
 
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
+######################################################################
+
+# enable to use fsync instead of fdatasync for write through #########
+AC_ARG_ENABLE([fsync],
+            [AS_HELP_STRING([--enable-fsync],[Enable fsync instead of fdatasync])],
+            [use_fsync=$enableval],
+            [use_fsync="no"])
+
+AM_CONDITIONAL([USE_FSYNC], [test x"$use_fsync" = "no"])
+
+if test "$use_fsync" != "yes" -a "$use_fsync" != "no"; then   
+   AC_MSG_ERROR([Invalid fsync check check: $use_fsync. Only "yes" or "no" is valid])
+else   
+   AC_MSG_NOTICE([Use fsync: $use_fsync])
+
+   if test "$use_fsync" = "yes"; then
+      AC_DEFINE_UNQUOTED([USE_FSYNC], [1], [fsync is anabled])   
+   fi
+fi
+######################################################################
 
 
 AC_CONFIG_FILES([Makefile

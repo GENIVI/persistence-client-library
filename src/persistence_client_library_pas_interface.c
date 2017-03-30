@@ -122,6 +122,8 @@ DBusHandlerResult msg_persAdminRequest(DBusConnection *connection, DBusMessage *
 
       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
    }
+
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("msg_persAdminRequest"), DLT_INT(request), DLT_INT(requestID) );
    errorReturn = check_pas_request((unsigned int)request, (unsigned int)requestID);
 
    reply = dbus_message_new_method_return(message);

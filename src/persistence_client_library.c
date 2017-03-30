@@ -282,8 +282,14 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
       gIsNodeStateManager = 1;
    }
 
+#if USE_FSYNC
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using fsync version"));
+#else
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using datasync version (DEFAULT)"));
+#endif
+
 #if USE_FILECACHE
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache!!!"));
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache"));
    pfcInitCache(appName);
 #endif
 
