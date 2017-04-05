@@ -1240,18 +1240,39 @@ END_TEST
 
 void* readThread(void* userData)
 {
-   int ret = 0, i = 0;
+   int ret = 0, i = 0, handleOne = 0, handleTwo = 0, handleThree = 0;
    unsigned char buffer[READ_SIZE] = {0};
    char threadName[64] = {0};
    char* uData = NULL;
    uData = (char*)userData;
 
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
    memset(threadName, 0, 64-1);
    memcpy(threadName, uData, 64-1);
    threadName[64-1] = '\0';
 
+   setenv(envVariable, "/etc/pclCustomLibConfigFileTest.cfg", 1);
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);
+
+
    pthread_barrier_wait(&gBarrierOne);
    usleep(5000);
+
+   handleOne   = pclKeyHandleOpen(PCL_LDBID_LOCAL, "pos/last_satellites", 1, 2);
+   handleTwo   = pclKeyHandleOpen(PCL_LDBID_LOCAL, "pos/last_satellites", 2, 3);
+   handleThree = pclKeyHandleOpen(PCL_LDBID_LOCAL, "pos/last_satellites", 3, 4);
+
+   ret = pclKeyHandleWriteData(handleOne, (unsigned char*)"pos/last_satellites_1_2_data", (int)strlen("pos/last_satellites_1_2_data"));
+   fail_unless(ret == (int)strlen("pos/last_satellites_1_2_data"));
+
+   ret = pclKeyHandleWriteData(handleTwo, (unsigned char*)"pos/last_satellites_2_3_data_23", (int)strlen("pos/last_satellites_2_3_data_23"));
+   fail_unless(ret == (int)strlen("pos/last_satellites_2_3_data_23"));
+
+   ret = pclKeyHandleWriteData(handleThree, (unsigned char*)"pos/last_satellites_3_4_data_34_34", (int)strlen("pos/last_satellites_3_4_data_34_34"));
+   fail_unless(ret == (int)strlen("pos/last_satellites_3_4_data_34_34"));
 
    for(i=0; i<NUM_OF_READS; i++)
    {
@@ -1266,6 +1287,13 @@ void* readThread(void* userData)
       fail_unless(ret == strlen("CACHE_ +48 10' 38.95, +8 44' 39.06"));
       usleep(3000);
 
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyHandleReadData(handleOne, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "pos/last_satellites_1_2_data",
+                    strlen((char*)buffer)) == 0, "Buffer not correctly read - pos/last_satellites_1_2_data");
+      fail_unless(ret == strlen("pos/last_satellites_1_2_data"));
+      usleep(3000);
+
       /**
        * Logical DB ID: PCL_LDBID_LOCAL with user 3 and seat 2
        *       ==> local USER value (user 3, seat 2)
@@ -1277,6 +1305,7 @@ void* readThread(void* userData)
       fail_unless(ret == strlen("WT_ /var/opt/user_manual_climateControl.pdf"));
       usleep(2000);
 
+#if 1
       /**
        * Logical DB ID: 0x20 with user 4 and seat 0
        *       ==> shared user value accessible by a group (user 4 and seat 0)
@@ -1287,6 +1316,15 @@ void* readThread(void* userData)
                     "Buffer not correctly read - address/home_address");
       fail_unless(ret == strlen("WT_ 55327 Heimatstadt, Wohnstrasse 31"));
       usleep(5000);
+#endif
+
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyHandleReadData(handleTwo, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "pos/last_satellites_2_3_data_23",
+                    strlen((char*)buffer)) == 0, "Buffer not correctly read - pos/last_satellites_2_3_data_23");
+      fail_unless(ret == strlen("pos/last_satellites_2_3_data_23"));
+      usleep(3000);
+
 
       /**
        * Logical DB ID: PCL_LDBID_LOCAL with user 0 and seat 0
@@ -1300,6 +1338,7 @@ void* readThread(void* userData)
       fail_unless(ret == strlen("WT_ 17"));
       usleep(2000);
 
+#if 1
       /**
        * Logical DB ID: 0x20 with user 4 and seat 0
        *       ==> shared user value accessible by A GROUP (user 4 and seat 0)
@@ -1310,7 +1349,22 @@ void* readThread(void* userData)
                     "Buffer not correctly read - links/last_link");
       fail_unless(ret == strlen("CACHE_ /last_exit/queens"));
       usleep(3000);
+#endif
+
+      memset(buffer, 0, READ_SIZE);
+      ret = pclKeyHandleReadData(handleThree, buffer, READ_SIZE);
+      fail_unless(strncmp((char*)buffer, "pos/last_satellites_3_4_data_34_34",
+                    strlen((char*)buffer)) == 0, "Buffer not correctly read - pos/last_satellites_3_4_data_34_34");
+      fail_unless(ret == strlen("pos/last_satellites_3_4_data_34_34"));
+      usleep(3000);
    }
+
+   (void)pclKeyHandleClose(handleOne);
+   (void)pclKeyHandleClose(handleTwo);
+   (void)pclKeyHandleClose(handleThree);
+
+
+   pclDeinitLibrary();
 
    pthread_exit(0);
 }
@@ -1499,7 +1553,6 @@ START_TEST(test_NoPluginFunc)
 END_TEST
 
 
-
 static Suite * persistenceClientLib_suite()
 {
    const char* testSuiteName = "Persistence Client Library (Key-API)";
@@ -1602,6 +1655,7 @@ static Suite * persistenceClientLib_suite()
    tcase_add_test(tc_SharedData, test_SharedData);
    tcase_set_timeout(tc_SharedData, 10);
 
+
 #ifdef SKIP_MULTITHREADED_TESTS
    printf("INFO: Skipping testcase MultiThreadedRead  (%p)\n", test_MultiThreadedRead);
    printf("INFO: Skipping testcase MultiThreadedWrite (%p)\n", test_MultiThreadedWrite);
@@ -1616,7 +1670,7 @@ static Suite * persistenceClientLib_suite()
 #endif
 
 
-
+#if 1
    suite_add_tcase(s, tc_NoPluginFunc);
 
    suite_add_tcase(s, tc_persSetData);
@@ -1667,14 +1721,6 @@ static Suite * persistenceClientLib_suite()
 
    suite_add_tcase(s, tc_InvalidPluginfConf);
 
-#ifndef SKIP_MULTITHREADED_TESTS
-   suite_add_tcase(s, tc_MultiThreadedRead);
-   tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
-
-   suite_add_tcase(s, tc_MultiThreadedWrite);
-   tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
-#endif
-
    suite_add_tcase(s, tc_NoRct);
    tcase_add_checked_fixture(tc_NoRct, data_setup_norct, data_teardown);
 
@@ -1683,9 +1729,21 @@ static Suite * persistenceClientLib_suite()
    suite_add_tcase(s, tc_SharedData);
    tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
+#endif
+
 
 #if USE_APPCHECK
    suite_add_tcase(s, tc_ValidApplication);
+#endif
+
+
+#ifndef SKIP_MULTITHREADED_TESTS
+   suite_add_tcase(s, tc_MultiThreadedRead);
+   tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_MultiThreadedWrite);
+   tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
+
 #endif
 
 
@@ -1698,6 +1756,7 @@ static Suite * persistenceClientLib_suite()
    tcase_add_checked_fixture(tc_LC_DbusInterface, data_setup, data_teardown);
    tcase_set_timeout(tc_LC_DbusInterface, 8);
 #endif
+
 
    return s;
 }

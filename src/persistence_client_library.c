@@ -55,8 +55,9 @@ static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 
 /// name of the backup blacklist file (contains all the files which are excluded from backup creation)
 static const char* gBackupFilename = "BackupFileList.info";
-
 static const char* gNsmAppId = "NodeStateManager";
+static const char* gShmWtNameTemplate = "_Data_mnt_c_%s";
+static const char* gShmCNameTemplate  = "_Data_mnt_wt_%s";
 
 static char gAppFolder[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
@@ -68,6 +69,7 @@ static int gAppCheckFlag = -1;
 static char gRctFilename[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
 #endif
+
 
 int customAsyncInitClbk(int errcode)
 {
@@ -134,11 +136,12 @@ int doAppcheck(void)
 char* makeShmName(const char* path)
 {
    size_t pathLen = strlen(path);
-   char* result = (char*) malloc(pathLen + 1);   //free happens at lifecycle shutdown
+   char* result = (char*)malloc(pathLen+1);   //free happens in checkLocalArtefacts
    int i =0;
 
    if(result != NULL)
    {
+      memset(result, 0, pathLen+1);
       for(i = 0; i < pathLen; i++)
       {
          if(!isalnum(path[i]))
@@ -150,7 +153,7 @@ char* makeShmName(const char* path)
             result[i] = path[i];
          }
       }
-      result[i + 1] = '\0';
+      result[i] = '\0';
    }
    else
    {
@@ -178,7 +181,17 @@ void checkLocalArtefacts(const char* thePath, const char* appName)
             {
                if(FILE_DIR_NOT_SELF_OR_PARENT(dirent->d_name))
                {
-                  if(strstr(dirent->d_name, name))
+                  char shmWtBuffer[128] = {0};
+                  char shmCBuffer[128] = {0};
+
+                  memset(shmWtBuffer, 0, 128);
+                  memset(shmCBuffer, 0, 128);
+
+                  snprintf(shmWtBuffer, 128, gShmWtNameTemplate, name);
+                  snprintf(shmCBuffer,  128, gShmCNameTemplate,  name);
+
+                  if(   strstr(dirent->d_name, shmWtBuffer)
+                     || strstr(dirent->d_name, shmCBuffer) )
                   {
                      size_t len = strlen(thePath) + strlen(dirent->d_name)+1;
                      char* fileName = malloc(len);

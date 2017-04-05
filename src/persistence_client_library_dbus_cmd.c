@@ -429,8 +429,8 @@ void process_send_lifecycle_request(DBusConnection* conn, unsigned int requestId
                                                           "LifecycleRequestComplete"); // method
       if(message != NULL)
       {
-         dbus_message_append_args(message, DBUS_TYPE_INT32, &requestId,
-                                           DBUS_TYPE_INT32, &status, DBUS_TYPE_INVALID);
+         dbus_message_append_args(message, DBUS_TYPE_UINT32, &requestId,
+                                           DBUS_TYPE_UINT32, &status, DBUS_TYPE_INVALID);
 
          DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("sendLcmRequest: "), DLT_UINT(requestId), DLT_UINT(status) );
          if(!dbus_connection_send(conn, message, 0))
