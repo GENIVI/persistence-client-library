@@ -94,7 +94,7 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
    DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("msg_lifecycleRequest"), DLT_UINT(request), DLT_UINT(requestID) );
 
-   msgReturn = check_lc_request(request, requestID);
+   msgReturn = NsmErrorStatus_ResponsePending;  // let NSM know that message response is pending,
 
    reply = dbus_message_new_method_return(message);
 
@@ -115,6 +115,13 @@ int msg_lifecycleRequest(DBusConnection *connection, DBusMessage *message)
 
    dbus_connection_flush(connection);
    dbus_message_unref(reply);
+
+
+   // now prepare for shutdown and then send
+   if(check_lc_request(request, requestID) == NsmErrorStatus_Fail)
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("msgLcReq - Failed write wo queue"));
+   }
 
    return DBUS_HANDLER_RESULT_HANDLED;
 }

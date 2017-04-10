@@ -138,6 +138,8 @@ enum _PersistenceConstantDef
    NsmErrorStatus_OK       = 1,
    /// lifecycle return failed indicator
    NsmErrorStatus_Fail     = -1,
+   /// lifecycle return that message is pending
+   NsmErrorStatus_ResponsePending = 7,
    /// max checksum size
    ChecksumBufSize         = 64,
    /// max character sub match size
