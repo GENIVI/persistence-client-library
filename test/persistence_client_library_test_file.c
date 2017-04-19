@@ -22,13 +22,14 @@
 #include <unistd.h>     /* exit */
 #include <time.h>
 #include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <dbus/dbus.h>
 #include <dlt.h>
 #include <dlt_common.h>
 #include <pthread.h>
-#include <string.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+
+#include <dbus/dbus.h>
 
 #include <check.h>
 
@@ -111,6 +112,7 @@ DLT_DECLARE_CONTEXT(gPcltDLTContext);
 
 // function prototype
 void run_concurrency_test();
+int check_environment();
 
 void data_setup(void)
 {
@@ -2222,6 +2224,13 @@ int main(int argc, char *argv[])
    DLT_REGISTER_CONTEXT(gPcltDLTContext, "PCLt", "Context for PCL testing");
 
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("Starting PCL test"));
+
+   if(check_environment() != 1)
+   {
+      printf("\nERROR: Environemnt not setup correclty, won't run tests!\n");
+      printf("       Please fix issues reported above.\n\n");
+      return EXIT_FAILURE;
+   }
 
    data_setupBlacklist();
 

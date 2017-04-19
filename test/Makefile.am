@@ -17,11 +17,11 @@ persistence_client_library_dbus_test_SOURCES = persistence_client_library_dbus_t
 persistence_client_library_dbus_test_LDADD = $(DEPS_LIBS)  \
    $(top_builddir)/src/libpersistence_client_library.la
 
-persistence_client_library_test_SOURCES = persistence_client_library_test.c
+persistence_client_library_test_SOURCES = persistence_client_library_test.c persistence_env_checker.c
 persistence_client_library_test_LDADD = $(DEPS_LIBS) $(CHECK_LIBS) \
    $(top_builddir)/src/libpersistence_client_library.la
 
-persistence_client_library_test_file_SOURCES = persistence_client_library_test_file.c
+persistence_client_library_test_file_SOURCES = persistence_client_library_test_file.c  persistence_env_checker.c
 persistence_client_library_test_file_LDADD = $(DEPS_LIBS) $(CHECK_LIBS) \
    $(top_builddir)/src/libpersistence_client_library.la
 
