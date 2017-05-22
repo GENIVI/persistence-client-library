@@ -722,56 +722,64 @@ int persistence_notify_on_change(const char* resource_id, const char* dbKey, uns
 
    	// search if item is already stored in the tree
    	searchItem = malloc(sizeof(key_value_s));
-      searchItem->key = hashKey;
-      foundItem = (key_value_s*)jsw_rbfind(gNotificationTree, searchItem);
+   	if(searchItem != NULL)
+   	{
+         searchItem->key = hashKey;
+         foundItem = (key_value_s*)jsw_rbfind(gNotificationTree, searchItem);
 
-      if(regPolicy == Notify_register)
-      {
-         if(foundItem == NULL)   // item not found add it, else already added so nothing to do
+         if(regPolicy == Notify_register)
          {
-            key_value_s* item = malloc(sizeof(key_value_s));    // assign key and value to the rbtree item
-            if(item != NULL)
+            if(foundItem == NULL)   // item not found add it, else already added so nothing to do
             {
-               item->key = hashKey;
-               // we don't need the path name here, we just need to know that this key is available in the tree
-               item->value = "";
-               (void)jsw_rbinsert(gNotificationTree, item);
-               free(item);
+               key_value_s* item = malloc(sizeof(key_value_s));    // assign key and value to the rbtree item
+               if(item != NULL)
+               {
+                  item->key = hashKey;
+                  // we don't need the path name here, we just need to know that this key is available in the tree
+                  item->value = "";
+                  (void)jsw_rbinsert(gNotificationTree, item);
+                  free(item);
 
-               gChangeNotifyCallback = callback;      // assign callback
+                  gChangeNotifyCallback = callback;      // assign callback
+               }
+               else
+               {
+                  rval = -1;
+               }
+            }
+            free(foundItem);
+         }
+         else if(regPolicy == Notify_unregister)
+         {
+            if(foundItem != NULL)   // item already in the tree remove it, if not found nothing to do
+            {
+               // we don't need the path name here, we just need to know that this key is available in the tree
+               jsw_rberase(gNotificationTree, foundItem);
+
+               if(jsw_rbsize(gNotificationTree) == 0)  // if no other notification is stored in the tree, remove callback
+               {
+                  gChangeNotifyCallback = NULL;          // remove callback
+               }
             }
             else
             {
-               rval = -1;
+               free(foundItem);
             }
          }
-         free(foundItem);
-      }
-      else if(regPolicy == Notify_unregister)
-      {
-         if(foundItem != NULL)   // item already in the tree remove it, if not found nothing to do
-         {
-            // remove from tree
-            jsw_rberase(gNotificationTree, foundItem);
 
-            if(jsw_rbsize(gNotificationTree) == 0)  // if no other notification is stored in the tree, remove callback
-            {
-               gChangeNotifyCallback = NULL;          // remove callback
-            }
-         }
-         else
+         if(-1 == deliverToMainloop(&data))
          {
-            free(foundItem);
+            DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - Write to pipe"), DLT_INT(errno));
+            rval = -1;
          }
-      }
 
-      if(-1 == deliverToMainloop(&data))
+         free(searchItem);
+      }
+      else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - Write to pipe"), DLT_INT(errno));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("notifyOnChange - failed to alloc memory"));
          rval = -1;
       }
-
-      free(searchItem);
    }
    else
    {

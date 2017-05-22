@@ -38,7 +38,7 @@
 #include "../include/persistence_client_library.h"
 #include "../include/persistence_client_library_error_def.h"
 
-#define SKIP_MULTITHREADED_TESTS 1
+//#define SKIP_MULTITHREADED_TESTS 1
 
 #define BUF_SIZE        64
 #define NUM_OF_FILES    3
@@ -818,6 +818,9 @@ START_TEST(test_InitDeinit)
 
    pclDeinitLibrary();
 
+   fail_unless(pclInitLibrary("", shutdownReg) == EPERS_COMMON);
+   fail_unless(pclInitLibrary(NULL, shutdownReg) == EPERS_COMMON);
+   fail_unless(pclInitLibrary(gWriteBuffer2, shutdownReg) == EPERS_COMMON);
 
 }
 END_TEST
@@ -1558,9 +1561,41 @@ START_TEST(test_NoPluginFunc)
 END_TEST
 
 
+static Suite* persistenceClientLib_suite_multi()
+{
+   const char* testSuiteName = "\n\nPersistence Client Library (Key-API) - Multi";
+
+   Suite * s  = suite_create(testSuiteName);
+
+#ifdef SKIP_MULTITHREADED_TESTS
+   printf("INFO: Skipping testcase MultiThreadedRead  (%p)\n", test_MultiThreadedRead);
+   printf("INFO: Skipping testcase MultiThreadedWrite (%p)\n", test_MultiThreadedWrite);
+#else
+   TCase * tc_MultiThreadedRead = tcase_create("MultiThreadedRead");
+   tcase_add_test(tc_MultiThreadedRead, test_MultiThreadedRead);
+   tcase_set_timeout(tc_MultiThreadedRead, 20);
+
+   TCase * tc_MultiThreadedWrite = tcase_create("MultiThreadedWrite");
+   tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
+   tcase_set_timeout(tc_MultiThreadedWrite, 20);
+#endif
+
+#ifndef SKIP_MULTITHREADED_TESTS
+   suite_add_tcase(s, tc_MultiThreadedRead);
+   tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
+
+   suite_add_tcase(s, tc_MultiThreadedWrite);
+   tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
+
+#endif
+
+   return s;
+
+}
+
 static Suite * persistenceClientLib_suite()
 {
-   const char* testSuiteName = "Persistence Client Library (Key-API)";
+   const char* testSuiteName = "\n\nPersistence Client Library (Key-API)";
 
    Suite * s  = suite_create(testSuiteName);
 
@@ -1661,20 +1696,6 @@ static Suite * persistenceClientLib_suite()
    tcase_set_timeout(tc_SharedData, 10);
 
 
-#ifdef SKIP_MULTITHREADED_TESTS
-   printf("INFO: Skipping testcase MultiThreadedRead  (%p)\n", test_MultiThreadedRead);
-   printf("INFO: Skipping testcase MultiThreadedWrite (%p)\n", test_MultiThreadedWrite);
-#else
-   TCase * tc_MultiThreadedRead = tcase_create("MultiThreadedRead");
-   tcase_add_test(tc_MultiThreadedRead, test_MultiThreadedRead);
-   tcase_set_timeout(tc_MultiThreadedRead, 20);
-
-   TCase * tc_MultiThreadedWrite = tcase_create("MultiThreadedWrite");
-   tcase_add_test(tc_MultiThreadedWrite, test_MultiThreadedWrite);
-   tcase_set_timeout(tc_MultiThreadedWrite, 20);
-#endif
-
-
 #if 1
    suite_add_tcase(s, tc_NoPluginFunc);
 
@@ -1736,20 +1757,10 @@ static Suite * persistenceClientLib_suite()
 
 #endif
 
-
 #if USE_APPCHECK
-   suite_add_tcase(s, tc_ValidApplication);
+   //suite_add_tcase(s, tc_ValidApplication);
 #endif
 
-
-#ifndef SKIP_MULTITHREADED_TESTS
-   suite_add_tcase(s, tc_MultiThreadedRead);
-   tcase_add_checked_fixture(tc_MultiThreadedRead, data_setup, data_teardown);
-
-   suite_add_tcase(s, tc_MultiThreadedWrite);
-   tcase_add_checked_fixture(tc_MultiThreadedWrite, data_setup, data_teardown);
-
-#endif
 
 
 #if 0
@@ -1769,7 +1780,7 @@ static Suite * persistenceClientLib_suite()
 
 int main(int argc, char *argv[])
 {
-   int nr_failed = 0;
+   int nr_failed = 0, nr_failed2 = 0;
    (void)argv;
 
    // assign application name
@@ -1799,18 +1810,31 @@ int main(int argc, char *argv[])
    }
    else
    {
-      Suite * s = persistenceClientLib_suite();
-      SRunner * sr = srunner_create(s);
-      srunner_set_fork_status(sr, CK_NOFORK);
-      srunner_set_xml(sr, "/tmp/persistenceClientLibraryTest.xml");
-      srunner_set_log(sr, "/tmp/persistenceClientLibraryTest.log");
+      Suite * sPcl = persistenceClientLib_suite();
+      Suite * sPclMulti = persistenceClientLib_suite_multi();
 
-      srunner_run_all(sr, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
+      SRunner * srPCL = srunner_create(sPcl);
+      SRunner * srPCLMulti = srunner_create(sPclMulti);
 
-      nr_failed = srunner_ntests_failed(sr);
-      srunner_ntests_run(sr);
+      srunner_set_fork_status(srPCL, CK_FORK);
+      srunner_set_xml(srPCL, "/tmp/persistenceClientLibraryTest.xml");
+      srunner_set_log(srPCL, "/tmp/persistenceClientLibraryTest.log");
 
-      srunner_free(sr);
+      srunner_set_fork_status(srPCLMulti, CK_NOFORK);
+      srunner_set_xml(srPCLMulti, "/tmp/persistenceClientLibraryTestMulti.xml");
+      srunner_set_log(srPCLMulti, "/tmp/persistenceClientLibraryTestMulti.log");
+
+      srunner_run_all(srPCL, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
+      srunner_run_all(srPCLMulti, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
+
+      srunner_ntests_run(srPCL);
+      srunner_ntests_run(srPCLMulti);
+
+      nr_failed = srunner_ntests_failed(srPCL);
+      nr_failed2 = srunner_ntests_failed(srPCLMulti);
+
+      srunner_free(srPCL);
+      srunner_free(srPCLMulti);
    }
 
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("End of PCL test"));
@@ -1819,7 +1843,7 @@ int main(int argc, char *argv[])
    DLT_UNREGISTER_CONTEXT(gPcltDLTContext);
    DLT_UNREGISTER_APP();
 
-   return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
+   return (0==nr_failed && 0==nr_failed2)?EXIT_SUCCESS:EXIT_FAILURE;
 
 }
 

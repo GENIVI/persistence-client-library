@@ -107,7 +107,7 @@ int pclFileClose(int fd)
             if(permission != -1)	   // permission is here also used for range check
             {
                // check if a backup and checksum file needs to be deleted
-               if(permission != PersistencePermission_ReadOnly || permission != PersistencePermission_LastEntry)
+               if(permission != PersistencePermission_ReadOnly && permission != PersistencePermission_LastEntry)
                {
                   // remove backup file
                   if(remove(get_file_backup_path(fd)) == -1)

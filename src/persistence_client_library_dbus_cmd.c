@@ -231,11 +231,8 @@ void process_prepare_shutdown(unsigned int complete)
 
    if(complete > 0)
    {
-   	close_all_persistence_handle();
-   }
+      close_all_persistence_handle();
 
-   if(complete > 0)
-   {
 		for(i=0; i<PersCustomLib_LastEntry; i++)  // unload custom client libraries
 		{
 			if(gPersCustomFuncs[i].custom_plugin_deinit != NULL)

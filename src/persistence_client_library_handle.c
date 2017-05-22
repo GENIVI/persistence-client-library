@@ -56,40 +56,46 @@ int list_item_insert(PersList_item_s** list, int fd)
 {
    int rval = 1;
 
-   PersList_item_s *tmp = *list;
-   if(tmp != NULL)   // check if list is empty
+   if(list != NULL)
    {
-      while(tmp->next != NULL)
+      PersList_item_s *tmp = *list;
+      if(tmp != NULL)   // check if list is empty
       {
-         tmp = tmp->next;
-      }
+         while(tmp->next != NULL)
+         {
+            tmp = tmp->next;
+         }
 
-      tmp->next = (PersList_item_s*)malloc(sizeof(PersList_item_s));
+         tmp->next = (PersList_item_s*)malloc(sizeof(PersList_item_s));
 
-      if(tmp->next != NULL)
-      {
-         tmp->next->fd = fd;
-         tmp->next->next = NULL;
+         if(tmp->next != NULL)
+         {
+            tmp->next->fd = fd;
+            tmp->next->next = NULL;
+         }
+         else
+         {
+            rval = -1;
+         }
       }
       else
       {
-         rval = -1;
+         *list = (PersList_item_s *)malloc(sizeof(PersList_item_s));
+         if(list != NULL)
+         {
+            (*list)->fd = fd;
+            (*list)->next = NULL;
+         }
+         else
+         {
+            rval = -1;
+         }
       }
    }
    else
    {
-      *list = (PersList_item_s *)malloc(sizeof(PersList_item_s));
-      if(list != NULL)
-      {
-         (*list)->fd = fd;
-         (*list)->next = NULL;
-      }
-      else
-      {
-         rval = -1;
-      }
+      rval = -1;
    }
-
    return rval;
 }
 

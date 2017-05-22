@@ -223,7 +223,7 @@ int pclInitLibrary(const char* appName, int shutdownMode)
    int lock = pthread_mutex_lock(&gInitMutex);
    if(lock == 0)
    {
-      if(appName != NULL)
+      if(appName != NULL && strlen(appName) > 0 && strlen(appName) < 256)
       {
          if(gPclInitCounter == 0)
          {

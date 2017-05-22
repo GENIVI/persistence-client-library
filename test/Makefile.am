@@ -8,6 +8,13 @@ AM_CFLAGS = $(DEPS_CFLAGS) $(CHECK_CFLAGS)
 #AM_CFLAGS = -fprofile-arcs -ftest-coverage $(DEPS_CFLAGS) $(CHECK_CFLAGS)
 endif
 
+
+localstate_DATA = data/PAS_data_benchmark.tar.gz \
+                  data/PAS_data.tar.gz
+
+# Add config file to distribution 
+EXTRA_DIST = $(localstate_DATA) 
+
 noinst_PROGRAMS = persistence_client_library_test \
                   persistence_client_library_test_file \
                   persistence_client_library_dbus_test  \

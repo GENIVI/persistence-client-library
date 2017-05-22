@@ -352,7 +352,7 @@ int pclVerifyConsistency(const char* origPath, const char* backupPath, const cha
                      {
                         DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum no match csum and original"));
 
-                        if(strcmp(origCsumBuf, origCsumBuf)  != 0)
+                        if(strcmp(backCsumBuf, origCsumBuf)  != 0)
                         {
                            DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("verifyConsist- csum no match backup and original"));
                            close(handle);

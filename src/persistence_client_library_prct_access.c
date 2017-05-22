@@ -224,9 +224,9 @@ int get_db_context(PersistenceInfo_s* dbContext, const char* resource_id, unsign
          dbContext->configKey.type  = PersistenceResourceType_key;
       }
 
-      memcpy(dbContext->configKey.customID, "A_CUSTOM_ID", strlen("A_CUSTOM_ID"));
-      memcpy(dbContext->configKey.reponsible, "default", strlen("default"));
-      memcpy(dbContext->configKey.custom_name, "default", strlen("default"));
+      strncpy(dbContext->configKey.customID,    "A_CUSTOM_ID", strlen("A_CUSTOM_ID "));
+      strncpy(dbContext->configKey.reponsible,  "default",     strlen("default"));
+      strncpy(dbContext->configKey.custom_name, "default",     strlen("default"));
 
       DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("gDBCtx - create res not in PRCT => key:"), DLT_STRING(resource_id) );
 
@@ -263,12 +263,12 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
          if(dbContext->context.seat_no == 0)
          {
             // /User/<user_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s%d/%s", plugin_gUser, dbContext->context.user_no, resource_id);
+            snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s%u/%s", plugin_gUser, dbContext->context.user_no, resource_id);
          }
          else
          {
             // /User/<user_no_parameter>/Seat/<seat_no_parameter> is added in front of the resource ID as the key string.
-            snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s%d%s%d/%s", plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
+            snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "%s%u%s%u/%s", plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
          }
       }
       storePolicy = PersistenceStorage_local;
@@ -283,11 +283,11 @@ int get_db_path_and_key(PersistenceInfo_s* dbContext, const char* resource_id, c
       // /User/<user_no_parameter> and /Seat/<seat_no_parameter> are add after /<LDBID parameter> if there are different than 0.
       if(dbContext->context.seat_no != 0)
       {
-         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "/%x%s%d%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
+         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "/%x%s%u%s%u/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, plugin_gSeat, dbContext->context.seat_no, resource_id);
       }
       else
       {
-         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "/%x%s%d/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, resource_id);
+         snprintf(dbKey, PERS_DB_MAX_LENGTH_KEY_NAME, "/%x%s%u/%s", dbContext->context.ldbid, plugin_gUser, dbContext->context.user_no, resource_id);
       }
       storePolicy = PersistenceStorage_local;
    }
