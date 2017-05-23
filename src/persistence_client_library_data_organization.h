@@ -291,6 +291,9 @@ extern int gDbusPendingRvalue __attribute__ ((visibility ("hidden")));
 extern int gPasRegistered;
 
 
+extern int gDbusMainloopRunning;
+
+
 /**
  * @brief definition of change callback function
  *

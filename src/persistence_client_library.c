@@ -233,22 +233,27 @@ int pclInitLibrary(const char* appName, int shutdownMode)
                                     DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter) );
 
             // do check if there are remaining shared memory and semaphores for local app
+            // (only when PCO key-value-store database backend is beeing used)
             checkLocalArtefacts("/dev/shm/", appName);
             //checkGroupArtefacts("/dev/shm", "group_");
 
             rval = private_pclInitLibrary(appName, shutdownMode);
+            if(rval >= 0)
+            {
+               gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
+            }
          }
          else
          {
             DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary - App:"), DLT_STRING(gAppId),
                                                   DLT_STRING("- ONLY INCREMENT init counter: "), DLT_UINT(gPclInitCounter) );
-         }
 
-         gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
+            gPclInitCounter++;     // increment after private init, otherwise atomic access is too early
+         }
       }
       else
       {
-         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - appName NULL"));
+         DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("pclInitLibrary - appName invalid"));
          rval = EPERS_COMMON;
       }
 
@@ -266,11 +271,55 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    // no need for NULL ptr check for appName, already done in calling function
 
-   int rval = 1;
+   int rval = 1, pasRegStatus = -1;
 
    char blacklistPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
    gShutdownMode = shutdownMode;
+
+#if USE_FSYNC
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using fsync version"));
+#else
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using datasync version (DEFAULT)"));
+#endif
+
+#if USE_FILECACHE
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache"));
+   pfcInitCache(appName);
+#endif
+
+   if(gDbusMainloopRunning == 0) // check if dbus has been already initialized
+   {
+      if(setup_dbus_mainloop() == -1)
+      {
+        DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed to setup main loop"));
+        return EPERS_DBUS_MAINLOOP;
+      }
+      gDbusMainloopRunning = 1;
+   }
+
+#if USE_PASINTERFACE
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
+
+   pasRegStatus = register_pers_admin_service();
+
+   if(pasRegStatus == -1)
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("initLibrary - Failed reg to PAS dbus interface"));
+   }
+   else if(pasRegStatus < -1)
+   {
+      DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("initLibrary - registration to PAS currently not possible."));
+      return EPERS_NO_REG_TO_PAS;
+   }
+   else
+   {
+     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("initLibrary - Successfully established IPC protocol for PCL."));
+     gPasRegistered = 1;   // remember registration to PAS
+   }
+#else
+   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
+#endif
 
    strncpy(gAppId, appName, PERS_RCT_MAX_LENGTH_RESPONSIBLE);  // assign application name
    gAppId[PERS_RCT_MAX_LENGTH_RESPONSIBLE-1] = '\0';
@@ -295,17 +344,6 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
       gIsNodeStateManager = 1;
    }
 
-#if USE_FSYNC
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using fsync version"));
-#else
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using datasync version (DEFAULT)"));
-#endif
-
-#if USE_FILECACHE
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("Using the filecache"));
-   pfcInitCache(appName);
-#endif
-
    // Assemble backup blacklist path
    snprintf(blacklistPath, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "%s%s/%s", CACHEPREFIX, appName, gBackupFilename);
 
@@ -314,11 +352,6 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
      DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("initLibrary - Err access blacklist:"), DLT_STRING(blacklistPath));
    }
 
-   if(setup_dbus_mainloop() == -1)
-   {
-     DLT_LOG(gPclDLTContext, DLT_LOG_ERROR, DLT_STRING("initLibrary - Failed to setup main loop"));
-     return EPERS_DBUS_MAINLOOP;
-   }
 
    if(gShutdownMode != PCL_SHUTDOWN_TYPE_NONE)
    {
@@ -327,20 +360,6 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("initLibrary => Failed reg to LC dbus interface"));
      }
    }
-#if USE_PASINTERFACE
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface is enabled!!"));
-   if(register_pers_admin_service() == -1)
-   {
-     DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("initLibrary - Failed reg to PAS dbus interface"));
-   }
-   else
-   {
-     DLT_LOG(gPclDLTContext, DLT_LOG_INFO,  DLT_STRING("initLibrary - Successfully established IPC protocol for PCL."));
-     gPasRegistered = 1;   // remember registration to PAS
-   }
-#else
-   DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("PAS interface not enabled, enable with \"./configure --enable-pasinterface\""));
-#endif
 
    if((rval = load_custom_plugins(customAsyncInitClbk)) < 0)      // load custom plugins
    {
@@ -375,7 +394,8 @@ int pclDeinitLibrary(void)
                                                DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter));
          rval = private_pclDeinitLibrary();
 
-         gPclInitCounter--;   // decrement init counter
+         gDbusMainloopRunning = 0;
+         gPclInitCounter--;         // decrement init counter
          DLT_UNREGISTER_CONTEXT(gPclDLTContext);
       }
       else if(gPclInitCounter > 1)

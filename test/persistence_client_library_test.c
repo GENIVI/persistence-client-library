@@ -1561,6 +1561,75 @@ START_TEST(test_NoPluginFunc)
 END_TEST
 
 
+
+void* pasInstallThread(void* userData)
+{
+   // install data
+   printf("#### Start installation of data \n");
+   if(system("persadmin_tool install /usr/local/var/PAS_data.tar.gz") == -1)
+   {
+      printf("#### Failed to install data\n");
+   }
+   printf("#### Installation of data succeeded\n");
+
+   pthread_exit(0);
+}
+
+
+
+START_TEST(test_PclInitPasNotAllowed)
+{
+   pthread_t installThread;
+   int rval = -1;
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   setenv(envVariable, "/etc/pclCustomLibConfigFileTest.cfg", 1);
+
+   if(pthread_create(&installThread, NULL, pasInstallThread, NULL) == -1)
+   {
+      printf("#### Failed to create install thread\n");
+   }
+   else
+   {
+      rval = pclInitLibrary(gTheAppId, shutdownReg);
+      //printf("#### 1 pclInit: %d\n\n", rval);
+      fail_unless(rval == 1, "Should be allowed to register");
+      pclDeinitLibrary();
+
+      rval = pclInitLibrary(gTheAppId, shutdownReg);
+      printf("#### 2 pclInit: %d\n", rval);
+      //fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be not allowed to register");
+      pclDeinitLibrary();
+
+      rval = pclInitLibrary(gTheAppId, shutdownReg);
+      printf("#### 3 pclInit: %d\n", rval);
+      //fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be not allowed to register");
+      pclDeinitLibrary();
+
+      rval = pclInitLibrary(gTheAppId, shutdownReg);
+      printf("#### 4 pclInit: %d\n", rval);
+      //fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be not allowed to register");
+      pclDeinitLibrary();
+   }
+
+   //printf("#### wait for install thread to end\n");
+   if(pthread_join(installThread, NULL) != 0)    // wait until thread has ended
+      printf("#### pthread_join - FAILED\n");
+
+
+   // printf("#### Install thread ended\n");
+   rval = pclInitLibrary(gTheAppId, shutdownReg);
+   //printf("#### 5 pclInit: %d\n\n", rval);
+   fail_unless(rval == 1, "Should be allowed to register");
+   pclDeinitLibrary();
+
+   (void)unsetenv(envVariable);
+}
+END_TEST
+
+
+
 static Suite* persistenceClientLib_suite_multi()
 {
    const char* testSuiteName = "\n\nPersistence Client Library (Key-API) - Multi";
@@ -1695,6 +1764,9 @@ static Suite * persistenceClientLib_suite()
    tcase_add_test(tc_SharedData, test_SharedData);
    tcase_set_timeout(tc_SharedData, 10);
 
+   TCase * tc_PclInitPasNotAllowed = tcase_create("PclInitPasNotAllowed");
+   tcase_add_test(tc_PclInitPasNotAllowed, test_PclInitPasNotAllowed);
+   tcase_set_timeout(tc_PclInitPasNotAllowed, 20);
 
 #if 1
    suite_add_tcase(s, tc_NoPluginFunc);
@@ -1755,6 +1827,9 @@ static Suite * persistenceClientLib_suite()
    suite_add_tcase(s, tc_SharedData);
    tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
+
+
+   suite_add_tcase(s, tc_PclInitPasNotAllowed);    // NOTE: make sure this test is run as the last test
 #endif
 
 #if USE_APPCHECK

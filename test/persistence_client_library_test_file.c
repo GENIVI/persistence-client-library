@@ -109,7 +109,6 @@ const char* gFileCsumNOKCsum  = "/Data/mnt-backup/lt-persistence_client_library_
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gPcltDLTContext);
 
-
 // function prototype
 void run_concurrency_test();
 int check_environment();
@@ -144,37 +143,60 @@ void setupRecoveryData(const char* originalFileName, const char* origData,
    ssize_t written = 0;
 
    // write data file
-   fd = open(originalFileName,  O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-   written = write(fd, origData, strlen(origData));
-   if(written != strlen(origData))
-      printf("Failed to write file - %s\n", originalFileName);
-   close(fd);
-   fd = -1;
+   fd = open(originalFileName,  O_CREAT|O_RDWR|O_TRUNC, 0744);
+   if(fd != -1)
+   {
+      written = write(fd, origData, strlen(origData));
+      if(written != strlen(origData))
+         printf("Failed to write file 1 - %s - %s\n", originalFileName, strerror(errno));
+      close(fd);
+      fd = -1;
+   }
+   else
+   {
+      printf("Failed to open file 1 - %s - %s\n", originalFileName, strerror(errno));
+   }
 
    if(backupFileName != NULL)
    {
       // write backup file
-      fd = open(backupFileName,  O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-      written = write(fd, backupData, strlen(backupData));
-      if(written != strlen(backupData))
-         printf("Failed to write file - %s\n", backupFileName);
-      close(fd);
-      fd = -1;
+      fd = open(backupFileName,  O_CREAT|O_RDWR|O_TRUNC, 0744);
+      if(fd != -1)
+      {
+         written = write(fd, backupData, strlen(backupData));
+         if(written != strlen(backupData))
+            printf("Failed to write file 2 - %s - %s\n", backupFileName, strerror(errno));
+         close(fd);
+         fd = -1;
+      }
+      else
+      {
+         printf("Failed to open file 2 - %s - %s\n", originalFileName, strerror(errno));
+      }
    }
+
 
    if(csumFileName != NULL)
    {
       // write checksum file
-      fd = open(csumFileName,  O_CREAT|O_RDWR|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-      written = write(fd, csumBuffer, strlen(csumBuffer));
-      if(written != strlen(csumBuffer))
-         printf("Failed to write file - %s\n", csumFileName);
-      close(fd);
-      fd = -1;
+      fd = open(csumFileName,  O_CREAT|O_RDWR|O_TRUNC, 0744);
+      if(fd != -1)
+      {
+         written = write(fd, csumBuffer, strlen(csumBuffer));
+         if(written != strlen(csumBuffer))
+            printf("Failed to write file 3 - %s - %s\n", csumFileName, strerror(errno));
+         close(fd);
+         fd = -1;
+      }
+      else
+      {
+         printf("Failed to open file 3 - %s - %s\n", originalFileName, strerror(errno));
+      }
    }
 
 }
 
+extern int pclCreateFile(const char* path, int chached);
 
 void data_setupBandR(void)
 {
@@ -183,6 +205,8 @@ void data_setupBandR(void)
    //const char* validCs   = "809ff12f";          // checksum for gWriteBuffer
    const char* validCs2  = "2f7fb691";          // checksum for gWriteBuffer2
    const char* validCs3  = "e6f52bda";          // checksum for gWriteBuffer3
+
+   (void)pclCreateFile("/Data/mnt-backup/lt-persistence_client_library_test/user/200/seat/100/media/dummy.dum", 0);
 
 
    // create test data (original files only)
@@ -1241,7 +1265,7 @@ START_TEST(test_FileBackupAndRecovery)
 
    (void)pclInitLibrary(gTheAppId, shutdownReg);
 
-#if 1
+
    //
    // test backup and checksum creation
    //
@@ -1355,9 +1379,7 @@ START_TEST(test_FileBackupAndRecovery)
    fail_unless(access(gFile2Backup, F_OK) != 0, "Backup 3 does exist, but should not\n");
    fail_unless(access(gFile2Csum, F_OK) != 0, "Csum 3 does exist, but should not\n");
 
-#endif
 
-#if 1
    //
    // now the error cases
    //
@@ -1415,7 +1437,7 @@ START_TEST(test_FileBackupAndRecovery)
    sizeRead = pclFileReadData(fd, readBuffer, 8192);
    fail_unless(sizeRead <= EPERS_COMMON, "Read succeeded, but should not => return: %dn", sizeRead);
    pclFileClose(fd);
-#endif
+
 
    // only backup file available, matches original data
    // expected: keep original
@@ -1500,6 +1522,8 @@ static Suite * persistencyClientLib_suite()
    tcase_add_test(tc_FileBackupAndRecovery, test_FileBackupAndRecovery);
    tcase_set_timeout(tc_FileBackupAndRecovery, 30);
 
+#if 1
+
    suite_add_tcase(s, tc_persDataFile);
    tcase_add_checked_fixture(tc_persDataFile, data_setup, data_teardown);
 
@@ -1532,6 +1556,16 @@ static Suite * persistencyClientLib_suite()
 
 
     suite_add_tcase(s, tc_InitDeinit);    // I M P O R T A N T: this needs to be the last test, as this tests ends NSM
+
+#else
+
+    printf("Do backup recovery test case now\n");
+    suite_add_tcase(s, tc_FileBackupAndRecovery);
+    tcase_add_checked_fixture(tc_FileBackupAndRecovery, data_setupBandR, data_teardownBandR);
+
+#endif
+
+
 
     //suite_add_tcase(s, tc_MultiFileReadWrite);
     //tcase_add_checked_fixture(tc_MultiFileReadWrite, data_setup, data_teardown);
@@ -2278,6 +2312,9 @@ int main(int argc, char *argv[])
    return (0==nr_failed)?EXIT_SUCCESS:EXIT_FAILURE;
 
 }
+
+
+
 
 const char* gWriteBuffer =   "Pack my box with five dozen liquor jugs. - "
    "Jackdaws love my big sphinx of quartz. - "

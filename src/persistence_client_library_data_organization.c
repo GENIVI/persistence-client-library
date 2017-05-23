@@ -30,6 +30,9 @@ unsigned int gPclInitCounter = 0;
 /// flag to indicate if PCL has registered to PAS
 int gPasRegistered = 0;
 
+/// flag to indicate if dbus mainloop is already running
+int gDbusMainloopRunning = 0;
+
 int gSyncFd = -1;
 
 int gIsNodeStateManager = 0;

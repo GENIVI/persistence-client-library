@@ -126,6 +126,8 @@ extern "C" {
 /// plugin variable not available
 #define EPERS_NO_PLUGIN_VAR       (-46)
 /// requested handle is not valid. \since PCL v7.0.3
+#define EPERS_NO_REG_TO_PAS       (-47)
+/// requested handle is not valid. \since PCL v7.0.3
 #define EPERS_INVALID_HANDLE     (-1000)
 
 #ifdef __cplusplus
