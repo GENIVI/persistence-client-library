@@ -458,7 +458,7 @@ int main(int argc, char *argv[])
 
 void printSynopsis()
 {
-	printf("Usage: persclient_tool [-o <action to do>] [-a <application name>] [-r <resource id>] [-l <logical db id>]\n");
+	printf("Usage: persistence_client_tool [-o <action to do>] [-a <application name>] [-r <resource id>] [-l <logical db id>]\n");
 	printf("                       [-u <user no>] [-s <seat no>] [-f <file>] [-p <payload>] [-H] [-h] [-v]\n");
 
 	printf("\n");
@@ -481,16 +481,16 @@ void printSynopsis()
 	printf("\n");
 	printf("Examples:\n");
    printf("1.) Read a Key and show value as HexDump:\n");
-	printf("    persclient_tool -o readkey -a MyApplication -r MyKey                   optional parameters: [-l 0xFF -u 0 -s 0]\n");
+	printf("    persistence_client_tool -o readkey -a MyApplication -r MyKey                   optional parameters: [-l 0xFF -u 0 -s 0]\n");
 	printf("2.) Read a Key into a file:\n");
-	printf("    persclient_tool -o readkey -a MyApplication -r MyKey -f outfile.bin    optional parameters: [-l 0xFF -u 0 -s 0 -H]\n");
+	printf("    persistence_client_tool -o readkey -a MyApplication -r MyKey -f outfile.bin    optional parameters: [-l 0xFF -u 0 -s 0 -H]\n");
 	printf("3.) Write a Key and use the <payload> as the data source.:\n");
-	printf("    persclient_tool -o writekey -a MyApplication -r MyKey -p 'Hello World' optional parameters: [-l 0xFF -u 0 -s 0 -H]\n");
+	printf("    persistence_client_tool -o writekey -a MyApplication -r MyKey -p 'Hello World' optional parameters: [-l 0xFF -u 0 -s 0 -H]\n");
 	printf("4.) Write a Key and use a file as the data source.:\n");
-	printf("    persclient_tool -o writekey -a MyApplication -r MyKey -f infile.bin    optional parameters: [-l 0xFF -u 0 -s 0 -H]\n");
+	printf("    persistence_client_tool -o writekey -a MyApplication -r MyKey -f infile.bin    optional parameters: [-l 0xFF -u 0 -s 0 -H]\n");
 	printf("5.) Get the size of a key [bytes]:\n");
-	printf("    persclient_tool -o getkeysize -a MyApplication -r MyKey                optional parameters: [-l 0xFF -u 0 -s 0]\n");
+	printf("    persistence_client_tool -o getkeysize -a MyApplication -r MyKey                optional parameters: [-l 0xFF -u 0 -s 0]\n");
 	printf("6.) Delete a key:\n");
-	printf("    persclient_tool -o deletekey -a MyApplication -r MyKey                 optional parameters: [-l 0xFF -u 0 -s 0]\n");
+	printf("    persistence_client_tool -o deletekey -a MyApplication -r MyKey                 optional parameters: [-l 0xFF -u 0 -s 0]\n");
 }
 
