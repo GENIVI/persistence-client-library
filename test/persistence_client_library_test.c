@@ -29,11 +29,14 @@
 
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/sendfile.h>
 
 #include <dbus/dbus.h>
 
 #include <check.h>
+#include <signal.h>
 
+#include "../include/persistence_client_library_file.h"
 #include "../include/persistence_client_library_key.h"
 #include "../include/persistence_client_library.h"
 #include "../include/persistence_client_library_error_def.h"
@@ -1562,10 +1565,143 @@ END_TEST
 
 
 
+int createSem(const char* semName)
+{
+   int ret = -1;
+   sem_t * sem;
+   if(semName != NULL)
+   {
+      sem = sem_open(semName, O_CREAT, 0644, 0);
+      if(sem != SEM_FAILED)
+      {
+         ret = 0;
+      }
+   }
+   return ret;
+}
+
+START_TEST(test_RemoveSem)
+{
+   int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
+   int i=0;
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_RemoveSem"));
+
+   // change to an wrong plugin configuration file using environment variable
+   setenv(envVariable, "/etc/pclCustomLibConfigFileWrongDefault.cfg", 1);
+   static const char* semFiles[] = {   "_Data_mnt_c_lt_persistence_client_library_test_cached_itz-sem",
+                                       "_Data_mnt_c_lt_persistence_client_library_test_configurable_default_data_itz-sem",
+                                       "_Data_mnt_c_lt_persistence_client_library_test_default_data_itz-sem",
+                                       "_Data_mnt_wt_lt_persistence_client_library_test_resource_table_cfg_itz-sem",
+                                       "_Data_mnt_wt_lt_persistence_client_library_test_wt_itz-sem",
+                                        NULL };
+
+   while(semFiles[i] != NULL)
+   {
+      fail_unless(createSem(semFiles[i++]) >= 0);
+   }
+
+   (void)pclInitLibrary(gTheAppId, shutdownReg);   // after calling init, files created above must be deleted
+
+   i=0;
+   while(semFiles[i] != NULL)
+   {
+      fail_unless(access(semFiles[i++], F_OK) == -1);
+   }
+
+   pclDeinitLibrary();
+
+   (void)unsetenv(envVariable);
+
+}
+END_TEST
+
+
+
+
+START_TEST(test_AccessRights)
+{
+   int i=0, ret = -1, fd = -1;
+   char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+   char write2[128] = { 0 };
+   char key[128] = { 0 };
+
+   DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("PCL_TEST test_RemoveSem"));
+
+   // change to an wrong plugin configuration file using environment variable
+   setenv(envVariable, "/etc/pclCustomLibConfigFileTest.cfg", 1);
+
+   (void)pclInitLibrary("helloworldpcl", PCL_SHUTDOWN_TYPE_NONE);   // after calling init, files created above must be deleted
+
+   //write to cache
+   for(i=0; i< 300; i++)
+   {
+      memset(key, 0, 128);
+      memset(write2, 0, sizeof((const char*)write2));
+      snprintf(key, 128, "Key_in_loop_%d_%d",i,i*i);
+      snprintf(write2, 128, "DATA-%d-%d",i,i*i );
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, (const char*)key, 1000, 1, (unsigned char*)write2, (int)strlen((const char*)write2));
+      fail_unless(ret == strlen((const char*)write2) , "Wrong write size while inserting key: %d", ret);
+   }
+
+
+
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "data/rctFileWriteThrough", 1000, 1);
+   fail_unless(fd != -1, "Could not open file ==> data/rctFileWriteThrough");
+
+   ret = pclFileWriteData(fd, "Some file data_rctFileWriteThrough", (int)strlen("Some file data_rctFileWriteThrough"));
+   fail_unless(ret == (int)strlen("Some file data_rctFileWriteThrough"), "Wrong file size  ==> rctFileWriteThrough: %d", ret);
+
+   ret = pclFileClose(fd);
+   fail_unless(ret == 0, "Failed to close file: data/rctFileWriteThrough");
+
+
+
+   fd = -1;
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "data/rctFileCached", 1000, 1);
+   fail_unless(fd != -1, "Could not open file ==> data/rctFileCached");
+
+   ret = pclFileWriteData(fd, "Some file data_rctFileCached", (int)strlen("Some file data_rctFileCached"));
+   fail_unless(ret == (int)strlen("Some file data_rctFileCached"), "Wrong file size  ==> rctFileCached: %d", ret);
+
+   ret = pclFileClose(fd);
+   fail_unless(ret == 0, "Failed to close file: data/rctFileCached");
+
+
+
+
+   fd = -1;
+   fd = pclFileOpen(PCL_LDBID_LOCAL, "data/file1.txt", 1000, 1);
+   fail_unless(fd != -1, "Could not open file ==> data/file1");
+
+   ret = pclFileWriteData(fd, "Some file data_file1", (int)strlen("Some file data_file1"));
+   fail_unless(ret == (int)strlen("Some file data_file1"), "Wrong file size  ==> file1: %d", ret);
+
+   ret = pclFileClose(fd);
+   fail_unless(ret == 0, "Failed to close file: data/file1");
+
+
+
+   ret = pclLifecycleSet(PCL_SHUTDOWN);
+   fail_unless(ret != EPERS_SHUTDOWN_NO_PERMIT, "Lifecycle set NOT allowed, but should");
+
+   pclDeinitLibrary();
+
+   (void)unsetenv(envVariable);
+
+}
+END_TEST
+
+
+
+
+
 void* pasInstallThread(void* userData)
 {
    // install data
-   printf("#### Start installation of data \n");
+
    if(system("persadmin_tool install /usr/local/var/PAS_data.tar.gz") == -1)
    {
       printf("#### Failed to install data\n");
@@ -1592,24 +1728,21 @@ START_TEST(test_PclInitPasNotAllowed)
    }
    else
    {
+      sleep(1);
       rval = pclInitLibrary(gTheAppId, shutdownReg);
       //printf("#### 1 pclInit: %d\n\n", rval);
-      fail_unless(rval == 1, "Should be allowed to register");
+      fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be NOT allowed to register");
+      pclDeinitLibrary();
+
+
+      rval = pclInitLibrary(gTheAppId, shutdownReg);
+      //printf("#### 2 pclInit: %d\n\n", rval);
+      fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be NOT allowed to register");
       pclDeinitLibrary();
 
       rval = pclInitLibrary(gTheAppId, shutdownReg);
-      printf("#### 2 pclInit: %d\n", rval);
-      //fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be not allowed to register");
-      pclDeinitLibrary();
-
-      rval = pclInitLibrary(gTheAppId, shutdownReg);
-      printf("#### 3 pclInit: %d\n", rval);
-      //fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be not allowed to register");
-      pclDeinitLibrary();
-
-      rval = pclInitLibrary(gTheAppId, shutdownReg);
-      printf("#### 4 pclInit: %d\n", rval);
-      //fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be not allowed to register");
+      //printf("#### 3 pclInit: %d\n\n", rval);
+      fail_unless(rval == EPERS_NO_REG_TO_PAS, "Should be NOT allowed to register");
       pclDeinitLibrary();
    }
 
@@ -1620,7 +1753,7 @@ START_TEST(test_PclInitPasNotAllowed)
 
    // printf("#### Install thread ended\n");
    rval = pclInitLibrary(gTheAppId, shutdownReg);
-   //printf("#### 5 pclInit: %d\n\n", rval);
+   printf("#### 5 pclInit: %d\n\n", rval);
    fail_unless(rval == 1, "Should be allowed to register");
    pclDeinitLibrary();
 
@@ -1764,6 +1897,14 @@ static Suite * persistenceClientLib_suite()
    tcase_add_test(tc_SharedData, test_SharedData);
    tcase_set_timeout(tc_SharedData, 10);
 
+   TCase * tc_RemoveSem = tcase_create("RemoveSem");
+   tcase_add_test(tc_RemoveSem, test_RemoveSem);
+   tcase_set_timeout(tc_RemoveSem, 12);
+
+
+   TCase * tc_AccessRights = tcase_create("AccessRights");
+   tcase_add_test(tc_AccessRights, test_AccessRights);
+
    TCase * tc_PclInitPasNotAllowed = tcase_create("PclInitPasNotAllowed");
    tcase_add_test(tc_PclInitPasNotAllowed, test_PclInitPasNotAllowed);
    tcase_set_timeout(tc_PclInitPasNotAllowed, 20);
@@ -1827,9 +1968,15 @@ static Suite * persistenceClientLib_suite()
    suite_add_tcase(s, tc_SharedData);
    tcase_add_checked_fixture(tc_SharedData, data_setup, data_teardown);
 
-
+   suite_add_tcase(s, tc_RemoveSem);
 
    suite_add_tcase(s, tc_PclInitPasNotAllowed);    // NOTE: make sure this test is run as the last test
+
+#else
+
+   //suite_add_tcase(s, tc_AccessRights);
+   suite_add_tcase(s, tc_PclInitPasNotAllowed);    // NOTE: make sure this test is run as the last test
+
 #endif
 
 #if USE_APPCHECK
@@ -1848,6 +1995,278 @@ static Suite * persistenceClientLib_suite()
    tcase_set_timeout(tc_LC_DbusInterface, 8);
 #endif
 
+   return s;
+}
+
+
+
+
+
+static void doFileCopy(const char* src, const char* dst)
+{
+   if(src != NULL && dst != NULL)
+   {
+      int srcFd = -1, dstFd = -1;
+
+      srcFd = open(src, O_RDWR);
+      if(srcFd != -1)
+      {
+         struct stat buf;
+         memset(&buf, 0, sizeof(buf));
+
+         if(fstat(srcFd, &buf) != -1)
+         {
+            dstFd = open(dst, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+            if((int)sendfile(dstFd, srcFd, 0, (size_t)buf.st_size) == -1)
+            {
+               printf("Failed to copy file: %s\n", strerror(errno));
+            }
+            close(dstFd);
+         }
+         close(srcFd);
+      }
+   }
+}
+
+
+START_TEST(test_CrashingApp)
+{
+
+   int ret = 0, rval = -1, i = 0;
+   char key[128] = {0};
+   char writeData[128] = {0};
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   setenv(envVariable, "/etc/pclCustomLibConfigFileTest.cfg", 1);
+
+   //Cleaning up
+   remove("/dev/shm/_tmp_attachToExistingCacheFragment_db-cache");
+   remove("/dev/shm/_tmp_attachToExistingCacheFragment_db-ht");
+   remove("/dev/shm/_tmp_attachToExistingCacheFragment_db-shm-info");
+
+   // backup original database
+   doFileCopy("/Data/mnt-c/lt-persistence_client_library_test/cached.itz",
+              "/Data/mnt-c/lt-persistence_client_library_test/cached_backup.itz");
+
+   remove("/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
+   sync();
+
+   //
+   // populate database with some new data
+   //
+   pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NONE);
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "Key_A", 2, 2, (unsigned char*)"some_Key_A_data", (int)strlen("some_Key_A_data"));
+   fail_unless(ret == strlen("some_Key_A_data"), "Wrong write size");
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "Key_BB", 2, 2, (unsigned char*)"some_Key_BB_data", (int)strlen("some_Key_BB_data"));
+   fail_unless(ret == strlen("some_Key_BB_data"), "Wrong write size");
+
+   ret = pclKeyWriteData(PCL_LDBID_LOCAL, "Key_CCC", 2, 2, (unsigned char*)"some_Key_CCC_data", (int)strlen("some_Key_CCC_data"));
+   fail_unless(ret == strlen("some_Key_CCC_data"), "Wrong write size");
+
+   // now write back data from cache to non volatile memory device
+   rval = pclLifecycleSet(PCL_SHUTDOWN);
+   fail_unless(rval == 0, "failed pclLifecycleSet: %d", rval);
+
+   pclDeinitLibrary();
+
+   //
+   // write some data to cache, and after writing to cache let the test crash to make sure data
+   // will not be written back to non volatile memory and the data remains only in cache
+   //
+   pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NONE);
+
+   // write new keys to cache
+   for(i=0; i< 400; i++)
+   {
+      memset(key, 0, 128);
+      memset(writeData, 0, 128);
+      snprintf(key, 128, "Key_in_loop_%d_%d_cache",i,i*i);
+      snprintf(writeData, 128, "DATA-%d_cache",i);
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, key, 3, 3, (unsigned char*)writeData, (int)strlen(writeData));
+      fail_unless(ret == strlen(writeData), "Wrong write size");
+   }
+
+   // now cause a crash (SIGILL) is simulated ==> next test process (test_RestartedApp) tries to read data from cache and from database file
+   raise(SIGILL);
+}
+END_TEST
+
+
+
+START_TEST(test_RestartedApp)
+{
+   int ret = 0, rval = -1, i = 0;
+   char key[128] = {0};
+   char writeData[128] = {0};
+   char readData[128] = {0};
+   const char* envVariable = "PERS_CLIENT_LIB_CUSTOM_LOAD";
+
+   setenv(envVariable, "/etc/pclCustomLibConfigFileTest.cfg", 1);
+
+   //
+   // check if all temporary files are available from presious crashed test
+   //
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-cache", F_OK)    == 0);
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-ht", F_OK)       == 0);
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-shm-info", F_OK) == 0);
+
+
+   pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NONE);
+
+   //
+   // try to read data from database file
+   //
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "Key_A", 2, 2, (unsigned char*)readData, 128);
+   //printf("Key: - %s - | Data: - %s - \n", key, readData);
+   fail_unless(strncmp((char*)readData, "some_Key_A_data", strlen("some_Key_A_data")) == 0, "Wrong data read - file 1 - %d", ret);
+   fail_unless(ret == strlen("some_Key_A_data"), "Wrong size - file 1 - %d", ret);
+
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "Key_BB", 2, 2, (unsigned char*)readData, 128);
+   fail_unless(strncmp((char*)readData, "some_Key_BB_data", strlen("some_Key_BB_data")) == 0, "Wrong data read - file 2 - %d", ret);
+   fail_unless(ret == strlen("some_Key_BB_data"), "Wrong size - file 2 - %d", ret);
+
+   ret = pclKeyReadData(PCL_LDBID_LOCAL, "Key_CCC", 2, 2, (unsigned char*)readData, 128);
+   fail_unless(strncmp((char*)readData, "some_Key_CCC_data", strlen("some_Key_CCC_data")) == 0, "Wrong data read - file 3 - %d", ret);
+   fail_unless(ret == strlen("some_Key_CCC_data"), "Wrong size - file 2 - %d", ret);
+
+
+   //
+   // now try to read data from cache which has been written there by the previous test (test_CrashingApp)
+   //
+   for(i=0; i< 400; i++)
+   {
+      memset(key, 0, 128);
+      memset(readData, 0, 128);
+      memset(writeData, 0, 128);
+      snprintf(key, 128, "Key_in_loop_%d_%d_cache",i,i*i);
+      snprintf(writeData, 128, "DATA-%d_cache",i); // reference data that should be read
+
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, key, 3, 3, (unsigned char*)readData, 128);
+      //printf("Key: - %s - | Data: - %s - \n", key, readData);
+      fail_unless(strncmp((char*)readData, writeData, strlen(writeData)) == 0, "Wrong data read - cache - %d", i);
+      fail_unless(ret == strlen(writeData), "Wrong size - cache - %d", i);
+   }
+
+
+   //
+   // now add some new keys
+   //
+   for(i=0; i< 400; i++)
+   {
+      memset(key, 0, 128);
+      memset(writeData, 0, 128);
+      snprintf(key, 128, "new_Key_in_loop_%d_%d_cache",i,i*i);
+      snprintf(writeData, 128, "new_DATA-%d_cache",i);
+
+      ret = pclKeyWriteData(PCL_LDBID_LOCAL, key, 4, 4, (unsigned char*)writeData, (int)strlen(writeData));
+      fail_unless(ret == strlen(writeData), "Wrong write size");
+   }
+
+   // now write back data from cache to non volatile memory device
+   rval = pclLifecycleSet(PCL_SHUTDOWN);
+   fail_unless(rval == 0, "failed pclLifecycleSet");
+
+   pclDeinitLibrary();
+
+
+   //
+   // check if all temporary files were removed
+   //
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-cache", F_OK)    == -1);
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-ht", F_OK)       == -1);
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-shm-info", F_OK) == -1);
+
+
+   //
+   //try to read all keys in database
+   //
+   pclInitLibrary(gTheAppId, PCL_SHUTDOWN_TYPE_NONE);
+
+   //
+   // read keys previously in cache
+   //
+   for(i=0; i< 400; i++)
+   {
+      memset(key, 0, 128);
+      memset(readData, 0, 128);
+      memset(writeData, 0, 128);
+      snprintf(key, 128, "Key_in_loop_%d_%d_cache",i,i*i);
+      snprintf(writeData, 128, "DATA-%d_cache",i); // reference data that should be read
+
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, key, 3, 3, (unsigned char*)readData, 128);
+      //printf("Key: - %s - | Data: - %s - \n", key, readData);
+      fail_unless(strncmp((char*)readData, writeData, strlen(writeData)) == 0, "Wrong data read - cache - %d", i);
+      fail_unless(ret == strlen(writeData), "Wrong size - cache - %d", i);
+   }
+
+
+   //
+   // read newly added keys
+   //
+   for(i=0; i< 400; i++)
+   {
+      memset(key, 0, 128);
+      memset(readData, 0, 128);
+      memset(writeData, 0, 128);
+      snprintf(key, 128, "new_Key_in_loop_%d_%d_cache",i,i*i);
+      snprintf(writeData, 128, "new_DATA-%d_cache",i); // reference data that should be read
+
+      ret = pclKeyReadData(PCL_LDBID_LOCAL, key, 4, 4, (unsigned char*)readData, 128);
+      //printf("Key: - %s - | Data: - %s - \n", key, readData);
+      fail_unless(strncmp((char*)readData, writeData, strlen(writeData)) == 0, "Wrong data read - cache - %d", i);
+      fail_unless(ret == strlen(writeData), "Wrong size - cache - %d", i);
+   }
+
+
+   rval = pclLifecycleSet(PCL_SHUTDOWN);
+   fail_unless(rval == 0, "failed pclLifecycleSet");
+
+   pclDeinitLibrary();
+
+
+   //
+   // check if all temporary files were removed
+   //
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-cache", F_OK)    == -1);
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-ht", F_OK)       == -1);
+   fail_unless(access("/dev/shm/_Data_mnt_c_lt_persistence_client_library_test_cached_itz-shm-info", F_OK) == -1);
+
+
+   // recover original database
+   doFileCopy("/Data/mnt-c/lt-persistence_client_library_test/cached_backup.itz",
+              "/Data/mnt-c/lt-persistence_client_library_test/cached.itz");
+
+   remove("/Data/mnt-c/lt-persistence_client_library_test/cached_backup.itz");
+
+   sync();
+}
+END_TEST
+
+
+
+
+static Suite * persistenceClientLib_suite_appcrash()
+{
+   const char* testSuiteName = "\n\nPersistence Client Library (App crash)";
+
+   Suite * s  = suite_create(testSuiteName);
+
+   TCase* tc_CrashingApp = tcase_create("CrashingApp");
+   tcase_set_timeout(tc_CrashingApp, 25);
+   tcase_add_test_raise_signal(tc_CrashingApp, test_CrashingApp, SIGILL);
+
+
+   TCase* tc_RestartedApp = tcase_create("RestartedApp");
+   tcase_add_test(tc_RestartedApp, test_RestartedApp);
+   tcase_set_timeout(tc_RestartedApp, 25);
+
+
+   suite_add_tcase(s, tc_CrashingApp);
+
+   suite_add_tcase(s, tc_RestartedApp);
 
    return s;
 }
@@ -1855,7 +2274,7 @@ static Suite * persistenceClientLib_suite()
 
 int main(int argc, char *argv[])
 {
-   int nr_failed = 0, nr_failed2 = 0;
+   int nr_failed = 0, nr_failed2 = 0, nr_failed3 = 0;
    (void)argv;
 
    // assign application name
@@ -1887,9 +2306,11 @@ int main(int argc, char *argv[])
    {
       Suite * sPcl = persistenceClientLib_suite();
       Suite * sPclMulti = persistenceClientLib_suite_multi();
+      Suite * sPclAppCrash = persistenceClientLib_suite_appcrash();
 
       SRunner * srPCL = srunner_create(sPcl);
       SRunner * srPCLMulti = srunner_create(sPclMulti);
+      SRunner * srPCLAppCrash = srunner_create(sPclAppCrash);
 
       srunner_set_fork_status(srPCL, CK_FORK);
       srunner_set_xml(srPCL, "/tmp/persistenceClientLibraryTest.xml");
@@ -1899,17 +2320,25 @@ int main(int argc, char *argv[])
       srunner_set_xml(srPCLMulti, "/tmp/persistenceClientLibraryTestMulti.xml");
       srunner_set_log(srPCLMulti, "/tmp/persistenceClientLibraryTestMulti.log");
 
-      srunner_run_all(srPCL, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
-      srunner_run_all(srPCLMulti, CK_VERBOSE /*CK_NORMAL CK_VERBOSE CK_SUBUNIT*/);
+      srunner_set_fork_status(srPCLAppCrash, CK_FORK);
+      srunner_set_xml(srPCLAppCrash, "/tmp/persistenceClientLibraryTestAppCrash.xml");
+      srunner_set_log(srPCLAppCrash, "/tmp/persistenceClientLibraryTestAppCrash.log");
+
+      srunner_run_all(srPCL,         CK_VERBOSE);
+      srunner_run_all(srPCLMulti,    CK_VERBOSE);
+      srunner_run_all(srPCLAppCrash, CK_VERBOSE);
 
       srunner_ntests_run(srPCL);
       srunner_ntests_run(srPCLMulti);
+      srunner_ntests_run(srPCLAppCrash);
 
-      nr_failed = srunner_ntests_failed(srPCL);
+      nr_failed  = srunner_ntests_failed(srPCL);
       nr_failed2 = srunner_ntests_failed(srPCLMulti);
+      nr_failed3 = srunner_ntests_failed(srPCLAppCrash);
 
       srunner_free(srPCL);
       srunner_free(srPCLMulti);
+      srunner_free(srPCLAppCrash);
    }
 
    DLT_LOG(gPcltDLTContext, DLT_LOG_INFO, DLT_STRING("End of PCL test"));
@@ -1918,7 +2347,7 @@ int main(int argc, char *argv[])
    DLT_UNREGISTER_CONTEXT(gPcltDLTContext);
    DLT_UNREGISTER_APP();
 
-   return (0==nr_failed && 0==nr_failed2)?EXIT_SUCCESS:EXIT_FAILURE;
+   return (0==nr_failed && 0==nr_failed2 && 0==nr_failed3)?EXIT_SUCCESS:EXIT_FAILURE;
 
 }
 
@@ -2033,6 +2462,7 @@ void run_concurrency_test()
       _exit(EXIT_SUCCESS);
    }
 }
+
 
 
 const char* gWriteBuffer =   "Pack my box with five dozen liquor jugs. - "

@@ -38,9 +38,8 @@
 #include <dbus/dbus.h>
 #include <pthread.h>
 #include <dlt.h>
-#include <dirent.h>
 #include <ctype.h>
-
+#include <semaphore.h>
 
 /// debug log and trace (DLT) setup
 DLT_DECLARE_CONTEXT(gPclDLTContext);
@@ -56,8 +55,13 @@ static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 /// name of the backup blacklist file (contains all the files which are excluded from backup creation)
 static const char* gBackupFilename = "BackupFileList.info";
 static const char* gNsmAppId = "NodeStateManager";
-static const char* gShmWtNameTemplate = "_Data_mnt_c_%s";
-static const char* gShmCNameTemplate  = "_Data_mnt_wt_%s";
+
+static const char* gArtefactTemplate[]  = { "_Data_mnt_wt_%s_wt_itz-sem",
+                                            "_Data_mnt_wt_%s_resource_table_cfg_itz-sem",
+                                            "_Data_mnt_c_%s_cached_itz-sem",
+                                            "_Data_mnt_c_%s_configurable_default_data_itz-sem",
+                                            "_Data_mnt_c_%s_default_data_itz-sem",
+                                           NULL };
 
 static char gAppFolder[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
@@ -130,9 +134,6 @@ int doAppcheck(void)
 #endif
 
 
-#define FILE_DIR_NOT_SELF_OR_PARENT(s) ((s)[0]!='.'&&(((s)[1]!='.'||(s)[2]!='\0')||(s)[1]=='\0'))
-
-
 char* makeShmName(const char* path)
 {
    size_t pathLen = strlen(path);
@@ -166,48 +167,24 @@ char* makeShmName(const char* path)
 
 void checkLocalArtefacts(const char* thePath, const char* appName)
 {
-   struct dirent *dirent = NULL;
-
    if(thePath != NULL && appName != NULL)
    {
       char* name = makeShmName(appName);
 
       if(name != NULL)
       {
-         DIR *dir = opendir(thePath);
-         if(NULL != dir)
+         char buffer[256] = {0};
+         int i = 0;
+
+         while(gArtefactTemplate[i] != NULL)
          {
-            for(dirent = readdir(dir); NULL != dirent; dirent = readdir(dir))
+            memset(buffer, 0, 256);
+            snprintf(buffer, 256, gArtefactTemplate[i++], name);
+
+            if(sem_unlink(buffer) == 0)     // just try to unlink, don't check file really exists
             {
-               if(FILE_DIR_NOT_SELF_OR_PARENT(dirent->d_name))
-               {
-                  char shmWtBuffer[128] = {0};
-                  char shmCBuffer[128] = {0};
-
-                  memset(shmWtBuffer, 0, 128);
-                  memset(shmCBuffer, 0, 128);
-
-                  snprintf(shmWtBuffer, 128, gShmWtNameTemplate, name);
-                  snprintf(shmCBuffer,  128, gShmCNameTemplate,  name);
-
-                  if(   strstr(dirent->d_name, shmWtBuffer)
-                     || strstr(dirent->d_name, shmCBuffer) )
-                  {
-                     size_t len = strlen(thePath) + strlen(dirent->d_name)+1;
-                     char* fileName = malloc(len);
-
-                     if(fileName != NULL)
-                     {
-                        snprintf(fileName, len, "%s%s", thePath, dirent->d_name);
-                        remove(fileName);
-
-                        DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary => remove sem + shmem:"), DLT_STRING(fileName));
-                        free(fileName);
-                     }
-                  }
-               }
+               DLT_LOG(gPclDLTContext, DLT_LOG_WARN, DLT_STRING("pclInitLibrary => sem_unlink"), DLT_STRING(buffer));
             }
-            closedir(dir);
          }
          free(name);
       }
@@ -232,11 +209,9 @@ int pclInitLibrary(const char* appName, int shutdownMode)
             DLT_LOG(gPclDLTContext, DLT_LOG_INFO, DLT_STRING("pclInitLibrary => App:"), DLT_STRING(appName),
                                     DLT_STRING("- init counter: "), DLT_UINT(gPclInitCounter) );
 
-            // do check if there are remaining shared memory and semaphores for local app
+            // do check if there are remaining semaphores for local app from previous lifecycle caused by app crash
             // (only when PCO key-value-store database backend is beeing used)
             checkLocalArtefacts("/dev/shm/", appName);
-            //checkGroupArtefacts("/dev/shm", "group_");
-
             rval = private_pclInitLibrary(appName, shutdownMode);
             if(rval >= 0)
             {
@@ -271,7 +246,10 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
 {
    // no need for NULL ptr check for appName, already done in calling function
 
-   int rval = 1, pasRegStatus = -1;
+   int rval = 1;
+#if USE_PASINTERFACE
+   int pasRegStatus = -1;
+#endif
 
    char blacklistPath[PERS_ORG_MAX_LENGTH_PATH_FILENAME] = {0};
 
@@ -328,7 +306,7 @@ static int private_pclInitLibrary(const char* appName, int shutdownMode)
    {
       // get and fd to the app folder, needed to call syncfs when cmd CMD_LC_PREPARE_SHUTDOWN is called
       // (commit buffer cache to disk)
-      // only if not NSM ==> if NSM ha an handle to the folder, it may interfere with PAS installation sequence
+      // only if not NSM ==> if NSM has an handle to the folder, it may interfere with PAS installation sequence
       memset(gAppFolder, 0, PERS_ORG_MAX_LENGTH_PATH_FILENAME-1);
       snprintf(gAppFolder, PERS_ORG_MAX_LENGTH_PATH_FILENAME, "/Data/mnt-c/%s/", appName);
       gAppFolder[PERS_ORG_MAX_LENGTH_PATH_FILENAME-1] = '\0';

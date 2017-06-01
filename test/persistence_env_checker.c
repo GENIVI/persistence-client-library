@@ -63,6 +63,13 @@ pid_t find_process_running(const char* processName)
             if(fgets(buf, sizeof(buf), fp) != NULL)
             {
                 char* first = strtok(buf, " ");
+
+                char* lastDelimiter = strrchr(first, '/');
+                if( 0 != lastDelimiter )
+                {
+                  first = lastDelimiter+1;
+                }
+
                 if (!strcmp(first, processName))
                 {
                     fclose(fp);
@@ -143,7 +150,7 @@ int check_test_data()
          memset(deviceC, 0, 24);
          deviceC[23] = '\0';
 
-         while( fscanf(fp, "%s %s %s %s %s %s", str1, str2, str3, str4, str5, str6) !=  EOF )
+         while( fscanf(fp, "%23s %23s %23s %95s %11s %11s", str1, str2, str3, str4, str5, str6) !=  EOF )
          {
 #if 0
             printf("1. : |%s|\n", str1 );
@@ -199,12 +206,12 @@ int check_plugin_config()
    }
    else
    {
-      char plugType[10], libNameAndPath[64], str3[20],  str4[20];
+      char plugType[24], libNameAndPath[64], str3[24],  str4[24];
 
       FILE * fp = fopen (gConfigFilePathname, "r");
       if(fp != NULL)
       {
-         while( fscanf(fp, "%s %s %s %s", plugType, libNameAndPath, str3, str4) !=  EOF )
+         while( fscanf(fp, "%23s %63s %23s %23s", plugType, libNameAndPath, str3, str4) !=  EOF )
          {
             if(strncmp("anInvalidEntry", plugType, strlen("anInvalidEntry"))) // ignore invalid test data entry
             {
