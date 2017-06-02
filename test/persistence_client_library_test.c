@@ -1701,8 +1701,7 @@ END_TEST
 void* pasInstallThread(void* userData)
 {
    // install data
-
-   if(system("persadmin_tool install /usr/local/var/PAS_data.tar.gz") == -1)
+   if(system("persadmin_tool install " LOCALSTATEDIR "/PAS_data.tar.gz") == -1)
    {
       printf("#### Failed to install data\n");
    }
