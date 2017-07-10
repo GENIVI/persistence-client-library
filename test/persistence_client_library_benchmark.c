@@ -71,8 +71,8 @@ inline long getMsDuration(struct timespec* start, struct timespec* end)
 void init_benchmark(int numLoops)
 {
    int i = 0;
-   long durationInit = 0;
-   long durationDeInit = 0;
+   long long durationInit = 0;
+   long long durationDeInit = 0;
    struct timespec initStart, initEnd;
    struct timespec deInitStart, deInitEnd;
    int shutdownReg = PCL_SHUTDOWN_TYPE_FAST | PCL_SHUTDOWN_TYPE_NORMAL;
@@ -101,7 +101,8 @@ void init_benchmark(int numLoops)
 void read_benchmark(int numLoops)
 {
    int ret = 0, i = 0;
-   long duration = 0,  size = 0;
+   long long duration = 0;
+   long  size = 0;
    struct timespec readStart, readEnd;
    char key[128] = { 0 };
    unsigned char buffer[7168] = {0};   // 7kB
