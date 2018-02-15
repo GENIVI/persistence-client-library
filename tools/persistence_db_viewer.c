@@ -109,6 +109,7 @@ void printDBcontent(const char* appname, dbType type)
    static const char* wt      = "wt.itz";
    static const char* def     = "default-data.itz";
    static const char* confDef = "configurable-default-data.itz";
+   static const size_t bufSize = 8192;
 
    memset(filename, 0, 512-1);
 
@@ -151,33 +152,29 @@ void printDBcontent(const char* appname, dbType type)
 
          if(resourceList != NULL)
          {
-            int i = 0, idx = 0, numResources = 0;
-            int resourceStartIdx[256] = {0};
-            char buffer[2048] = {0};
-
-            memset(resourceStartIdx, 0, 256-1);
             ret = persComDbGetKeysList(handle, resourceList, listSize);
-
             if(ret != 0)
             {
-               resourceStartIdx[idx] = 0; // initial start
+               int i = 0, idx = 0, numResources = 0;
+               int resourceStartIdx[256] = { 0 };
+               char buffer[bufSize];
 
-               for(i=1; i<listSize; i++ )
+               for(i = 1; i < listSize; i++)
                {
-                 if(resourceList[i]  == '\0')
-                 {
-                    numResources++;
-                    resourceStartIdx[idx++] = i+1;
-                 }
+                  if(resourceList[i] == '\0')
+                  {
+                     numResources++;
+                     resourceStartIdx[idx++] = i+1;
+                  }
                }
 
                printf("NumOf resources: %d \n", numResources);
 
-               for(i=0; i<=numResources; i++)
+               for(i = 0; i<= numResources; i++)
                {
-                  memset(buffer, 0, 1024);
+                  memset(buffer, 0, sizeof(buffer));
                   printf("Key[%d]: %s\n", i, &resourceList[resourceStartIdx[i]]);
-                  persComDbReadKey(handle,  &resourceList[resourceStartIdx[i]], buffer, 1024);
+                  persComDbReadKey(handle,  &resourceList[resourceStartIdx[i]], buffer, (int)sizeof(buffer));
                   printf(" value: %s\n\n", buffer);
                }
             }
