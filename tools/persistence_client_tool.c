@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
             appName = malloc(len + 1);
             if(appName != NULL)
             {
-               memset(appName, 0, len);
+               memset(appName, 0, len + 1);
                strncpy(appName, optarg, len);
             }
 		   }
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
             resourceID = malloc(len + 1);
             if(resourceID != NULL)
             {
-               memset(resourceID, 0, len);
+               memset(resourceID, 0, len + 1);
                strncpy(resourceID, optarg, len);
             }
          }
@@ -316,7 +316,7 @@ int main(int argc, char *argv[])
             payloadBuffer = malloc(len + 1);
             if(payloadBuffer != NULL)
             {
-               memset(payloadBuffer, 0, len);
+               memset(payloadBuffer, 0, len + 1);
                strncpy(payloadBuffer, optarg, len);
             }
          }
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
             fileName = malloc(len + 1);
             if(fileName != NULL)
             {
-               memset(fileName, 0, len);
+               memset(fileName, 0, len + 1);
                strncpy(fileName, optarg, len);
             }
          }

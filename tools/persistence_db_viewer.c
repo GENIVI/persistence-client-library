@@ -159,18 +159,18 @@ void printDBcontent(const char* appname, dbType type)
                int resourceStartIdx[256] = { 0 };
                char buffer[bufSize];
 
-               for(i = 1; i < listSize; i++)
+               for(i = 1; i < listSize; ++i)
                {
                   if(resourceList[i] == '\0')
                   {
                      numResources++;
-                     resourceStartIdx[idx++] = i+1;
+                     resourceStartIdx[++idx] = i+1;
                   }
                }
 
                printf("NumOf resources: %d \n", numResources);
 
-               for(i = 0; i<= numResources; i++)
+               for(i = 0; i < numResources; ++i)
                {
                   memset(buffer, 0, sizeof(buffer));
                   printf("Key[%d]: %s\n", i, &resourceList[resourceStartIdx[i]]);
