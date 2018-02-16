@@ -8,11 +8,10 @@
  * Mozilla Public License, v. 2.0. If a  copy of the MPL was not distributed
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ******************************************************************************/
- /**
+/**
  * @file           persistence_db_viewer.c
  * @ingroup        Persistence client library tools
  * @author         Ingo Huerner
-
  *
  * @see
  */
@@ -60,21 +59,21 @@ typedef enum dbType_
 
 
 unsigned int gDbMaskArray[] = {
-      dbTypeNone,
-      dbTypeCached,
-      dbTypeWriteThrough,
-      dbTypeDefault,
-      dbTypeConfDefault,
-      dbTypeRCT
+   dbTypeNone,
+   dbTypeCached,
+   dbTypeWriteThrough,
+   dbTypeDefault,
+   dbTypeConfDefault,
+   dbTypeRCT
 };
 
 const char* gDbNameArray[] = {
-      "none",
-      "cached",
-      "wt",
-      "default",
-      "confDefault",
-      "RCT"
+   "none",
+   "cached",
+   "wt",
+   "default",
+   "confDefault",
+   "RCT"
 };
 
 
@@ -102,7 +101,7 @@ void printDBcontent(const char* appname, dbType type)
    int handle = 0,  listSize = 0, ret = 0;
 
    char* resourceList = NULL;
-   char filename[512] = {0};
+   char filename[512] = { 0 };
 
    static const char* nameTemplate = "/Data/mnt-c/%s/%s";
    static const char* cache   = "cached.itz";
@@ -110,8 +109,6 @@ void printDBcontent(const char* appname, dbType type)
    static const char* def     = "default-data.itz";
    static const char* confDef = "configurable-default-data.itz";
    static const size_t bufSize = 8192;
-
-   memset(filename, 0, 512-1);
 
    printf("---------------------------------------------------------------------\n");
    if(type == dbTypeCached)
@@ -145,10 +142,10 @@ void printDBcontent(const char* appname, dbType type)
    if(handle >= 0)
    {
       listSize = persComDbGetSizeKeysList(handle);
-      if(listSize > 0 && listSize < 2048)
+      if(listSize > 0)
       {
-         resourceList = (char*)malloc((size_t)listSize+4);
-         memset(resourceList, 0, (size_t)listSize+4-1);
+         resourceList = (char*)malloc((size_t)listSize);
+         memset(resourceList, 0, (size_t)listSize);
 
          if(resourceList != NULL)
          {
@@ -164,7 +161,7 @@ void printDBcontent(const char* appname, dbType type)
                   if(resourceList[i] == '\0')
                   {
                      numResources++;
-                     resourceStartIdx[++idx] = i+1;
+                     resourceStartIdx[++idx] = i + 1;
                   }
                }
 
@@ -172,9 +169,11 @@ void printDBcontent(const char* appname, dbType type)
 
                for(i = 0; i < numResources; ++i)
                {
-                  memset(buffer, 0, sizeof(buffer));
                   printf("Key[%d]: %s\n", i, &resourceList[resourceStartIdx[i]]);
+
+                  memset(buffer, 0, sizeof(buffer));
                   persComDbReadKey(handle,  &resourceList[resourceStartIdx[i]], buffer, (int)sizeof(buffer));
+
                   printf(" value: %s\n\n", buffer);
                }
             }
@@ -200,7 +199,6 @@ void printDBcontent(const char* appname, dbType type)
 
 
 
-
 void printRCTcontent(const char* appname, int full)
 {
    int handle = -1, listSize = 0, ret = 0;
@@ -217,29 +215,25 @@ void printRCTcontent(const char* appname, int full)
    if(handle >= 0)
    {
       listSize = persComRctGetSizeResourcesList(handle);
-      if(listSize > 0 && listSize < 2048)
+      if(listSize > 0)
       {
-         resourceList = (char*)malloc((size_t)listSize+4);
-         memset(resourceList, 0, (size_t)listSize+4-1);
+         resourceList = (char*)malloc((size_t)listSize);
+         memset(resourceList, 0, (size_t)listSize);
 
          if(resourceList != NULL)
          {
-            int i = 0, idx = 1, numResources = 0;
-            int resourceStartIdx[256] = {0};
-
-            memset(resourceStartIdx, 0, 256-1);
             ret = persComRctGetResourcesList(handle, resourceList, listSize);
-
             if(ret != 0)
             {
-               resourceStartIdx[idx] = 0; // initial start
+               int i = 0, idx = 0, numResources = 0;
+               int resourceStartIdx[256] = { 0 };
 
-               for(i=1; i<listSize; i++ )
+               for(i = 1; i < listSize; ++i)
                {
                   if(resourceList[i]  == '\0')
                   {
                      numResources++;
-                     resourceStartIdx[idx++] = i+1;
+                     resourceStartIdx[++idx] = i + 1;
                   }
                }
 
@@ -247,7 +241,7 @@ void printRCTcontent(const char* appname, int full)
                printf("RCT keys [%d]: %s \n", numResources, filename);
                printf("---------------------------------------------------------------------\n");
 
-               for(i=0; i<numResources; i++)
+               for(i = 0; i < numResources; ++i)
                {
                   PersistenceConfigurationKey_s psConfig_out;
                   printf("RCT[%d]                    : \"%s\"\n", i, &resourceList[resourceStartIdx[i]]);
@@ -395,6 +389,7 @@ void printAvailableApplication(const char* thePath)
 }
 
 
+
 int main(int argc, char *argv[])
 {
    int ret = 0, opt = 0, printAllAppsContent = -1, listAllApps = -1;
@@ -457,12 +452,10 @@ int main(int argc, char *argv[])
       printAppManual();
    }
 
-
    if(listAllApps == 1)
    {
       printAvailableApplication(persPath);
    }
-
 
    if(printAllAppsContent == 1)
    {
@@ -472,7 +465,6 @@ int main(int argc, char *argv[])
    {
       printSingleApplicationDBs(singleAppName, persPath, dbTypeAccum);
    }
-
 
    // unregister debug log and trace
    DLT_UNREGISTER_APP();
