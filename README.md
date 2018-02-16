@@ -28,6 +28,7 @@ Execute the following steps in order to build the component
 * autoreconf –vi
 * configure, with the following options
   * --enable-tests to enable the build of the tests
+  * --enable-tools to enable the build of the tools
   * --enable-pasinterface enable the PAS interface (disabled by default)
   * --enable-appcheck, performs an application check if the using application is a valid/trusted one.
 * make 
