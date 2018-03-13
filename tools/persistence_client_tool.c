@@ -82,11 +82,11 @@ int readKey(const char * resource_id, unsigned int user, unsigned int seat, unsi
    int numPerRow = 8;
 
    printf("- %s - User: %u - Seat: %u - ldbid: 0x%x\n\n", __FUNCTION__,  user, seat, ldbid);
-   printf("   ResourceID: \"%s\" \n", resource_id);
+   printf("   ResourceID: \"%s\"\n", resource_id);
 
    rval = pclKeyReadData(ldbid, resource_id, user, seat, buffer, size);
    if(rval >=0)
-      printf("   Data      : \"%s \"\n", buffer);
+      printf("   Data      : \"%s\"\n", buffer);
    else
       printf("Failed to read: %d\n", rval);
 
@@ -109,8 +109,8 @@ int writeKey(const char * resource_id, unsigned int user, unsigned int seat, uns
    int numPerRow = 8;
 
    printf("- %s - User: %u - Seat: %u - ldbid: 0x%x\n\n", __FUNCTION__,  user, seat, ldbid);
-   printf("   ResourceID: \"%s\" \n", resource_id);
-   printf("   Data      : \"%s \"\n", buffer);
+   printf("   ResourceID: \"%s\"\n", resource_id);
+   printf("   Data      : \"%s\"\n", buffer);
 
    size = pclKeyWriteData(ldbid, resource_id, user, seat, buffer, (int)strlen((char*)buffer));
 
@@ -148,7 +148,7 @@ int getkeysize(char * resource_id, unsigned int user, unsigned int seat, unsigne
    int rval = 0;
 
    printf("- %s - User: %u - Seat: %u - ldbid: 0x%x\n\n", __FUNCTION__,  user, seat, ldbid);
-   printf("   ResourceID: \"%s\" \n", resource_id);
+   printf("   ResourceID: \"%s\"\n", resource_id);
 
    rval = pclKeyGetSize(ldbid, resource_id,user, seat);
    printf("   KeySize: %d\n", rval);
@@ -291,10 +291,10 @@ int main(int argc, char *argv[])
 		   case 'a':   // application name
 		   {
 		      size_t len = strlen(optarg);
-            appName = malloc(len);
+            appName = malloc(len + 1);
             if(appName != NULL)
             {
-               memset(appName, 0, len);
+               memset(appName, 0, len + 1);
                strncpy(appName, optarg, len);
             }
 		   }
@@ -302,10 +302,10 @@ int main(int argc, char *argv[])
 		   case 'r':   // resource ID
          {
             size_t len = strlen(optarg);
-            resourceID = malloc(len);
+            resourceID = malloc(len + 1);
             if(resourceID != NULL)
             {
-               memset(resourceID, 0, len);
+               memset(resourceID, 0, len + 1);
                strncpy(resourceID, optarg, len);
             }
          }
@@ -313,10 +313,10 @@ int main(int argc, char *argv[])
          case 'p':   // payload to write
          {
             size_t len = strlen(optarg);
-            payloadBuffer = malloc(len);
+            payloadBuffer = malloc(len + 1);
             if(payloadBuffer != NULL)
             {
-               memset(payloadBuffer, 0, len);
+               memset(payloadBuffer, 0, len + 1);
                strncpy(payloadBuffer, optarg, len);
             }
          }
@@ -324,10 +324,10 @@ int main(int argc, char *argv[])
          case 'f':   // filename to read data from, write data to
          {
             size_t len = strlen(optarg);
-            fileName = malloc(len);
+            fileName = malloc(len + 1);
             if(fileName != NULL)
             {
-               memset(fileName, 0, len);
+               memset(fileName, 0, len + 1);
                strncpy(fileName, optarg, len);
             }
          }
@@ -370,14 +370,14 @@ int main(int argc, char *argv[])
          case modeReadKey:
          {
             unsigned char* buffer = NULL;
-            int keysize = pclKeyGetSize(ldbid, resourceID,user_no, seat_no);
+            int keysize = pclKeyGetSize(ldbid, resourceID, user_no, seat_no);
 
             if(keysize > 0)
             {
-               buffer = malloc((size_t)keysize);
+               buffer = malloc((size_t)keysize + 1);
                if(buffer != NULL)
                {
-                  memset(buffer, 0, (size_t)(keysize-1));
+                  memset(buffer, 0, (size_t)(keysize + 1));
                   readKey(resourceID, user_no, seat_no, ldbid, doHexdump, buffer, keysize);
 
                   if(fileName != NULL)
@@ -493,4 +493,3 @@ void printSynopsis()
 	printf("6.) Delete a key:\n");
 	printf("    persistence_client_tool -o deletekey -a MyApplication -r MyKey                 optional parameters: [-l 0xFF -u 0 -s 0]\n");
 }
-
