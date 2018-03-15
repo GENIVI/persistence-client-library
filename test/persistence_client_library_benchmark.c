@@ -167,7 +167,7 @@ void read_benchmark(int numLoops)
 void write_benchmark(int numLoops)
 {
    int ret = 0, i = 0;
-   long duration = 0,  size = 0;
+   long long duration = 0,  size = 0;
    struct timespec readStart, readEnd;
    char key[128] = { 0 };
    unsigned char buffer[7168] = {0};   // 7kB
