@@ -30,7 +30,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 
 # Overwrite the build in defaults
-CFLAGS="-Wall -O -Werror -fstack-protector -pthread -Wformat -Wformat-security -fexceptions -fstrict-aliasing -fno-omit-frame-pointer -Wconversion -D_FORTIFY_SOURCE=2"
+CFLAGS="-Wall -O -Werror -fstack-protector -pthread -Wformat -Wformat-security -fexceptions -fstrict-aliasing -fno-omit-frame-pointer -Wconversion -D_FORTIFY_SOURCE=2 -Wno-format-truncation"
 
 # Checks for programs.
 AC_PROG_CC
